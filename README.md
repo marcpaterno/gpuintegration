@@ -11,7 +11,6 @@ The easiest way to obtain *all* the code needed is to use a special
 form of the *git clone* command:
 
 ```
-#!bash
 git clone --recurse-submodules ...
 ```
 
@@ -19,7 +18,5 @@ If you clone a new submodule repository into this one, after doing
 the clone, remember to update our list of submodules:
 
 ```
-#!bash
 git submodule update --init --recursive
-```
-
+``
