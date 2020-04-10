@@ -1,0 +1,21 @@
+lo :0x1.9p+4
+lc : 0x1.b8p+4
+lt : 0x1.b8p+4
+zt : 0x1.cccccccccccccp-2
+lnM : 0x1.0cp+5
+rmis : 0x1p+0
+theta : 0x1.921fb54442eeap+1
+radius_ : 0x1p+0
+zo_low_ : 0x1.999999999999ap-3
+zo_high_ : 0x1.6666666666666p-2
+scaled_Rmis : 0x0p+0
+lc_lt : 0x1.733fa6defc7a2p-2
+mor : 0x1.e366843ef66fcp-6
+omega_z : 0x1.d68f014e6c713p-2
+dv_do_dz : 0x1.84d005d9ad292p+31
+hmf : 0x1.3a3ec407b3769p-19
+int_zo_zt : 0x1.cp-51
+roffset : 0x1.58fb9e70a6934p-3
+lo_lc : 0x1.4a4729d1398c6p-5
+sigma : 0x1.d6463be1b6a8cp+10
+val : 0x1.0b1f85994aebbp-44
