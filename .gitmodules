@@ -1,0 +1,12 @@
+[submodule "Optional"]
+	path = Optional
+	url = https://github.com/akrzemi1/Optional.git
+[submodule "cubacpp"]
+	path = cubacpp
+	url = https://mpaterno@bitbucket.org/mpaterno/cubacpp.git
+[submodule "cuba"]
+	path = cuba
+	url = https://github.com/JohannesBuchner/cuba.git
+[submodule "eigen"]
+	path = eigen
+	url = https://gitlab.com/libeigen/eigen.git
