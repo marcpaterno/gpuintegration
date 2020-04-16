@@ -3,6 +3,7 @@
 
 #include "gsl/gsl_interp.h"
 #include <array>
+#include <assert.h>
 #include <cstddef>
 #include <iomanip>
 #include <istream>
