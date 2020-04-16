@@ -4,7 +4,7 @@ enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
 # the ABI here -- e.g., the standard level.
-add_compile_options(-W -Wall -Wextra -Werror)
+add_compile_options(-W -Wall -Wextra) # -Werror excluded due to troubles in Eigen.
 add_compile_options(-Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual -Wpedantic -Wdouble-promotion)
 SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-math-errno -march=native -mtune=native" )
 
