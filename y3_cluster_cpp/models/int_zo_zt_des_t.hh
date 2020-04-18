@@ -9,7 +9,7 @@ namespace y3_cluster {
 
   class INT_ZO_ZT_DES_t {
   public:
-    explicit INT_ZO_ZT_DES_t() {}
+    INT_ZO_ZT_DES_t() {}
 
     double
     operator()(double zomin, double zomax, double zt) const

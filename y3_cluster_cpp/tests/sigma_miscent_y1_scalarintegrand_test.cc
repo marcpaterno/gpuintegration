@@ -12,12 +12,16 @@ template <class M>
 M
 make_from_file(char const* filename)
 {
-  static_assert(std::is_default_constructible<M>::value,
-                "Type must be default constructable");
-  std::ifstream in(filename);
+  static_assert(std::is_default_constructible<M>::value, "Type must be default constructable");
+  char const* basedir = std::getenv("Y3_CLUSTER_CPP_DIR");
+  if (basedir == nullptr) throw std::runtime_error("Y3_CLUSTER_CPP_DIR was not defined\n");
+  std::string fname(basedir);
+  fname += '/';
+  fname += filename;
+  std::ifstream in(fname);
   if (!in) {
     std::string msg("Failed to open file: ");
-    msg += filename;
+    msg += fname;
     throw std::runtime_error(msg);
   }
   M result;
@@ -31,13 +35,13 @@ TEST_CASE("sigma_miscent_y1_scalarintegrand")
   OMEGA_Z_DES omega_z;       // we want the default
   INT_ZO_ZT_DES_t int_zo_zt; // we want the default
 
-  MOR_DES_t mor = make_from_file<MOR_DES_t>("../../data/MOR_DES_t.dump");
+  MOR_DES_t mor = make_from_file<MOR_DES_t>("data/MOR_DES_t.dump");
   DV_DO_DZ_t dv_do_dz =
-    make_from_file<DV_DO_DZ_t>("../../data/DV_DO_DZ_t.dump");
-  HMF_t hmf = make_from_file<HMF_t>("../../data/HMF_t.dump");
-  ROFFSET_t roffset = make_from_file<ROFFSET_t>("../../data/ROFFSET_t.dump");
-  SIG_SUM sig_sum = make_from_file<SIG_SUM>("../../data/SIG_SUM.dump");
-  LO_LC_t lo_lc = make_from_file<LO_LC_t>("../../data/LO_LC_t.dump");
+    make_from_file<DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
+  HMF_t hmf = make_from_file<HMF_t>("data/HMF_t.dump");
+  ROFFSET_t roffset = make_from_file<ROFFSET_t>("data/ROFFSET_t.dump");
+  SIG_SUM sig_sum = make_from_file<SIG_SUM>("data/SIG_SUM.dump");
+  LO_LC_t lo_lc = make_from_file<LO_LC_t>("data/LO_LC_t.dump");
 
   SigmaMiscentY1ScalarIntegrand integrand;
   integrand.set_sample(

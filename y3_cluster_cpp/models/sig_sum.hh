@@ -68,7 +68,9 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, SIG_SUM const& m)
     {
-      os << std::hexfloat << *m._sigma1 << '/' << *m._sigma2 << '/' << *m._bias;
+      auto const old_flags = os.flags();
+      os << std::hexfloat << *m._sigma1 << '\n' << *m._sigma2 << '\n' << *m._bias;
+      os.flags(old_flags);
       return os;
     }
 
@@ -77,14 +79,13 @@ namespace y3_cluster {
     {
       auto sigma1 = std::make_shared<Interp2D>();
       is >> *sigma1;
-      is.clear();
-      is.ignore(2, '/');
+      if (!is) return is;
       auto sigma2 = std::make_shared<Interp2D>();
       is >> *sigma2;
-      is.clear();
-      is.ignore(2, '/');
+      if (!is) return is;
       auto bias = std::make_shared<Interp2D>();
       is >> *bias;
+      if (!is) return is;
       m = SIG_SUM(sigma1, sigma2, bias);
       return is;
     }

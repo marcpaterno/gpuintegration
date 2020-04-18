@@ -64,8 +64,10 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, HMF_t const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat;
-      os << *(m._nmz) << '/' << m._s << ' ' << m._q;
+      os << *(m._nmz) << '\n' << m._s << ' ' << m._q;
+      os.flags(old_flags);
       return os;
     }
 
@@ -74,21 +76,25 @@ namespace y3_cluster {
     {
       assert(is.good());
       auto table = std::make_shared<Interp2D>();
-      double s, q;
       is >> *table;
-      assert(is.fail());
-      is.clear();
-      is.ignore(2, '/');
-      assert(is.good());
-      is >> std::hexfloat >> s >> q;
-      m = HMF_t(table, s, q);
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> const vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 2)
+      {
+        m = HMF_t(table, vals_read[0], vals_read[1]);
+      }
+      else
+      {
+        is.setstate(std::ios_base::failbit);
+      };
       return is;
     }
 
   private:
     std::shared_ptr<Interp2D const> _nmz;
-    double _s;
-    double _q;
+    double _s = 0.0;
+    double _q = 0.0;
   };
 }
 

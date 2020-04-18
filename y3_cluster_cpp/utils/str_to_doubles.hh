@@ -8,6 +8,6 @@ namespace cosmosis {
   // Read hexfloat doubles from a string.
   std::vector<double>
   str_to_doubles(std::string const& txt);
-};
+}
 
 #endif

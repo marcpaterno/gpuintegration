@@ -235,10 +235,10 @@ namespace y3_cluster {
     static y3_cluster::Interp2D const sig_interp;
     static y3_cluster::Interp2D const skews_interp;
 
-    double _A;
-    double _B;
-    double _C;
-    double _sigma_intr;
+    double _A = 0.0;
+    double _B = 0.0;
+    double _C = 0.0;
+    double _sigma_intr = 0.0;
 
   public:
     MOR_sdss() = default;
@@ -278,8 +278,10 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, MOR_sdss const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat << m._A << ' ' << m._B << ' ' << m._C << ' '
          << m._sigma_intr;
+      os.flags(old_flags);
       return os;
     }
 
@@ -287,15 +289,23 @@ namespace y3_cluster {
     operator>>(std::istream& is, MOR_sdss& m)
     {
       assert(is.good());
-      is >> m._A >> m._B >> m._C >> m._sigma_intr;
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> vals = cosmosis::str_to_doubles(buffer);
+      if (vals.size() == 4)
+      {
+        m._A = vals[0];
+        m._B = vals[1];
+        m._C = vals[2];
+        m._sigma_intr = vals[3];
+      }
+      else
+      {
+        is.setstate(std::ios_base::failbit);
+      };
       return is;
     }
   };
 }
-
-y3_cluster::Interp2D const y3_cluster::MOR_sdss::sig_interp =
-  y3_cluster::Interp2D(test_sigintr, test_lsat, sig_skewnorml_flat);
-y3_cluster::Interp2D const y3_cluster::MOR_sdss::skews_interp =
-  y3_cluster::Interp2D(test_sigintr, test_lsat, skews);
 
 #endif

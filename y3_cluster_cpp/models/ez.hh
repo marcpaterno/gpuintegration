@@ -36,8 +36,10 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, EZ const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat;
       os << m._ezsq;
+      os.flags(old_flags);
       return os;
     }
 

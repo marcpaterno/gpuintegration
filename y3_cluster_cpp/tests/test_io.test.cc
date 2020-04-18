@@ -101,7 +101,7 @@ TEST_CASE("Interp1D")
     stream >> t;
     CHECK(m(1.5) == t(1.5));
   }
-  SECTION("table followed by double")
+  SECTION("table followed by table")
   {
     vector<double> xs = {1, 2, 3, 4};
     vector<double> ys = {2.5, 5.0, 7.5, 10.5};
@@ -109,19 +109,17 @@ TEST_CASE("Interp1D")
     CHECK(m(2.5) == 2.5 * 2.5);
     stringstream stream;
     stream << m;
-    stream << '/';
+    stream << '\n';
     CHECK(stream.good());
-    double d = 2.5;
-    stream << d;
+    stream << m;
     CHECK(stream.good());
-    Interp1D t;
-    stream >> t;
-    CHECK(m(1.5) == t(1.5));
-    stream.clear();
-    stream.ignore(2, '/');
-    double val;
-    stream >> val;
-    CHECK(d == val);
+
+    Interp1D t1;
+    stream >> t1;
+    CHECK(m(1.5) == t1(1.5));
+    Interp1D t2;
+    stream >> t2;
+    CHECK(m(1.5) == t2(1.5));    
   }
 }
 
@@ -205,6 +203,7 @@ TEST_CASE("MOR_DES_t")
   REQUIRE(is.good());
   MOR_DES_t m;
   is >> m;
+  REQUIRE(is.good());
   CHECK(m(lt, lnM, zt) == mor);
 }
 

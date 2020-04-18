@@ -6,6 +6,7 @@
 #include "utils/interp_2d.hh"
 #include "utils/mz_power_law.hh"
 #include "utils/primitives.hh"
+#include "utils/str_to_doubles.hh"
 
 #include <cmath>
 #include <fstream>
@@ -238,12 +239,12 @@ namespace y3_cluster {
     static y3_cluster::Interp2D const sig_interp;
     static y3_cluster::Interp2D const skews_interp;
 
-    double _A;
-    double _B;
-    double _C;
-    double _sigma_intr;
-    double _epsilon;
-    double _z_pivot;
+    double _A = 0.0;
+    double _B = 0.0;
+    double _C = 0.0;
+    double _sigma_intr = 0.0;
+    double _epsilon = 0.0;
+    double _z_pivot = 0.0;
 
   public:
     MOR_DES_t() = default;
@@ -298,25 +299,36 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, MOR_DES_t const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat;
       os << m._A << ' ' << m._B << ' ' << m._C << ' ' << m._sigma_intr << ' '
          << m._epsilon << ' ' << m._z_pivot;
+      os.flags(old_flags);
       return os;
     }
 
     friend std::istream&
     operator>>(std::istream& is, MOR_DES_t& m)
     {
-      is >> std::hexfloat;
-      is >> m._A >> m._B >> m._C >> m._sigma_intr >> m._epsilon >> m._z_pivot;
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 6)
+      {
+        m._A = vals_read[0];
+        m._B = vals_read[1];
+        m._C = vals_read[2];
+        m._sigma_intr = vals_read[3];
+        m._epsilon = vals_read[4];
+        m._z_pivot = vals_read[6];
+      }
+      else
+      {
+        is.setstate(std::ios_base::failbit);
+      }
       return is;
     }
   };
 }
-
-y3_cluster::Interp2D const y3_cluster::MOR_DES_t::sig_interp =
-  y3_cluster::Interp2D(test_sigintr, test_lsat, sig_skewnorml_flat);
-y3_cluster::Interp2D const y3_cluster::MOR_DES_t::skews_interp =
-  y3_cluster::Interp2D(test_sigintr, test_lsat, skews);
 
 #endif

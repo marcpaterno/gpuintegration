@@ -83,17 +83,13 @@ private:
   optional<SIG_SUM> sigma;
 
   // State set for current 'bin' to be integrated.
-  double zo_low_;
-  double zo_high_;
-  double radius_;
+  double zo_low_ = 0.0;
+  double zo_high_ = 0.0;
+  double radius_ = 0.0;
 
 public:
   // Default c'tor just for testing outside of CosmoSIS.
   SigmaMiscentY1ScalarIntegrand() = default;
-
-  // Initialize my integrand object from the parameters read
-  // from the relevant block in the CosmoSIS ini file.
-  explicit SigmaMiscentY1ScalarIntegrand(cosmosis::DataBlock& config);
 
   // Set any data members from values read from the current sample.
   // Do not attempt to copy the sample!.

@@ -17,4 +17,3 @@ cosmosis::str_to_doubles(std::string const& txt)
   };
   return vals;
 }
-

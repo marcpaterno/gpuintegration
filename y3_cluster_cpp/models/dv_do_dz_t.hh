@@ -43,7 +43,9 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, DV_DO_DZ_t const& m)
     {
-      os << std::hexfloat << *m._da << '/' << m._ezt << '/' << m._h;
+      auto const old_flags = os.flags();
+      os << std::hexfloat << *m._da << '\n' << m._ezt << '\n' << m._h;
+      os.flags(old_flags);
       return os;
     }
 
@@ -53,14 +55,14 @@ namespace y3_cluster {
       assert(is.good());
       auto da = std::make_shared<Interp1D>();
       is >> *da;
-      is.clear();
-      is.ignore(2, '/');
+      if (!is) return is;
       EZ ez;
       is >> ez;
-      is.clear();
-      is.ignore(2, '/');
-      double h;
-      is >> h;
+      if (!is) return is;
+      std::string buffer;
+      std::getline(is, buffer);
+      if (!is) return is;
+      double const h = std::stod(buffer);
       m = DV_DO_DZ_t(da, ez, h);
       return is;
     }

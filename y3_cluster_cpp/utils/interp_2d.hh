@@ -5,11 +5,13 @@
 
 #include "gsl/gsl_interp2d.h"
 #include "utils/ndarray.hh"
+#include "utils/str_to_doubles.hh"
 #include <array>
 #include <assert.h>
 #include <cstddef>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // Interp2D is used for linear interpolation in 1 dimension.
@@ -117,15 +119,23 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, Interp2D const& interp)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat;
       for (auto x : interp.xs_)
+      {
         os << x << ' ';
-      os << '/';
+      }
+      os << '\n';
       for (auto y : interp.ys_)
-        os << y << ' ';
-      os << '/';
+    {
+      os << y << ' ';
+    }
+      os << '\n';
       for (auto z : interp.zs_)
+      {
         os << z << ' ';
+      }
+      os.flags(old_flags);
       return os;
     }
 
@@ -135,19 +145,13 @@ namespace y3_cluster {
       assert(is.good());
       if (interp.interp_)
         gsl_interp2d_free(interp.interp_);
-      double val;
-      is >> std::hexfloat;
-      while (is >> val)
-        interp.xs_.push_back(val);
-      is.clear(); // clear failbit
-      is.ignore(2, '/');
-      assert(is.good());
-      while (is >> val)
-        interp.ys_.push_back(val);
-      is.clear();
-      is.ignore(2, '/');
-      while (is >> val)
-        interp.zs_.push_back(val);
+      std::string buffer;
+      std::getline(is, buffer);
+      interp.xs_ = cosmosis::str_to_doubles(buffer);
+      std::getline(is, buffer);
+      interp.ys_ = cosmosis::str_to_doubles(buffer);
+      std::getline(is, buffer);
+      interp.zs_ = cosmosis::str_to_doubles(buffer);
       interp.interp_ =
         gsl_interp2d_alloc(gsl_interp2d_bilinear, interp.nx(), interp.ny());
       gsl_interp2d_init(interp.interp_,

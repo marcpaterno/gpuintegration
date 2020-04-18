@@ -30,6 +30,7 @@ T get_datablock(cosmosis::DataBlock& db,
                 const char* value);
 
 template <>
+inline
 double
 get_datablock<double>(cosmosis::DataBlock& db, const char*, const char* val)
 {
@@ -37,6 +38,7 @@ get_datablock<double>(cosmosis::DataBlock& db, const char*, const char* val)
 }
 
 template <>
+inline
 std::vector<double>
 get_datablock<std::vector<double>>(cosmosis::DataBlock& db,
                                    const char*,
@@ -46,6 +48,7 @@ get_datablock<std::vector<double>>(cosmosis::DataBlock& db,
 }
 
 template <>
+inline
 cosmosis::ndarray<double>
 get_datablock<cosmosis::ndarray<double>>(cosmosis::DataBlock& db,
                                          const char*,

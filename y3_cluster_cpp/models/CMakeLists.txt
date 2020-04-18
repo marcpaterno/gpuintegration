@@ -1,6 +1,8 @@
 add_library(models SHARED
             lc_lt_t.cc
-            int_lc_lt_des_t.cc)
+            int_lc_lt_des_t.cc
+            mor_des_t.cc
+            mor_sdss_t.cc)
 
 target_link_libraries(models
                       PRIVATE

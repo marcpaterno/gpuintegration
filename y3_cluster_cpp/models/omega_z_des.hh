@@ -10,7 +10,7 @@
 namespace y3_cluster {
   struct OMEGA_Z_DES {
   public:
-    OMEGA_Z_DES() {}
+    OMEGA_Z_DES() = default;
     OMEGA_Z_DES(cosmosis::DataBlock&) {}
 
     double

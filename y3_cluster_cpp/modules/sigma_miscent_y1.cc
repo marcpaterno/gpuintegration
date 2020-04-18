@@ -266,5 +266,3 @@ sigma_miscent_y1::make_integration_volumes(cosmosis::DataBlock& cfg)
     throw;
   };
 }
-
-DEFINE_COSMOSIS_VECTOR_INTEGRATION_MODULE(sigma_miscent_y1)

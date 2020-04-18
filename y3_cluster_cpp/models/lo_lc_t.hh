@@ -43,23 +43,37 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, LO_LC_t const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat << m._alpha << ' ' << m._a << ' ' << m._b << ' '
          << m._R_lambda;
+      os.flags(old_flags);
       return os;
     }
 
     friend std::istream&
     operator>>(std::istream& is, LO_LC_t& m)
     {
-      is >> m._alpha >> m._a >> m._b >> m._R_lambda;
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> const vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 4)
+      {
+        m._alpha = vals_read[0];
+        m._a = vals_read[1];
+        m._b = vals_read[2];
+        m._R_lambda = vals_read[3];
+      }
+      else {
+        is.setstate(std::ios_base::failbit);
+      }
       return is;
     }
 
   private:
-    double _alpha;
-    double _a;
-    double _b;
-    double _R_lambda;
+    double _alpha = 0.0;
+    double _a = 0.0;
+    double _b = 0.0;
+    double _R_lambda = 0.0;
   };
 }
 

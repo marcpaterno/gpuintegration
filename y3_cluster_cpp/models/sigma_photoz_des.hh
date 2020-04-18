@@ -7,7 +7,7 @@ namespace y3_cluster {
 
   class SIGMA_PHOTOZ_DES_t {
   public:
-    explicit SIGMA_PHOTOZ_DES_t() {}
+    SIGMA_PHOTOZ_DES_t() = default;
 
     double
     operator()(double zt) const

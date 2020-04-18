@@ -29,19 +29,24 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, ROFFSET_t const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat << m._tau;
+      os.flags(old_flags);
       return os;
     }
 
     friend std::istream&
     operator>>(std::istream& is, ROFFSET_t& m)
     {
-      is >> m._tau;
+      std::string buffer;
+      std::getline(is, buffer);
+      if (!is) return is;
+      m._tau = std::stod(buffer);
       return is;
     }
 
   private:
-    double _tau;
+    double _tau = 0.0;
   };
 }
 

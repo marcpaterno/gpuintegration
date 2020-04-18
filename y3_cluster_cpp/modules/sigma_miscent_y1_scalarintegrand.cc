@@ -10,21 +10,6 @@ using cubacpp::integration_result;
 using cosmosis::DataBlock;
 using cubacpp::integration_result;
 
-SigmaMiscentY1ScalarIntegrand::SigmaMiscentY1ScalarIntegrand(DataBlock&)
-  : lc_lt()
-  , mor()
-  , omega_z()
-  , dv_do_dz()
-  , hmf()
-  , int_zo_zt()
-  , roffset()
-  , lo_lc()
-  , sigma()
-  , zo_low_()
-  , zo_high_()
-  , radius_()
-{}
-
 void
 SigmaMiscentY1ScalarIntegrand::set_sample(DataBlock& sample)
 {

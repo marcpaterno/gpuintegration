@@ -40,7 +40,9 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, ANGLE_TO_DIST_t const& m)
     {
-      os << std::hexfloat << *(m._da) << '/' << m._h;
+      auto const old_flags = os.flags();
+      os << std::hexfloat << *(m._da) << '\n' << m._h;
+      os.flags(old_flags);
       return os;
     }
 
@@ -50,17 +52,18 @@ namespace y3_cluster {
       assert(is.good());
       auto table = std::make_shared<Interp1D>();
       is >> *table;
-      is.clear();
-      is.ignore(2, '/');
-      double val = 0;
-      is >> std::hexfloat >> val;
+      if (!is) return is;
+      std::string buffer;
+      std::getline(is, buffer);
+      if (!is) return is;
+      double const val = std::stod(buffer);
       m = ANGLE_TO_DIST_t(table, val);
       return is;
     }
 
   private:
     std::shared_ptr<Interp1D const> _da;
-    double _h;
+    double _h = 0.0;
   };
 }
 

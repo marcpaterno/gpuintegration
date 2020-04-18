@@ -43,7 +43,9 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, AVERAGE_SCI_t const& m)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat << *(m._sci);
+      os.flags(old_flags);
       return os;
     }
 
@@ -52,7 +54,8 @@ namespace y3_cluster {
     {
       assert(is.good());
       auto table = std::make_shared<Interp1D>();
-      is >> std::hexfloat >> *table;
+      is >> *table;
+      if (!is) return is;
       m = AVERAGE_SCI_t(table);
       return is;
     }

@@ -1,6 +1,7 @@
 #ifndef Y3_CLUSTER_INTERP_1D_HH
 #define Y3_CLUSTER_INTERP_1D_HH
 
+#include "str_to_doubles.hh"
 #include "gsl/gsl_interp.h"
 #include <array>
 #include <assert.h>
@@ -54,35 +55,37 @@ namespace y3_cluster {
     friend std::ostream&
     operator<<(std::ostream& os, Interp1D const& interp)
     {
+      auto const old_flags = os.flags();
       os << std::hexfloat;
-      for (auto x : interp.xs_)
+      for (auto x : interp.xs_) {
         os << x << ' ';
-      os << '/';
-      for (auto y : interp.ys_)
+      }
+      os << '\n';
+      for (auto y : interp.ys_) {
         os << y << ' ';
+      }
+      os.flags(old_flags);
       return os;
     }
 
     friend std::istream&
-    operator>>(std::istream& is, Interp1D& interp)
+    operator>>(std::istream& in, Interp1D& interp)
     {
-      assert(is.good());
+      assert(in.good());
       if (interp.interp_)
         gsl_interp_free(interp.interp_);
-      double val;
-      while (is >> val)
-        interp.xs_.push_back(val);
-      is.clear(); // clear failbit
-      is.ignore(2, '/');
-      assert(is.good());
-      while (is >> val)
-        interp.ys_.push_back(val);
+      std::string buffer;
+      std::getline(in, buffer);
+      interp.xs_ = cosmosis::str_to_doubles(buffer);
+      assert(in.good());
+      std::getline(in, buffer);
+      interp.ys_ = cosmosis::str_to_doubles(buffer);
       interp.interp_ = gsl_interp_alloc(gsl_interp_linear, interp.xs_.size());
       gsl_interp_init(interp.interp_,
                       interp.xs_.data(),
                       interp.ys_.data(),
                       interp.xs_.size());
-      return is;
+      return in;
     }
 
   private:

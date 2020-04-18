@@ -10,7 +10,7 @@
 namespace y3_cluster {
   struct OMEGA_Z_SDSS {
   public:
-    OMEGA_Z_SDSS() {}
+    OMEGA_Z_SDSS() = default;
     OMEGA_Z_SDSS(cosmosis::DataBlock&) {}
 
     double
