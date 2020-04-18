@@ -4,12 +4,12 @@ target_include_directories(testmain
                                   ${CMAKE_SOURCE_DIR}/externals)
 
 add_executable(sigma_miscent_y1_scalarintegrand_test sigma_miscent_y1_scalarintegrand_test.cc)
-target_link_libraries(sigma_miscent_y1_scalarintegrand_test PRIVATE testmain ${cuba_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
+target_link_libraries(sigma_miscent_y1_scalarintegrand_test PRIVATE testmain ${CUBA_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
 target_include_directories(sigma_miscent_y1_scalarintegrand_test
                            PRIVATE ${CMAKE_SOURCE_DIR}
                                    ${CMAKE_SOURCE_DIR}/externals
                                    ${EXTERNALS_DIR}
-                                   ${cuba_INCLUDE_DIR}
+                                   ${CUBA_INCLUDE_DIR}
                                    ${CUBACPP_DIR}
                                    ${GSL_INCLUDE_DIR}
                                    ${EIGEN3_INCLUDE_DIR})

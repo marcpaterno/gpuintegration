@@ -21,7 +21,7 @@ set(CMAKE_SHARED_MODULE_SUFFIX ".so") # We want this on all operating systems
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
-find_package(cuba REQUIRED)
+find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
