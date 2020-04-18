@@ -11,6 +11,7 @@
 #include "utils/interp_1d.hh"
 
 #include "utils/make_ifstream.hh"
+#include "utils/str_to_doubles.hh"
 #include <sstream>
 #include <vector>
 
@@ -51,15 +52,10 @@ TEST_CASE("Reading hexfloats")
     vector<double> expected{1.5, 2.5, 3.6};
     ostringstream out;
     out << hexfloat;
-    for (auto x : expected)
+    for (auto x : expected) {
       out << x << ' ';
-    istringstream in(out.str());
-    in >> hexfloat;
-    REQUIRE(in.good());
-    double val;
-    vector<double> read;
-    while (in >> val)
-      read.push_back(val);
+    };
+    auto read = cosmosis::str_to_doubles(out.str());
     CHECK(expected == read);
   }
   SECTION("two vectors")
@@ -68,26 +64,24 @@ TEST_CASE("Reading hexfloats")
     vector<double> second = {86, 99};
     ostringstream out;
     out << hexfloat;
-    for (auto x : first)
+    for (auto x : first) {
       out << x << ' ';
-    out << '/';
-    ;
-    for (auto x : second)
+    };
+    out << '\n';
+    for (auto x : second) {
       out << x << ' ';
+    };
     istringstream in(out.str());
     REQUIRE(in.good());
-    double val;
-    vector<double> read_1;
-    while (in >> val)
-      read_1.push_back(val);
-    CHECK(in.fail());
-    CHECK(first == read_1);
-    in.clear(); // unset failbit
-    in.ignore(2, '/');
+    std::string line;
+    std::getline(in, line);
     CHECK(in.good());
-    vector<double> read_2;
-    while (in >> val)
-      read_2.push_back(val);
+    auto read_1 = cosmosis::str_to_doubles(line);
+    CHECK(first == read_1);
+
+    std::getline(in, line);
+    CHECK(in.eof());
+    auto read_2 = cosmosis::str_to_doubles(line);
     CHECK(second == read_2);
   }
 }

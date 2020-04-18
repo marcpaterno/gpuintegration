@@ -1,7 +1,8 @@
 add_library(utils SHARED
             interp_1d.cc
             interp_2d.cc
-            make_ifstream.cc)
+            make_ifstream.cc
+            str_to_doubles.cc)
 target_link_libraries(utils PRIVATE ${GSL_LIBRARIES})
 message(STATUS "CUBACPP_DIR is: ${CUBACPP_DIR}")
 target_include_directories(utils PRIVATE
