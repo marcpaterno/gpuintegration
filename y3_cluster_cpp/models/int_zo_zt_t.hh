@@ -8,6 +8,7 @@ namespace y3_cluster {
 
   class INT_ZO_ZT_t {
   public:
+    INT_ZO_ZT_t () = default;
     explicit INT_ZO_ZT_t(double sigma) : _sigma(sigma) {}
 
     explicit INT_ZO_ZT_t(cosmosis::DataBlock& sample)
@@ -34,7 +35,7 @@ namespace y3_cluster {
     }
 
   private:
-    double _sigma;
+    double _sigma = 0.0;
   };
 }
 
