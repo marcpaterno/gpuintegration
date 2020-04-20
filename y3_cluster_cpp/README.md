@@ -39,5 +39,15 @@ Other recognized values are `Debug` and `DebWithRelInfo`.
 cmake -DEIGEN3_INCLUDE_DIR=../../eigen -DCUBACPP_DIR=../../cubacpp -DEXTERNALS_DIR=../../  -DCMAKE_MODULE_PATH="../../cubacpp/cmake/modules/;../../eigen/cmake/" -DCMAKE_BUILD_TYPE=Release ..
 ```
 
+It may be convenient to define `PROJECT_DIR` to be the top-level directory for this repository.
 
+```
+cmake -DCUBA_INCLUDE_DIR=${PROJECT_DIR}/cuba \
+      -DCUBA_LIBRARIES=${PROJECT_DIR}/cuba/libcuba.so \
+      -DEIGEN3_INCLUDE_DIR=${PROJECT_DIR}/eigen \
+      -DCUBACPP_DIR=${PROJECT_DIR}/cubacpp \
+      -DEXTERNALS_DIR=${PROJECT_DIR} \
+      -DCMAKE_MODULE_PATH="${PROJECT_DIR}/cubacpp/cmake/modules/;${PROJECT_DIR}/eigen/cmake/" \
+      -DCMAKE_BUILD_TYPE=Release ..
+```
 
