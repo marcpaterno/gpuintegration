@@ -8,8 +8,8 @@ add_compile_options(-W -Wall -Wextra) # -Werror excluded due to troubles in Eige
 add_compile_options(-Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual -Wpedantic -Wdouble-promotion)
 SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-math-errno -mtune=native" )
 
-if (CMAKE_CXX_COMPILER STREQUAL "gcc")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-signaling-nans -fexcess-precision=fast")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-signaling-nans") # -fexcess-precision=fast")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 endif()
 
