@@ -62,6 +62,12 @@ TEST_CASE("sigma_miscent_y1_scalarintegrand")
     double const expected = 0x1.0b1f85994aebbp-44;
     integrand.set_grid_point({zo_low_, zo_high_, radius_});
     double val = integrand(lo, lc, lt, zt, lnM, rmis, theta);
-    CHECK(val == expected);
+    std::cout
+      << "expected: " << expected << '\n'
+      << "val:      " << val << '\n'
+      << std::hexfloat
+      << "expected: " << expected << '\n'
+      << "val:      " << val << '\n';
+    CHECK_THAT(val, Catch::WithinULP(expected, 2) );
   }
 }
