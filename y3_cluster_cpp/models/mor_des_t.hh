@@ -320,7 +320,7 @@ namespace y3_cluster {
         m._C = vals_read[2];
         m._sigma_intr = vals_read[3];
         m._epsilon = vals_read[4];
-        m._z_pivot = vals_read[6];
+        m._z_pivot = vals_read[5];
       }
       else
       {
