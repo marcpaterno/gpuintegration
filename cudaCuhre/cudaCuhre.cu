@@ -52,8 +52,7 @@ int main(int argc, char **argv){
 	
   // Initialize device
   QuadDebugExit(args.DeviceInit());
-  	//double devInitTime = 0;
-  const int ndim = 6;
+  const int ndim = 8;
   //for(int i = 0; i < 1; ++i)
   {
     TYPE integral = 0, error = 0;

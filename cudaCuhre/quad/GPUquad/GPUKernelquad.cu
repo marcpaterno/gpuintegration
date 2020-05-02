@@ -8,7 +8,6 @@ using namespace cooperative_groups;
 //FOR DEBUGGINGG
 
 bool cudaMemoryTest(){
-	bool status = false;
     const unsigned int N = 1048576;
     const unsigned int bytes = N * sizeof(int);
     int *h_a = (int*)malloc(bytes);
@@ -18,7 +17,6 @@ bool cudaMemoryTest(){
     memset(h_a, 0, bytes);
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
-    status = true;
 	return true;
 }
 
