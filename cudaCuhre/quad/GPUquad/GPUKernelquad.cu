@@ -1,4 +1,7 @@
+#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 
+#include "GPUQuadRule.cu"
 #include "GPUQuadPhases.cu"
 
 namespace quad {
@@ -1487,3 +1490,4 @@ namespace quad {
   };
 
 }
+#endif
