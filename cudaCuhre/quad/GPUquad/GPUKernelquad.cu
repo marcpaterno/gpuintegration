@@ -1065,7 +1065,7 @@ bool cudaMemoryTest(){
 		 //printf("Status before entering phase 2 %.12f +- %.12f\n", integral, error);
 		 cudaDeviceSetLimit(cudaLimitMallocHeapSize, 2*128*1024*1024);
 		 
-		 double *exitCondition;
+		 double *exitCondition = nullptr;
 		 //QuadDebug(Device.AllocateMemory((void **)&exitCondition, sizeof(double)*2));   
 		 //cudaMemcpy(&exitCondition[0], &integral, 	sizeof(T),	cudaMemcpyHostToDevice);
 		 //cudaMemcpy(&exitCondition[1], &error, 		sizeof(T),	cudaMemcpyHostToDevice);

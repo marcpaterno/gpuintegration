@@ -56,7 +56,6 @@ namespace quad{
 			T selfRes   = dRegionsIntegral[blockIdx.x + numRegions];	
 			
 			//that's how indices to the right to find the sibling
-			int posToRight = (numRegions/2);
 			//but we want the sibling to be found at the second half of the array only, to avoid race conditions
 			int siblingIndex = (numRegions/2) + blockIdx.x;
 			//printf("[%i] si:%i\n", blockIdx.x, siblingIndex);
@@ -68,7 +67,6 @@ namespace quad{
 			T siblErr 	= dRegionsError[siblingIndex];
 			T siblRes 	= dRegionsIntegral[siblingIndex];
 			
-			T parErr 	= dParentsError[blockIdx.x];
 			T parRes 	= dParentsIntegral[blockIdx.x];
 			
 			T diff 		= siblRes + selfRes - parRes;
