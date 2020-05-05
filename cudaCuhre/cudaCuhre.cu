@@ -66,7 +66,8 @@ main(int argc, char** argv)
       cuhre->integrate(epsrel, EPSABS, integral, error, nregions, neval);
     // printf("%d\t%e\t%.10lf\t%.10f\t%ld\t%ld\t%d\n", DIM, epsrel, integral,
     // error, nregions, neval, errorFlag); std::cout << std::setprecision(9) <<
-    // DIM << "\t" << epsrel << "\t" << std::setprecision(9)  << integral << "\t"
+    // DIM << "\t" << epsrel << "\t" << std::setprecision(9)  << integral <<
+    // "\t"
     // << error << "\t" << nregions << "\t" << neval << "\t" << errorFlag  <<
     // std::endl;
     // MPI_Finalize();
