@@ -411,9 +411,10 @@ namespace quad {
       int numprocs, rank, namelen, id;
       int errorFlag = 0;
       char processor_name[MPI_MAX_PROCESSOR_NAME];
-	  //commented out by Ioannis, throws warning
-      //freopen(
-     //   "/dev/null", "w", stderr); // Hide errors from nodes with no CUDA cards
+      // commented out by Ioannis, throws warning
+      // freopen(
+      //   "/dev/null", "w", stderr); // Hide errors from nodes with no CUDA
+      //   cards
       // MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -648,7 +649,7 @@ namespace quad {
 #if TIMING_DEBUG == 1
         firstPhaseTime =
           timer::stop_timer_returntime(&timer_one, "First Phase");
-        //printf("First Phase took : %.2lf\n", firstPhaseTime);
+        // printf("First Phase took : %.2lf\n", firstPhaseTime);
 #endif
 
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);

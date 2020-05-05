@@ -68,7 +68,6 @@ namespace quad {
     extern __shared__ T slength[];
     size_t threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
-
     if (threadIdx.x < NDIM) {
       slength[threadIdx.x] =
         dRegionsLength[threadIdx.x] / numOfDivisionsPerRegionPerDimension;
@@ -95,20 +94,20 @@ namespace quad {
   template <typename T>
   __global__ void
   alignRegions(T* dRegions,
-                T* dRegionsLength,
-                int* activeRegions,
-                T* dRegionsIntegral,
-                T* dRegionsError,
-                T* dRegionsParentIntegral,
-                T* dRegionsParentError,
-                int* subDividingDimension,
-                int* scannedArray,
-                T* newActiveRegions,
-                T* newActiveRegionsLength,
-                int* newActiveRegionsBisectDim,
-                size_t numRegions,
-                size_t newNumRegions,
-                int numOfDivisionOnDimension)
+               T* dRegionsLength,
+               int* activeRegions,
+               T* dRegionsIntegral,
+               T* dRegionsError,
+               T* dRegionsParentIntegral,
+               T* dRegionsParentError,
+               int* subDividingDimension,
+               int* scannedArray,
+               T* newActiveRegions,
+               T* newActiveRegionsLength,
+               int* newActiveRegionsBisectDim,
+               size_t numRegions,
+               size_t newNumRegions,
+               int numOfDivisionOnDimension)
   {
 
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -161,7 +160,7 @@ namespace quad {
           genRegions[i * numActiveRegions + dim * data_size + tid] =
             activeRegions[dim * numActiveRegions + tid];
           genRegionsLength[i * numActiveRegions + dim * data_size + tid] =
-            activeRegionsLength[dim * numActiveRegions + tid];    
+            activeRegionsLength[dim * numActiveRegions + tid];
         }
       }
 
@@ -332,7 +331,7 @@ namespace quad {
                            cudaMemcpyHostToDevice));
 
       size_t numThreads = 512;
-	  //this has been changed temporarily, do not remove
+      // this has been changed temporarily, do not remove
       /*size_t numOfDivisionPerRegionPerDimension = 4;
       if(NDIM == 5 )numOfDivisionPerRegionPerDimension = 2;
       if(NDIM == 6 )numOfDivisionPerRegionPerDimension = 2;
@@ -380,11 +379,11 @@ namespace quad {
 
     void
     GenerateActiveIntervals(int* activeRegions,
-                             int* subDividingDimension,
-                             T* dRegionsIntegral,
-                             T* dRegionsError,
-                             T*& dParentsIntegral,
-                             T*& dParentsError)
+                            int* subDividingDimension,
+                            T* dRegionsIntegral,
+                            T* dRegionsError,
+                            T*& dParentsIntegral,
+                            T*& dParentsError)
     {
 
       int* scannedArray = 0;
@@ -466,20 +465,20 @@ namespace quad {
         cudaDeviceSynchronize();
 
         alignRegions<T><<<numBlocks, numThreads>>>(dRegions,
-                                                    dRegionsLength,
-                                                    activeRegions,
-                                                    dRegionsIntegral,
-                                                    dRegionsError,
-                                                    dParentsIntegral,
-                                                    dParentsError,
-                                                    subDividingDimension,
-                                                    scannedArray,
-                                                    newActiveRegions,
-                                                    newActiveRegionsLength,
-                                                    newActiveRegionsBisectDim,
-                                                    numRegions,
-                                                    numActiveRegions,
-                                                    numOfDivisionOnDimension);
+                                                   dRegionsLength,
+                                                   activeRegions,
+                                                   dRegionsIntegral,
+                                                   dRegionsError,
+                                                   dParentsIntegral,
+                                                   dParentsError,
+                                                   subDividingDimension,
+                                                   scannedArray,
+                                                   newActiveRegions,
+                                                   newActiveRegionsLength,
+                                                   newActiveRegionsBisectDim,
+                                                   numRegions,
+                                                   numActiveRegions,
+                                                   numOfDivisionOnDimension);
 
         if (VERBOSE) {
           Println(log, "\nCalling GPU Function divideIntervalsGPU");
@@ -527,7 +526,7 @@ namespace quad {
         dRegions = genRegions;
         dRegionsLength = genRegionsLength;
         cudaDeviceSynchronize();
-       
+
         cudaDeviceSynchronize();
         // TODO: throws error
         // QuadDebug(cudaMemcpy(dRegions, 		genRegions, sizeof(T) *
@@ -542,13 +541,13 @@ namespace quad {
 
     void
     FirstPhaseIteration(T epsrel,
-                         T epsabs,
-                         T& integral,
-                         T& error,
-                         size_t& nregions,
-                         size_t& neval,
-                         T*& dParentsIntegral,
-                         T*& dParentsError)
+                        T epsabs,
+                        T& integral,
+                        T& error,
+                        size_t& nregions,
+                        size_t& neval,
+                        T*& dParentsIntegral,
+                        T*& dParentsError)
     {
 
       if (VERBOSE) {
@@ -691,11 +690,11 @@ namespace quad {
       }
 
       GenerateActiveIntervals(activeRegions,
-                               subDividingDimension,
-                               dRegionsIntegral,
-                               dRegionsError,
-                               dParentsIntegral,
-                               dParentsError);
+                              subDividingDimension,
+                              dRegionsIntegral,
+                              dRegionsError,
+                              dParentsIntegral,
+                              dParentsError);
 
       if (VERBOSE) {
         printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f\n",
@@ -727,14 +726,14 @@ namespace quad {
       for (int i = 0; i < 100; i++) {
 
         FirstPhaseIteration(epsrel,
-                             epsabs,
-                             integral,
-                             error,
-                             nregions,
-                             neval,
-                             dParentsIntegral,
-                             dParentsError);
-       
+                            epsabs,
+                            integral,
+                            error,
+                            nregions,
+                            neval,
+                            dParentsIntegral,
+                            dParentsError);
+
         if (numRegions < 1) {
           printf("NO BAD SUBREGIONS LEFT\n");
           return;
@@ -1025,7 +1024,7 @@ namespace quad {
           numFailedRegions +=
             thrust::reduce(int_ptr, int_ptr + numRegionsThread);
 
-          //std::cout << "--" << numFailedRegions << std::endl;
+          // std::cout << "--" << numFailedRegions << std::endl;
           // QuadDebug(cudaThreadExit());
 
           QuadDebug(Device.ReleaseMemory(dRegionsError));

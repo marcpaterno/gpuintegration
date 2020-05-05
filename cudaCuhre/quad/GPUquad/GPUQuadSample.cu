@@ -133,7 +133,7 @@ namespace quad {
 
     T* f = &sdata[0];
     __syncthreads();
-  
+
     if (threadIdx.x == 0) {
       Result* r = &region->result;
       T* f1 = f;
@@ -154,7 +154,6 @@ namespace quad {
       r->bisectdim = bisectdim;
     }
     __syncthreads();
-
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
@@ -193,7 +192,6 @@ namespace quad {
                        errcoeff[0] * sum[2] <= sum[3]) ?
                         errcoeff[1] * sum[1] :
                         errcoeff[2] * MAX(MAX(sum[1], sum[2]), sum[3]));
- 
     }
   }
 }
