@@ -546,7 +546,7 @@ namespace quad {
       } else {
         // if(blockIdx.x == 0)
         //			printf("Block 0 error allocated:%i\n",
-        //gRegionPoolSize);
+        // gRegionPoolSize);
         serror = (T*)malloc(sizeof(T) * gRegionPoolSize);
         serrorPos = (size_t*)malloc(sizeof(size_t) * gRegionPoolSize);
       }

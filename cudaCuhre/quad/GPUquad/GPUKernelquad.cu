@@ -1,8 +1,8 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 
-#include "GPUQuadRule.cu"
 #include "GPUQuadPhases.cu"
+#include "GPUQuadRule.cu"
 
 namespace quad {
   using namespace cooperative_groups;
@@ -618,7 +618,8 @@ namespace quad {
         // TODO: throws error
         // QuadDebug(cudaMemcpy(dRegions, 		genRegions, sizeof(T) *
         // numRegions * NDIM, cudaMemcpyDeviceToDevice));
-        // QuadDebug(cudaMemcpy(dRegionsLength, 	genRegionsLength, sizeof(T)
+        // QuadDebug(cudaMemcpy(dRegionsLength, 	genRegionsLength,
+        // sizeof(T)
         // * numRegions * NDIM, cudaMemcpyDeviceToDevice));
       } else {
         numRegions = 0;
@@ -787,7 +788,8 @@ namespace quad {
         // TODO: throws error
         // QuadDebug(cudaMemcpy(dRegions, 		genRegions, sizeof(T) *
         // numRegions * NDIM, cudaMemcpyDeviceToDevice));
-        // QuadDebug(cudaMemcpy(dRegionsLength, 	genRegionsLength, sizeof(T)
+        // QuadDebug(cudaMemcpy(dRegionsLength, 	genRegionsLength,
+        // sizeof(T)
         // * numRegions * NDIM, cudaMemcpyDeviceToDevice));
       } else {
         numRegions = 0;
@@ -1239,8 +1241,9 @@ namespace quad {
     Why did you have this section?
       for(int i = 1; i < num_gpus; i++){
     int gpu_id;
-    QuadDebug(cudaSetDevice(i));	// "% num_gpus" allows more CPU threads than
-    GPU devices QuadDebug(cudaGetDevice(&gpu_id)); QuadDebug(cudaDeviceReset());
+    QuadDebug(cudaSetDevice(i));	// "% num_gpus" allows more CPU threads
+    than GPU devices QuadDebug(cudaGetDevice(&gpu_id));
+    QuadDebug(cudaDeviceReset());
       }
       */
 

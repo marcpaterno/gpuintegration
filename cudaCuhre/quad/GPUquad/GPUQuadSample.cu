@@ -38,7 +38,7 @@ namespace quad {
 
     // if(threadIdx.x == 0 && blockIdx.x == 0)
     //	printf("computePermutation grid: %i threads & %i blocks\n", blockDim.x,
-    //gridDim.x);
+    // gridDim.x);
     for (int dim = 0; dim < DIM; ++dim) {
       g[dim] = 0;
     }
@@ -167,8 +167,8 @@ namespace quad {
         T* fm = fp + 1;
         // if(threadIdx.x ==0)
         //	printf("[%i] base:%.12f  ratio:%.12f  fp[0]:%.12f  fm[0]:%.12f
-        //fp[%i]:%.12f fm[%i]:%.12f\n", blockIdx.x, base, ratio, fp[0], fm[0],
-        //offset, fp[offset], offset, fm[offset]);
+        // fp[%i]:%.12f fm[%i]:%.12f\n", blockIdx.x, base, ratio, fp[0], fm[0],
+        // offset, fp[offset], offset, fm[offset]);
         T fourthdiff =
           fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
         f1 = fm;
