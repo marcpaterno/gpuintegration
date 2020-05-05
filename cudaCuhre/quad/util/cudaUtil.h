@@ -154,7 +154,6 @@ public:
         warmUpKernel<<<FIRST_PHASE_MAXREGIONS, BLOCK_SIZE>>>();
 
         QuadDebug(cudaDeviceSynchronize());
-        printf("After first warmup\n");
       }
 
       if (dev < 0) {
@@ -185,7 +184,7 @@ public:
       if (CheckCmdLineFlag("verbose")) {
         GetCmdLineArgument("verbose", verbose);
       }
-      printf("last\n");
+
       if (false && verbose) {
         printf("Using device %d: %s (SM%d, %d SMs, %lld free / %lld total MB "
                "physmem, ECC %s)\n",

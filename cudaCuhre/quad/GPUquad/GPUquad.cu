@@ -49,7 +49,7 @@ namespace quad {
     ~GPUcuhre()
     {
       if (VERBOSE) {
-        sprintf(msg, "GPUcuhre Destructur");
+        sprintf(msg, "GPUcuhre Destructor");
         Print(msg);
       }
       delete kernel;
@@ -81,7 +81,7 @@ namespace quad {
           for (int gpuNode = 0; gpuNode < devCount; ++gpuNode) {
             cudaDeviceProp devProp;
             cudaGetDeviceProperties(&devProp, gpuNode);
-            sprintf(idstr2, " %s (%d) ", devProp.name, gpuNode);
+            sprintf(idstr2, " %s (%i) ", devProp.name, gpuNode);
             strncat(idstr, idstr2, BUFSIZE);
           }
         } else {
@@ -355,8 +355,8 @@ namespace quad {
 
       if (VERBOSE) {
         sprintf(msg,
-                "Cuhre input parameters:\nndim %ld\nepsrel %e\nepsabs %e\nkey "
-                "%ld\n\n",
+                "Cuhre input parameters:\nndim %i\nepsrel %f\nepsabs %f\nkey "
+                "%i\n\n",
                 NDIM,
                 epsrel,
                 epsabs,
@@ -411,8 +411,9 @@ namespace quad {
       int numprocs, rank, namelen, id;
       int errorFlag = 0;
       char processor_name[MPI_MAX_PROCESSOR_NAME];
-      freopen(
-        "/dev/null", "w", stderr); // Hide errors from nodes with no CUDA cards
+	  //commented out by Ioannis, throws warning
+      //freopen(
+     //   "/dev/null", "w", stderr); // Hide errors from nodes with no CUDA cards
       // MPI_Init(&argc,&argv);
       MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -607,8 +608,8 @@ namespace quad {
 
         if (VERBOSE) {
           sprintf(msg,
-                  "Cuhre input parameters:\nndim %ld\nepsrel %e\nepsabs "
-                  "%e\nkey %ld\n\n",
+                  "Cuhre input parameters:\nndim %i\nepsrel %f\nepsabs "
+                  "%f\nkey %i\n\n",
                   NDIM,
                   epsrel,
                   epsabs,
@@ -647,7 +648,7 @@ namespace quad {
 #if TIMING_DEBUG == 1
         firstPhaseTime =
           timer::stop_timer_returntime(&timer_one, "First Phase");
-        printf("First Phase took : %.2lf\n", firstPhaseTime);
+        //printf("First Phase took : %.2lf\n", firstPhaseTime);
 #endif
 
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
@@ -671,8 +672,6 @@ namespace quad {
 
         if (error <= MaxErr(integral, epsrel, epsabs))
           errorFlag = 0;
-        else
-          printf("not satisfied\n");
 
 #if TIMING_DEBUG == 1
         T time = timer::stop_timer_returntime(&timer, "Total time :");
@@ -691,7 +690,7 @@ namespace quad {
           errorFlag,
           kernelTime,
           time);
-        printf("nregions:%i\n", nregions);
+        printf("nregions:%lu\n", nregions);
         printf("Error flag:%i\n", errorFlag);
         printf("Total Time:%f\n", time);
 #endif
