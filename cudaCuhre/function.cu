@@ -1,11 +1,10 @@
-#define FUN 5
-#define DIM 8
-
+#define FUN 11
+#define DIM 6
+//
 #ifndef FUN
 #define FUN 2
 #define DIM 3
 #endif
-
 
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b))?a:b)
@@ -28,7 +27,7 @@ __device__
 T r8vec_dot ( int n, T a1[], const T a2[] ){
   int i;
   T value;
-
+	
   value = 0.0;
   for ( i = 0; i < n; i++ ){
     value = value + a1[i] * a2[i];
@@ -107,7 +106,69 @@ T IntegrandFunc(const T xx[], int NDIM) {
     total = total + alpha * fabs ( xx[N-1] - beta);
   }
   f = exp ( - total );
+
+#elif FUN == 11
+//sin(x1+x2+x3+x4+x5+x6) from 0 to 10
+  double sum = 0;
+  int N = 0;
+  for(N=0; N<NDIM; N++)
+	sum+= 10*xx[N];
+	
+  f = pow(10, NDIM)*sin(sum);
   
+#elif FUN == 12
+//sin(x1+x2+x3+x4+x5+x6)+1 from 0 to 1
+  double sum = 0;
+  int N = 0;
+  for(N=0; N<NDIM; N++)
+	sum+= xx[N];
+	
+  f = 1+sin(sum);
+#elif FUN == 13
+//sin(x1+x2+x3+x4+x5+x6)+1 from 0 to 10
+  double sum = 0;
+  int N = 0;
+  for(N=0; N<NDIM; N++)
+	sum+= 10*xx[N];
+	
+  f = pow(10, NDIM)*(1+sin(sum));   
+#elif FUN == 14
+//sin(10[x1+x2+x3+x4+x5+x6]) from 0 to 1
+  double sum = 0;
+  int N = 0;
+  for(N=0; N<NDIM; N++)
+	sum+= xx[N];
+	
+  f = sin(10*sum); 
+  
+#elif FUN == 15
+//this is FUN 14 in demo2.c
+  double sum = 0;
+
+  
+  int N = 0;
+  for(N=0; N<NDIM; N++){
+    if(N == 0)
+      sum+= 5*xx[N];
+    else if(N==1)
+      sum+=.001*xx[N];
+    else if(N==2)
+      sum+=xx[N];
+    else
+      sum+=xx[N]*.001;
+  }
+  
+  f = sin(sum);
+#elif FUN == 19
+//Sin (x1 - x2 + x3 - x4 + x5 - x6) in (0,1)
+	double sum = 0;
+	sum = xx[0]-xx[1]+xx[2]-xx[3]+xx[4]-xx[5];
+	f = sin(sum);
+#elif FUN == 20
+//Sin (x1 - x2 + x3 - x4 + x5 - x6) in (0,10)
+	double sum = 0;
+	sum = 10*(xx[0]-xx[1]+xx[2]-xx[3]+xx[4]-xx[5]);
+	f = pow(10,6)*sin(sum);
 #endif
   
   return f;

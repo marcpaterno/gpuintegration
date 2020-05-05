@@ -34,7 +34,7 @@ int main(int argc, char **argv){
     exit(0);
   }
  
-  TYPE epsrel = 1e-7;  
+  TYPE epsrel = 1e-3;  
   if (args.CheckCmdLineFlag("e")){
     args.GetCmdLineArgument("e", epsrel);
   }
@@ -52,8 +52,8 @@ int main(int argc, char **argv){
 	
   // Initialize device
   QuadDebugExit(args.DeviceInit());
-  	double devInitTime = 0;
-  const int ndim = 8;
+  	//double devInitTime = 0;
+  const int ndim = 6;
   //for(int i = 0; i < 1; ++i)
   {
     TYPE integral = 0, error = 0;

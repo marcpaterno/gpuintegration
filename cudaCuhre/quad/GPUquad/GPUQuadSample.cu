@@ -11,9 +11,9 @@ namespace quad{
     T
     computeReduce(T sum){
 		sdata[threadIdx.x] = sum;
-    
+		
 		__syncthreads();
-  
+		
 		// contiguous range pattern
 		for(size_t offset = blockDim.x / 2; offset > 0; offset >>= 1){
 			if(threadIdx.x < offset){
@@ -24,7 +24,7 @@ namespace quad{
     
 		return sdata[0];
 	}
-
+	
 	template<typename T>
     __device__
     void
@@ -35,6 +35,9 @@ namespace quad{
 					   T *sum,  
 					   Structures<T> *constMem){
 		
+		
+		//if(threadIdx.x == 0 && blockIdx.x == 0)
+		//	printf("computePermutation grid: %i threads & %i blocks\n", blockDim.x, gridDim.x);
 		for(int dim = 0; dim < DIM; ++dim){
 		  g[dim]=0;
 		}
@@ -53,6 +56,20 @@ namespace quad{
 			}
 		}
 		
+		/*sBound[0].unScaledLower = .5;sBound[0].unScaledUpper = 1;
+		sBound[1].unScaledLower = 0;;sBound[1].unScaledUpper = 1 ;
+		sBound[2].unScaledLower = 0;sBound[2].unScaledUpper = 1;
+		sBound[3].unScaledLower = 0;sBound[3].unScaledUpper = 1;
+		sBound[4].unScaledLower = 0;sBound[4].unScaledUpper = 1;
+		sBound[5].unScaledLower = 0;sBound[5].unScaledUpper = 1;*/
+		
+		/*sBound[0].unScaledLower = .5;sBound[0].unScaledUpper = .75;
+		sBound[1].unScaledLower = 0;;sBound[1].unScaledUpper = 1 ;
+		sBound[2].unScaledLower = 0;sBound[2].unScaledUpper = 1;
+		sBound[3].unScaledLower = 0;sBound[3].unScaledUpper = 1;
+		sBound[4].unScaledLower = 0;sBound[4].unScaledUpper = 1;
+		sBound[5].unScaledLower = 0;sBound[5].unScaledUpper = 1;*/
+		
 		//sBound is shared memory
 		T jacobian = 1;
 		for(int dim = 0; dim < DIM; ++dim ){
@@ -63,8 +80,13 @@ namespace quad{
 		}
 		
 		T fun = IntegrandFunc<T>(x, DIM);
+		//printf("[%i] (%i) Computing integral at x:%.12f at %f, %f, %f, %f, %f, %f\n", blockIdx.x, threadIdx.x, fun, x[0], x[1], x[2], x[3], x[4], x[5]);
+		//commented out by Ioannis
 		fun = fun*jacobian;
 		sdata[threadIdx.x] = fun;
+	
+		//added by Ioannis, effectively changed the order of where this is changing
+		//fun = fun*jacobian;
 		//T *weight = &constMem->_cRuleWt[gIndex*NRULES];
 	  
 		for(int rul = 0; rul < NRULES; ++rul ){
@@ -94,10 +116,10 @@ namespace quad{
     int maxdim = 0;
     T maxrange = 0;
 	
+	//set dimension range
     for(int dim = 0; dim < DIM; ++dim ) {
 	
       Bounds *b = &region->bounds[dim];
-	 
       T range = b->upper - b->lower;
       if( range > maxrange ) {
 		maxrange = range;
@@ -105,21 +127,31 @@ namespace quad{
       }
     }
 	
-    T sum[NRULES]; // NRULES is defined in quad.h as 5
+    T sum[NRULES]; 
     Zap(sum);		
 	
     //Compute first set of permutation outside for loop to extract the Function values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+	//printf("%lu\n", FEVAL); 
+	 __syncthreads();
     if(pIndex < FEVAL){
+		//printf("[%i] Thread %i doing 1st permutation\n", blockIdx.x, threadIdx.x);
       computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);  
     }
+	
     __syncthreads();
 	
     //Perform operations for real f[FRAME_PER_THREAD];
 	
     T *f = &sdata[0];
-  
+	__syncthreads();
+	//if(threadIdx.x ==0)
+		//for(int ii=0; ii<15; ii++)
+		{
+			//printf("[%i] sData[%i]:%.12f\n", blockIdx.x, ii, sdata[ii]);
+		}
+	
     if(threadIdx.x == 0){
       Result *r = &region->result;
       T *f1 = f;
@@ -129,29 +161,38 @@ namespace quad{
       for(int dim = 0; dim < DIM; ++dim ){
 		T *fp = f1 + 1;
 		T *fm = fp + 1;
+		//if(threadIdx.x ==0)
+		//	printf("[%i] base:%.12f  ratio:%.12f  fp[0]:%.12f  fm[0]:%.12f fp[%i]:%.12f fm[%i]:%.12f\n", blockIdx.x, base, ratio, fp[0], fm[0], offset, fp[offset], offset, fm[offset]);
 		T fourthdiff = fabs(base + ratio*(fp[0] + fm[0]) - (fp[offset] + fm[offset]));
 		f1 = fm;
+		//printf("[%i] fourthdiff:%.12f at dim:%i\n", blockIdx.x, fourthdiff, dim);
 		if( fourthdiff > maxdiff ) {
 			maxdiff = fourthdiff;
 			bisectdim = dim;
 		}
       }
       r->bisectdim = bisectdim;
+	  //printf("[%i] bisectDim:%i\n", blockIdx.x, bisectdim);
     }
+	__syncthreads();
+	
+	//value is the set number of required function evaluations per region, not how many there have been so far or anythign like that
 	
     for(perm = 1; perm < FEVAL/BLOCK_SIZE; ++perm){
       int pIndex = perm*BLOCK_SIZE+threadIdx.x;
+	  //printf("[%i] Thread %i doing 2nd permutation\n", blockIdx.x, threadIdx.x);
       computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);
     }
-
+	
     //Balance permutations
     pIndex = perm*BLOCK_SIZE + threadIdx.x;
-	
     if(pIndex < FEVAL){
       int pIndex = perm*BLOCK_SIZE + threadIdx.x;
+	 // printf("[%i] Thread %i doing 3rd permutation\n", blockIdx.x, threadIdx.x);
       computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);  
     }
 	
+	//FIRST TIME REDUCTION HAPPENS WITH SUM
     for(int i = 0; i < NRULES; ++i)
       sum[i] = computeReduce<T>(sum[i]);
   
@@ -175,6 +216,8 @@ namespace quad{
 		errcoeff[1]*sum[1] :
 		errcoeff[2]*MAX(MAX(sum[1], sum[2]), sum[3]) );
       //printf("Sample : %ld %.16lf %.16lf\n",(size_t)blockIdx.x, r->avg,r->err);
+	  if(blockIdx.x<5)
+		printf("[%i] Phase 1 unrefined error %.12f +- %.12f\n", blockIdx.x, r->avg, r->err);
     }
   }
 }

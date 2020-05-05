@@ -7,13 +7,13 @@ namespace quad{
   #if TIMING_DEBUG == 1
   timer::event_pair timer_one;
   #endif
-
+	
   template <typename T>
     class GPUcuhre{
     
     //Debug message
     char msg[256];
-
+	
     //Quadrature Parameters
     int NDIM;
     int KEY;
@@ -475,11 +475,12 @@ namespace quad{
 			MPI_Finalize(); 
       }
 	  else{
-
-#if TIMING_DEBUG == 1
-	timer::event_pair timer;
-	timer::start_timer(&timer);
-#endif
+		
+	#if TIMING_DEBUG == 1
+		timer::event_pair timer;
+		timer::start_timer(&timer);
+	#endif
+	
 	if(VERBOSE){
 	  sprintf(msg, "Cuhre input parameters:\nndim %ld\nepsrel %e\nepsabs %e\nkey %ld\n\n",
 		  NDIM, 
@@ -502,46 +503,51 @@ namespace quad{
 	}
 	T firstPhaseTime = 0;
 	
-#if TIMING_DEBUG == 1
-	timer::start_timer(&timer_one);
-#endif
+	#if TIMING_DEBUG == 1
+		timer::start_timer(&timer_one);
+	#endif
 	
 	FIRST_PHASE_MAXREGIONS *= numDevices;
+	printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
 	kernel->IntegrateFirstPhase(epsrel, epsabs, integral, error, nregions, neval);
 	 
-#if TIMING_DEBUG == 1
-	firstPhaseTime = timer::stop_timer_returntime(&timer_one, "First Phase");
-	printf("First Phase took : %.2lf\n", firstPhaseTime);
-#endif
+	#if TIMING_DEBUG == 1
+		firstPhaseTime = timer::stop_timer_returntime(&timer_one, "First Phase");
+		printf("First Phase took : %.2lf\n", firstPhaseTime);
+	#endif
         
 	T *optionalInfo = (T *)malloc(sizeof(T) * 2);
 	  
 	if(kernel->getNumActiveRegions() > 0){
 	  if(VERBOSE){
-#if TIMING_DEBUG == 1
-	  timer::start_timer(&timer_one);
-#endif
+		#if TIMING_DEBUG == 1
+			timer::start_timer(&timer_one);
+		#endif
 	  }
 	 
 	  errorFlag = kernel->IntegrateSecondPhase(epsrel, epsabs, integral, error, nregions, neval, optionalInfo);
-
+		
 	  if(VERBOSE){
-#if TIMING_DEBUG == 1
-	  timer::stop_timer(&timer_one, "Second Phase");
-#endif
+		#if TIMING_DEBUG == 1
+			timer::stop_timer(&timer_one, "Second Phase");
+		#endif
 	  }
 	}
+	
 	if(error <= MaxErr(integral, epsrel, epsabs))
 	  errorFlag = 0;
-
-#if TIMING_DEBUG == 1
-	T time = timer::stop_timer_returntime(&timer, "Total time :");
-	T kernelTime = firstPhaseTime+optionalInfo[0];
-	printf("FirstPhase time\t: %.2lf\nSecondPhase Kernel time\t: %.2lf\n",firstPhaseTime, optionalInfo[0]);
-	printf("%d\t%e\t%.15lf\t%.15f\t%-15ld\t%-15ld\t%d\t%-10.2lf\t%-10.2lf\n", DIM, epsrel, integral, error, nregions, neval, errorFlag, kernelTime, time);
-    printf("Error flag:%i\n", errorFlag);
-	printf("Total Time:%f\n", time);
-#endif
+	else
+		printf("not satisfied\n");
+	
+	#if TIMING_DEBUG == 1
+		T time = timer::stop_timer_returntime(&timer, "Total time :");
+		T kernelTime = firstPhaseTime+optionalInfo[0];
+		printf("FirstPhase time\t: %.2lf\nSecondPhase Kernel time\t: %.2lf\n",firstPhaseTime, optionalInfo[0]);
+		printf("%d\t%e\t%.15lf\t%.15f\t%-15ld\t%-15ld\t%d\t%-10.2lf\t%-10.2lf\n", DIM, epsrel, integral, error, nregions, neval, errorFlag, kernelTime, time);
+		printf("nregions:%i\n", nregions);
+		printf("Error flag:%i\n", errorFlag);
+		printf("Total Time:%f\n", time);
+	#endif
       }      
       return errorFlag;
     }
