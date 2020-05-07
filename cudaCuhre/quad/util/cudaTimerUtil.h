@@ -1,4 +1,5 @@
-
+#ifndef CUDACUHRE_QUAD_UTIL_CUDATIMER_UTIL_H
+#define CUDACUHRE_QUAD_UTIL_CUDATIMER_UTIL_H
 namespace quad {
   namespace timer {
     struct event_pair {
@@ -50,7 +51,7 @@ namespace quad {
       cudaEventDestroy(p->end);
       return elapsed_time;
     }
-
   }
-
 }
+
+#endif

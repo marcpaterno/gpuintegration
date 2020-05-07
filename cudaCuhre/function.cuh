@@ -1,3 +1,6 @@
+#ifndef CUDACUHRE_FUNCTION_CUH
+#define CUDACUHRE_FUNCTION_CHH
+
 #define FUN 11
 #define DIM 6
 //
@@ -175,3 +178,5 @@ IntegrandFunc(const T xx[], int NDIM)
 
   return f;
 }
+
+#endif

@@ -1,5 +1,11 @@
+#ifndef CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
+#define CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
+
 #include "cudaArchUtil.h"
+#include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
 
 namespace quad {
 
@@ -87,5 +93,6 @@ namespace quad {
 
     return;
   }
-
 }
+
+#endif

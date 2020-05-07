@@ -1,7 +1,14 @@
+#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUAD_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_GPUQUAD_CUH
 #include "../util/cudaMemoryUtil.h"
 #include "../util/cudaTimerUtil.h"
 
-#include "GPUKernelquad.cu"
+#include "GPUKernelquad.cuh"
+
+#include <mpi.h>
+
+#include <stdio.h>
+
 namespace quad {
 #if TIMING_DEBUG == 1
   timer::event_pair timer_one;
@@ -700,3 +707,5 @@ namespace quad {
     }
   };
 }
+
+#endif

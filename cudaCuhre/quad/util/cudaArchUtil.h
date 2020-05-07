@@ -1,4 +1,5 @@
-
+#ifndef CUDACUHRE_QUAD_UTIL_CUDAARCH_UTIL_H
+#define CUDACUHRE_QUAD_UTIL_CUDAARCH_UTIL_H
 namespace quad {
 
   /// QUAD_PTX_ARCH reflects the PTX version targeted by the active compiler
@@ -8,5 +9,6 @@ namespace quad {
 #else
 #define QUAD_PTX_ARCH __CUDA_ARCH__
 #endif
-
 }
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
+
 namespace quad {
 
   template <typename T>
@@ -195,3 +198,5 @@ namespace quad {
     }
   }
 }
+
+#endif

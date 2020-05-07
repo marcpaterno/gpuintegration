@@ -1,4 +1,7 @@
-#include "GPUQuadSample.cu"
+#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADPHASES_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_GPUQUADPHASES_CUH
+
+#include "GPUQuadSample.cuh"
 #include <cooperative_groups.h>
 
 namespace quad {
@@ -676,3 +679,6 @@ namespace quad {
     }
   }
 }
+
+#endif
+

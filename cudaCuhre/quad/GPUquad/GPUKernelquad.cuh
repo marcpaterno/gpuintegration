@@ -1,8 +1,13 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 
-#include "GPUQuadPhases.cu"
-#include "GPUQuadRule.cu"
+#include "GPUQuadPhases.cuh"
+#include "GPUQuadRule.cuh"
+
+#include <cuda.h>
+
+#include <stdio.h>
+#include <string.h>
 
 namespace quad {
   using namespace cooperative_groups;

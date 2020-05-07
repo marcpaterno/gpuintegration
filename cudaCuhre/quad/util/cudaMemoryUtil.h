@@ -1,3 +1,7 @@
+#ifndef CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
+#define CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
+
+#include <cuda.h>
 
 namespace quad {
   template <typename T>
@@ -105,6 +109,8 @@ namespace quad {
       } while (0);
       return error;
     }
-  };
+};
 
 }
+
+#endif

@@ -2,12 +2,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "function.cu"
+#include "function.cuh"
 #include "quad/quad.h"
 #include "quad/util/cudaUtil.h"
 #include <iomanip>
 
-#include "quad/GPUquad/GPUquad.cu"
+#include "quad/GPUquad/GPUquad.cuh"
 
 using namespace quad;
 
@@ -17,14 +17,13 @@ using namespace quad;
 // Globals, constants and typedefs
 //---------------------------------------------------------------------
 
-bool g_verbose = false;
 
 int
 main(int argc, char** argv)
 {
   // Initialize command line
   CommandLineArgs args(argc, argv);
-  g_verbose = args.CheckCmdLineFlag("v");
+  bool g_verbose = args.CheckCmdLineFlag("v");
 
   // Print usage
   if (args.CheckCmdLineFlag("help")) {

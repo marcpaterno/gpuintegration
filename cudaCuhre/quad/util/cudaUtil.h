@@ -1,5 +1,8 @@
-#include <float.h>
+#ifndef CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
+#define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
+
 #include <math.h>
+#include <float.h>
 #include <omp.h>
 #include <stdio.h>
 
@@ -211,3 +214,5 @@ public:
 #define Zap(d) memset(d, 0, sizeof(d))
 
 #define MaxErr(avg, epsrel, epsabs) MAX(epsrel* fabs(avg), epsabs)
+
+#endif

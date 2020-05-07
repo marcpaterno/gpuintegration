@@ -1,6 +1,8 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADRULE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_GPUQUADRULE_CUH
 
+#include "../util/cudaMemoryUtil.h"
+
 namespace quad {
   template <typename T>
   class QuadRule {
