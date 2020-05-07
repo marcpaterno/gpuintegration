@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(cudaCuhre LANGUAGES CXX CUDA)
+project(cudaCuhre LANGUAGES CUDA CXX)
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 14)
@@ -15,5 +15,4 @@ add_executable(cudaCuhre cudaCuhre.cu)
 target_compile_features(cudaCuhre PUBLIC cxx_std_14)
 target_compile_options(cudaCuhre PRIVATE "-arch=sm_70")
 set_target_properties(cudaCuhre PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(cudaCuhre PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(cudaCuhre ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
