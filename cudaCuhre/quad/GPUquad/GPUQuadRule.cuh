@@ -435,13 +435,13 @@ namespace quad {
       else if (RULE == 7)
         NSETS = 6;
 
-      FEVAL = (1 + 2 * DIM + 2 * DIM + 2 * DIM + 2 * DIM + 2 * DIM * (DIM - 1) +
-               4 * DIM * (DIM - 1) + 4 * DIM * (DIM - 1) * (DIM - 2) / 3 +
-               (1 << DIM));
+      FEVAL = (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim * (ndim - 1) +
+               4 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) * (ndim - 2) / 3 +
+               (1 << ndim));
       PERMUTATIONS_POS_ARRAY_SIZE =
-        (1 + 1 * 1 + 2 * DIM * 1 + 2 * DIM * 1 + 2 * DIM * 1 + 2 * DIM * 1 +
-         2 * DIM * (DIM - 1) * 2 + 4 * DIM * (DIM - 1) * 2 +
-         4 * DIM * (DIM - 1) * (DIM - 2) * 3 / 3 + DIM * (1 << DIM));
+        (1 + 1 * 1 + 2 * ndim * 1 + 2 * ndim * 1 + 2 * ndim * 1 + 2 * ndim * 1 +
+         2 * ndim * (ndim - 1) * 2 + 4 * ndim * (ndim - 1) * 2 +
+         4 * ndim * (ndim - 1) * (ndim - 2) * 3 / 3 + ndim * (1 << ndim));
       // NRULES = 5;
       Rule9Generate();
 

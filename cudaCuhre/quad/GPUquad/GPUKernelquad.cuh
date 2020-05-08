@@ -96,7 +96,7 @@ namespace quad {
     }
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __global__ void
   alignRegions(T* dRegions,
                T* dRegionsLength,
@@ -120,7 +120,7 @@ namespace quad {
     if (tid < numRegions && activeRegions[tid] == 1) {
       size_t interval_index = scannedArray[tid];
 
-      for (int i = 0; i < DIM; ++i) {
+      for (int i = 0; i < NDIM; ++i) {
         newActiveRegions[i * newNumRegions + interval_index] =
           dRegions[i * numRegions + tid];
         newActiveRegionsLength[i * newNumRegions + interval_index] =
@@ -143,7 +143,7 @@ namespace quad {
     }
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __global__ void
   divideIntervalsGPU(T* genRegions,
                      T* genRegionsLength,
@@ -161,7 +161,7 @@ namespace quad {
       size_t data_size = numActiveRegions * numOfDivisionOnDimension;
 
       for (int i = 0; i < numOfDivisionOnDimension; ++i) {
-        for (int dim = 0; dim < DIM; ++dim) {
+        for (int dim = 0; dim < NDIM; ++dim) {
           genRegions[i * numActiveRegions + dim * data_size + tid] =
             activeRegions[dim * numActiveRegions + tid];
           genRegionsLength[i * numActiveRegions + dim * data_size + tid] =
@@ -469,7 +469,7 @@ namespace quad {
 
         cudaDeviceSynchronize();
 
-        alignRegions<T><<<numBlocks, numThreads>>>(dRegions,
+        alignRegions<T, NDIM><<<numBlocks, numThreads>>>(dRegions,
                                                    dRegionsLength,
                                                    activeRegions,
                                                    dRegionsIntegral,
@@ -509,7 +509,7 @@ namespace quad {
                              sizeof(T) * numActiveRegions * NDIM *
                                numOfDivisionOnDimension));
 
-        divideIntervalsGPU<T>
+        divideIntervalsGPU<T, NDIM>
           <<<numBlocks, numThreads>>>(genRegions,
                                       genRegionsLength,
                                       newActiveRegions,

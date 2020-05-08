@@ -29,7 +29,7 @@ namespace quad {
     return sdata[0];
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ void
   computePermutation(int pIndex,
                      Bounds* b,
@@ -39,7 +39,7 @@ namespace quad {
                      Structures<T>* constMem)
   {
 
-    for (int dim = 0; dim < DIM; ++dim) {
+    for (int dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0;
     }
 
@@ -53,9 +53,9 @@ namespace quad {
                               posIter]);
       int absPos = abs(pos);
       if (pos == absPos) {
-        g[absPos - 1] = __ldg(&constMem->_gpuG[gIndex * DIM + posIter]);
+        g[absPos - 1] = __ldg(&constMem->_gpuG[gIndex * NDIM + posIter]);
       } else {
-        g[absPos - 1] = -__ldg(&constMem->_gpuG[gIndex * DIM + posIter]);
+        g[absPos - 1] = -__ldg(&constMem->_gpuG[gIndex * NDIM + posIter]);
       }
     }
 
@@ -74,14 +74,14 @@ namespace quad {
     sBound[5].unScaledLower = 0;sBound[5].unScaledUpper = 1;*/
 
     T jacobian = 1;
-    for (int dim = 0; dim < DIM; ++dim) {
+    for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
       T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
       jacobian = jacobian * range;
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
     }
 
-    T fun = IntegrandFunc<T>(x, DIM);
+    T fun = IntegrandFunc<T>(x, NDIM);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun;
 
@@ -100,17 +100,17 @@ namespace quad {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
-    T g[DIM], x[DIM];
+    T g[NDIM], x[NDIM];
     int perm = 0;
 
     T ratio =
-      Sq(__ldg(&constMem->_gpuG[2 * DIM]) / __ldg(&constMem->_gpuG[1 * DIM]));
-    int offset = 2 * DIM;
+      Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
+    int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
 
     // set dimension range
-    for (int dim = 0; dim < DIM; ++dim) {
+    for (int dim = 0; dim < NDIM; ++dim) {
 
       Bounds* b = &region->bounds[dim];
       T range = b->upper - b->lower;
@@ -129,7 +129,7 @@ namespace quad {
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
     __syncthreads();
     if (pIndex < FEVAL) {
-      computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
     }
 
     __syncthreads();
@@ -143,7 +143,7 @@ namespace quad {
       T base = *f1 * 2 * (1 - ratio);
       T maxdiff = 0;
       int bisectdim = maxdim;
-      for (int dim = 0; dim < DIM; ++dim) {
+      for (int dim = 0; dim < NDIM; ++dim) {
         T* fp = f1 + 1;
         T* fm = fp + 1;
         T fourthdiff =
@@ -160,14 +160,14 @@ namespace quad {
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
     }
 
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<T>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
     }
 
     for (int i = 0; i < NRULES; ++i)

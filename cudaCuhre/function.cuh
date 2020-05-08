@@ -2,11 +2,11 @@
 #define CUDACUHRE_FUNCTION_CHH
 
 #define FUN 11
-#define DIM 6
+//#define DIM 6
 //
 #ifndef FUN
 #define FUN 2
-#define DIM 3
+//#define DIM 3
 #endif
 
 #define PI 3.14159265358979323844

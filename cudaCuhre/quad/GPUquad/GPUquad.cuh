@@ -540,7 +540,7 @@ namespace quad {
 #endif
         printf(
           "%d\t%e\t%.10lf\t%.10f\t%-15ld\t%-15ld\t%d\t%-10.2lf\t%-10.2lf\n",
-          DIM,
+          NDIM,
           epsrel,
           integral,
           error,
@@ -688,7 +688,7 @@ namespace quad {
                optionalInfo[0]);
         printf(
           "%d\t%e\t%.15lf\t%.15f\t%-15ld\t%-15ld\t%d\t%-10.2lf\t%-10.2lf\n",
-          DIM,
+          NDIM,
           epsrel,
           integral,
           error,

@@ -20,7 +20,7 @@ namespace quad {
     size_t index = blockIdx.x;
 
     if (threadIdx.x == 0) {
-      for (int dim = 0; dim < DIM; ++dim) {
+      for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
 
         sRegionPool[threadIdx.x].bounds[dim].lower = 0;
@@ -183,7 +183,7 @@ namespace quad {
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
 
-      for (int dim = 0; dim < DIM; ++dim) {
+      for (int dim = 0; dim < NDIM; ++dim) {
         sRegionPool[index].bounds[dim].lower = 0;
         sRegionPool[index].bounds[dim].upper = 0;
       }
@@ -197,14 +197,14 @@ namespace quad {
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
 
-      for (int dim = 0; dim < DIM; ++dim) {
+      for (int dim = 0; dim < NDIM; ++dim) {
         sRegionPool[index].bounds[dim].lower = 0;
         sRegionPool[index].bounds[dim].upper = 0;
       }
     }
 
     if (threadIdx.x == 0) {
-      for (int dim = 0; dim < DIM; ++dim) {
+      for (int dim = 0; dim < NDIM; ++dim) {
 
         sRegionPool[threadIdx.x].bounds[dim].lower = 0;
         sRegionPool[threadIdx.x].bounds[dim].upper = 1;
@@ -530,7 +530,7 @@ namespace quad {
 
         // TODO: What does div do!
         RegionRight->div = ++RegionLeft->div;
-        for (int dim = 0; dim < DIM; ++dim) {
+        for (int dim = 0; dim < NDIM; ++dim) {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
         }
