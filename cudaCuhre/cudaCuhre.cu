@@ -59,18 +59,9 @@ main(int argc, char** argv)
     TYPE integral = 0, error = 0;
     size_t nregions = 0, neval = 0;
 
-    GPUcuhre<TYPE, ndim>* cuhre =
-      new GPUcuhre<TYPE, ndim>(argc, argv, 0, verbose, numDevices);
+    GPUcuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
     int errorFlag =
-      cuhre->integrate(epsrel, EPSABS, integral, error, nregions, neval);
-    // printf("%d\t%e\t%.10lf\t%.10f\t%ld\t%ld\t%d\n", DIM, epsrel, integral,
-    // error, nregions, neval, errorFlag); std::cout << std::setprecision(9) <<
-    // DIM << "\t" << epsrel << "\t" << std::setprecision(9)  << integral <<
-    // "\t"
-    // << error << "\t" << nregions << "\t" << neval << "\t" << errorFlag  <<
-    // std::endl;
-    // MPI_Finalize();
-    delete cuhre;
+      cuhre.integrate(epsrel, EPSABS, integral, error, nregions, neval);
   }
 
   return 0;
