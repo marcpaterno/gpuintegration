@@ -6,14 +6,15 @@
 
 namespace quad {
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ void
   INIT_REGION_POOL(T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
                    Structures<T>* constMem,
                    int FEVAL,
-                   int NSETS)
+                   int NSETS, 
+				   Region<NDIM> sRegionPool[])
   {
 
     size_t index = blockIdx.x;
@@ -33,7 +34,7 @@ namespace quad {
     }
 
     __syncthreads();
-    SampleRegionBlock<T>(0, constMem, FEVAL, NSETS);
+    SampleRegionBlock<T, NDIM>(0, constMem, FEVAL, NSETS, sRegionPool);
     __syncthreads();
   }
 
@@ -94,55 +95,7 @@ namespace quad {
     }
   }
 
-  template <typename T>
-  __global__ void
-  INTEGRATE_GPU_PHASE1(T* dRegions,
-                       T* dRegionsLength,
-                       size_t numRegions,
-                       T* dRegionsIntegral,
-                       T* dRegionsError,
-                       T* dParentsIntegral,
-                       T* dParentsError,
-                       int* activeRegions,
-                       int* subDividingDimension,
-                       T epsrel,
-                       T epsabs,
-                       Structures<T> constMem,
-                       int FEVAL,
-                       int NSETS)
-  {
-
-    T ERR = 0, RESULT = 0;
-    int fail = 0;
-
-    INIT_REGION_POOL(
-      dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS);
-
-    if (threadIdx.x == 0) {
-      ERR = sRegionPool[threadIdx.x].result.err;
-      RESULT = sRegionPool[threadIdx.x].result.avg;
-      T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
-      int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
-
-      dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
-      dRegionsError[gridDim.x + blockIdx.x] = ERR;
-
-      if (ratio > 1) {
-        fail = 1;
-        ERR = 0;
-        RESULT = 0;
-      }
-
-      activeRegions[blockIdx.x] = fail;
-      subDividingDimension[blockIdx.x] = fourthDiffDim;
-      dRegionsIntegral[blockIdx.x] = RESULT;
-      dRegionsError[blockIdx.x] = ERR;
-
-      __syncthreads();
-    }
-  }
-
-  template <typename T>
+  template <typename T, int NDIM>
   __global__ void
   INTEGRATE_GPU_PHASE12(T* dRegions,
                         T* dRegionsLength,
@@ -159,12 +112,13 @@ namespace quad {
                         int FEVAL,
                         int NSETS)
   {
-
+	__shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
+	
     T ERR = 0, RESULT = 0;
     int fail = 0;
 
     INIT_REGION_POOL(
-      dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS);
+      dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS, sRegionPool);
 
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -195,7 +149,7 @@ namespace quad {
   ////PHASE 2 Procedures Starts
   template <typename T>
   __device__ void
-  ComputeErrResult(T& ERR, T& RESULT)
+  ComputeErrResult(T& ERR, T& RESULT, Region<6> sRegionPool[])
   {
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -204,7 +158,7 @@ namespace quad {
     __syncthreads();
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ int
   INIT_REGION_POOL(T* dRegions,
                    T* dRegionsLength,
@@ -212,7 +166,8 @@ namespace quad {
                    size_t numRegions,
                    Structures<T>* constMem,
                    int FEVAL,
-                   int NSETS)
+                   int NSETS,
+				   Region<NDIM> sRegionPool[])
   {
 
     size_t intervalIndex = blockIdx.x;
@@ -261,10 +216,10 @@ namespace quad {
 
     __syncthreads();
 
-    SampleRegionBlock<T>(0, constMem, FEVAL, NSETS);
+    SampleRegionBlock<T, NDIM>(0, constMem, FEVAL, NSETS, sRegionPool);
 
     if (threadIdx.x == 0) {
-      gPool = (Region*)malloc(sizeof(Region) * (SM_REGION_POOL_SIZE / 2));
+      gPool = (Region<6>*)malloc(sizeof(Region<6>) * (SM_REGION_POOL_SIZE / 2));
       gRegionPoolSize = (SM_REGION_POOL_SIZE / 2); 
     }
 
@@ -293,13 +248,13 @@ namespace quad {
     b = c;
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ void
-  INSERT_GLOBAL_STORE(Region* sRegionPool, Region* gRegionPool, int gpuId)
+  INSERT_GLOBAL_STORE(Region<NDIM>* sRegionPool, Region<NDIM>* gRegionPool, int gpuId)
   {
 
     if (threadIdx.x == 0) {
-      gPool = (Region*)malloc(sizeof(Region) *
+      gPool = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) *
                               (gRegionPoolSize + (SM_REGION_POOL_SIZE / 2)));
       if (gPool == NULL) {
         printf("Failed to malloc at block:%i threadIndex:%i gpu:%i "
@@ -384,9 +339,9 @@ namespace quad {
     }
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ void
-  EXTRACT_TOPK(Region* sRegionPool, Region* gRegionPool)
+  EXTRACT_TOPK(Region<NDIM>* sRegionPool, Region<NDIM>* gRegionPool)
   {
 
     // Comment 3 instructions these section if you are directly using new shared
@@ -397,7 +352,7 @@ namespace quad {
     if (threadIdx.x == 0) {
 
       if ((gRegionPoolSize * sizeof(T) + gRegionPoolSize * sizeof(size_t)) <
-          sizeof(Region) * SM_REGION_POOL_SIZE) {
+          sizeof(Region<NDIM>) * SM_REGION_POOL_SIZE) {
         serror = &sarray[0];
         // TODO:Size of sRegionPool vs sarray constrain
         serrorPos = (size_t*)&sarray[gRegionPoolSize];
@@ -446,7 +401,7 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       if (2 * gRegionPoolSize * sizeof(T) >=
-          sizeof(Region) * SM_REGION_POOL_SIZE) {
+          sizeof(Region<NDIM>) * SM_REGION_POOL_SIZE) {
         free(serror);
         free(serrorPos);
       }
@@ -473,9 +428,9 @@ namespace quad {
     }
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ size_t
-  EXTRACT_MAX(Region* sRegionPool, Region* gRegionPool, size_t sSize, int gpuId)
+  EXTRACT_MAX(Region<NDIM>* sRegionPool, Region<NDIM>* gRegionPool, size_t sSize, int gpuId)
   {
     // If array  for regions in shared is full
     if (sSize == SM_REGION_POOL_SIZE) {
@@ -494,20 +449,20 @@ namespace quad {
       for (idx = 0; idx < offset / BLOCK_SIZE; ++idx) {
         size_t index = idx * BLOCK_SIZE + threadIdx.x;
         if (index < offset) {
-          Region* r1 = &sRegionPool[index];
-          Region* r2 = &sRegionPool[index + offset];
+          Region<6>* r1 = &sRegionPool[index];
+          Region<6>* r2 = &sRegionPool[index + offset];
           if (r1->result.err < r2->result.err) {
-            swap<Region>(sRegionPool[index], sRegionPool[offset + index]);
+            swap<Region<6>>(sRegionPool[index], sRegionPool[offset + index]);
           }
         }
       }
 
       size_t index = idx * BLOCK_SIZE + threadIdx.x;
       if (index < offset) {
-        Region* r1 = &sRegionPool[index];
-        Region* r2 = &sRegionPool[index + offset];
+        Region<6>* r1 = &sRegionPool[index];
+        Region<6>* r2 = &sRegionPool[index + offset];
         if (r1->result.err < r2->result.err) {
-          swap<Region>(sRegionPool[index], sRegionPool[offset + index]);
+          swap<Region<NDIM>>(sRegionPool[index], sRegionPool[offset + index]);
         }
       }
       __syncthreads();
@@ -516,53 +471,8 @@ namespace quad {
     return sSize;
   }
 
-  template <typename T>
-  __device__ size_t
-  EXTRACT_MAX2(Region* sRegionPool,
-               Region* gRegionPool,
-               size_t sSize,
-               int gpuId)
-  {
-    // If SharedPool is full
-    if (sSize == SM_REGION_POOL_SIZE) {
-
-      INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId);
-      __syncthreads();
-
-      gRegionPool = gPool;
-      EXTRACT_TOPK<T>(sRegionPool, gRegionPool);
-      sSize = (SM_REGION_POOL_SIZE / 2);
-      __syncthreads();
-    }
-
-    for (size_t offset = (SM_REGION_POOL_SIZE / 2); offset > 0; offset >>= 1) {
-      int idx = 0;
-      for (idx = 0; idx < offset / BLOCK_SIZE; ++idx) {
-        size_t index = idx * BLOCK_SIZE + threadIdx.x;
-        if (index < offset) {
-          Region* r1 = &sRegionPool[index];
-          Region* r2 = &sRegionPool[index + offset];
-          if (r1->result.err < r2->result.err) {
-            swap<Region>(sRegionPool[index], sRegionPool[offset + index]);
-          }
-        }
-      }
-
-      size_t index = idx * BLOCK_SIZE + threadIdx.x;
-      if (index < offset) {
-        Region* r1 = &sRegionPool[index];
-        Region* r2 = &sRegionPool[index + offset];
-        if (r1->result.err < r2->result.err) {
-          swap<Region>(sRegionPool[index], sRegionPool[offset + index]);
-        }
-      }
-      __syncthreads();
-    }
-
-    return sSize;
-  }
-
-  template <typename T>
+ 
+  template <typename T, int NDIM>
   __global__ void
   BLOCK_INTEGRATE_GPU_PHASE2(T* dRegions,
                              T* dRegionsLength,
@@ -580,17 +490,19 @@ namespace quad {
                              int NSETS,
                              double* exitCondition)
   {
+	__shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
 
-    Region* gRegionPool = 0;
-    int sRegionPoolSize = INIT_REGION_POOL<T>(dRegions,
+    Region<NDIM>* gRegionPool = 0;
+    int sRegionPoolSize = INIT_REGION_POOL<T, NDIM>(dRegions,
                                               dRegionsLength,
                                               subDividingDimension,
                                               numRegions,
                                               &constMem,
                                               FEVAL,
-                                              NSETS);
+                                              NSETS,
+											  sRegionPool);
 
-    ComputeErrResult<T>(ERR, RESULT);
+    ComputeErrResult<T>(ERR, RESULT, sRegionPool);
     // TODO : May be redundance sync
     __syncthreads();
 
@@ -601,13 +513,13 @@ namespace quad {
 			   
       gRegionPool = gPool;
       sRegionPoolSize =
-        EXTRACT_MAX<T>(sRegionPool, gRegionPool, sRegionPoolSize, gpuId);
-      Region *RegionLeft, *RegionRight;
+        EXTRACT_MAX<T, NDIM>(sRegionPool, gRegionPool, sRegionPoolSize, gpuId);
+      Region<NDIM> *RegionLeft, *RegionRight;
       Result result;
 
       if (threadIdx.x == 0) {
         Bounds *bL, *bR;
-        Region* R = &sRegionPool[0];
+        Region<NDIM>* R = &sRegionPool[0];
         result.err = R->result.err;
         result.avg = R->result.avg;
         result.bisectdim = R->result.bisectdim;
@@ -633,9 +545,9 @@ namespace quad {
       sRegionPoolSize++;
 
       __syncthreads();
-      SampleRegionBlock<T>(0, &constMem, FEVAL, NSETS);
+      SampleRegionBlock<T, NDIM>(0, &constMem, FEVAL, NSETS, sRegionPool);
       __syncthreads();
-      SampleRegionBlock<T>(sRegionPoolSize - 1, &constMem, FEVAL, NSETS);
+      SampleRegionBlock<T, NDIM>(sRegionPoolSize - 1, &constMem, FEVAL, NSETS, sRegionPool);
       __syncthreads();
 
       // update ERR & RESULT

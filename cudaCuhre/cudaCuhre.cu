@@ -53,14 +53,14 @@ main(int argc, char** argv)
 
   // Initialize device
   QuadDebugExit(args.DeviceInit());
-  const int ndim = 6;
+  constexpr int ndim = 6;
   // for(int i = 0; i < 1; ++i)
   {
     TYPE integral = 0, error = 0;
     size_t nregions = 0, neval = 0;
 
-    GPUcuhre<TYPE>* cuhre =
-      new GPUcuhre<TYPE>(argc, argv, ndim, 0, verbose, numDevices);
+    GPUcuhre<TYPE, ndim>* cuhre =
+      new GPUcuhre<TYPE, ndim>(argc, argv, 0, verbose, numDevices);
     int errorFlag =
       cuhre->integrate(epsrel, EPSABS, integral, error, nregions, neval);
     // printf("%d\t%e\t%.10lf\t%.10f\t%ld\t%ld\t%d\n", DIM, epsrel, integral,

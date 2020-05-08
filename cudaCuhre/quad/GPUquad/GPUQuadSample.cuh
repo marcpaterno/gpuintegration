@@ -91,13 +91,13 @@ namespace quad {
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
-  template <typename T>
+  template <typename T, int NDIM>
   __device__ void
-  SampleRegionBlock(int sIndex, Structures<T>* constMem, int FEVAL, int NSETS)
+  SampleRegionBlock(int sIndex, Structures<T>* constMem, int FEVAL, int NSETS, Region<NDIM> sRegionPool[])
   {
 
     // read
-    Region* const region = (Region*)&sRegionPool[sIndex];
+    Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
     T g[DIM], x[DIM];

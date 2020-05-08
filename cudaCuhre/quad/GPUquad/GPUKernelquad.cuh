@@ -183,13 +183,13 @@ namespace quad {
     }
   }
 
-  template <typename T>
+  template <typename T, int NDIM>
   class GPUKernelCuhre {
     T* dRegions;
     T* dRegionsLength;
     T* hRegions;
     T* hRegionsLength;
-    int NDIM, KEY, VERBOSE;
+    int KEY, VERBOSE;
     size_t numRegions, numFunctionEvaluations;
     size_t fEvalPerRegion;
     HostMemory<T> Host;
@@ -218,7 +218,7 @@ namespace quad {
     {
       numRegions = 0;
       numFunctionEvaluations = 0;
-      NDIM = 0;
+      //NDIM = 0;
       KEY = 0;
     }
 
@@ -277,10 +277,10 @@ namespace quad {
     }
 
     void
-    InitGPUKernelCuhre(int dim, int key, int verbose, int numDevices = 1)
+    InitGPUKernelCuhre(int key, int verbose, int numDevices = 1)
     {
       QuadDebug(cudaDeviceReset());
-      NDIM = dim;
+      //NDIM = dim;
       KEY = key;
       VERBOSE = verbose;
       NUM_DEVICES = numDevices;
@@ -323,7 +323,7 @@ namespace quad {
         hRegionsLength[dim] = 1;
 #endif
       }
-
+		
       QuadDebug(Device.AllocateMemory((void**)&dRegions, sizeof(T) * NDIM));
       QuadDebug(
         Device.AllocateMemory((void**)&dRegionsLength, sizeof(T) * NDIM));
@@ -594,7 +594,7 @@ namespace quad {
                                       sizeof(int) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
-
+		
       if (VERBOSE) {
         Println(log, "\nEntering function IntegrateFirstPhase \n");
         sprintf(msg,
@@ -606,7 +606,7 @@ namespace quad {
         Println(log, msg);
       }
 
-      INTEGRATE_GPU_PHASE12<T><<<numBlocks, numThreads, NDIM>>>(dRegions,
+      INTEGRATE_GPU_PHASE12<T, NDIM><<<numBlocks, numThreads, NDIM>>>(dRegions,
                                                           dRegionsLength,
                                                           numRegions,
                                                           dRegionsIntegral,
@@ -958,7 +958,7 @@ namespace quad {
           // sizeof(T),	cudaMemcpyHostToDevice); cudaMemcpy(&exitCondition[1],
           // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
-          BLOCK_INTEGRATE_GPU_PHASE2<T>
+          BLOCK_INTEGRATE_GPU_PHASE2<T, NDIM>
             <<<numBlocks, numThreads, NDIM, stream[gpu_id]>>>(dRegionsThread,
                                                            dRegionsLengthThread,
                                                            numRegionsThread,

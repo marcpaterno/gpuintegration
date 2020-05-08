@@ -14,14 +14,14 @@ namespace quad {
   timer::event_pair timer_one;
 #endif
 
-  template <typename T>
+  template <typename T, int NDIM>
   class GPUcuhre {
 
     // Debug message
     char msg[256];
 
     // Quadrature Parameters
-    int NDIM;
+    //int NDIM;
     int KEY;
 
     // Verbose
@@ -32,25 +32,24 @@ namespace quad {
     char** argv;
 
     T epsrel, epsabs;
-    GPUKernelCuhre<T>* kernel;
+    GPUKernelCuhre<T, NDIM>* kernel;
     std::ofstream log;
 
   public:
     GPUcuhre(int pargc,
              char** pargv,
-             int dim,
              int key = 0,
              int verbose = 0,
              int numDevices = 1)
     {
       argc = pargc;
       argv = pargv;
-      NDIM = dim;
+      //NDIM = dim;
       KEY = key;
       VERBOSE = verbose;
       this->numDevices = numDevices;
-      kernel = new GPUKernelCuhre<T>(std::cout);
-      kernel->InitGPUKernelCuhre(NDIM, KEY, VERBOSE, numDevices);
+      kernel = new GPUKernelCuhre<T, NDIM>(std::cout);
+      kernel->InitGPUKernelCuhre(KEY, VERBOSE, numDevices);
     }
 
     ~GPUcuhre()
@@ -135,8 +134,8 @@ namespace quad {
       data = (T*)malloc(sizeof(T) * dataSize);
       MPI_Recv(data, dataSize, MPI_DOUBLE, 0, TAG, MPI_COMM_WORLD, &stat);
 
-      GPUKernelCuhre<T>* thkernel = new GPUKernelCuhre<T>(log);
-      thkernel->InitGPUKernelCuhre(NDIM, KEY, VERBOSE, numDevicesAtNode);
+      GPUKernelCuhre<T, NDIM>* thkernel = new GPUKernelCuhre<T, NDIM>(log);
+      thkernel->InitGPUKernelCuhre(KEY, VERBOSE, numDevicesAtNode);
 
       thkernel->setRegionsData(data, numRegionsPerNode);
       T th_integral = 0, th_error = 0;
@@ -257,7 +256,7 @@ namespace quad {
     }
 
     int
-    MPI_MASTER_integrateSecondPhase(GPUKernelCuhre<T>* thkernel,
+    MPI_MASTER_integrateSecondPhase(GPUKernelCuhre<T, NDIM>* thkernel,
                                     unsigned long int numCUDADevices,
                                     T& integral,
                                     T& error,
@@ -313,7 +312,7 @@ namespace quad {
 
     void
     MPI_MASTER_sendQuadratureData(
-      GPUKernelCuhre<T>* thkernel,
+      GPUKernelCuhre<T, NDIM>* thkernel,
       std::map<int, std::vector<std::string>> CUDANodeDetails,
       int numCUDADevices)
     {
@@ -351,7 +350,7 @@ namespace quad {
     }
 
     T
-    MPI_MASTER_integrateFirstPhase(GPUKernelCuhre<T>* thkernel,
+    MPI_MASTER_integrateFirstPhase(GPUKernelCuhre<T, NDIM>* thkernel,
                                    T epsrel,
                                    T epsabs,
                                    T& integral,
@@ -373,7 +372,7 @@ namespace quad {
       int masterDevCount = 0;
       cudaGetDeviceCount(&masterDevCount);
 
-      thkernel->InitGPUKernelCuhre(NDIM, KEY, VERBOSE, masterDevCount);
+      thkernel->InitGPUKernelCuhre(KEY, VERBOSE, masterDevCount);
       thkernel->GenerateInitialRegions();
 
       if (VERBOSE) {
@@ -436,7 +435,7 @@ namespace quad {
         if (VERBOSE)
           log.open(logfilename.c_str());
 
-        GPUKernelCuhre<T>* thkernel = new GPUKernelCuhre<T>(log);
+        GPUKernelCuhre<T, NDIM>* thkernel = new GPUKernelCuhre<T, NDIM>(log);
         FIRST_PHASE_MAXREGIONS *= (numprocs * 4); // TODO:Assuming four devices
 
         T firstPhaseTime = 0;

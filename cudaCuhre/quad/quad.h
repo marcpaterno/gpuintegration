@@ -48,7 +48,6 @@ typedef struct {
   int bisectdim;
 } Result;
 
-
 typedef struct {
   TYPE lower, upper;
 } Bounds;
@@ -57,19 +56,18 @@ typedef struct {
   TYPE unScaledLower, unScaledUpper;
 } GlobalBounds;
 
-/*
 template<int dim>
 struct Region{
   int div;
   Result result;
   Bounds bounds[dim];
-};*/
+};
 
-typedef struct {
+/*typedef struct {
   int div;
   Result result;
   Bounds bounds[DIM];
-} Region;
+} Region;*/
 
 /*#if KEY == 13 && DIM == 2
 #define RULE 13
@@ -101,7 +99,8 @@ PERMUTATIONS_POS_ARRAY_SIZE (1+1*1 + 2*DIM*1 + 2*DIM*1 + 2*DIM*1 + 2*DIM*1 +
 
 */
 #define NRULES 5
-__shared__ Region sRegionPool[SM_REGION_POOL_SIZE];
+//__shared__ Region<6> sRegionPool[SM_REGION_POOL_SIZE];
+
 //__shared__ GlobalBounds sBound[DIM];
 extern __shared__ GlobalBounds sBound[];
 __shared__ TYPE sdata[BLOCK_SIZE];
@@ -110,6 +109,5 @@ __shared__ TYPE* serror;
 __shared__ size_t* serrorPos;
 
 __shared__ TYPE ERR, RESULT;
-__shared__ Region* gPool;
-__device__ Region* gPool2;
+__shared__ Region<6>* gPool;
 __shared__ size_t gRegionPos[SM_REGION_POOL_SIZE / 2], gRegionPoolSize;
