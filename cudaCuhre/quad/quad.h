@@ -44,16 +44,16 @@ public:
 };
 
 typedef struct {
-  TYPE avg, err;
+  double avg, err;
   int bisectdim;
 } Result;
 
 typedef struct {
-  TYPE lower, upper;
+  double lower, upper;
 } Bounds;
 
 typedef struct {
-  TYPE unScaledLower, unScaledUpper;
+  double unScaledLower, unScaledUpper;
 } GlobalBounds;
 
 template<int dim>
@@ -109,5 +109,4 @@ __shared__ TYPE* serror;
 __shared__ size_t* serrorPos;
 
 __shared__ TYPE ERR, RESULT;
-__shared__ Region<6>* gPool;
 __shared__ size_t gRegionPos[SM_REGION_POOL_SIZE / 2], gRegionPoolSize;

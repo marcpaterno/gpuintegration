@@ -606,7 +606,7 @@ namespace quad {
         Println(log, msg);
       }
 
-      INTEGRATE_GPU_PHASE12<T, NDIM><<<numBlocks, numThreads, NDIM>>>(dRegions,
+      INTEGRATE_GPU_PHASE12<T, NDIM><<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds)>>>(dRegions,
                                                           dRegionsLength,
                                                           numRegions,
                                                           dRegionsIntegral,
@@ -959,7 +959,7 @@ namespace quad {
           // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
           BLOCK_INTEGRATE_GPU_PHASE2<T, NDIM>
-            <<<numBlocks, numThreads, NDIM, stream[gpu_id]>>>(dRegionsThread,
+            <<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds), stream[gpu_id]>>>(dRegionsThread,
                                                            dRegionsLengthThread,
                                                            numRegionsThread,
                                                            dRegionsIntegral,
@@ -974,7 +974,7 @@ namespace quad {
                                                            Rule.GET_FEVAL(),
                                                            Rule.GET_NSETS(),
                                                            exitCondition);
-
+			
           cudaDeviceSynchronize();
           // printf("BLOCK INTEGRATE_GPU done %d gpu:%i\n", cpu_thread_id,
           // gpu_id);
