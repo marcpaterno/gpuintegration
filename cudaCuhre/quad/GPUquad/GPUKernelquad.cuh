@@ -606,7 +606,7 @@ namespace quad {
         Println(log, msg);
       }
 
-      INTEGRATE_GPU_PHASE12<T><<<numBlocks, numThreads>>>(dRegions,
+      INTEGRATE_GPU_PHASE12<T><<<numBlocks, numThreads, NDIM>>>(dRegions,
                                                           dRegionsLength,
                                                           numRegions,
                                                           dRegionsIntegral,
@@ -959,7 +959,7 @@ namespace quad {
           // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
           BLOCK_INTEGRATE_GPU_PHASE2<T>
-            <<<numBlocks, numThreads, 0, stream[gpu_id]>>>(dRegionsThread,
+            <<<numBlocks, numThreads, NDIM, stream[gpu_id]>>>(dRegionsThread,
                                                            dRegionsLengthThread,
                                                            numRegionsThread,
                                                            dRegionsIntegral,
