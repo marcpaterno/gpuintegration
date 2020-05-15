@@ -7,7 +7,7 @@
 #include "quad/util/cudaUtil.h"
 #include <iomanip>
 
-#include "quad/GPUquad/GPUquad.cuh"
+#include "quad/GPUquad/Cuhre.cuh"
 
 using namespace quad;
 
@@ -59,7 +59,7 @@ main(int argc, char** argv)
     TYPE integral = 0, error = 0;
     size_t nregions = 0, neval = 0;
 
-    GPUcuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
+    Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
     int errorFlag =
       cuhre.integrate(epsrel, EPSABS, integral, error, nregions, neval);
   }

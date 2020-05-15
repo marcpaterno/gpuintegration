@@ -1,5 +1,5 @@
-#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUAD_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_GPUQUAD_CUH
+#ifndef CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
 #include "../util/cudaMemoryUtil.h"
 #include "../util/cudaTimerUtil.h"
 
@@ -15,7 +15,7 @@ namespace quad {
 #endif
 
   template <typename T, int NDIM>
-  class GPUcuhre {
+  class Cuhre {
 
     // Debug message
     char msg[256];
@@ -36,7 +36,7 @@ namespace quad {
     std::ofstream log;
 
   public:
-    GPUcuhre(int pargc,
+    Cuhre(int pargc,
              char** pargv,
              int key = 0,
              int verbose = 0,
@@ -52,10 +52,10 @@ namespace quad {
       kernel->InitGPUKernelCuhre(KEY, VERBOSE, numDevices);
     }
 
-    ~GPUcuhre()
+    ~Cuhre()
     {
       if (VERBOSE) {
-        sprintf(msg, "GPUcuhre Destructor");
+        sprintf(msg, "Cuhre Destructor");
         Print(msg);
       }
       delete kernel;
