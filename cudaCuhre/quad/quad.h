@@ -1,3 +1,5 @@
+#ifndef CUDACUHRE_QUAD_QUAD_h
+#define CUDACUHRE_QUAD_QUAD_h
 
 #define TIMING_DEBUG 1
 #define BLOCK_SIZE 256
@@ -6,7 +8,7 @@
 #define GLOBAL_ERROR 1
 #define MAX_GLOBALPOOL_SIZE 2048
 
-//#define TYPE double
+using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
 
@@ -110,3 +112,5 @@ __shared__ size_t* serrorPos;
 
 __shared__ TYPE ERR, RESULT;
 __shared__ size_t gRegionPos[SM_REGION_POOL_SIZE / 2], gRegionPoolSize;
+
+#endif

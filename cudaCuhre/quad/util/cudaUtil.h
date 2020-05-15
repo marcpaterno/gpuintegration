@@ -1,6 +1,9 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 
+#include "cudaDebugUtil.h"
+#include "../quad.h"
+
 #include <math.h>
 #include <float.h>
 #include <omp.h>
@@ -10,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -17,50 +21,24 @@
 __global__ void
 warmUpKernel()
 {}
+
 /**
  *Utility for parsing command line arguments
  */
 class CommandLineArgs {
-protected:
+private:
   std::map<std::string, std::string> pairs;
 
 public:
   //@brief Constructor
-  CommandLineArgs(int argc, char** argv)
-  {
-    using namespace std;
-    for (int i = 1; i < argc; i++) {
-      string arg = argv[i];
-      if ((arg[0] != '-') || (arg[1] != '-')) {
-        continue;
-      }
-      string::size_type pos;
-      string key, val;
-      if ((pos = arg.find('=')) == string::npos) {
-        key = string(arg, 2, arg.length() - 2);
-        val = "";
-      } else {
-        key = string(arg, 2, pos - 2);
-        val = string(arg, pos + 1, arg.length() - 1);
-      }
-      pairs[key] = val;
-    }
-  }
+  CommandLineArgs(int argc, char** argv);
 
   /**
    * Checks whether a flag "--<flag>" is present in the commandline
    */
   bool
-  CheckCmdLineFlag(const char* arg_name)
-  {
-    using namespace std;
-    map<string, string>::iterator itr;
-    if ((itr = pairs.find(arg_name)) != pairs.end()) {
-      return true;
-    }
-    return false;
-  }
-
+  CheckCmdLineFlag(const char* arg_name) const;
+  
   /**
    * Returns the value specified for a given commandline parameter
    * --<flag>=<value>
@@ -69,12 +47,19 @@ public:
   void
   GetCmdLineArgument(const char* arg_name, T& val)
   {
-    using namespace std;
-    map<string, string>::iterator itr;
-    if ((itr = pairs.find(arg_name)) != pairs.end()) {
-      istringstream str_stream(itr->second);
-      str_stream >> val;
+    auto const itr = pairs.find(arg_name);
+    if (itr == pairs.end()) return;
+
+    std::istringstream str_stream(itr->second);
+    T buffer;
+    str_stream >> buffer;
+    if (!str_stream) {
+      std::string message("Unable con convert argument '");
+      message += arg_name;
+      message += "' to the required type";
+      throw std::runtime_error(message);
     }
+    val = buffer;
   }
 
   /**
@@ -119,7 +104,7 @@ public:
   /**
    * The number of pairs parsed
    */
-  int
+  std::size_t 
   ParsedArgc()
   {
     return pairs.size();

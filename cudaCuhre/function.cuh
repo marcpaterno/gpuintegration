@@ -1,6 +1,8 @@
 #ifndef CUDACUHRE_FUNCTION_CUH
 #define CUDACUHRE_FUNCTION_CHH
 
+#include "quad/quad.h"
+
 #define FUN 11
 //#define DIM 6
 //
@@ -11,34 +13,6 @@
 
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b)) ? a : b)
-
-#define TYPE double
-
-template <typename T>
-__device__ T
-r8vec_sum(int n, const T a[])
-{
-  T sum;
-  sum = 0.0;
-  for (int i = 0; i < n; i++) {
-    sum = sum + a[i];
-  }
-  return sum;
-}
-
-template <typename T>
-__device__ T
-r8vec_dot(int n, T a1[], const T a2[])
-{
-  int i;
-  T value;
-
-  value = 0.0;
-  for (i = 0; i < n; i++) {
-    value = value + a1[i] * a2[i];
-  }
-  return value;
-}
 
 template <typename T>
 __device__ T

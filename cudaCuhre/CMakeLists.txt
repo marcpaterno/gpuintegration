@@ -15,4 +15,6 @@ add_executable(cudaCuhre cudaCuhre.cu)
 target_compile_features(cudaCuhre PUBLIC cxx_std_14)
 target_compile_options(cudaCuhre PRIVATE "-arch=sm_70")
 set_target_properties(cudaCuhre PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(cudaCuhre ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_link_libraries(cudaCuhre util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+
+add_subdirectory(quad)
