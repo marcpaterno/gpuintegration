@@ -23,15 +23,15 @@ class Structures {
 public:
   __host__ __device__
   Structures()
-    : _gpuG(NULL)
-    , _cRuleWt(NULL)
-    , _GPUScale(NULL)
-    , _gpuGenPos(NULL)
-    , _gpuGenPermGIndex(NULL)
-    , _gpuGenPermVarCount(NULL)
-    , _gpuGenPermVarStart(NULL)
-    , _cGeneratorCount(NULL)
-    , _GPUNorm(NULL)
+    : _gpuG(nullptr)
+    , _cRuleWt(nullptr)
+    , _GPUScale(nullptr)
+    , _gpuGenPos(nullptr)
+    , _gpuGenPermGIndex(nullptr)
+    , _gpuGenPermVarCount(nullptr)
+    , _gpuGenPermVarStart(nullptr)
+    , _cGeneratorCount(nullptr)
+    , _GPUNorm(nullptr)
   {}
 
   T* const __restrict__ _gpuG;

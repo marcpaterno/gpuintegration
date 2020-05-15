@@ -221,7 +221,7 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       gPool = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * (SM_REGION_POOL_SIZE / 2));
-	  if(gPool == NULL)
+	  if(gPool == nullptr)
 		  printf("Block %i failed to malloc gPool in Phase 2 Init_Region_Pool\n", blockIdx.x);
       gRegionPoolSize = (SM_REGION_POOL_SIZE / 2); 
     }

@@ -190,9 +190,9 @@ namespace quad {
       char* pch;
       char* str = strdup(input.c_str());
       pch = strtok(str, delimiter.c_str());
-      while (pch != NULL) {
+      while (pch != nullptr) {
         output.push_back(pch);
-        pch = strtok(NULL, delimiter.c_str());
+        pch = strtok(nullptr, delimiter.c_str());
       }
       free(str);
       return output;
