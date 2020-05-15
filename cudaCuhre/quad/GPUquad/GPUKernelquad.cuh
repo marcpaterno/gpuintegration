@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
 
-#include "GPUQuadPhases.cuh"
+#include "Phases.cuh"
 #include "GPUQuadRule.cuh"
 
 #include <cuda.h>
