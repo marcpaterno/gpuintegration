@@ -11,7 +11,7 @@
 
 using namespace quad;
 
-#define EPSABS 1e-12
+constexpr double EPSABS = 1e-12;
 
 //---------------------------------------------------------------------
 // Globals, constants and typedefs
