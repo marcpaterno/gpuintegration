@@ -19,8 +19,7 @@ __constant__ TYPE errcoeff[] = {5, 1, 5};
 #include "util/cudaDebugUtil.h"
 
 template <typename T>
-class Structures {
-public:
+struct Structures {
   __host__ __device__
   Structures()
     : _gpuG(nullptr)
@@ -45,31 +44,26 @@ public:
   size_t* const __restrict__ _cGeneratorCount;
 };
 
-typedef struct {
+struct Result {
   double avg, err;
   int bisectdim;
-} Result;
+};
 
-typedef struct {
+struct Bounds {
   double lower, upper;
-} Bounds;
+};
 
-typedef struct {
+struct GlobalBounds {
   double unScaledLower, unScaledUpper;
-} GlobalBounds;
+};
 
 template<int dim>
-struct Region{
+struct Region {
   int div;
   Result result;
   Bounds bounds[dim];
 };
 
-/*typedef struct {
-  int div;
-  Result result;
-  Bounds bounds[DIM];
-} Region;*/
 
 /*#if KEY == 13 && DIM == 2
 #define RULE 13
