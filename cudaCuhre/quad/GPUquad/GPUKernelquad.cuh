@@ -18,6 +18,7 @@ namespace quad {
   bool
   cudaMemoryTest()
   {
+    // TODO: Doesn't this leak both h_a and d_a on every call?
     const unsigned int N = 1048576;
     const unsigned int bytes = N * sizeof(int);
     int* h_a = (int*)malloc(bytes);
