@@ -1,6 +1,7 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 #define CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 
+#include "cudaArray.cuh"
 namespace gpu {
 
   namespace detail {
@@ -17,7 +18,8 @@ namespace gpu {
   template <class F, size_t N>
   __device__ double
   // Unsure if we need to pass 'f' by value, for GPU execution
-  apply(F&& f, gpu::cudaArray<double, N> const& data){
+  apply(F&& f, gpu::cudaArray<double, N> const& data)
+  {
     return detail::apply_impl(
       std::forward<F>(f), data, std::make_index_sequence<N>());
   }

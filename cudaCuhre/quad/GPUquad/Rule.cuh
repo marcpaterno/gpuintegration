@@ -289,7 +289,7 @@ namespace quad {
       for (int dim = 0; dim < NDIM; ++dim) {
         cpuG[NDIM * 8 + dim] = cpuRule9G[4];
       }
-		
+
       CPUScale =
         (T*)Host.AllocateMemory((void*)CPUScale, sizeof(T) * NSETS * NRULES);
       CPUNorm =
@@ -435,9 +435,9 @@ namespace quad {
       else if (RULE == 7)
         NSETS = 6;
 
-      FEVAL = (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim * (ndim - 1) +
-               4 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) * (ndim - 2) / 3 +
-               (1 << ndim));
+      FEVAL = (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+               2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+               4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
       PERMUTATIONS_POS_ARRAY_SIZE =
         (1 + 1 * 1 + 2 * ndim * 1 + 2 * ndim * 1 + 2 * ndim * 1 + 2 * ndim * 1 +
          2 * ndim * (ndim - 1) * 2 + 4 * ndim * (ndim - 1) * 2 +

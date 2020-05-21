@@ -1,9 +1,9 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 
+#include "../util/Volume.cuh"
 #include "Phases.cuh"
 #include "Rule.cuh"
-#include "../util/Volume.cuh"
 
 #include <cuda.h>
 
@@ -191,10 +191,10 @@ namespace quad {
     T* dRegionsLength;
     T* hRegions;
     T* hRegionsLength;
-	
-	T *highs;
-	T *lows;
-	
+
+    T* highs;
+    T* lows;
+
     int KEY, VERBOSE;
     size_t numRegions, numFunctionEvaluations;
     size_t fEvalPerRegion;
@@ -224,7 +224,7 @@ namespace quad {
     {
       numRegions = 0;
       numFunctionEvaluations = 0;
-      //NDIM = 0;
+      // NDIM = 0;
       KEY = 0;
     }
 
@@ -286,7 +286,7 @@ namespace quad {
     InitKernel(int key, int verbose, int numDevices = 1)
     {
       QuadDebug(cudaDeviceReset());
-      //NDIM = dim;
+      // NDIM = dim;
       KEY = key;
       VERBOSE = verbose;
       NUM_DEVICES = numDevices;
@@ -329,7 +329,7 @@ namespace quad {
         hRegionsLength[dim] = 1;
 #endif
       }
-		
+
       QuadDebug(Device.AllocateMemory((void**)&dRegions, sizeof(T) * NDIM));
       QuadDebug(
         Device.AllocateMemory((void**)&dRegionsLength, sizeof(T) * NDIM));
@@ -475,21 +475,22 @@ namespace quad {
 
         cudaDeviceSynchronize();
 
-        alignRegions<T, NDIM><<<numBlocks, numThreads>>>(dRegions,
-                                                   dRegionsLength,
-                                                   activeRegions,
-                                                   dRegionsIntegral,
-                                                   dRegionsError,
-                                                   dParentsIntegral,
-                                                   dParentsError,
-                                                   subDividingDimension,
-                                                   scannedArray,
-                                                   newActiveRegions,
-                                                   newActiveRegionsLength,
-                                                   newActiveRegionsBisectDim,
-                                                   numRegions,
-                                                   numActiveRegions,
-                                                   numOfDivisionOnDimension);
+        alignRegions<T, NDIM>
+          <<<numBlocks, numThreads>>>(dRegions,
+                                      dRegionsLength,
+                                      activeRegions,
+                                      dRegionsIntegral,
+                                      dRegionsError,
+                                      dParentsIntegral,
+                                      dParentsError,
+                                      subDividingDimension,
+                                      scannedArray,
+                                      newActiveRegions,
+                                      newActiveRegionsLength,
+                                      newActiveRegionsBisectDim,
+                                      numRegions,
+                                      numActiveRegions,
+                                      numOfDivisionOnDimension);
 
         if (VERBOSE) {
           Println(log, "\nCalling GPU Function divideIntervalsGPU");
@@ -549,11 +550,11 @@ namespace quad {
         numRegions = 0;
       }
     }
-    
-	template<typename IntegT>
+
+    template <typename IntegT>
     void
     FirstPhaseIteration(IntegT* d_integrand,
-	                    T epsrel,
+                        T epsrel,
                         T epsabs,
                         T& integral,
                         T& error,
@@ -602,7 +603,7 @@ namespace quad {
                                       sizeof(int) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
-		
+
       if (VERBOSE) {
         Println(log, "\nEntering function IntegrateFirstPhase \n");
         sprintf(msg,
@@ -613,25 +614,27 @@ namespace quad {
                 numThreads);
         Println(log, msg);
       }
-		//display(dvol->d_highs, 6);
-		//display(dvol->d_lows, 6);
-      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds)>>>(d_integrand,
-		                                                                                          dRegions,
-                                                                                                  dRegionsLength,
-                                                                                                  numRegions,
-																								  dRegionsIntegral,
-																								  dRegionsError,
-																								  dParentsIntegral,
-																								  dParentsError,
-																								  activeRegions,
-																								  subDividingDimension,
-																								  epsrel,
-																								  epsabs,
-																								  constMem,
-                                                                                                  rule.GET_FEVAL(),
-																								  rule.GET_NSETS(),
-																								  lows, 
-																								  highs);
+      // display(dvol->d_highs, 6);
+      // display(dvol->d_lows, 6);
+      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
+        <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
+          d_integrand,
+          dRegions,
+          dRegionsLength,
+          numRegions,
+          dRegionsIntegral,
+          dRegionsError,
+          dParentsIntegral,
+          dParentsError,
+          activeRegions,
+          subDividingDimension,
+          epsrel,
+          epsabs,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs);
 
       QuadDebug(
         Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions * 2));
@@ -728,47 +731,47 @@ namespace quad {
       QuadDebug(cudaFree(dRegionsError));
       QuadDebug(cudaFree(dRegionsIntegral));
     }
-	
-	template<typename IntegT>
+
+    template <typename IntegT>
     void
     IntegrateFirstPhase(IntegT* d_integrand,
-	                    T epsrel,
+                        T epsrel,
                         T epsabs,
                         T& integral,
                         T& error,
                         size_t& nregions,
                         size_t& neval,
-						Volume<T, NDIM>* vol = 0)
+                        Volume<T, NDIM>* vol = 0)
     {
-	  
-      T *dParentsError = 0, *dParentsIntegral = 0;
-	  
-	  cudaMalloc((void**)&lows,  sizeof(T)*NDIM);
-	  cudaMalloc((void**)&highs, sizeof(T)*NDIM);
-	  
-	  if(vol){
-		 cudaMemcpy(lows,  vol->lows,  sizeof(T)*NDIM,  cudaMemcpyHostToDevice);
-		 cudaMemcpy(highs, vol->highs, sizeof(T)*NDIM,  cudaMemcpyHostToDevice);
-	  }
-	  else{
-			Volume<T, NDIM> tempVol;
-			cudaMemcpy(lows,  tempVol.lows,  sizeof(T)*NDIM,  cudaMemcpyHostToDevice);
-			cudaMemcpy(highs, tempVol.highs, sizeof(T)*NDIM,  cudaMemcpyHostToDevice);
-	  }
-	   CudaCheckError();
 
-	   
+      T *dParentsError = 0, *dParentsIntegral = 0;
+
+      cudaMalloc((void**)&lows, sizeof(T) * NDIM);
+      cudaMalloc((void**)&highs, sizeof(T) * NDIM);
+
+      if (vol) {
+        cudaMemcpy(lows, vol->lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+        cudaMemcpy(highs, vol->highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+      } else {
+        Volume<T, NDIM> tempVol;
+        cudaMemcpy(
+          lows, tempVol.lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+        cudaMemcpy(
+          highs, tempVol.highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+      }
+      CudaCheckError();
+
       for (int i = 0; i < 100; i++) {
 
         FirstPhaseIteration<IntegT>(d_integrand,
-		                    epsrel,
-                            epsabs,
-                            integral,
-                            error,
-                            nregions,
-                            neval,
-                            dParentsIntegral,
-                            dParentsError);
+                                    epsrel,
+                                    epsabs,
+                                    integral,
+                                    error,
+                                    nregions,
+                                    neval,
+                                    dParentsIntegral,
+                                    dParentsError);
 
         if (numRegions < 1) {
           printf("NO BAD SUBREGIONS LEFT\n");
@@ -798,11 +801,11 @@ namespace quad {
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToHost));
     }
-	
-	template<typename IntegT>
+
+    template <typename IntegT>
     int
     IntegrateSecondPhase(IntegT* d_integrand,
-	                     T epsrel,
+                         T epsrel,
                          T epsabs,
                          T& integral,
                          T& error,
@@ -992,25 +995,28 @@ namespace quad {
           // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
           BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
-            <<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds), stream[gpu_id]>>>(d_integrand,
-																				   dRegionsThread,
-																				   dRegionsLengthThread,
-																				   numRegionsThread,
-																				   dRegionsIntegral,
-																				   dRegionsError,
-																				   dRegionsNumRegion,
-																				   activeRegions,
-																				   subDividingDimension,
-																				   epsrel,
-																				   epsabs,
-																				   gpu_id,
-																				   constMem,
-																				   rule.GET_FEVAL(),
-																				   rule.GET_NSETS(),
-																				   exitCondition,
-																				   lows,
-																				   highs);
-			
+            <<<numBlocks,
+               numThreads,
+               NDIM * sizeof(GlobalBounds),
+               stream[gpu_id]>>>(d_integrand,
+                                 dRegionsThread,
+                                 dRegionsLengthThread,
+                                 numRegionsThread,
+                                 dRegionsIntegral,
+                                 dRegionsError,
+                                 dRegionsNumRegion,
+                                 activeRegions,
+                                 subDividingDimension,
+                                 epsrel,
+                                 epsabs,
+                                 gpu_id,
+                                 constMem,
+                                 rule.GET_FEVAL(),
+                                 rule.GET_NSETS(),
+                                 exitCondition,
+                                 lows,
+                                 highs);
+
           cudaDeviceSynchronize();
           // printf("BLOCK INTEGRATE_GPU done %d gpu:%i\n", cpu_thread_id,
           // gpu_id);
