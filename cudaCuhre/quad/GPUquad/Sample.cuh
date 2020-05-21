@@ -1,5 +1,5 @@
-#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
+#ifndef CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
 #include "../util/cudaArray.cuh"
 #include "../util/cudaApply.cuh"

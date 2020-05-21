@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 
-#include "GPUQuadSample.cuh"
+#include "Sample.cuh"
 #include "../util/Volume.cuh"
 #include <cooperative_groups.h>
 

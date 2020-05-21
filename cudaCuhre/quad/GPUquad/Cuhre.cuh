@@ -3,7 +3,7 @@
 #include "../util/cudaMemoryUtil.h"
 #include "../util/cudaTimerUtil.h"
 
-#include "GPUKernelquad.cuh"
+#include "Kernel.cuh"
 #include "../util/Volume.cuh"
 #include <mpi.h>
 #include <stdio.h>
@@ -31,7 +31,7 @@ namespace quad {
     char** argv;
 
     T epsrel, epsabs;
-    GPUKernelCuhre<T, NDIM>* kernel;
+    Kernel<T, NDIM>* kernel;
     std::ofstream log;
 
   public:
@@ -47,8 +47,8 @@ namespace quad {
       KEY = key;
       VERBOSE = verbose;
       this->numDevices = numDevices;
-      kernel = new GPUKernelCuhre<T, NDIM>(std::cout);
-      kernel->InitGPUKernelCuhre(KEY, VERBOSE, numDevices);
+      kernel = new Kernel<T, NDIM>(std::cout);
+      kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
     ~Cuhre()
@@ -134,8 +134,8 @@ namespace quad {
       data = (T*)malloc(sizeof(T) * dataSize);
       MPI_Recv(data, dataSize, MPI_DOUBLE, 0, TAG, MPI_COMM_WORLD, &stat);
 
-      GPUKernelCuhre<T, NDIM>* thkernel = new GPUKernelCuhre<T, NDIM>(log);
-      thkernel->InitGPUKernelCuhre(KEY, VERBOSE, numDevicesAtNode);
+      Kernel<T, NDIM>* thkernel = new Kernel<T, NDIM>(log);
+      thkernel->InitKernel(KEY, VERBOSE, numDevicesAtNode);
 
       thkernel->setRegionsData(data, numRegionsPerNode);
       T th_integral = 0, th_error = 0;
@@ -258,7 +258,7 @@ namespace quad {
     
 	template<typename IntegT>
     int
-    MPI_MASTER_integrateSecondPhase(GPUKernelCuhre<T, NDIM>* thkernel,
+    MPI_MASTER_integrateSecondPhase(Kernel<T, NDIM>* thkernel,
 	                                IntegT* d_integrand,
                                     unsigned long int numCUDADevices,
                                     T& integral,
@@ -316,7 +316,7 @@ namespace quad {
 
     void
     MPI_MASTER_sendQuadratureData(
-      GPUKernelCuhre<T, NDIM>* thkernel,
+      Kernel<T, NDIM>* thkernel,
       std::map<int, std::vector<std::string>> CUDANodeDetails,
       int numCUDADevices)
     {
@@ -355,7 +355,7 @@ namespace quad {
 	
 	template<typename IntegT>
     T
-    MPI_MASTER_integrateFirstPhase(GPUKernelCuhre<T, NDIM>* thkernel, IntegT* d_integrand,
+    MPI_MASTER_integrateFirstPhase(Kernel<T, NDIM>* thkernel, IntegT* d_integrand,
                                    T epsrel,
                                    T epsabs,
                                    T& integral,
@@ -380,7 +380,7 @@ namespace quad {
       int masterDevCount = 0;
       cudaGetDeviceCount(&masterDevCount);
 
-      thkernel->InitGPUKernelCuhre(KEY, VERBOSE, masterDevCount);
+      thkernel->InitKernel(KEY, VERBOSE, masterDevCount);
       thkernel->GenerateInitialRegions();
 
       if (VERBOSE) {
@@ -451,7 +451,7 @@ namespace quad {
         if (VERBOSE)
           log.open(logfilename.c_str());
 
-        GPUKernelCuhre<T, NDIM>* thkernel = new GPUKernelCuhre<T, NDIM>(log);
+        Kernel<T, NDIM>* thkernel = new Kernel<T, NDIM>(log);
         FIRST_PHASE_MAXREGIONS *= (numprocs * 4); // TODO:Assuming four devices
 		
         T firstPhaseTime = 0;
@@ -624,29 +624,7 @@ namespace quad {
 	  IntegT* d_integrand = 0;
 	  cudaMalloc((void**)&d_integrand, sizeof(IntegT));
 	  cudaMemcpy(d_integrand, integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-	 
-	 // cudaMalloc((void**)&(kernel->lows), sizeof(T)*NDIM);
-	 // cudaMalloc((void**)&(kernel->highs), sizeof(T)*NDIM);
-	
-		/*printf("ABOUT TO PRINT\n");
-	  cudaMalloc((void**)&dvolume, sizeof(Volume<T, NDIM>));	
-	  printf("ABOUT TO PRINT\n");
-	  cudaMalloc((void**)&(dvolume->d_lows),    sizeof(T)*NDIM);
-	  cudaMalloc((void**)&(dvolume->d_highs),   sizeof(T)*NDIM);
-		
-	  if(volume){
-		cudaMemcpy(dvolume->d_lows,  volume->lows,  sizeof(T)*NDIM, cudaMemcpyHostToDevice);
-		cudaMemcpy(dvolume->d_highs, volume->highs, sizeof(T)*NDIM, cudaMemcpyHostToDevice);
-	  }
-	  else{
-		cudaMemset(dvolume->d_lows,  0,  sizeof(T)*NDIM);
-		cudaMemset(dvolume->d_highs, 1 , sizeof(T)*NDIM);
-	  }
-	  
-	  printf("ABOUT TO PRINT\n");
-	  kernel->display(dvolume->d_lows, NDIM);
-	  printf("COPIED MEM\n");*/
-	  
+	   
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);

@@ -1,8 +1,8 @@
-#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_GPUKERNELQUAD_CUH
+#ifndef CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 
 #include "Phases.cuh"
-#include "GPUQuadRule.cuh"
+#include "Rule.cuh"
 #include "../util/Volume.cuh"
 
 #include <cuda.h>
@@ -186,7 +186,7 @@ namespace quad {
   }
 
   template <typename T, int NDIM>
-  class GPUKernelCuhre {
+  class Kernel {
     T* dRegions;
     T* dRegionsLength;
     T* hRegions;
@@ -200,7 +200,7 @@ namespace quad {
     size_t fEvalPerRegion;
     HostMemory<T> Host;
     DeviceMemory<T> Device;
-    QuadRule<T> Rule;
+    Rule<T> rule;
     Structures<T> constMem;
     int NUM_DEVICES;
     // Debug Msg
@@ -220,7 +220,7 @@ namespace quad {
       array = temp;
     }
 
-    GPUKernelCuhre(std::ostream& logerr = std::cout) : log(logerr)
+    Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
       numRegions = 0;
       numFunctionEvaluations = 0;
@@ -228,7 +228,7 @@ namespace quad {
       KEY = 0;
     }
 
-    ~GPUKernelCuhre()
+    ~Kernel()
     {
 
       if (VERBOSE) {
@@ -283,7 +283,7 @@ namespace quad {
     }
 
     void
-    InitGPUKernelCuhre(int key, int verbose, int numDevices = 1)
+    InitKernel(int key, int verbose, int numDevices = 1)
     {
       QuadDebug(cudaDeviceReset());
       //NDIM = dim;
@@ -298,7 +298,7 @@ namespace quad {
                                    sizeof(size_t),
                                    0,
                                    cudaMemcpyHostToDevice));
-      Rule.Init(NDIM, fEvalPerRegion, KEY, VERBOSE, &constMem);
+      rule.Init(NDIM, fEvalPerRegion, KEY, VERBOSE, &constMem);
       QuadDebug(Device.SetHeapSize());
     }
 
@@ -628,8 +628,8 @@ namespace quad {
 																								  epsrel,
 																								  epsabs,
 																								  constMem,
-                                                                                                  Rule.GET_FEVAL(),
-																								  Rule.GET_NSETS(),
+                                                                                                  rule.GET_FEVAL(),
+																								  rule.GET_NSETS(),
 																								  lows, 
 																								  highs);
 
@@ -910,7 +910,7 @@ namespace quad {
           // QuadDebug(Device.SetHeapSize());
           CudaCheckError();
 
-          Rule.loadDeviceConstantMemory(&constMem, cpu_thread_id);
+          rule.loadDeviceConstantMemory(&constMem, cpu_thread_id);
           size_t numThreads = BLOCK_SIZE;
           size_t numBlocks = numRegionsThread;
 
@@ -1005,8 +1005,8 @@ namespace quad {
 																				   epsabs,
 																				   gpu_id,
 																				   constMem,
-																				   Rule.GET_FEVAL(),
-																				   Rule.GET_NSETS(),
+																				   rule.GET_FEVAL(),
+																				   rule.GET_NSETS(),
 																				   exitCondition,
 																				   lows,
 																				   highs);

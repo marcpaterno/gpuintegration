@@ -1,11 +1,11 @@
-#ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADRULE_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_GPUQUADRULE_CUH
+#ifndef CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_DRULE_CUH
 
 #include "../util/cudaMemoryUtil.h"
 
 namespace quad {
   template <typename T>
-  class QuadRule {
+  class Rule {
 
     T* cpuG;
     T* CPURuleWt;
@@ -334,7 +334,7 @@ namespace quad {
       return NSETS;
     }
 
-    ~QuadRule()
+    ~Rule()
     {
       // Host.ReleaseMemory(CPUScale);
       // Host.ReleaseMemory(CPUNorm);
