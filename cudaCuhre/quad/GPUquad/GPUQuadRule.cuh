@@ -289,7 +289,7 @@ namespace quad {
       for (int dim = 0; dim < NDIM; ++dim) {
         cpuG[NDIM * 8 + dim] = cpuRule9G[4];
       }
-
+		
       CPUScale =
         (T*)Host.AllocateMemory((void*)CPUScale, sizeof(T) * NSETS * NRULES);
       CPUNorm =

@@ -2,6 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 
 #include "GPUQuadSample.cuh"
+#include "../util/Volume.cuh"
 #include <cooperative_groups.h>
 
 namespace quad {
@@ -15,7 +16,9 @@ namespace quad {
                    Structures<T>* constMem,
                    int FEVAL,
                    int NSETS, 
-				   Region<NDIM> sRegionPool[])
+				   Region<NDIM> sRegionPool[],
+				   T *lows,
+				   T *highs)
   {
 
     size_t index = blockIdx.x;
@@ -35,7 +38,7 @@ namespace quad {
     }
 
     __syncthreads();
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
     __syncthreads();
   }
 
@@ -112,15 +115,26 @@ namespace quad {
                         T epsabs,
                         Structures<T> constMem,
                         int FEVAL,
-                        int NSETS)
+                        int NSETS,
+						T* lows,
+						T* highs)
   {
 	__shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
+	__shared__ T shighs[NDIM];
+	__shared__ T slows[NDIM];
+		
+	if(threadIdx.x == 0){
+		for(int i=0; i<NDIM; ++i){
+			slows[i]  = lows[i];
+			shighs[i] = highs[i];
+		}
+	}
 	
     T ERR = 0, RESULT = 0;
     int fail = 0;
-
+	
     INIT_REGION_POOL<IntegT>(
-      d_integrand, dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS, sRegionPool);
+      d_integrand, dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
 
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -171,7 +185,9 @@ namespace quad {
                    int FEVAL,
                    int NSETS,
 				   Region<NDIM> sRegionPool[],
-				   Region<NDIM>*& gPool)
+				   Region<NDIM>*& gPool,
+				   T* lows,
+				   T* highs)
   {
 
     size_t intervalIndex = blockIdx.x;
@@ -220,7 +236,7 @@ namespace quad {
 
     __syncthreads();
 
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
 
     if (threadIdx.x == 0) {
       gPool = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * (SM_REGION_POOL_SIZE / 2));
@@ -486,22 +502,37 @@ namespace quad {
                              Structures<T> constMem,
                              int FEVAL,
                              int NSETS,
-                             double* exitCondition)
+                             double* exitCondition,
+							 T* lows,
+							 T* highs)
   {
 	__shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
 	__shared__ Region<NDIM>* gPool;
-		
-    Region<NDIM>* gRegionPool = 0;
-    int sRegionPoolSize = INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions,
-                                              dRegionsLength,
-                                              subDividingDimension,
-                                              numRegions,
-                                              &constMem,
-                                              FEVAL,
-                                              NSETS,
-											  sRegionPool,
-											  gPool);
+	__shared__ T shighs[NDIM];
+	__shared__ T slows[NDIM];
+	
+	if(threadIdx.x == 0){
+		for(int i=0; i<NDIM; ++i){
+			slows[i]  = lows[i];
+			shighs[i] = highs[i];
+		}
+	}
 
+	
+    Region<NDIM>* gRegionPool = 0;
+    int sRegionPoolSize = INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, 
+															dRegions,
+															dRegionsLength,
+															subDividingDimension,
+															numRegions,
+															&constMem,
+															FEVAL,
+															NSETS,
+															sRegionPool,
+															gPool,
+															slows,
+															shighs);
+	
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
     // TODO : May be redundance sync
     __syncthreads();
@@ -541,13 +572,13 @@ namespace quad {
         // Subdivide the chosen axis
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
-
+		
       sRegionPoolSize++;
-
+		
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, sRegionPoolSize - 1, &constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, sRegionPoolSize - 1, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
       __syncthreads();
 
       // update ERR & RESULT

@@ -3,6 +3,7 @@
 
 #include "../util/cudaArray.cuh"
 #include "../util/cudaApply.cuh"
+#include "../util/Volume.cuh"
 
 namespace quad {
 
@@ -40,11 +41,14 @@ namespace quad {
                      T* g,
                      gpu::cudaArray<T, NDIM>& x,
                      T* sum,
-                     Structures<T>* constMem)
+                     Structures<T>* constMem,
+					 T* lows,
+					 T* highs)
   {
-
-    for (int dim = 0; dim < NDIM; ++dim) {
+	
+    for (int dim = 0; dim < NDIM; ++dim){
       g[dim] = 0;
+	  x[dim] = 0;
     }
 
     int posCnt = __ldg(&constMem->_gpuGenPermVarStart[pIndex + 1]) -
@@ -81,8 +85,9 @@ namespace quad {
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
       T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-      jacobian = jacobian * range;
+      jacobian = jacobian * range * (highs[dim] - lows[dim]);
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
+	  x[dim] = (highs[dim] - lows[dim])*x[dim] + lows[dim];
     }
 
     //T fun = IntegrandFunc<T>(x, NDIM);
@@ -98,9 +103,9 @@ namespace quad {
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
   template <typename IntegT, typename T, int NDIM>
   __device__ void
-  SampleRegionBlock(IntegT* d_integrand, int sIndex, Structures<T>* constMem, int FEVAL, int NSETS, Region<NDIM> sRegionPool[])
+  SampleRegionBlock(IntegT* d_integrand, int sIndex, Structures<T>* constMem, int FEVAL, int NSETS, Region<NDIM> sRegionPool[], T* lows, T* highs)
   {
-
+	
     // read
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
@@ -136,7 +141,7 @@ namespace quad {
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
     __syncthreads();
     if (pIndex < FEVAL) {
-      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
 
     __syncthreads();
@@ -146,8 +151,8 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       Result* r = &region->result;
-      T* f1 = f;
-      T base = *f1 * 2 * (1 - ratio);
+      T* f1     = f;
+      T base    = *f1 * 2 * (1 - ratio);
       T maxdiff = 0;
       int bisectdim = maxdim;
       for (int dim = 0; dim < NDIM; ++dim) {
@@ -157,7 +162,7 @@ namespace quad {
           fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
         f1 = fm;
         if (fourthdiff > maxdiff) {
-          maxdiff = fourthdiff;
+          maxdiff   = fourthdiff;
           bisectdim = dim;
         }
       }
@@ -167,14 +172,14 @@ namespace quad {
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
 
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
 
     for (int i = 0; i < NRULES; ++i)

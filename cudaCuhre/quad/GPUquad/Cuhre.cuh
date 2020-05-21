@@ -4,6 +4,7 @@
 #include "../util/cudaTimerUtil.h"
 
 #include "GPUKernelquad.cuh"
+#include "../util/Volume.cuh"
 #include <mpi.h>
 #include <stdio.h>
 
@@ -105,7 +106,7 @@ namespace quad {
     
 	template<typename IntegT>
     void
-    MPI_CLIENT_receiveQuadratureData(IntegT *d_integrand, int nodeRank, int index, T* numInfo)
+    MPI_CLIENT_receiveQuadratureData(IntegT *d_integrand, int nodeRank, int index, Volume<T, NDIM> *dvol, T* numInfo)
     { // numCUDADevices, unsigned long int numRegions){
 
       unsigned long int numCUDADevices = (unsigned long int)numInfo[0];
@@ -264,6 +265,7 @@ namespace quad {
                                     T& error,
                                     size_t& nregions,
                                     size_t& neval,
+									Volume<T, NDIM> *dvol,
                                     T* optionalInfo)
     {
       int devCount = 0;
@@ -359,7 +361,8 @@ namespace quad {
                                    T& integral,
                                    T& error,
                                    size_t& nregions,
-                                   size_t& neval)
+                                   size_t& neval,
+								   Volume<T, NDIM>* dvol)
     {
 
 	 
@@ -403,7 +406,7 @@ namespace quad {
 #endif
 
       thkernel->IntegrateFirstPhase(
-        d_integrand, epsrel, epsabs, integral, error, nregions, neval);
+        d_integrand, epsrel, epsabs, integral, error, nregions, neval, dvol);
 
 #if TIMING_DEBUG == 1
       firstPhaseTime = timer::stop_timer_returntime(&timer_one, "First Phase");
@@ -419,7 +422,8 @@ namespace quad {
                   T& integral,
                   T& error,
                   size_t& nregions,
-                  size_t& neval)
+                  size_t& neval,
+				  Volume<T, NDIM>* dvol)
     {
       int numprocs, rank, namelen, id;
       int errorFlag = 0;
@@ -449,13 +453,11 @@ namespace quad {
 
         GPUKernelCuhre<T, NDIM>* thkernel = new GPUKernelCuhre<T, NDIM>(log);
         FIRST_PHASE_MAXREGIONS *= (numprocs * 4); // TODO:Assuming four devices
-
+		
         T firstPhaseTime = 0;
 		
-		
-		
         firstPhaseTime = MPI_MASTER_integrateFirstPhase(
-          thkernel, d_integrand, epsrel, epsabs, integral, error, nregions, neval);
+          thkernel, d_integrand, epsrel, epsabs, integral, error, nregions, neval, dvol);
 
         size_t numRegions = thkernel->getNumActiveRegions();
         std::map<int, std::vector<std::string>> CUDANodeDetails =
@@ -515,12 +517,14 @@ namespace quad {
 
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
         if (thkernel->getNumActiveRegions() > 0) {
-          errorFlag = MPI_MASTER_integrateSecondPhase(thkernel, d_integrand,
+          errorFlag = MPI_MASTER_integrateSecondPhase(thkernel, 
+		                                              d_integrand,
                                                       numCUDADevices,
                                                       integral,
                                                       error,
                                                       nregions,
                                                       neval,
+													  dvol,
                                                       optionalInfo);
         }
 
@@ -592,7 +596,7 @@ namespace quad {
           logfilename = logfilename + ".log";
           if (VERBOSE)
             log.open(logfilename.c_str());
-          MPI_CLIENT_receiveQuadratureData(d_integrand, id, activeCUDADevicesIdx[id], numInfo);
+          MPI_CLIENT_receiveQuadratureData(d_integrand, id, activeCUDADevicesIdx[id], dvol, numInfo);
         }
 
         MPI_Finalize();
@@ -609,18 +613,45 @@ namespace quad {
               T& integral,
               T& error,
               size_t& nregions,
-              size_t& neval)
+              size_t& neval,
+			  Volume<T, NDIM>* volume = nullptr)
     {
       this->epsrel = epsrel;
       this->epsabs = epsabs;
 
       int errorFlag = 0, numprocs = 0;
-
+	  
+	  IntegT* d_integrand = 0;
+	  cudaMalloc((void**)&d_integrand, sizeof(IntegT));
+	  cudaMemcpy(d_integrand, integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
+	 
+	 // cudaMalloc((void**)&(kernel->lows), sizeof(T)*NDIM);
+	 // cudaMalloc((void**)&(kernel->highs), sizeof(T)*NDIM);
+	
+		/*printf("ABOUT TO PRINT\n");
+	  cudaMalloc((void**)&dvolume, sizeof(Volume<T, NDIM>));	
+	  printf("ABOUT TO PRINT\n");
+	  cudaMalloc((void**)&(dvolume->d_lows),    sizeof(T)*NDIM);
+	  cudaMalloc((void**)&(dvolume->d_highs),   sizeof(T)*NDIM);
+		
+	  if(volume){
+		cudaMemcpy(dvolume->d_lows,  volume->lows,  sizeof(T)*NDIM, cudaMemcpyHostToDevice);
+		cudaMemcpy(dvolume->d_highs, volume->highs, sizeof(T)*NDIM, cudaMemcpyHostToDevice);
+	  }
+	  else{
+		cudaMemset(dvolume->d_lows,  0,  sizeof(T)*NDIM);
+		cudaMemset(dvolume->d_highs, 1 , sizeof(T)*NDIM);
+	  }
+	  
+	  printf("ABOUT TO PRINT\n");
+	  kernel->display(dvolume->d_lows, NDIM);
+	  printf("COPIED MEM\n");*/
+	  
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
         errorFlag =
-          MPI_INTEGRATE(integrand, epsrel, epsabs, integral, error, nregions, neval);
+          MPI_INTEGRATE(integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
         MPI_Finalize();
       } else {
 
@@ -663,14 +694,10 @@ namespace quad {
         timer::start_timer(&timer_one);
 #endif
 		
-		IntegT* d_integrand = 0;
-	    cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-	    cudaMemcpy(d_integrand, integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-
         FIRST_PHASE_MAXREGIONS *= numDevices;
         printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
         kernel->IntegrateFirstPhase(
-          d_integrand, epsrel, epsabs, integral, error, nregions, neval);
+          d_integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
 
 #if TIMING_DEBUG == 1
         firstPhaseTime =
