@@ -544,9 +544,11 @@ namespace quad {
         numRegions = 0;
       }
     }
-
+    
+	template<typename IntegT>
     void
-    FirstPhaseIteration(T epsrel,
+    FirstPhaseIteration(IntegT* d_integrand,
+	                    T epsrel,
                         T epsabs,
                         T& integral,
                         T& error,
@@ -607,7 +609,8 @@ namespace quad {
         Println(log, msg);
       }
 
-      INTEGRATE_GPU_PHASE12<T, NDIM><<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds)>>>(dRegions,
+      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds)>>>(d_integrand,
+		                                                  dRegions,
                                                           dRegionsLength,
                                                           numRegions,
                                                           dRegionsIntegral,
@@ -717,9 +720,11 @@ namespace quad {
       QuadDebug(cudaFree(dRegionsError));
       QuadDebug(cudaFree(dRegionsIntegral));
     }
-
+	
+	template<typename IntegT>
     void
-    IntegrateFirstPhase(T epsrel,
+    IntegrateFirstPhase(IntegT* d_integrand,
+	                    T epsrel,
                         T epsabs,
                         T& integral,
                         T& error,
@@ -728,10 +733,11 @@ namespace quad {
     {
 
       T *dParentsError = 0, *dParentsIntegral = 0;
-
+	  	  
       for (int i = 0; i < 100; i++) {
 
-        FirstPhaseIteration(epsrel,
+        FirstPhaseIteration<IntegT>(d_integrand,
+		                    epsrel,
                             epsabs,
                             integral,
                             error,
@@ -768,9 +774,11 @@ namespace quad {
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToHost));
     }
-
+	
+	template<typename IntegT>
     int
-    IntegrateSecondPhase(T epsrel,
+    IntegrateSecondPhase(IntegT* d_integrand,
+	                     T epsrel,
                          T epsabs,
                          T& integral,
                          T& error,
@@ -959,8 +967,9 @@ namespace quad {
           // sizeof(T),	cudaMemcpyHostToDevice); cudaMemcpy(&exitCondition[1],
           // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
-          BLOCK_INTEGRATE_GPU_PHASE2<T, NDIM>
-            <<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds), stream[gpu_id]>>>(dRegionsThread,
+          BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
+            <<<numBlocks, numThreads, NDIM*sizeof(GlobalBounds), stream[gpu_id]>>>(d_integrand,
+			                                               dRegionsThread,
                                                            dRegionsLengthThread,
                                                            numRegionsThread,
                                                            dRegionsIntegral,

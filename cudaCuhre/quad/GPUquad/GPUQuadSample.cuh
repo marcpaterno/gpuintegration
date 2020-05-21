@@ -29,9 +29,10 @@ namespace quad {
     return sdata[0];
   }
 
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __device__ void
-  computePermutation(int pIndex,
+  computePermutation(IntegT *d_integrand,
+                     int pIndex,
                      Bounds* b,
                      T* g,
                      T* x,
@@ -91,9 +92,9 @@ namespace quad {
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __device__ void
-  SampleRegionBlock(int sIndex, Structures<T>* constMem, int FEVAL, int NSETS, Region<NDIM> sRegionPool[])
+  SampleRegionBlock(IntegT* d_integrand, int sIndex, Structures<T>* constMem, int FEVAL, int NSETS, Region<NDIM> sRegionPool[])
   {
 
     // read
@@ -101,7 +102,7 @@ namespace quad {
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
     T g[NDIM], x[NDIM];
-    int perm = 0;
+	int perm = 0;
 
     T ratio =
       Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
@@ -129,7 +130,7 @@ namespace quad {
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
     __syncthreads();
     if (pIndex < FEVAL) {
-      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
     }
 
     __syncthreads();
@@ -160,14 +161,14 @@ namespace quad {
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
     }
 
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<T, NDIM>(pIndex, region->bounds, g, x, sum, constMem);
+      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem);
     }
 
     for (int i = 0; i < NRULES; ++i)

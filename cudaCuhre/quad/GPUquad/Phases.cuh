@@ -6,9 +6,10 @@
 
 namespace quad {
 
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __device__ void
-  INIT_REGION_POOL(T* dRegions,
+  INIT_REGION_POOL(IntegT* d_integrand,
+                   T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
                    Structures<T>* constMem,
@@ -34,7 +35,7 @@ namespace quad {
     }
 
     __syncthreads();
-    SampleRegionBlock<T, NDIM>(0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
     __syncthreads();
   }
 
@@ -95,9 +96,10 @@ namespace quad {
     }
   }
 
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __global__ void
-  INTEGRATE_GPU_PHASE12(T* dRegions,
+  INTEGRATE_GPU_PHASE1( IntegT* d_integrand,
+                        T* dRegions,
                         T* dRegionsLength,
                         size_t numRegions,
                         T* dRegionsIntegral,
@@ -117,8 +119,8 @@ namespace quad {
     T ERR = 0, RESULT = 0;
     int fail = 0;
 
-    INIT_REGION_POOL(
-      dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS, sRegionPool);
+    INIT_REGION_POOL<IntegT>(
+      d_integrand, dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS, sRegionPool);
 
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -158,9 +160,10 @@ namespace quad {
     __syncthreads();
   }
 
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __device__ int
-  INIT_REGION_POOL(T* dRegions,
+  INIT_REGION_POOL(IntegT* d_integrand,
+                   T* dRegions,
                    T* dRegionsLength,
                    int* subDividingDimension,
                    size_t numRegions,
@@ -217,7 +220,7 @@ namespace quad {
 
     __syncthreads();
 
-    SampleRegionBlock<T, NDIM>(0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
 
     if (threadIdx.x == 0) {
       gPool = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * (SM_REGION_POOL_SIZE / 2));
@@ -466,9 +469,10 @@ namespace quad {
   }
 
  
-  template <typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM>
   __global__ void
-  BLOCK_INTEGRATE_GPU_PHASE2(T* dRegions,
+  BLOCK_INTEGRATE_GPU_PHASE2(IntegT* d_integrand,
+                             T* dRegions,
                              T* dRegionsLength,
                              size_t numRegions,
                              T* dRegionsIntegral,
@@ -488,7 +492,7 @@ namespace quad {
 	__shared__ Region<NDIM>* gPool;
 		
     Region<NDIM>* gRegionPool = 0;
-    int sRegionPoolSize = INIT_REGION_POOL<T, NDIM>(dRegions,
+    int sRegionPoolSize = INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions,
                                               dRegionsLength,
                                               subDividingDimension,
                                               numRegions,
@@ -541,9 +545,9 @@ namespace quad {
       sRegionPoolSize++;
 
       __syncthreads();
-      SampleRegionBlock<T, NDIM>(0, &constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool);
       __syncthreads();
-      SampleRegionBlock<T, NDIM>(sRegionPoolSize - 1, &constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, sRegionPoolSize - 1, &constMem, FEVAL, NSETS, sRegionPool);
       __syncthreads();
 
       // update ERR & RESULT
