@@ -1,6 +1,9 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_GPUQUADSAMPLE_CUH
 
+#include "../util/cudaArray.cuh"
+#include "../util/cudaApply.cuh"
+
 namespace quad {
 
   template <typename T>
@@ -35,7 +38,7 @@ namespace quad {
                      int pIndex,
                      Bounds* b,
                      T* g,
-                     T* x,
+                     gpu::cudaArray<T, NDIM>& x,
                      T* sum,
                      Structures<T>* constMem)
   {
@@ -82,7 +85,8 @@ namespace quad {
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
     }
 
-    T fun = IntegrandFunc<T>(x, NDIM);
+    //T fun = IntegrandFunc<T>(x, NDIM);
+	T fun = gpu::apply(*d_integrand, x);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun;
 
@@ -101,7 +105,9 @@ namespace quad {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
-    T g[NDIM], x[NDIM];
+    T g[NDIM] ; 
+	//T x[NDIM];
+	gpu::cudaArray<double, NDIM> x;
 	int perm = 0;
 
     T ratio =
