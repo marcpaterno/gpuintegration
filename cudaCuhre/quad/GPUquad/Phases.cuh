@@ -321,6 +321,7 @@ namespace quad {
         sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
 
+	__syncthreads();
     int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
     if (index < (SM_REGION_POOL_SIZE / 2)) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
