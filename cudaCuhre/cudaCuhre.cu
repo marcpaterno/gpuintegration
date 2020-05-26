@@ -72,7 +72,7 @@ main(int argc, char** argv)
 	Test integrand;
 	double highs[ndim] = {10, 10, 10, 10, 10, 10};
     double lows[ndim] =  {0,  0,  0,  0,  0,  0};
-    Volume<double, ndim> vol(lows, highs, ndim);
+    Volume<double, ndim> vol(lows, highs);
 	
     int errorFlag =
       cuhre.integrate<Test>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);
