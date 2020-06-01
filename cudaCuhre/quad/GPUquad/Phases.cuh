@@ -285,11 +285,10 @@ namespace quad {
   template <typename T, int NDIM>
   __device__ void
   INSERT_GLOBAL_STORE(Region<NDIM>* sRegionPool,
-                      Region<NDIM>* gRegionPool,
+                      Region<NDIM>*& gRegionPool,
                       int gpuId,
                       Region<NDIM>*& gPool)
   {
-
     if (threadIdx.x == 0) {
       gPool = (Region<NDIM>*)malloc(
         sizeof(Region<NDIM>) * (gRegionPoolSize + (SM_REGION_POOL_SIZE / 2)));
@@ -378,7 +377,7 @@ namespace quad {
     // memory instead of reusing shared memory
 
     T* sarray = (T*)&sRegionPool[0];
-
+	
     if (threadIdx.x == 0) {
 
       if ((gRegionPoolSize * sizeof(T) + gRegionPoolSize * sizeof(size_t)) <
@@ -393,7 +392,7 @@ namespace quad {
       }
     }
     __syncthreads();
-
+	
     int offset = 0;
     for (offset = 0; (offset < MAX_GLOBALPOOL_SIZE / BLOCK_SIZE) &&
                      (offset < gRegionPoolSize / BLOCK_SIZE);
@@ -461,7 +460,7 @@ namespace quad {
   template <typename T, int NDIM>
   __device__ size_t
   EXTRACT_MAX(Region<NDIM>* sRegionPool,
-              Region<NDIM>* gRegionPool,
+              Region<NDIM>*& gRegionPool,
               size_t sSize,
               int gpuId,
               Region<NDIM>*& gPool)
@@ -567,7 +566,7 @@ namespace quad {
         sRegionPool, gRegionPool, sRegionPoolSize, gpuId, gPool);
       Region<NDIM>*RegionLeft, *RegionRight;
       Result result;
-
+		
       if (threadIdx.x == 0) {
         Bounds *bL, *bR;
         Region<NDIM>* R = &sRegionPool[0];
@@ -594,7 +593,7 @@ namespace quad {
       }
 
       sRegionPoolSize++;
-
+	  nregions++;
       __syncthreads();
       SampleRegionBlock<IntegT, T, NDIM>(
         d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
