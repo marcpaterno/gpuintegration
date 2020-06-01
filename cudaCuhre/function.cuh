@@ -14,12 +14,179 @@
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b)) ? a : b)
 
+
+//==================================================
+//functions tested in the original two papers
+
+class FUNC1 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	double t1 = pow(x, 2) + 
+	     pow(y, 2) + 
+		 pow(z, 2) + 
+		 pow(k, 2) + 
+		 pow(l, 2) + 
+		 pow(m, 2) + 
+		 pow(n, 2) + 
+		 pow(o, 2);
+	
+	double f = 1.0 / (0.1 + pow(cos(t1), 2));
+	return f;
+  }
+};
+
+class FUNC2 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	double t1 = cos(pow(2.0, 2.0 * 1)*x)* 
+				cos(pow(2.0, 2.0 * 2)*y)* 
+				cos(pow(2.0, 2.0 * 3)*z)*
+				cos(pow(2.0, 2.0 * 4)*k)* 
+				cos(pow(2.0, 2.0 * 5)*l)* 
+				cos(pow(2.0, 2.0 * 6)*m)*
+				cos(pow(2.0, 2.0 * 7)*n)* 
+				cos(pow(2.0, 2.0 * 8)*o);
+	double f = cos(t1);
+	return f;
+  }
+};
+
+class FUNC3 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	double t1 = 1 * asin(pow(x, 1))* 
+				2 * asin(pow(y, 2))* 
+				3 * asin(pow(z, 3))*
+				4 * asin(pow(k, 4))* 
+				5 * asin(pow(l, 5))* 
+				6 * asin(pow(m, 6))*
+				7 * asin(pow(n, 7))* 
+				8 * asin(pow(o, 8));
+	return cos(t1);
+  }
+};
+
+class FUNC4 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	double t1 = asin(x)* 
+				asin(y)* 
+				asin(z)*
+				asin(k)* 
+				asin(l)* 
+				asin(m)*
+				asin(n)* 
+				asin(o);
+	return cos(t1);
+  }
+};
+
+class FUNC5 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	double t = cos(10.0 * x)* 
+				cos(10.0 * y)* 
+				cos(10.0 * z)*
+				cos(10.0 * k)* 
+				cos(10.0 * l)* 
+				cos(10.0 * m)*
+				cos(10.0 * n)* 
+				cos(10.0 * o);
+	return t*(-0.054402111088937*2);
+  }
+};
+
+//==================================================
+
+//oscillatory integral from Genz test suite
+class GENZ_1 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	int NDIM = 8;
+	double alpha = 110.0 / (NDIM * NDIM * sqrt(NDIM * 1.0));
+	double sum = pow(alpha, NDIM)*(x + y + z + k + l + m + n + o);
+	sum += 2.0 * PI * alpha;
+	return cos(sum);
+  }
+};
+
+//product peak intgral from Genz test suite
+class GENZ_2 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	int NDIM = 8;
+	double alpha = 600.0 / (NDIM * NDIM * NDIM);
+	double beta = alpha;
+	double t1  = 1.0 / pow(alpha, 2);
+    double total =  1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2))*
+					1.0 / (t1 + pow(x - beta, 2));
+	return total;
+  }
+};
+
+//Gaussian integral from Genz test suite
+class GENZ_4 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	//int NDIM = 8;
+	//double total = 0.0;
+	double alpha = 0.5; // 150.0/(NDIM * NDIM * NDIM);
+	double beta = alpha;
+	//int N = 1;
+	
+	double t1 = pow(x - beta, 2) + 
+				pow(y - beta, 2) +
+				pow(z - beta, 2) +
+				pow(k - beta, 2) +
+				pow(l - beta, 2) +
+				pow(m - beta, 2) +
+				pow(n - beta, 2) +
+				pow(o - beta, 2);
+	return exp(-1*t1*alpha);
+  }
+};
+
+//C^0 - continuous integral from Genz test suite
+class GENZ_5 {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double o){
+	int NDIM = 8;
+	double total = 0.0;
+	double alpha = 0.5; // 150.0/(NDIM * NDIM * NDIM);
+	double beta = alpha;
+	//int N = 1;
+	
+	double t1 = fabs(x - beta) + 
+				fabs(y - beta) +
+				fabs(z - beta) +
+				fabs(k - beta) +
+				fabs(l - beta) +
+				fabs(m - beta) +
+				fabs(n - beta) +
+				fabs(o - beta);
+	return exp(-1*t1*alpha);
+  }
+};
+
 template <typename T>
 __device__ T
-IntegrandFunc(const T xx[], int NDIM)
-{
+IntegrandFunc(const T xx[], int NDIM){
   T f = 0;
-
 #if FUN == 1
   T t1 = 0;
   int N = 1;
