@@ -976,23 +976,12 @@ namespace quad {
                     numRegionsThread,
                     numBlocks,
                     numThreads);
-            // printf(msg, "\t# of input intervals\t\t: %ld\n\t#. of Thread
-            // Blocks\t\t: %ld\n\t#. of Threads per Blocks\t:
-            // %ld\n",numRegionsThread, numBlocks, numThreads);
             Println(log, msg);
           }
           CudaCheckError();
 
-          // std::cout << " phase2 : 	blocks:" << numBlocks << " threads:" <<
-          // numThreads << std::endl; printf("Status before entering phase 2
-          // %.12f +- %.12f\n", integral, error);
-          cudaDeviceSetLimit(cudaLimitMallocHeapSize, 2 * 128 * 1024 * 1024);
-
+		  cudaDeviceSetLimit(cudaLimitMallocHeapSize, sizeof(Region<NDIM>)*FIRST_PHASE_MAXREGIONS*MAX_GLOBALPOOL_SIZE);
           double* exitCondition = nullptr;
-          // QuadDebug(Device.AllocateMemory((void **)&exitCondition,
-          // sizeof(double)*2)); cudaMemcpy(&exitCondition[0], &integral,
-          // sizeof(T),	cudaMemcpyHostToDevice); cudaMemcpy(&exitCondition[1],
-          // &error, 		sizeof(T),	cudaMemcpyHostToDevice);
 
           BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
