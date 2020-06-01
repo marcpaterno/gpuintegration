@@ -192,8 +192,10 @@ namespace quad {
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
 
-    for (int i = 0; i < NRULES; ++i)
+    for (int i = 0; i < NRULES; ++i){
       sum[i] = computeReduce<T>(sum[i]);
+	  __syncthreads();
+	}
 
     if (threadIdx.x == 0) {
       Result* r = &region->result;
