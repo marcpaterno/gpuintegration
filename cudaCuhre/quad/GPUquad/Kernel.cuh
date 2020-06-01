@@ -213,7 +213,7 @@ namespace quad {
     ExpandcuArray(T*& array, int currentSize, int newSize)
     {
       T* temp = 0;
-	  int copy_size = std::min(currentSize, newSize);
+      int copy_size = std::min(currentSize, newSize);
       QuadDebug(Device.AllocateMemory((void**)&temp, sizeof(T) * newSize));
       QuadDebug(cudaMemcpy(
         temp, array, sizeof(T) * copy_size, cudaMemcpyDeviceToDevice));
@@ -422,7 +422,7 @@ namespace quad {
 
       if (last_element == 1)
         numActiveRegions++;
-		
+
       if (numActiveRegions > 0) {
 
         int numOfDivisionOnDimension = 2;
@@ -509,7 +509,7 @@ namespace quad {
         numRegions = 0;
       }
     }
-	
+
     template <typename IntegT>
     void
     FirstPhaseIteration(IntegT* d_integrand,
@@ -534,7 +534,7 @@ namespace quad {
           "Beginning of FirstPhaseIteration:: Allocating for %lu bad regions\n",
           numRegions * 2);
       }
-		
+
       QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
                                       sizeof(T) * numRegions * 2));
       QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
@@ -546,14 +546,14 @@ namespace quad {
         QuadDebug(Device.AllocateMemory((void**)&dParentsError,
                                         sizeof(T) * numRegions * 2));
       }
-		
+
       int *activeRegions = 0, *subDividingDimension = 0;
 
       QuadDebug(Device.AllocateMemory((void**)&activeRegions,
                                       sizeof(int) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
-	  
+
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
           d_integrand,
@@ -577,9 +577,9 @@ namespace quad {
       QuadDebug(
         Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions * 2));
       cudaDeviceSynchronize();
-	  
+
       if (numRegions != 1) {
-		  
+
         RefineError<T><<<numBlocks, numThreads>>>(dRegionsIntegral,
                                                   dRegionsError,
                                                   dParentsIntegral,
@@ -590,13 +590,12 @@ namespace quad {
                                                   epsrel,
                                                   epsabs);
         cudaDeviceSynchronize();
-		
+
         QuadDebug(cudaMemcpy(dRegionsError,
                              newErrs,
                              sizeof(T) * numRegions * 2,
                              cudaMemcpyDeviceToDevice));
         cudaDeviceSynchronize();
-		
       }
 
       nregions += numRegions;
@@ -608,23 +607,22 @@ namespace quad {
 
       // integral && error are the accumalated ones
       // we temporarily add the leaves to see what's happening
-	
+
       thrust::device_ptr<T> wrapped_ptr;
-		
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
       T rG = integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-	  
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
       T errG = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-	  
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
       integral =
         integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-	  
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-	   
-	  
+
       if (VERBOSE) {
         printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f\n",
                rG,
@@ -726,7 +724,7 @@ namespace quad {
           break;
         }
       }
-	
+
       QuadDebug(cudaFree(dParentsIntegral));
       QuadDebug(cudaFree(dParentsError));
 
@@ -922,7 +920,9 @@ namespace quad {
           }
           CudaCheckError();
 
-		  cudaDeviceSetLimit(cudaLimitMallocHeapSize, sizeof(Region<NDIM>)*2*FIRST_PHASE_MAXREGIONS*MAX_GLOBALPOOL_SIZE);
+          cudaDeviceSetLimit(cudaLimitMallocHeapSize,
+                             sizeof(Region<NDIM>) * 2 * FIRST_PHASE_MAXREGIONS *
+                               MAX_GLOBALPOOL_SIZE);
           double* exitCondition = nullptr;
 
           BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
@@ -977,12 +977,12 @@ namespace quad {
 
           cudaEventDestroy(start);
           cudaEventDestroy(event[gpu_id]);
-		  
+
           thrust::device_ptr<T> wrapped_ptr;
           wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
           T integResult =
             thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
-          
+
           integral += integResult;
 
           wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
@@ -1004,7 +1004,7 @@ namespace quad {
 
           // std::cout << "--" << numFailedRegions << std::endl;
           // QuadDebug(cudaThreadExit());
-		  
+
           QuadDebug(Device.ReleaseMemory(dRegionsError));
           QuadDebug(Device.ReleaseMemory(dRegionsIntegral));
           QuadDebug(Device.ReleaseMemory(dRegionsThread));
@@ -1013,7 +1013,7 @@ namespace quad {
           QuadDebug(Device.ReleaseMemory(subDividingDimension));
           QuadDebug(Device.ReleaseMemory(dRegionsNumRegion));
           QuadDebug(cudaDeviceSynchronize());
-		  
+
         } else
           printf("Rogue cpu thread\n");
       }
