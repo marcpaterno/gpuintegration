@@ -7,12 +7,17 @@
 template <typename T, int NDIM>
 struct Volume {
 
-  T highs[NDIM] = {0.0};
-  T lows[NDIM] = {1.0};
+  T highs[NDIM];
+  T lows[NDIM];
 
   __host__
   Volume()
-  {}
+  {
+	  for(int i=0; i<NDIM; i++){
+		 highs[i]=1;
+		 lows[i] =0;
+	  }
+  }
 
   __host__ __device__
   Volume(T const* l, T const* h)

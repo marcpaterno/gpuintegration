@@ -16,6 +16,14 @@
 
 //==================================================
 // functions tested in the original two papers
+/*class Test {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m){
+	return sin(x + y + z + k +l + m);
+  }
+};*/
+
 
 class FUNC1 {
 public:
@@ -203,8 +211,6 @@ public:
              double n,
              double o)
   {
-    int NDIM = 8;
-    double total = 0.0;
     double alpha = 0.5; // 150.0/(NDIM * NDIM * NDIM);
     double beta = alpha;
     // int N = 1;
