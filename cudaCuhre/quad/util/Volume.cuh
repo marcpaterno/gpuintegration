@@ -10,8 +10,8 @@ namespace quad {
   template <typename T, int NDIM>
   struct Volume {
 
-    T highs[NDIM] = {0.0};
-    T lows[NDIM] = {1.0};
+    T lows[NDIM] = {0.0};
+    T highs[NDIM] = {1.0};
 
     __host__
     Volume()
@@ -23,6 +23,7 @@ namespace quad {
       std::memcpy(lows, l, NDIM * sizeof(T));
       std::memcpy(highs, h, NDIM * sizeof(T));
     }
+
   };
 }
 
