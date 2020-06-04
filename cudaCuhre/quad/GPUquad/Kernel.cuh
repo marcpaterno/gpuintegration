@@ -681,10 +681,10 @@ namespace quad {
                         T& error,
                         size_t& nregions,
                         size_t& neval,
-                        Volume<T, NDIM>* vol = 0)
+                        Volume<T, NDIM>* vol = nullptr)
     {
 
-      T *dParentsError = 0, *dParentsIntegral = 0;
+      T *dParentsError = nullptr, *dParentsIntegral = nullptr;
 
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
