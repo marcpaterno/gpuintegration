@@ -21,7 +21,6 @@ TEST_CASE("1d volume")
   }
 };
 
-
 TEST_CASE("2d volume")
 {
   SECTION("default constructed")
