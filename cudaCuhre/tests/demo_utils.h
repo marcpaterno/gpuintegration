@@ -11,7 +11,7 @@ using std::chrono::high_resolution_clock;
 using std::chrono::duration;
 
 template <typename ALG, typename F>
-void
+bool
 time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char const* algname)
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -36,5 +36,6 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
             << res.nregions << '\t'
             << dt.count()
             << std::endl;
+  return res.status == 0;
 }
 
