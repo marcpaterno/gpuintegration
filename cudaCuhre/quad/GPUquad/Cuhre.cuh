@@ -62,6 +62,7 @@ namespace quad {
 
 #define BUFSIZE 256
 #define TAG 0
+	
 
     void
     MPI_CLIENT_checkCUDA(int nodeRank, T epsrel, T epsabs)
@@ -188,6 +189,8 @@ namespace quad {
       MPI_Send(result, 6, MPI_DOUBLE, 0, TAG, MPI_COMM_WORLD);
     }
 
+
+
     std::vector<std::string>
     splitString(std::string input, std::string delimiter)
     {
@@ -202,6 +205,8 @@ namespace quad {
       free(str);
       return output;
     }
+	
+
 
     std::map<int, std::vector<std::string>>
     MPI_MASTER_findActiveCUDANodes(int nodeRank,
@@ -622,10 +627,35 @@ namespace quad {
       // MPI_Finalize();
       return errorFlag;
     }
-
+    
+	template <typename IntegT>
+	cuhreResult 
+	integrate(IntegT integrand,
+			  double epsrel,
+			  double epsabs,
+			  Volume<T, NDIM>* volume = nullptr){
+					  
+		cuhreResult res;
+		
+		res.value = 0;
+		res.error = 0;
+		res.neval = 0;
+		res.nregions = 0;
+		
+		integrate<IntegT>(integrand,
+						  epsrel,
+                          epsabs,
+						  res.value,
+						  res.error,
+						  res.nregions,
+						  res.neval,
+						  volume);
+		return res;
+	}
+	
     template <typename IntegT>
     int
-    integrate(IntegT* integrand,
+    integrate(IntegT integrand,
               T epsrel,
               T epsabs,
               T& integral,
@@ -634,27 +664,29 @@ namespace quad {
               size_t& neval,
               Volume<T, NDIM>* volume = nullptr)
     {
+	  printf("Here\n"); 
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-
-      int errorFlag = 0, numprocs = 0;
-
+	
+      int errorFlag = 0; 
+	  int numprocs = 0;
+		
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
-        d_integrand, integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-
+        d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
+		
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
         errorFlag = MPI_INTEGRATE(
-          integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
+          &integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
         MPI_Finalize();
       } else {
 
 #if TIMING_DEBUG == 1
-        timer::event_pair timer;
-        timer::start_timer(&timer);
+       // timer::event_pair timer;
+       // timer::start_timer(&timer);
 #endif
 
         if (VERBOSE) {
@@ -685,14 +717,14 @@ namespace quad {
                   total_db / 1024.0 / 1024.0);
           Print(msg);
         }
-        T firstPhaseTime = 0;
-
+        //T firstPhaseTime = 0;
+		
 #if TIMING_DEBUG == 1
         timer::start_timer(&timer_one);
 #endif
 
         FIRST_PHASE_MAXREGIONS *= numDevices;
-        printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
+       // printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
         kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
                                     epsabs,
@@ -703,9 +735,9 @@ namespace quad {
                                     volume);
 
 #if TIMING_DEBUG == 1
-        firstPhaseTime =
+       /* firstPhaseTime =
           timer::stop_timer_returntime(&timer_one, "First Phase");
-        // printf("First Phase took : %.2lf\n", firstPhaseTime);
+         printf("First Phase took : %.2lf\n", firstPhaseTime);*/
 #endif
 
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
@@ -713,7 +745,7 @@ namespace quad {
         if (kernel->getNumActiveRegions() > 0) {
           if (VERBOSE) {
 #if TIMING_DEBUG == 1
-            timer::start_timer(&timer_one);
+           // timer::start_timer(&timer_one);
 #endif
           }
 
@@ -728,16 +760,17 @@ namespace quad {
 
           if (VERBOSE) {
 #if TIMING_DEBUG == 1
-            timer::stop_timer(&timer_one, "Second Phase");
+           // timer::stop_timer(&timer_one, "Second Phase");
 #endif
           }
         }
 
-        if (error <= MaxErr(integral, epsrel, epsabs))
+        if (error <= MaxErr(integral, epsrel, epsabs)){
           errorFlag = 0;
-
+		}
+	
 #if TIMING_DEBUG == 1
-        T time = timer::stop_timer_returntime(&timer, "Total time :");
+        /*T time = timer::stop_timer_returntime(&timer, "Total time :");
         T kernelTime = firstPhaseTime + optionalInfo[0];
         printf("FirstPhase time\t: %.2lf\nSecondPhase Kernel time\t: %.2lf\n",
                firstPhaseTime,
@@ -755,8 +788,14 @@ namespace quad {
           time);
         printf("nregions:%lu\n", nregions);
         printf("Error flag:%i\n", errorFlag);
-        printf("Total Time:%f\n", time);
+        printf("Total Time:%f\n", time);*/
+		
+		/*res.value 	 = integral;
+		res.error 	 = error;
+		res.nregions = nregions;
+		res.neval    = neval;*/
 #endif
+		printf("%.12f +- %.12f Flag:%i\n", integral, error, errorFlag);
       }
       return errorFlag;
     }

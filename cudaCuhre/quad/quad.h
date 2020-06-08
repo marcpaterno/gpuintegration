@@ -44,6 +44,14 @@ struct Structures {
   size_t* const __restrict__ _cGeneratorCount;
 };
 
+struct cuhreResult{
+	double value;
+	double error;
+	size_t neval;
+	size_t nregions;
+	bool   status;
+};
+
 struct Result {
   double avg, err;
   int bisectdim;

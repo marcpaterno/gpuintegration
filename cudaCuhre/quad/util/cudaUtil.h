@@ -127,7 +127,7 @@ public:
         exit(1);
       }
 
-      printf("DeviceCount:%i\n", deviceCount);
+      //printf("DeviceCount:%i\n", deviceCount);
       for (int i = 0; i < deviceCount; i++) {
         int gpu_id;
         cudaDeviceProp devProp;

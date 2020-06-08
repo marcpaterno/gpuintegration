@@ -31,7 +31,7 @@ int main()
   cuhre.maxeval = maxeval;
 
   std::cout << "alg\tepsrel\tvalue\terrorest\terror\tneval\tnregions\ttime\n";
-
+	
   double epsrel = 1.0e-3;
   for (int i = 0; i <= 6; ++i, epsrel /= 10.0)
   {

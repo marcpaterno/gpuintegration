@@ -10,12 +10,16 @@ namespace quad {
   template <typename T, int NDIM>
   struct Volume {
 
-    T lows[NDIM] = {0.0};
-    T highs[NDIM] = {1.0};
+    T lows[NDIM]  = {0.0};
+    T highs[NDIM];
 
     __host__
     Volume()
-    {}
+    {
+		for(T& x: highs)
+			x = 1.0;
+		
+	}
 
     __host__ __device__
     Volume(T const* l, T const* h)

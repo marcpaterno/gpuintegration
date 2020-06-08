@@ -714,7 +714,7 @@ namespace quad {
                                     dParentsError);
 
         if (numRegions < 1) {
-          printf("NO BAD SUBREGIONS LEFT\n");
+          //printf("NO BAD SUBREGIONS LEFT\n");
           return;
         }
         // printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
@@ -724,7 +724,7 @@ namespace quad {
           break;
         }
       }
-
+		
       QuadDebug(cudaFree(dParentsIntegral));
       QuadDebug(cudaFree(dParentsError));
 

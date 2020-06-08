@@ -25,6 +25,26 @@ public:
   }
 };
 
+class GENZ_1_8d{
+	
+	public:
+	double normalization;
+	double integral;
+	__device__ __host__
+	GENZ_1_8d(){
+		integral = (1./315.) * sin(1.) * sin(3./2.) * sin(2.) * sin (5./2.) * sin(3.) *
+                        sin(7./2.) * sin(4.) * (sin(37./2.) - sin(35./2.));
+		normalization = 1./integral;
+						
+	}
+	__device__ __host__ double
+	operator()(double s, double t, double u, double v,
+                 double w, double x, double y, double z){
+		return normalization * cos(s + 2.*t + 3.*u + 4.*v + 5.*w + 6.*x + 7.*y + 8.*z);			 
+	}
+};
+
+
 int
 main(int argc, char** argv)
 {
@@ -41,7 +61,7 @@ main(int argc, char** argv)
            argv[0]);
     exit(0);
   }
-
+	
   TYPE epsrel = 1e-3;
   if (args.CheckCmdLineFlag("e")) {
     args.GetCmdLineArgument("e", epsrel);
@@ -62,20 +82,18 @@ main(int argc, char** argv)
   QuadDebugExit(args.DeviceInit());
   
 
-  constexpr int ndim = 6;
+  constexpr int ndim = 8;
   
-    TYPE integral = 0, error = 0;
-    size_t nregions = 0, neval = 0;
-
-    Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
+  Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
 		
-	Test integrand;
-	double highs[ndim] = {10, 10, 10, 10, 10, 10};
-    double lows[ndim] =  {0,  0,  0,  0,  0,  0};
+	//Test integrand;
+	GENZ_1_8d integrand;
+	double highs[ndim] = {1, 1, 1, 1, 1, 1, 1, 1};
+    double lows[ndim] =  {0, 0, 0, 0, 0, 0, 0, 0};
     Volume<double, ndim> vol(lows, highs);
 	
-    int errorFlag =
-      cuhre.integrate<Test>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);
-  
+    
+    /*cuhre.integrate<GENZ_1_8d>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);*/
+    cuhre.integrate<GENZ_1_8d>(integrand, epsrel, EPSABS, &vol);
   return 0;
 }
