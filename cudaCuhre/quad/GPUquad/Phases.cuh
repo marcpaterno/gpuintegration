@@ -5,8 +5,52 @@
 #include "Sample.cuh"
 #include <cooperative_groups.h>
 
+#define FINAL 0
+
 namespace quad {
 
+  /*__device__ __host__
+  double
+  Sq(double x){return x*x;}*/
+
+   /* struct weightsum_functor { 
+        __device__ __host__ 
+        double 
+        operator()(double err){return  1/fmax(Sq(err), ldexp(1., -104));} 
+    };
+  
+  template<typename T>
+  double
+  ComputeWeightSum(T *errors, size_t size){ 
+	 thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
+	 thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor()); 
+	 double weightsum = thrust::reduce(d_ptr, d_ptr + size);
+	 double sigsq = 1/weightsum;
+  }	*/
+	  
+	/*template<typename T>
+	void ApplyFinal0(T &avg, T &err, T &weightsum, T &avgsum, T &chisum,  T &chisqsum, T &chisq, const T guess){
+		double w = 0, sigsq = 0;
+		weightsum += w = 1/Max(sqrt(err), ldexp(1., -104));
+		sigsq = 1/weightsum;
+		avgsum += w*avg;
+		avg = sigsq*avgsum;
+		chisum += w *= avg - guess;
+		chisqsum += w*avg;
+		chisq = chisqsum - avg*chisum;
+  }*/
+	
+
+	
+	/*template<typename T>
+  double
+  ComputeWeightSum(T *errors, size_t size){ 
+	 thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
+	 thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor()); 
+	 double weightsum = thrust::reduce(d_ptr, d_ptr + size);
+	 double sigsq = 1/weightsum;
+  }*/
+	
   template <typename IntegT, typename T, int NDIM>
   __device__ void
   INIT_REGION_POOL(IntegT* d_integrand,
@@ -61,7 +105,7 @@ namespace quad {
 
       T selfErr = dRegionsError[blockIdx.x + numRegions];
       T selfRes = dRegionsIntegral[blockIdx.x + numRegions];
-
+		
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
@@ -133,7 +177,7 @@ namespace quad {
 
     T ERR = 0, RESULT = 0;
     int fail = 0;
-
+	
     INIT_REGION_POOL<IntegT>(d_integrand,
                              dRegions,
                              dRegionsLength,
@@ -523,7 +567,11 @@ namespace quad {
                              int NSETS,
                              double* exitCondition,
                              T* lows,
-                             T* highs)
+                             T* highs/*,
+							 T integral,
+							 T error,
+							 T weightsum,
+							 T avgsum*/)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ Region<NDIM>* gPool;
@@ -555,12 +603,18 @@ namespace quad {
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
     // TODO : May be redundance sync
     __syncthreads();
-
     int nregions = sRegionPoolSize; // is only 1 at this point
-
+	
+	//prep for final=0
+	double lastavg = RESULT;
+	double lasterr = ERR;
+	double weightsum = 1/fmax(ERR*ERR, ldexp(1., -104));
+	double avgsum    = weightsum*lastavg;
+	double w = 0;
+	
     while (nregions <= MAX_GLOBALPOOL_SIZE &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
-
+	
       gRegionPool = gPool;
       sRegionPoolSize = EXTRACT_MAX<T, NDIM>(
         sRegionPool, gRegionPool, sRegionPoolSize, gpuId, gPool);
@@ -591,7 +645,7 @@ namespace quad {
         // Subdivide the chosen axis
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
-
+	
       sRegionPoolSize++;
 	  nregions++;
       __syncthreads();
@@ -624,14 +678,34 @@ namespace quad {
         rL->err += diff;
         rR->err += diff;
 
-        ERR += rL->err + rR->err - result.err;
-        RESULT += rL->avg + rR->avg - result.avg;
+        //ERR += rL->err + rR->err - result.err;
+        //RESULT += rL->avg + rR->avg - result.avg;
+		lasterr += rL->err + rR->err - result.err;
+		lastavg += rL->avg + rR->avg - result.avg;
+		
+		weightsum 	 	+= w = 1/fmax(lasterr*lasterr, ldexp(1., -104));
+		avgsum		 	+= w*lastavg;
+		double sigsq 	=  1/weightsum;
+		double avg 		=	sigsq*avgsum;
+		
+		if(FINAL == 1){
+			ERR = lasterr;
+			RESULT = lastavg;
+		}
+		else{
+			RESULT 	= avg;
+			ERR 	= sqrt(sigsq);
+		}
       }
-      __syncthreads();
+	  
+	  __syncthreads();
+	  
+	//  if(threadIdx.x == 0 && blockIdx.x == 115)
+	//	printf("%.12f +- %.12f r:%f\n", RESULT, ERR, ERR/MaxErr(RESULT, epsrel, epsabs));
+	
     }
 
     if (threadIdx.x == 0) {
-
       int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
 
       if (ERR > (1e+10)) {
@@ -644,7 +718,8 @@ namespace quad {
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
-
+	 // if(isActive == 1)
+	//	printf("%i, %i, %.12f, %.12f\n", blockIdx.x, nregions, RESULT, ERR);
       free(gPool);
     }
   }
