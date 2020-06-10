@@ -1,0 +1,66 @@
+---
+title: "Comparing VEGAS and CUHRE"
+author: "Marc Paterno"
+date: "6/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Purpose of this document
+
+This document shows a comparison of the speed of the VEGAS and CUHRE algorithms,
+as implemented in the CUBA (http://www.feynarts.de/cuba/) library, and wrapped
+by `cubacpp` (https://bitbucket.org/mpaterno/cubacpp).
+
+## The integrand
+
+The integrand used for this compa rison is:
+
+$$ k (u v +w^{y} x y / (1 + u) + z^2) $$
+
+where $k$ is a normalization constant that yields an integral of 1 over the unit hypercube.
+
+$$ k = 12 / (7 - 6  {\log(2)}^2 + \log(64)).$$
+
+The approximate value of the $k$ is `r  format(12.0 / (7.0 - 6 * log(2.0) * log(2.0) + log(64.0)), digits = 15)`.
+
+
+
+## Testing environment
+
+These tests were run on a MacBook Pro laptop.
+
+```{r child = 'mac130389-description.Rmd'}
+```
+
+## Description of the dataframe
+
+```{r child = 'dataframe-description.Rmd'}
+```
+
+```{r read_data, echo = FALSE, message = FALSE}
+d <- read_tsv("vegas_cuhre.txt") %>%
+  mutate(r = errorest/(epsrel*value)) %>%
+  arrange(alg, desc(epsrel))
+
+knitr::kable(d, digits = 10)
+```
+
+## Analysis
+
+For this integrand, the CUHRE algorithm requires far fewer function evaluations to achieve a given relative error tolerance.
+The following table shows the number of function evaluations used by each algorithm for each error tolerance.
+The column `ratio` is the ratio between the number of evaluations required by VEGAS and that required by CUHRE.
+Note that for the fractional error tolerance of $10^{-6}$ the VEGAS algorithm did not converge within the number of calls allowed.
+
+```{r, echo = FALSE}
+nevals <- select(d, alg, epsrel, neval) %>%
+  pivot_wider(names_from = alg, values_from = neval) %>%
+  mutate(ratio = vegas / cuhre)
+knitr::kable(nevals)
+```
+

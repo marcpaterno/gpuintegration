@@ -1,0 +1,38 @@
+---
+title: "Where CUHRE evaluates functions"
+author: "Marc Paterno"
+date: "6/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Purpose of this document
+
+This document shows where the CUHRE algorithm evaluates the function it is integrating.
+Unlike a Monte Carlo algorithm (such as VEGAS), CUHRE evaluates the function at a set of determinalistically chosen points.
+
+The function used as the integrand in this example is:
+
+$$ 2 x^2 + 2 y - y^2.$$
+We have used both VEGAS and CUHRE to integrate this function, using a fractional error tolerance of 0.01.
+This function is sufficiently simple that CUHRE uses only two regions.
+The plots show where VEGAS and CUHRE each evaluate the function to achieve this level of accuracty.
+
+```{r echo = FALSE, message = FALSE}
+d <- bind_rows(cuhre = read_tsv("cuhre_points.txt"),
+               vegas = read_tsv("vegas_points.txt"),
+               .id = "alg")
+```
+
+VEGAS required `r nrow(filter(d, alg == "vegas"))` function evaluations, and CUHRE required `r nrow(filter(d, alg == "cuhre"))`.
+
+```{r, echo = FALSE}
+ggplot(d, aes(x,y)) +
+  geom_point(size = 0.5) +
+  facet_wrap(vars(alg))
+```
+

@@ -1,0 +1,2 @@
+The MacBook machine used in these tests has a single 4-core 2.9 GHz Intel Core i7 processor.
+

@@ -1,0 +1,14 @@
+
+1. *alg*: the name of the algorithm (cuhre is serial; gpucuhre is parallel)
+2. *epsrel*: the fractional error target
+3. *value*: the estimated value of the integral
+4. *errorest*: the estimated error for the result
+5. *error*: the absolute difference between the estimated value and the true value
+6. *neval*: the number of function evaluations used
+7. *nregions*: the number of regions used
+8. *time*: the time in milliseconds for the calculation
+9. *r*: ratio of (errorest/(epsrel*value)); this should be less than 1 if the algorithm has converged
+
+A value of NA indicates that the algorithm did not converge,
+but rather stopped because the maximum number of function evaluations had been reached.
+

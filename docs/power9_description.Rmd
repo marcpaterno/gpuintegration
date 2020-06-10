@@ -1,0 +1,2 @@
+The Power9 machine used in these tests is a PowerNV 8335-GTG (AC 922) system.
+It has two processors, each with 8 cores. Each core has 4 slices.
