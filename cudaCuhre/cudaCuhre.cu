@@ -1,6 +1,6 @@
 #include <mpi.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
+//#include <thrust/device_vector.h>
+//#include <thrust/host_vector.h>
 
 #include "function.cuh"
 #include "quad/quad.h"
@@ -82,18 +82,23 @@ main(int argc, char** argv)
   QuadDebugExit(args.DeviceInit());
   
 
-  constexpr int ndim = 8;
+  constexpr int ndim = 5;
   
   Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
 		
 	//Test integrand;
-	GENZ_1_8d integrand;
-	double highs[ndim] = {1, 1, 1, 1, 1, 1, 1, 1};
-    double lows[ndim] =  {0, 0, 0, 0, 0, 0, 0, 0};
-    Volume<double, ndim> vol(lows, highs);
+	absCosSum5D integrand;
 	
+	//double highs[ndim] = {1, 1, 1, 1, 1, 1, 1, 1};
+    //double lows[ndim] =  {0, 0, 0, 0, 0, 0, 0, 0};
+	double highs[ndim] = {1, 1, 1, 1, 1};
+    double lows[ndim] =  {0, 0, 0, 0, 0};
+    Volume<double, ndim> vol(lows, highs);
+	//double highs[ndim] = {1, 1, 1, 1, 1};
+    //double lows[ndim] =  {0, 0, 0, 0, 0};
+    //Volume<double, ndim> vol(lows, highs);
     
     /*cuhre.integrate<GENZ_1_8d>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);*/
-    cuhre.integrate<GENZ_1_8d>(integrand, epsrel, EPSABS, &vol);
+    cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol);
   return 0;
 }

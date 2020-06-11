@@ -567,11 +567,8 @@ namespace quad {
                              int NSETS,
                              double* exitCondition,
                              T* lows,
-                             T* highs/*,
-							 T integral,
-							 T error,
-							 T weightsum,
-							 T avgsum*/)
+                             T* highs,
+							 int Final)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ Region<NDIM>* gPool;
@@ -611,6 +608,9 @@ namespace quad {
 	double weightsum = 1/fmax(ERR*ERR, ldexp(1., -104));
 	double avgsum    = weightsum*lastavg;
 	double w = 0;
+	double avg = 0;
+	double sigsq = 0;
+	
 	
     while (nregions <= MAX_GLOBALPOOL_SIZE &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
@@ -685,24 +685,15 @@ namespace quad {
 		
 		weightsum 	 	+= w = 1/fmax(lasterr*lasterr, ldexp(1., -104));
 		avgsum		 	+= w*lastavg;
-		double sigsq 	=  1/weightsum;
-		double avg 		=	sigsq*avgsum;
+		sigsq 	=  1/weightsum;
+		avg 		=	sigsq*avgsum;
 		
-		if(FINAL == 1){
-			ERR = lasterr;
-			RESULT = lastavg;
-		}
-		else{
-			RESULT 	= avg;
-			ERR 	= sqrt(sigsq);
-		}
+		ERR = Final ? lasterr : sqrt(sigsq);
+		RESULT = Final ? lastavg : avg;
       }
 	  
 	  __syncthreads();
 	  
-	//  if(threadIdx.x == 0 && blockIdx.x == 115)
-	//	printf("%.12f +- %.12f r:%f\n", RESULT, ERR, ERR/MaxErr(RESULT, epsrel, epsabs));
-	
     }
 
     if (threadIdx.x == 0) {
@@ -713,13 +704,11 @@ namespace quad {
         ERR = 0.0;
         isActive = 1;
       }
-
+	
       activeRegions[blockIdx.x] = isActive;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
-	 // if(isActive == 1)
-	//	printf("%i, %i, %.12f, %.12f\n", blockIdx.x, nregions, RESULT, ERR);
       free(gPool);
     }
   }

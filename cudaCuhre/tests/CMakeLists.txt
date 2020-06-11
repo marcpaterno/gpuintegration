@@ -19,6 +19,14 @@ target_include_directories(cuda_genz_1_8d PRIVATE
   ${CMAKE_SOURCE_DIR}
   )
 
+add_executable(absCosSum5D absCosSum5D.cu)
+target_compile_options(absCosSum5D PRIVATE "-arch=sm_70")
+set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(absCosSum5D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(absCosSum5D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  )
+
 add_executable(genz_1_8d genz_1_8d.cc)
 target_include_directories(genz_1_8d PRIVATE
   ${CMAKE_SOURCE_DIR}/../cubacpp

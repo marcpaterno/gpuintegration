@@ -1,5 +1,6 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
+
 #include "../util/cudaMemoryUtil.h"
 #include "../util/cudaTimerUtil.h"
 
@@ -633,7 +634,8 @@ namespace quad {
 	integrate(IntegT integrand,
 			  double epsrel,
 			  double epsabs,
-			  Volume<T, NDIM>* volume = nullptr){
+			  Volume<T, NDIM>* volume = nullptr,
+			  int Final = 0){
 					  
 		cuhreResult res;
 		
@@ -649,7 +651,8 @@ namespace quad {
 						  res.error,
 						  res.nregions,
 						  res.neval,
-						  volume);
+						  volume,
+						  Final);
 		return res;
 	}
 	
@@ -662,12 +665,14 @@ namespace quad {
               T& error,
               size_t& nregions,
               size_t& neval,
-              Volume<T, NDIM>* volume = nullptr)
+              Volume<T, NDIM>* volume = nullptr,
+			  int Final = 0)
     {
-	  printf("Here\n"); 
+		
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-	
+	  kernel->SetFinal(Final);
+	  
       int errorFlag = 0; 
 	  int numprocs = 0;
 		
@@ -795,7 +800,7 @@ namespace quad {
 		res.nregions = nregions;
 		res.neval    = neval;*/
 #endif
-		printf("%.12f +- %.12f Flag:%i\n", integral, error, errorFlag);
+		printf("%.12f, %.12f, %i, %i\n", integral, error, nregions, errorFlag);
       }
       return errorFlag;
     }

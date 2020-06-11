@@ -24,7 +24,6 @@ public:
   }
 };*/
 
-
 class FUNC1 {
 public:
   __device__ __host__ double
@@ -45,6 +44,15 @@ public:
   }
 };
 
+class absCosSum5D{
+	public:
+		__device__ __host__ double
+		operator()(double v, double w, double x, double y, double z){
+			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z)/0.6371054);
+		}
+	
+};
+
 class FUNC2 {
 public:
   __device__ __host__ double
@@ -57,12 +65,23 @@ public:
              double n,
              double o)
   {
-    double t1 = cos(pow(2.0, 2.0 * 1) * x) * cos(pow(2.0, 2.0 * 2) * y) *
+    /*double t1 = cos(pow(2.0, 2.0 * 1) * x) * cos(pow(2.0, 2.0 * 2) * y) *
                 cos(pow(2.0, 2.0 * 3) * z) * cos(pow(2.0, 2.0 * 4) * k) *
                 cos(pow(2.0, 2.0 * 5) * l) * cos(pow(2.0, 2.0 * 6) * m) *
                 cos(pow(2.0, 2.0 * 7) * n) * cos(pow(2.0, 2.0 * 8) * o);
     double f = cos(t1);
-    return f;
+    return f;*/
+	
+	double xx[8] = {x, y, z, k, l, m, n, o};
+	double t1 = 1.0;
+	int N = 1;
+	int NDIM = 8;
+	for (N = 1; N <= NDIM; ++N) {
+		t1 = t1 * cos(pow(2.0, 2.0 * N) * xx[N - 1]);
+	}
+
+	return cos(t1);
+	
   }
 };
 
@@ -115,9 +134,14 @@ public:
              double n,
              double o)
   {
-    double t = cos(10.0 * x) * cos(10.0 * y) * cos(10.0 * z) * cos(10.0 * k) *
-               cos(10.0 * l) * cos(10.0 * m) * cos(10.0 * n) * cos(10.0 * o);
-    return t * (-0.054402111088937 * 2);
+	double sum = 0;
+	int NDIM = 8;
+	int N = 1;
+	double xx[8] = {x, y, z, k, l, m, n, o};
+	for (N = 1; N <= NDIM; ++N) {
+		sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
+	}
+	return sum / 2.0;
   }
 };
 
