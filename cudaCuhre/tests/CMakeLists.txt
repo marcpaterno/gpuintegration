@@ -12,7 +12,7 @@ target_include_directories(fun6d_demo PRIVATE
 target_link_libraries(fun6d_demo PRIVATE ${CUBA_LIBRARIES})
 
 add_executable(cuda_genz_1_8d genz_1_8d.cu)
-target_compile_options(cuda_genz_1_8d PRIVATE "-arch=sm_70")
+target_compile_options(cuda_genz_1_8d PRIVATE "-arch=sm_70" "-lineinfo")
 set_target_properties(cuda_genz_1_8d PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cuda_genz_1_8d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(cuda_genz_1_8d PRIVATE
@@ -20,7 +20,7 @@ target_include_directories(cuda_genz_1_8d PRIVATE
   )
 
 add_executable(absCosSum5D absCosSum5D.cu)
-target_compile_options(absCosSum5D PRIVATE "-arch=sm_70")
+target_compile_options(absCosSum5D PRIVATE "-arch=sm_70" "-lineinfo")
 set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(absCosSum5D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(absCosSum5D PRIVATE

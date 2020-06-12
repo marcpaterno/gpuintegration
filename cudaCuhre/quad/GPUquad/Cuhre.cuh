@@ -753,7 +753,7 @@ namespace quad {
            // timer::start_timer(&timer_one);
 #endif
           }
-
+			
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
@@ -769,7 +769,8 @@ namespace quad {
 #endif
           }
         }
-
+		printf("ratio:%.12f \n", error/MaxErr(integral, epsrel, epsabs));
+		printf("epsrel:%f\n", epsrel);
         if (error <= MaxErr(integral, epsrel, epsabs)){
           errorFlag = 0;
 		}

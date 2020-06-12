@@ -111,7 +111,7 @@ __shared__ TYPE sdata[BLOCK_SIZE];
 
 __shared__ TYPE* serror;
 __shared__ size_t* serrorPos;
-
+__shared__ bool GlobalMemCopy;
 __shared__ TYPE ERR, RESULT;
 __shared__ size_t gRegionPos[SM_REGION_POOL_SIZE / 2], gRegionPoolSize;
 
