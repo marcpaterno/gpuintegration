@@ -933,11 +933,11 @@ namespace quad {
           int *activeRegions = 0, *subDividingDimension = 0,
               *dRegionsNumRegion = 0;
 
-		  int *extra_space = 0;
+	
+		  Region<NDIM>* gRegionPool = 0;
 		  
-		  
-		 QuadDebug(Device.AllocateMemory((void**)&extra_space,
-                                          sizeof(int) * numRegionsThread));								  
+		  QuadDebug(Device.AllocateMemory((void**)&gRegionPool,
+                                          sizeof(Region<NDIM>) * numRegionsThread * MAX_GLOBALPOOL_SIZE));								  
           QuadDebug(Device.AllocateMemory((void**)&activeRegions,
                                           sizeof(int) * numRegionsThread));
           QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
@@ -949,8 +949,7 @@ namespace quad {
           QuadDebug(Device.AllocateMemory((void**)&dRegionsLengthThread,
                                           sizeof(T) * numRegionsThread * NDIM));
 
-		cudaMemset(extra_space, 0, MAX_GLOBALPOOL_SIZE*sizeof(int));
-          CudaCheckError();
+         CudaCheckError();
           // NOTE:Copy order is important
 
           for (int dim = 0; dim < NDIM; ++dim) {
@@ -992,7 +991,7 @@ namespace quad {
           CudaCheckError();
 		  printf("Launching Phase 2 with %lu blocks\n", numBlocks);
           cudaDeviceSetLimit(cudaLimitMallocHeapSize,
-                             sizeof(Region<NDIM>) * 3 * FIRST_PHASE_MAXREGIONS *
+                             sizeof(Region<NDIM>) * 2 * FIRST_PHASE_MAXREGIONS *
                                MAX_GLOBALPOOL_SIZE);
           double* exitCondition = nullptr;
 		
@@ -1019,7 +1018,7 @@ namespace quad {
                                  lows,
                                  highs,
 								 Final,
-								 extra_space);
+								 gRegionPool);
 
           cudaDeviceSynchronize();
 		  //display(dRegionsNumRegion, numRegionsThread);
@@ -1088,9 +1087,9 @@ namespace quad {
           QuadDebug(Device.ReleaseMemory(activeRegions));
           QuadDebug(Device.ReleaseMemory(subDividingDimension));
           QuadDebug(Device.ReleaseMemory(dRegionsNumRegion));
-		  QuadDebug(Device.ReleaseMemory(extra_space));
+		  QuadDebug(Device.ReleaseMemory(gRegionPool));
           QuadDebug(cudaDeviceSynchronize());
-
+		  
         } else
           printf("Rogue cpu thread\n");
       }

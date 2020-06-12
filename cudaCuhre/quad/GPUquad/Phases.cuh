@@ -293,11 +293,11 @@ namespace quad {
       d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
 
     if (threadIdx.x == 0) {
-      gPool =
+      /*gPool =
         (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * (SM_REGION_POOL_SIZE / 2));
       if (gPool == nullptr)
         printf("Block %i failed to malloc gPool in Phase 2 Init_Region_Pool\n",
-               blockIdx.x);
+               blockIdx.x);*/
       gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
     }
 
@@ -334,18 +334,16 @@ namespace quad {
                       Region<NDIM>*& gPool)
   {   
 	
-    if (threadIdx.x == 0 && GlobalMemCopy) {
-      //gPool = (Region<NDIM>*)malloc(
-      //  sizeof(Region<NDIM>) * (gRegionPoolSize + (SM_REGION_POOL_SIZE / 2)));
+   /* if (threadIdx.x == 0 && GlobalMemCopy) {
 	   gPool = (Region<NDIM>*)malloc(
         sizeof(Region<NDIM>) * 2048);
-    }
+    }*/
     __syncthreads();
 	
     // Copy existing global regions into newly allocated spaced
 	
     int iterationsPerThread = 0;
-	if(GlobalMemCopy){
+	/*if(GlobalMemCopy){
 		
 		for (iterationsPerThread = 0;
 			 iterationsPerThread < gRegionPoolSize / BLOCK_SIZE;
@@ -355,13 +353,13 @@ namespace quad {
 		  gPool[dataIndex] = gRegionPool[dataIndex];
 		  __syncthreads();
 		}
-
+	
 		size_t dataIndex = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
 		if (dataIndex < gRegionPoolSize) {
 		  gPool[dataIndex] = gRegionPool[dataIndex];
 		}
 		
-	}
+	}*/
 	
     for (iterationsPerThread = 0;
          iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;
@@ -371,7 +369,7 @@ namespace quad {
       gPool[gRegionPoolSize + index] =
         sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
-
+	
 	__syncthreads();
     int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
     if (index < (SM_REGION_POOL_SIZE / 2)) {
@@ -381,18 +379,13 @@ namespace quad {
         sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
 
-    __syncthreads();
-    if (threadIdx.x == 0 && GlobalMemCopy) {
-      gRegionPoolSize = gRegionPoolSize + (SM_REGION_POOL_SIZE / 2);
-      free(gRegionPool);
-	  GlobalMemCopy = false;
-    }
-	else if(threadIdx.x == 0){
+	__syncthreads();
+	if(threadIdx.x == 0){
 		gRegionPoolSize = gRegionPoolSize + (SM_REGION_POOL_SIZE / 2);
 	}
     __syncthreads();
 
-    gRegionPool = gPool;
+    //gRegionPool = gPool;
   }
 
   template <typename T>
@@ -454,12 +447,12 @@ namespace quad {
                      (offset < gRegionPoolSize / BLOCK_SIZE);
          offset++) {
       size_t regionIndex = offset * BLOCK_SIZE + threadIdx.x;
-      serror[regionIndex] = gRegionPool[regionIndex].result.err;
+      serror[regionIndex] = gPool[regionIndex].result.err;
       serrorPos[regionIndex] = regionIndex;
     }
     size_t regionIndex = offset * BLOCK_SIZE + threadIdx.x;
     if (regionIndex < gRegionPoolSize) {
-      serror[regionIndex] = gRegionPool[regionIndex].result.err;
+      serror[regionIndex] = gPool[regionIndex].result.err;
       serrorPos[regionIndex] = regionIndex;
     }
 
@@ -527,7 +520,7 @@ namespace quad {
       INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId, gPool);
       __syncthreads();
 		
-      gRegionPool = gPool;
+      //gRegionPool = gPool;
       EXTRACT_TOPK<T>(sRegionPool, gRegionPool, gPool);
       sSize = (SM_REGION_POOL_SIZE / 2);
       __syncthreads();
@@ -581,16 +574,13 @@ namespace quad {
                              T* lows,
                              T* highs,
 							 int Final,
-							 int *extra_space)
+							 Region<NDIM>* ggRegionPool)
   {
-	  
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ Region<NDIM>* gPool;
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
 	__shared__ int max_global_pool_size;
-	
-	
 	
     if (threadIdx.x == 0) {
       for (int i = 0; i < NDIM; ++i) {
@@ -598,10 +588,11 @@ namespace quad {
         shighs[i] = highs[i];
       }
 	  max_global_pool_size = 2048;
-	  GlobalMemCopy = true;
+	  gPool = &ggRegionPool[blockIdx.x*MAX_GLOBALPOOL_SIZE];
     }
-
-    Region<NDIM>* gRegionPool = 0;
+	
+	
+    //Region<NDIM>* gRegionPool = &ggRegionPool[blockIdx.x*MAX_GLOBALPOOL_SIZE];
     int sRegionPoolSize =
       INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand,
                                         dRegions,
@@ -636,9 +627,9 @@ namespace quad {
     while (/*blockIdx.x < 13074 &&*/ nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
 	
-      gRegionPool = gPool;
+      //gRegionPool = gPool;
       sRegionPoolSize = EXTRACT_MAX<T, NDIM>(
-        sRegionPool, gRegionPool, sRegionPoolSize, gpuId, gPool);
+        sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
       Region<NDIM>*RegionLeft, *RegionRight;
       Result result;
 		
@@ -698,8 +689,6 @@ namespace quad {
         rL->err += diff;
         rR->err += diff;
 		
-        //ERR += rL->err + rR->err - result.err;
-        //RESULT += rL->avg + rR->avg - result.avg;
 		lasterr += rL->err + rR->err - result.err;
 		lastavg += rL->avg + rR->avg - result.avg;
 		
@@ -710,16 +699,6 @@ namespace quad {
 		
 		ERR 	= Final ? lasterr : sqrt(sigsq);
 		RESULT 	= Final ? lastavg : avg;
-		//if(blockIdx.x == 16385)		
-		//	max_global_pool_size 	+= extra_space[siblIndex];
-		//if(blockIdx.x == 16385)
-		//	printf("%i/%i\n", nregions, max_global_pool_size);
-		//if(extra_space[siblIndex] != 0)
-		//	extra_space[siblIndex] = 0;
-		//printf("nregions:%i\n", nregions);
-		//mod is expensive change
-		//if(nregions > MAX_GLOBALPOOL_SIZE && nregions % MAX_GLOBALPOOL_SIZE == 0)
-		//	GlobalMemCopy = true;	
       }
 	  
 	  __syncthreads();
@@ -735,22 +714,11 @@ namespace quad {
         isActive = 1;
       }
 	  
-	  // size_t siblIndex 		 = blockIdx.x < (numRegions/2) ? blockIdx.x + numRegions/2 : blockIdx.x - numRegions/2;
-	  //if(activeRegions[siblIndex] == 1)
-	  	  
-	  if(nregions < MAX_GLOBALPOOL_SIZE-64)
-	  {
-		//if(blockIdx.x == 1)
-			//printf("%i, %lu, %i, %i\n", blockIdx.x, siblIndex, (SM_REGION_POOL_SIZE/2)*((MAX_GLOBALPOOL_SIZE - nregions)/(SM_REGION_POOL_SIZE/2)), nregions);
-		extra_space[blockIdx.x] = (SM_REGION_POOL_SIZE/2)*((MAX_GLOBALPOOL_SIZE - nregions)/(SM_REGION_POOL_SIZE/2));
-	  }
-	 // printf("%i, %i\n", blockIdx.x, nregions);
-	  //printf("%i, %i\n", blockIdx.x);
       activeRegions[blockIdx.x] = isActive;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
-      free(gPool);
+      //free(gPool);
     }
   }
 }
