@@ -196,10 +196,17 @@ namespace quad {
     T* hRegions;
     T* hRegionsLength;
 
-    T* highs;
+    T* dParentsError;
+	T* dParentsIntegral;
+	
+	T* highs;
     T* lows;
 	
+	T* dRegionsError;
+	T* dRegionsIntegral;
 	int Final; //dictates the update rules in Sequential Cuhre & as a result it's conditionally applied in Phase 2
+	T lastErr;
+	T lastAvg;
     int KEY, VERBOSE;
     size_t numRegions, numFunctionEvaluations;
     size_t fEvalPerRegion;
@@ -234,7 +241,11 @@ namespace quad {
 
     Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
-	  Final = 0;	
+	  dParentsError = nullptr;
+	  dParentsIntegral = nullptr;
+	  lastErr = 0;
+	  lastAvg = 0;
+	  Final   = 0;	
 	  //weightsum = 0, avgsum = 0, guess = 0, chisq = 0, chisum = 0, chisqsum = 0; //only used when FINAL = 0 in Rcuhre
       numRegions = 0;
       numFunctionEvaluations = 0;
@@ -519,6 +530,7 @@ namespace quad {
         // sizeof(T)
         // * numRegions * NDIM, cudaMemcpyDeviceToDevice));
       } else {
+		printf("Zero active regions setting numRegions to 0\n");
         numRegions = 0;
       }
     }
@@ -578,8 +590,9 @@ namespace quad {
 
       size_t numThreads = BLOCK_SIZE;
       size_t numBlocks = numRegions;
-
-      T *dRegionsError = 0, *dRegionsIntegral = 0;
+	
+      //T *dRegionsError = 0, *dRegionsIntegral = 0;
+	  dRegionsError = nullptr, dRegionsIntegral = nullptr;
       T* newErrs = 0;
 
       if (VERBOSE) {
@@ -615,8 +628,6 @@ namespace quad {
           numRegions,
           dRegionsIntegral,
           dRegionsError,
-          dParentsIntegral,
-          dParentsError,
           activeRegions,
           subDividingDimension,
           epsrel,
@@ -657,7 +668,8 @@ namespace quad {
       nregions += numRegions;
       neval += numRegions * fEvalPerRegion;
 		
-      if (VERBOSE) {
+      if (VERBOSE) 
+	  {
         printf("computing the integral/error for %lu regions\n", numRegions);
       }
 
@@ -679,12 +691,12 @@ namespace quad {
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 			    
-		/*double w = 1/fmax(errG*errG, ldexp(1., -104));
-	    weightsum += w*numRegions; //adapted by Ioannis
-		avgsum += w*rG*numRegions;
-		double sigsq = 1/weightsum;
-		rG = sigsq*avgsum;
-		errG = sqrt(sigsq);*/
+	  double w = numRegions*1/fmax(errG*errG, ldexp(1., -104));
+	  weightsum += w; //adapted by Ioannis
+      avgsum += w*rG;
+	  double sigsq = 1/weightsum;
+	  rG = sigsq*avgsum;
+	  errG = sqrt(sigsq);
 		
       //if (VERBOSE) 
 	  {
@@ -711,15 +723,18 @@ namespace quad {
         integral = rG;
         error = errG;
         numRegions = 0;
+		printf("Setting numRegions to zero because err is satisfied\n");
         return;
       }
-
-      GenerateActiveIntervals(activeRegions,
-                              subDividingDimension,
-                              dRegionsIntegral,
-                              dRegionsError,
-                              dParentsIntegral,
-                              dParentsError);
+	  
+	  if(numRegions <= FIRST_PHASE_MAXREGIONS)
+		GenerateActiveIntervals(activeRegions,
+                                subDividingDimension,
+                                dRegionsIntegral,
+                                dRegionsError,
+                                dParentsIntegral,
+                                dParentsError);
+								
 
       if (VERBOSE) {
         printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f\n",
@@ -730,11 +745,9 @@ namespace quad {
       }
 
       QuadDebug(cudaFree(subDividingDimension));
-
       QuadDebug(cudaFree(newErrs));
       QuadDebug(cudaFree(activeRegions));
-      QuadDebug(cudaFree(dRegionsError));
-      QuadDebug(cudaFree(dRegionsIntegral));
+
     }
 	
     template <typename IntegT>
@@ -749,8 +762,6 @@ namespace quad {
                         Volume<T, NDIM>* vol = nullptr)
     {
 		
-      T *dParentsError = nullptr, *dParentsIntegral = nullptr;
-
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
 
@@ -777,21 +788,35 @@ namespace quad {
                                     neval,
                                     dParentsIntegral,
                                     dParentsError);
-
-        if (numRegions < 1) {
-          //printf("NO BAD SUBREGIONS LEFT\n");
-          return;
-        }
-        // printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
-        if (numRegions > FIRST_PHASE_MAXREGIONS) {
-        /*  printf("Reached the limit on Phase 1 regions supported (%i)\n",
-                 FIRST_PHASE_MAXREGIONS);*/
-          break;
-        }
-      }
 		
-      QuadDebug(cudaFree(dParentsIntegral));
-      QuadDebug(cudaFree(dParentsError));
+		printf("After iteration numRegions:%lu\n", numRegions);
+        if (numRegions < 1) {
+          return;
+		}
+        else if (numRegions > FIRST_PHASE_MAXREGIONS) {
+		  QuadDebug(cudaFree(dRegionsError));
+		  QuadDebug(cudaFree(dRegionsIntegral));
+		  FirstPhaseIteration<IntegT>(d_integrand,
+                                    epsrel,
+                                    epsabs,
+                                    lastAvg,
+                                    lastErr,
+                                    nregions,
+                                    neval,
+                                    dParentsIntegral,
+                                    dParentsError);
+          break;
+		}
+	    else{
+			QuadDebug(cudaFree(dRegionsError));
+			QuadDebug(cudaFree(dRegionsIntegral));
+		}
+      }
+	  
+      if(numRegions <= FIRST_PHASE_MAXREGIONS){
+		QuadDebug(cudaFree(dParentsIntegral));
+		QuadDebug(cudaFree(dParentsError));
+	  }	//otherwise parents will be used in phase 2
 		
       hRegions =
         (T*)Host.AllocateMemory(&hRegions, sizeof(T) * numRegions * NDIM);
@@ -922,13 +947,13 @@ namespace quad {
           size_t numThreads = BLOCK_SIZE;
           size_t numBlocks = numRegionsThread;
 
-          T *dRegionsError = 0, *dRegionsIntegral = 0;
+         // T *dRegionsError = 0,  *dRegionsIntegral = 0;
           T *dRegionsThread = 0, *dRegionsLengthThread = 0;
 
-          QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
+         /* QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
                                           sizeof(T) * numRegionsThread));
           QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
-                                          sizeof(T) * numRegionsThread));
+                                          sizeof(T) * numRegionsThread));*/
 
           int *activeRegions = 0, *subDividingDimension = 0,
               *dRegionsNumRegion = 0;
@@ -1018,7 +1043,13 @@ namespace quad {
                                  lows,
                                  highs,
 								 Final,
-								 gRegionPool);
+								 gRegionPool,
+								 dParentsIntegral,
+							     dParentsError,
+							     lastAvg, 
+							     lastErr,
+							     weightsum,
+							     avgsum);
 
           cudaDeviceSynchronize();
 		  //display(dRegionsNumRegion, numRegionsThread);
