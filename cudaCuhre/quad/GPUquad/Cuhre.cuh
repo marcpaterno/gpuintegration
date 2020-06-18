@@ -71,7 +71,8 @@ namespace quad {
       MPI_Status stat;
       int devCount = 0, namelen = 0;
       char processor_name[MPI_MAX_PROCESSOR_NAME];
-      char idstr[256], idstr2[256], buff[BUFSIZE];
+      //char idstr[256], idstr2[256], buff[BUFSIZE];
+	  char idstr[320], idstr2[320], buff[BUFSIZE];
       MPI_Recv(buff, BUFSIZE, MPI_CHAR, 0, TAG, MPI_COMM_WORLD, &stat);
       MPI_Get_processor_name(processor_name, &namelen);
       cudaGetDeviceCount(&devCount);
@@ -689,11 +690,6 @@ namespace quad {
         MPI_Finalize();
       } else {
 
-#if TIMING_DEBUG == 1
-       // timer::event_pair timer;
-       // timer::start_timer(&timer);
-#endif
-
         if (VERBOSE) {
           sprintf(msg,
                   "Cuhre input parameters:\nndim %i\nepsrel %f\nepsabs "
@@ -722,14 +718,8 @@ namespace quad {
                   total_db / 1024.0 / 1024.0);
           Print(msg);
         }
-        //T firstPhaseTime = 0;
-		
-#if TIMING_DEBUG == 1
-        timer::start_timer(&timer_one);
-#endif
-
+    		
         FIRST_PHASE_MAXREGIONS *= numDevices;
-       // printf("FIRST_PHASE_MAXREGIONS:%i\n", FIRST_PHASE_MAXREGIONS);
         kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
                                     epsabs,
@@ -738,21 +728,10 @@ namespace quad {
                                     nregions,
                                     neval,
                                     volume);
-
-#if TIMING_DEBUG == 1
-       /* firstPhaseTime =
-          timer::stop_timer_returntime(&timer_one, "First Phase");
-         printf("First Phase took : %.2lf\n", firstPhaseTime);*/
-#endif
-
+									
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 
         if (kernel->getNumActiveRegions() > 0) {
-          if (VERBOSE) {
-#if TIMING_DEBUG == 1
-           // timer::start_timer(&timer_one);
-#endif
-          }
 			
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
@@ -763,45 +742,13 @@ namespace quad {
                                                    neval,
                                                    optionalInfo);
 
-          if (VERBOSE) {
-#if TIMING_DEBUG == 1
-           // timer::stop_timer(&timer_one, "Second Phase");
-#endif
-          }
         }
-		printf("ratio:%.12f \n", error/MaxErr(integral, epsrel, epsabs));
-		printf("epsrel:%f\n", epsrel);
+
         if (error <= MaxErr(integral, epsrel, epsabs)){
           errorFlag = 0;
 		}
-	
-#if TIMING_DEBUG == 1
-        /*T time = timer::stop_timer_returntime(&timer, "Total time :");
-        T kernelTime = firstPhaseTime + optionalInfo[0];
-        printf("FirstPhase time\t: %.2lf\nSecondPhase Kernel time\t: %.2lf\n",
-               firstPhaseTime,
-               optionalInfo[0]);
-        printf(
-          "%d\t%e\t%.15lf\t%.15f\t%-15ld\t%-15ld\t%d\t%-10.2lf\t%-10.2lf\n",
-          NDIM,
-          epsrel,
-          integral,
-          error,
-          nregions,
-          neval,
-          errorFlag,
-          kernelTime,
-          time);
-        printf("nregions:%lu\n", nregions);
-        printf("Error flag:%i\n", errorFlag);
-        printf("Total Time:%f\n", time);*/
 		
-		/*res.value 	 = integral;
-		res.error 	 = error;
-		res.nregions = nregions;
-		res.neval    = neval;*/
-#endif
-		printf("%.12f, %.12f, %i, %i\n", integral, error, nregions, errorFlag);
+		printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
       }
       return errorFlag;
     }
