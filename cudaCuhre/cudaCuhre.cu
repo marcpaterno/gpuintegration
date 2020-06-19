@@ -1,6 +1,6 @@
+#include <chrono>
+#include <cmath>
 #include <mpi.h>
-//#include <thrust/device_vector.h>
-//#include <thrust/host_vector.h>
 
 #include "function.cuh"
 #include "quad/quad.h"
@@ -9,21 +9,12 @@
 
 #include "quad/GPUquad/Cuhre.cuh"
 #include "quad/util/Volume.cuh"
+
 using namespace quad;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration;
 
 constexpr double EPSABS = 1e-12;
-
-//---------------------------------------------------------------------
-// Globals, constants and typedefs
-//---------------------------------------------------------------------
-
-class Test {
-public:
-  __device__ __host__ double
-  operator()(double x, double y, double z, double k, double l, double m){
-	return sin(x + y + z + k +l + m);
-  }
-};
 
 class GENZ_1_8d{
 	
@@ -45,6 +36,7 @@ class GENZ_1_8d{
 };
 
 
+
 int
 main(int argc, char** argv)
 {
@@ -62,7 +54,7 @@ main(int argc, char** argv)
     exit(0);
   }
 	
-  TYPE epsrel = 1e-3;
+  TYPE epsrel = 4e-5;
   if (args.CheckCmdLineFlag("e")) {
     args.GetCmdLineArgument("e", epsrel);
   }
@@ -81,7 +73,6 @@ main(int argc, char** argv)
  // Initialize device
   QuadDebugExit(args.DeviceInit());
   
-
   constexpr int ndim = 5;
   
   Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
@@ -94,11 +85,12 @@ main(int argc, char** argv)
 	double highs[ndim] = {1, 1, 1, 1, 1};
     double lows[ndim] =  {0, 0, 0, 0, 0};
     Volume<double, ndim> vol(lows, highs);
-	//double highs[ndim] = {1, 1, 1, 1, 1};
-    //double lows[ndim] =  {0, 0, 0, 0, 0};
-    //Volume<double, ndim> vol(lows, highs);
-    
+	using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
+	
     /*cuhre.integrate<GENZ_1_8d>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);*/
-    cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol);
+    auto t0 = std::chrono::high_resolution_clock::now();
+	cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol);
+	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+	std::cout<<"Time in ms:"<< dt.count()<<std::endl;
   return 0;
 }
