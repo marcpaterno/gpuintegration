@@ -72,43 +72,11 @@ struct Region {
   Bounds bounds[dim];
 };
 
-
-/*#if KEY == 13 && DIM == 2
-#define RULE 13
-#elif KEY == 1 && DIM == 3
-#define RULE 13
-#elif KEY == 9
-#define RULE 9
-#elif KEY == 7
-#define RULE 7
-#elif DIM == 2
-#define RULE 9
-#elif DIM == 3
-#define RULE 11
-#else
-#define RULE 9
-#endif
-
-#if RULE == 13
-#define NSETS 14
-#elif RULE == 11
-#define NSETS 13
-#elif RULE == 9
-#define NSETS 9
-#define FEVAL (1 + 2*DIM + 2*DIM + 2*DIM + 2*DIM + 2*DIM*(DIM - 1) + 4*DIM*(DIM
-- 1) + 4*DIM*(DIM - 1)*(DIM - 2)/3 + (1 << DIM)) #define
-PERMUTATIONS_POS_ARRAY_SIZE (1+1*1 + 2*DIM*1 + 2*DIM*1 + 2*DIM*1 + 2*DIM*1 +
-2*DIM*(DIM - 1)*2 + 4*DIM*(DIM - 1)*2 + 4*DIM*(DIM - 1)*(DIM - 2)*3/3 + DIM*(1
-<< DIM)) #elif RULE == 7 #define NSETS 6 #endif
-
-*/
 #define NRULES 5
-//__shared__ Region<6> sRegionPool[SM_REGION_POOL_SIZE];
 
-//__shared__ GlobalBounds sBound[DIM];
 extern __shared__ GlobalBounds sBound[];
-__shared__ TYPE sdata[BLOCK_SIZE];
 
+__shared__ TYPE sdata[BLOCK_SIZE];
 __shared__ TYPE* serror;
 __shared__ size_t* serrorPos;
 __shared__ bool GlobalMemCopy;

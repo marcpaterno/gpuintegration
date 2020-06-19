@@ -4,28 +4,24 @@
 #include "quad/quad.h"
 
 #define FUN 11
-//#define DIM 6
-//
-#ifndef FUN
-#define FUN 2
-//#define DIM 3
-#endif
 
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b)) ? a : b)
 
-//==================================================
-// functions tested in the original two papers
-/*class Test {
+
+class Test {
 public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k, double l, double m){
 	return sin(x + y + z + k +l + m);
   }
-};*/
+};
 
 class FUNC1 {
 public:
+	//DCUHRE ANSWER with epsrel 1e-4: 2.705514721507 +- 2.70543224E-04
+	//range (0,1)
+	
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -45,6 +41,7 @@ public:
 };
 
 class absCosSum5D{
+	// ACTUAL ANSWER = 0.6371054
 	public:
 		__device__ __host__ double
 		operator()(double v, double w, double x, double y, double z){
@@ -65,13 +62,7 @@ public:
              double n,
              double o)
   {
-    /*double t1 = cos(pow(2.0, 2.0 * 1) * x) * cos(pow(2.0, 2.0 * 2) * y) *
-                cos(pow(2.0, 2.0 * 3) * z) * cos(pow(2.0, 2.0 * 4) * k) *
-                cos(pow(2.0, 2.0 * 5) * l) * cos(pow(2.0, 2.0 * 6) * m) *
-                cos(pow(2.0, 2.0 * 7) * n) * cos(pow(2.0, 2.0 * 8) * o);
-    double f = cos(t1);
-    return f;*/
-	
+	//DCUHRE ANSWER with epsrel 1e-4: 0.992581686378 +- 9.92539990E-05
 	double xx[8] = {x, y, z, k, l, m, n, o};
 	double t1 = 1.0;
 	int N = 1;
@@ -87,6 +78,7 @@ public:
 
 class FUNC3 {
 public:
+	//DCUHRE ANSWER with epsrel 1e-4: 0.991177511809 +- 9.91162890E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -106,6 +98,7 @@ public:
 
 class FUNC4 {
 public:
+	//DCUHRE ANSWER with epsrel 1e-4: 0.999020280358 +- 6.69561860E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -124,6 +117,8 @@ public:
 
 class FUNC5 {
 public:
+	//ANSWER = 4
+	//DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -145,9 +140,6 @@ public:
   }
 };
 
-//==================================================
-
-// oscillatory integral from Genz test suite
 class GENZ_1 {
 public:
   __device__ __host__ double
@@ -160,6 +152,7 @@ public:
              double n,
              double o)
   {
+	//DCUHRE ANSWER with epsrel 1e-4: -0.731004131572 +- 0.00000000E+00
     int NDIM = 8;
     double alpha = 110.0 / (NDIM * NDIM * sqrt(NDIM * 1.0));
     double sum = pow(alpha, NDIM) * (x + y + z + k + l + m + n + o);
@@ -168,9 +161,10 @@ public:
   }
 };
 
-// product peak intgral from Genz test suite
+
 class GENZ_2 {
 public:
+	//DCUHRE ANSWER with epsrel 1e-4: 0.329102695990 +- 3.16149770E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -183,22 +177,19 @@ public:
   {
     int NDIM = 8;
     double alpha = 600.0 / (NDIM * NDIM * NDIM);
-    double beta = alpha;
     double t1 = 1.0 / pow(alpha, 2);
-    // printf("o1:%f\n", o);
     double total =
-      (1.0 / (t1 + pow(x - beta, 2))) * (1.0 / (t1 + pow(y - beta, 2))) *
-      (1.0 / (t1 + pow(z - beta, 2))) * (1.0 / (t1 + pow(k - beta, 2))) *
-      (1.0 / (t1 + pow(l - beta, 2))) * (1.0 / (t1 + pow(m - beta, 2))) *
-      (1.0 / (t1 + pow(n - beta, 2))) * (1.0 / (t1 + pow(p - beta, 2)));
-    // printf("o2:%f\n", o);
+      (1.0 / (t1 + pow(x - alpha, 2))) * (1.0 / (t1 + pow(y - alpha, 2))) *
+      (1.0 / (t1 + pow(z - alpha, 2))) * (1.0 / (t1 + pow(k - alpha, 2))) *
+      (1.0 / (t1 + pow(l - alpha, 2))) * (1.0 / (t1 + pow(m - alpha, 2))) *
+      (1.0 / (t1 + pow(n - alpha, 2))) * (1.0 / (t1 + pow(p - alpha, 2)));
     return total;
   }
 };
 
-// Gaussian integral from Genz test suite
 class GENZ_4 {
 public:
+		//DCUHRE ANSWER with epsrel 1e-4: 0.720492998631 +- 5.00191000E-07
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -209,12 +200,8 @@ public:
              double n,
              double o)
   {
-    // int NDIM = 8;
-    // double total = 0.0;
-    double alpha = 0.5; // 150.0/(NDIM * NDIM * NDIM);
+    double alpha = 0.5; 
     double beta = alpha;
-    // int N = 1;
-
     double t1 = pow(x - beta, 2) + pow(y - beta, 2) + pow(z - beta, 2) +
                 pow(k - beta, 2) + pow(l - beta, 2) + pow(m - beta, 2) +
                 pow(n - beta, 2) + pow(o - beta, 2);
@@ -222,7 +209,6 @@ public:
   }
 };
 
-// C^0 - continuous integral from Genz test suite
 class GENZ_5 {
 public:
   __device__ __host__ double
@@ -235,7 +221,8 @@ public:
              double n,
              double o)
   {
-    double alpha = 0.5; // 150.0/(NDIM * NDIM * NDIM);
+	//DCUHRE ANSWER with epsrel 1e-4: 0.375625473524 +- 3.69126870E-05
+    double alpha = 0.5; 
     double beta = alpha;
     // int N = 1;
 
