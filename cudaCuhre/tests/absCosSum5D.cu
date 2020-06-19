@@ -33,8 +33,9 @@ int main()
 	//double epsrel   = 8e-6;
 	double epsabs = 1e-12;
 	auto t0 = std::chrono::high_resolution_clock::now();
-	cuhre.integrate<absCosSum5D>(integrand, epsrel, epsabs, &vol, 0);
+	cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, epsabs, &vol, 0);
 	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+	std::cout<< result.value <<"\t"<< result.error <<"\t"<<result.nregions<<std::endl;
 	std::cout<<"Time in ms:"<< dt.count()<<std::endl;
 	return 0;
 }

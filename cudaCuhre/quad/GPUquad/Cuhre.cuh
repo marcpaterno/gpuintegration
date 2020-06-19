@@ -745,7 +745,7 @@ namespace quad {
           errorFlag = 0;
         }
 
-        printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
+        //printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
       }
       return errorFlag;
     }
