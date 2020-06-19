@@ -665,7 +665,7 @@ namespace quad {
       QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
 		
-	  printf("Phase 1 Iteration launching %lu blocks, numRegions:%lu\n", numBlocks, numRegions);
+	  //printf("Phase 1 Iteration launching %lu blocks, numRegions:%lu\n", numBlocks, numRegions);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
           d_integrand,
@@ -1061,7 +1061,7 @@ namespace quad {
             Println(log, msg);
           }
           CudaCheckError();
-		  printf("Launching Phase 2 with %lu blocks\n", numBlocks);
+		  //printf("Launching Phase 2 with %lu blocks\n", numBlocks);
           cudaDeviceSetLimit(cudaLimitMallocHeapSize,
                              sizeof(Region<NDIM>) * 2 * FIRST_PHASE_MAXREGIONS *
                                MAX_GLOBALPOOL_SIZE);
@@ -1139,7 +1139,7 @@ namespace quad {
 			
           cudaEventDestroy(start);
           cudaEventDestroy(event[gpu_id]);
-		  printf("Phase 1 contribution:%.12f +- %.12f\n", integral, error);
+		  //printf("Phase 1 contribution:%.12f +- %.12f\n", integral, error);
           thrust::device_ptr<T> wrapped_ptr;
 		  
           wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
