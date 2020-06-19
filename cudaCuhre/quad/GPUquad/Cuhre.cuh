@@ -64,7 +64,6 @@ namespace quad {
 #define BUFSIZE 256
 #define TAG 0
 	
-
     void
     MPI_CLIENT_checkCUDA(int nodeRank, T epsrel, T epsabs)
     {
@@ -636,8 +635,9 @@ namespace quad {
 			  double epsrel,
 			  double epsabs,
 			  Volume<T, NDIM>* volume = nullptr,
-			  int Final = 0){
-					  
+			  int verbosity = 0,
+			  int Final = 0)
+	{	  
 		cuhreResult res;
 		
 		res.value = 0;
@@ -653,6 +653,7 @@ namespace quad {
 						  res.nregions,
 						  res.neval,
 						  volume,
+						  verbosity,
 						  Final);
 		return res;
 	}
@@ -667,13 +668,14 @@ namespace quad {
               size_t& nregions,
               size_t& neval,
               Volume<T, NDIM>* volume = nullptr,
+			  int verbosity = 0,
 			  int Final = 0)
     {
 		
       this->epsrel = epsrel;
       this->epsabs = epsabs;
 	  kernel->SetFinal(Final);
-	  
+	  kernel->SetVerbosity(verbosity);
       int errorFlag = 0; 
 	  int numprocs = 0;
 		

@@ -4,14 +4,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include "../util/Volume.cuh"
+
 #include "Phases.cuh"
 #include "Rule.cuh"
 
 #include <cuda.h>
-
 #include <stdio.h>
 #include <string.h>
-
+#include <sstream>
+#include <fstream>
 #include <thrust/transform_reduce.h>
 
 namespace quad {
@@ -37,7 +38,6 @@ namespace quad {
   }
 
   //==========
-
   __constant__ size_t dFEvalPerRegion;
 
   template <typename T>
@@ -59,7 +59,6 @@ namespace quad {
   {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
       for (int i = 0; i < size; i++)
-        // if(i<10)
         printf("array[%i]:%.12f - %.12f\n", i, array[i], array[i] + array2[i]);
     }
   }
@@ -202,12 +201,15 @@ namespace quad {
 	T* highs;
     T* lows;
 	
+	std::stringstream out1;
+
 	T* dRegionsError;
 	T* dRegionsIntegral;
 	int Final; //dictates the update rules in Sequential Cuhre & as a result it's conditionally applied in Phase 2
 	T lastErr;
 	T lastAvg;
-    int KEY, VERBOSE;
+	
+    int KEY, VERBOSE, outLevel;
     size_t numRegions, numFunctionEvaluations;
     size_t fEvalPerRegion;
     HostMemory<T> Host;
@@ -223,6 +225,8 @@ namespace quad {
   public:
 	T weightsum, avgsum, guess, chisq, chisum, chisqsum;
   
+	void SetVerbosity(const int verb){outLevel = verb;}
+	
 	void SetFinal(const int _Final){
 		Final = _Final;
 	}
@@ -243,6 +247,7 @@ namespace quad {
     {
 	  dParentsError = nullptr;
 	  dParentsIntegral = nullptr;
+
 	  lastErr = 0;
 	  lastAvg = 0;
 	  Final   = 0;	
@@ -284,7 +289,7 @@ namespace quad {
       hRegionsLength = &data[size * NDIM];
       numRegions = size;
     }
-
+	
     T*
     getRegions(size_t size, int startIndex)
     {
@@ -306,7 +311,7 @@ namespace quad {
       }
       return newhRegionsAndLength;
     }
-
+	
     void
     InitKernel(int key, int verbose, int numDevices = 1)
     {
@@ -326,7 +331,7 @@ namespace quad {
       rule.Init(NDIM, fEvalPerRegion, KEY, VERBOSE, &constMem);
       QuadDebug(Device.SetHeapSize());
     }
-
+	
     //@brief Template function to display GPU device array variables
     template <class K>
     void
@@ -335,10 +340,50 @@ namespace quad {
       K* tmp = (K*)malloc(sizeof(K) * size);
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
-        printf("%.20lf \n", (T)tmp[i]);
+		std::cout<<tmp[i]<< std::endl;
+        //printf("%.20lf \n", (T)tmp[i]);
       }
     }
-
+	
+	void PrintToFile(std::string outString, std::string filename)
+	{
+		std::ofstream outfile(filename);
+		outfile << outString << std::endl;
+		outfile.close();
+	}
+	
+	template <class K>
+    void
+    display(K* array, size_t size, std::string filename)
+    {
+	  std::stringstream outfile;
+      K* tmp = (K*)malloc(sizeof(K) * size);
+      cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
+      for (int i = 0; i < size; ++i) {
+		outfile<<tmp[i]<< std::endl;
+        //printf("%.20lf \n", (T)tmp[i]);
+      }
+	  PrintToFile(outfile.str(), filename);
+    }
+	
+	template <class K>
+    void
+	display(K* array1, K* array2, T optional, size_t size, K (*func)(K, K, T), std::string filename)
+    {
+	  std::stringstream outfile;
+      K* tmp1 = (K*)malloc(sizeof(K) * size);
+	  K* tmp2 = (K*)malloc(sizeof(K) * size);
+	  
+      cudaMemcpy(tmp1, array1, sizeof(K) * size, cudaMemcpyDeviceToHost);
+	  cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
+	   
+      for (int i = 0; i < size; ++i) 
+		outfile<< tmp1[i] << "," << tmp2[i] << "," << func(tmp1[i], tmp2[i], optional)<<std::endl;
+	
+	  std::string outputS = outfile.str();
+	  PrintToFile(outputS, filename);
+    }
+	
     void
     GenerateInitialRegions()
     {
@@ -412,7 +457,7 @@ namespace quad {
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToDevice));
     }
-
+	
     void
     GenerateActiveIntervals(int* activeRegions,
                             int* subDividingDimension,
@@ -535,7 +580,7 @@ namespace quad {
       }
     }
 	
-	struct WeightSumFunc
+	/*struct WeightSumFunc
 	{
 		__host__ __device__
         double operator()(T err){ 
@@ -556,7 +601,7 @@ namespace quad {
 		avgsum	  +=  thrust::reduce(d_err_storage, d_err_storage + size);
 		
 		integral = avgsum/weightsum;
-		error 	 = sqrt(1/weightsum);*/
+		error 	 = sqrt(1/weightsum);
 		
 		T *hintegrals = (T*)malloc(sizeof(T)*size);
 		T *herrors    = (T*)malloc(sizeof(T)*size);
@@ -571,9 +616,9 @@ namespace quad {
 			double sigsq = 1/weightsum;
 			rG = sigsq*avgsum;
 			errG = sqrt(sigsq);
-		}*/
+		}
 		
-	}
+	}*/
 	
     template <typename IntegT>
     void
@@ -594,7 +639,7 @@ namespace quad {
       //T *dRegionsError = 0, *dRegionsIntegral = 0;
 	  dRegionsError = nullptr, dRegionsIntegral = nullptr;
       T* newErrs = 0;
-
+	  
       if (VERBOSE) {
         printf(
           "Beginning of FirstPhaseIteration:: Allocating for %lu bad regions\n",
@@ -605,7 +650,7 @@ namespace quad {
                                       sizeof(T) * numRegions * 2));
       QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
                                       sizeof(T) * numRegions * 2));
-
+		
       if (numRegions == 1 && error == 0) {
         QuadDebug(Device.AllocateMemory((void**)&dParentsIntegral,
                                         sizeof(T) * numRegions * 2));
@@ -619,7 +664,8 @@ namespace quad {
                                       sizeof(int) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
-
+		
+	  printf("Phase 1 Iteration launching %lu blocks, numRegions:%lu\n", numBlocks, numRegions);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
           d_integrand,
@@ -641,7 +687,7 @@ namespace quad {
       QuadDebug(
         Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions * 2));
       cudaDeviceSynchronize();
-
+		
       if (numRegions != 1) {
 		
         RefineError<T><<<numBlocks, numThreads>>>(dRegionsIntegral,
@@ -655,14 +701,13 @@ namespace quad {
                                                   epsabs);
 												  
         cudaDeviceSynchronize();
-
+		
         QuadDebug(cudaMemcpy(dRegionsError,
                              newErrs,
                              sizeof(T) * numRegions * 2,
                              cudaMemcpyDeviceToDevice));
 		//use newErrs for transformation
         cudaDeviceSynchronize();
-		
       }
 	  
       nregions += numRegions;
@@ -700,14 +745,18 @@ namespace quad {
 		
       //if (VERBOSE) 
 	  {
-        printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f numRegions:%i\n",
+        /*printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f numRegions:%lu\n",
                rG,
                errG,
                integral,
                error, 
-			   numRegions);
+			   numRegions);*/
+		
+		//out1<< rG << "," << errG << "," << integral << "," << error << "," << numRegions << endl;
+		if(outLevel >= 1)
+			out1<< rG << "," << errG << "," << nregions << std::endl;
       }
-
+		
       if ((errG <= MaxErr(rG, epsrel, epsabs)) && GLOBAL_ERROR) {
 
         if (VERBOSE) {
@@ -719,11 +768,10 @@ namespace quad {
                   errG);
           Println(log, msg);
         }
-
+		
         integral = rG;
         error = errG;
         numRegions = 0;
-		printf("Setting numRegions to zero because err is satisfied\n");
         return;
       }
 	  
@@ -747,7 +795,6 @@ namespace quad {
       QuadDebug(cudaFree(subDividingDimension));
       QuadDebug(cudaFree(newErrs));
       QuadDebug(cudaFree(activeRegions));
-
     }
 	
     template <typename IntegT>
@@ -764,7 +811,7 @@ namespace quad {
 		
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
-
+	
       if (vol) {
         cudaMemcpy(lows, vol->lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
         cudaMemcpy(highs, vol->highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
@@ -789,11 +836,11 @@ namespace quad {
                                     dParentsIntegral,
                                     dParentsError);
 		
-		printf("After iteration numRegions:%lu\n", numRegions);
         if (numRegions < 1) {
           return;
 		}
         else if (numRegions > FIRST_PHASE_MAXREGIONS) {
+		
 		  QuadDebug(cudaFree(dRegionsError));
 		  QuadDebug(cudaFree(dRegionsIntegral));
 		  FirstPhaseIteration<IntegT>(d_integrand,
@@ -1019,8 +1066,17 @@ namespace quad {
                              sizeof(Region<NDIM>) * 2 * FIRST_PHASE_MAXREGIONS *
                                MAX_GLOBALPOOL_SIZE);
           double* exitCondition = nullptr;
-		
-          BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
+		  
+		  //-------------------------------------
+		  //file I/O
+		  
+		  auto callback = [](T integral, T error, T rel){return fabs(error/(rel*integral));};
+		  using func_pointer = double (*)(T integral, T error, T rel);
+		  func_pointer lambda_fp = callback;
+		  if(outLevel >= 3)
+			display(dRegionsIntegral + numRegionsThread , dRegionsError + numRegionsThread, epsrel, numRegionsThread, lambda_fp, "start_ratio.txt");
+		//--------------------------------------------------------------------------------------
+		  BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
                numThreads,
                NDIM * sizeof(GlobalBounds),
@@ -1052,7 +1108,12 @@ namespace quad {
 							     avgsum);
 
           cudaDeviceSynchronize();
-		  //display(dRegionsNumRegion, numRegionsThread);
+		  if(outLevel >= 2)
+		  {
+			display(dRegionsIntegral , dRegionsError, epsrel, numRegionsThread, lambda_fp, "end_ratio.txt");
+			display(dRegionsNumRegion, numRegionsThread, "numRegions.txt");
+		  }
+		 
           CudaCheckError();
           cudaDeviceSynchronize();
           cudaEventRecord(event[gpu_id], stream[gpu_id]);
@@ -1080,10 +1141,10 @@ namespace quad {
           cudaEventDestroy(event[gpu_id]);
 		  printf("Phase 1 contribution:%.12f +- %.12f\n", integral, error);
           thrust::device_ptr<T> wrapped_ptr;
+		  
           wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
           T integResult =
             thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
-		  
           integral += integResult;
 			
           wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
@@ -1094,23 +1155,32 @@ namespace quad {
           thrust::device_ptr<int> int_ptr =
             thrust::device_pointer_cast(dRegionsNumRegion);
           int regionCnt = thrust::reduce(int_ptr, int_ptr + numRegionsThread);
+		  //printf("Phase 2 contribution:%.12f +- %.12f\n", integResult, errorResult);
+		  if(Final == 0){
+			double w = numRegionsThread*1/fmax(error*error, ldexp(1., -104));
+			weightsum += w; //adapted by Ioannis
+			avgsum += w*integral;
+			double sigsq = 1/weightsum;
+			integral = sigsq*avgsum;
+			error = sqrt(sigsq);   
+			//printf("Final = 0 Contribution: %.12f +- %.12f\n", integral, error);
+		   }
 		   
-		  printf("Phase 2 contribution:%.12f +- %.12f\n", integResult, errorResult);
-		  //printf("Regions Processed %i\n", nregions+regionCnt);
-          //nregions += regionCnt; //this really gives the regions processed, we want regions in result mostly
+		  if(outLevel >= 1)
+		  {
+			out1<< integral << "," << error << "," << (regionCnt - numRegionsThread) << std::endl;
+			PrintToFile(out1.str(), "Level_1.txt");
+		  }
+		  
 		  nregions = regionCnt;
-          // std::cout << "Num regions : " << regionCnt << std::endl;
-
+			
           neval += (regionCnt - numRegionsThread) * fEvalPerRegion * 2 +
                    numRegionsThread * fEvalPerRegion;
-
+		
           int_ptr = thrust::device_pointer_cast(activeRegions);
           numFailedRegions +=
             thrust::reduce(int_ptr, int_ptr + numRegionsThread);
-
-          // std::cout << "--" << numFailedRegions << std::endl;
-          // QuadDebug(cudaThreadExit());
-
+			
           QuadDebug(Device.ReleaseMemory(dRegionsError));
           QuadDebug(Device.ReleaseMemory(dRegionsIntegral));
           QuadDebug(Device.ReleaseMemory(dRegionsThread));

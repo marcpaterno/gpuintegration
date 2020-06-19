@@ -96,8 +96,8 @@ namespace quad {
 					T *dRegionsError, 
 					Structures<T> constMem,
 					int FEVAL,
-					int NSETS){
-		
+					int NSETS)
+	{
 		T ERR = 0, RESULT = 0;	
 		INIT_REGION_POOL(dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS);
 		
@@ -107,7 +107,7 @@ namespace quad {
 		__syncthreads();
 		 
 		}  
-  }
+	}
 
   template <typename T>
   __global__ void
@@ -680,33 +680,31 @@ namespace quad {
 	__shared__ int max_global_pool_size;
 	
     if (threadIdx.x == 0) {
-      for (int i = 0; i < NDIM; ++i) {
-        slows[i] = lows[i];
-        shighs[i] = highs[i];
-      }
+	  memcpy(slows,  lows, 	sizeof(T)*NDIM);
+	  memcpy(shighs, highs, sizeof(T)*NDIM);
 	  max_global_pool_size = 2048;
 	  gPool = &ggRegionPool[blockIdx.x*MAX_GLOBALPOOL_SIZE];
     }
 	
 	InitSMemRegions(sRegionPool);
 	//First compute sibling region
-	SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, GetSiblingIndex(blockIdx.x));
-	SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+	//SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, GetSiblingIndex(blockIdx.x));
+	//SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
 	
-	T siblIntegral = sRegionPool[0].result.avg;
-	T siblError    = sRegionPool[0].result.err;
+	//T siblIntegral = sRegionPool[0].result.avg;
+	//T siblError    = sRegionPool[0].result.err;
 	
 	int sRegionPoolSize = SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
 	SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
 	ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
 	
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
-    // TODO : May be redundance sync
+	//TODO  : ERR is not refined, dRegionsIntegral holds sibling, & self, we also have parentsIntegral & parentsError
+    //TODO  : May be redundance sync
     __syncthreads();
     int nregions = sRegionPoolSize; // is only 1 at this point
 	
-	//prep for final=0
-	//double lastavg 	 = RESULT;
+	//prep for final = 0
 	double lastavg 	 = RESULT;
 	double lasterr 	 = ERR;
 	double weightsum = 1/fmax(ERR*ERR, ldexp(1., -104));
@@ -720,6 +718,7 @@ namespace quad {
 	if(threadIdx.x == 0)
 		printf("%i, %.12f, %.12f, %i\n", blockIdx.x, RESULT, ERR, max_global_pool_size);
 	*/
+	
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
 	
@@ -748,10 +747,10 @@ namespace quad {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
         }
-
+		
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
-	
+		
       sRegionPoolSize++;
 	  nregions++;
       __syncthreads();
@@ -775,6 +774,7 @@ namespace quad {
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
         T err = rL->err + rR->err;
+		
         if (err > 0) {
           T c = 1 + 2 * diff / err;
           rL->err *= c;
@@ -794,9 +794,7 @@ namespace quad {
 		ERR 	= Final ? lasterr : sqrt(sigsq);
 		RESULT 	= Final ? lastavg : avg;
       }
-	  
 	  __syncthreads();
-	  
     }
 	
     if (threadIdx.x == 0) {
@@ -808,9 +806,18 @@ namespace quad {
         isActive = 1;
       }
 	  
+	  /*if(blockIdx.x == 0){
+		  printf("===============\n");
+		  printf("Phase 1 brought stats:%.12f +- %.12f || Sums: (%f,%f)\n", phase1_lastavg, phase1_lasterr, phase1_avgsum, phase1_weightsum);
+		  printf("Phase 2 BL0 Local contribution %.12f +-%.12f Sums:%f\n", lastavg, lasterr, avgsum, weightsum);
+		  printf("===============\n");
+	  }*/
+	  
       activeRegions[blockIdx.x] 	= isActive;
-      dRegionsIntegral[blockIdx.x] 	= RESULT;
-      dRegionsError[blockIdx.x] 	= ERR;
+      //dRegionsIntegral[blockIdx.x] 	= RESULT;
+      //dRegionsError[blockIdx.x] 	= ERR;
+	  dRegionsIntegral[blockIdx.x] 	= lastavg;
+      dRegionsError[blockIdx.x] 	= lasterr;
       dRegionsNumRegion[blockIdx.x] = nregions;
       //free(gPool);
     }
