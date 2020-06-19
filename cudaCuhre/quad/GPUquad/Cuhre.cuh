@@ -63,15 +63,15 @@ namespace quad {
 
 #define BUFSIZE 256
 #define TAG 0
-	
+
     void
     MPI_CLIENT_checkCUDA(int nodeRank, T epsrel, T epsabs)
     {
       MPI_Status stat;
       int devCount = 0, namelen = 0;
       char processor_name[MPI_MAX_PROCESSOR_NAME];
-      //char idstr[256], idstr2[256], buff[BUFSIZE];
-	  char idstr[320], idstr2[320], buff[BUFSIZE];
+      // char idstr[256], idstr2[256], buff[BUFSIZE];
+      char idstr[320], idstr2[320], buff[BUFSIZE];
       MPI_Recv(buff, BUFSIZE, MPI_CHAR, 0, TAG, MPI_COMM_WORLD, &stat);
       MPI_Get_processor_name(processor_name, &namelen);
       cudaGetDeviceCount(&devCount);
@@ -190,8 +190,6 @@ namespace quad {
       MPI_Send(result, 6, MPI_DOUBLE, 0, TAG, MPI_COMM_WORLD);
     }
 
-
-
     std::vector<std::string>
     splitString(std::string input, std::string delimiter)
     {
@@ -206,8 +204,6 @@ namespace quad {
       free(str);
       return output;
     }
-	
-
 
     std::map<int, std::vector<std::string>>
     MPI_MASTER_findActiveCUDANodes(int nodeRank,
@@ -628,36 +624,36 @@ namespace quad {
       // MPI_Finalize();
       return errorFlag;
     }
-    
-	template <typename IntegT>
-	cuhreResult 
-	integrate(IntegT integrand,
-			  double epsrel,
-			  double epsabs,
-			  Volume<T, NDIM>* volume = nullptr,
-			  int verbosity = 0,
-			  int Final = 0)
-	{	  
-		cuhreResult res;
-		
-		res.value = 0;
-		res.error = 0;
-		res.neval = 0;
-		res.nregions = 0;
-		
-		integrate<IntegT>(integrand,
-						  epsrel,
-                          epsabs,
-						  res.value,
-						  res.error,
-						  res.nregions,
-						  res.neval,
-						  volume,
-						  verbosity,
-						  Final);
-		return res;
-	}
-	
+
+    template <typename IntegT>
+    cuhreResult
+    integrate(IntegT integrand,
+              double epsrel,
+              double epsabs,
+              Volume<T, NDIM>* volume = nullptr,
+              int verbosity = 0,
+              int Final = 0)
+    {
+      cuhreResult res;
+
+      res.value = 0;
+      res.error = 0;
+      res.neval = 0;
+      res.nregions = 0;
+
+      integrate<IntegT>(integrand,
+                        epsrel,
+                        epsabs,
+                        res.value,
+                        res.error,
+                        res.nregions,
+                        res.neval,
+                        volume,
+                        verbosity,
+                        Final);
+      return res;
+    }
+
     template <typename IntegT>
     int
     integrate(IntegT integrand,
@@ -668,22 +664,22 @@ namespace quad {
               size_t& nregions,
               size_t& neval,
               Volume<T, NDIM>* volume = nullptr,
-			  int verbosity = 0,
-			  int Final = 0)
+              int verbosity = 0,
+              int Final = 0)
     {
-		
+
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-	  kernel->SetFinal(Final);
-	  kernel->SetVerbosity(verbosity);
-      int errorFlag = 0; 
-	  int numprocs = 0;
-		
+      kernel->SetFinal(Final);
+      kernel->SetVerbosity(verbosity);
+      int errorFlag = 0;
+      int numprocs = 0;
+
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
         d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-		
+
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -720,7 +716,7 @@ namespace quad {
                   total_db / 1024.0 / 1024.0);
           Print(msg);
         }
-    		
+
         FIRST_PHASE_MAXREGIONS *= numDevices;
         kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
@@ -730,11 +726,11 @@ namespace quad {
                                     nregions,
                                     neval,
                                     volume);
-									
+
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 
         if (kernel->getNumActiveRegions() > 0) {
-			
+
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
@@ -743,14 +739,13 @@ namespace quad {
                                                    nregions,
                                                    neval,
                                                    optionalInfo);
-
         }
 
-        if (error <= MaxErr(integral, epsrel, epsabs)){
+        if (error <= MaxErr(integral, epsrel, epsabs)) {
           errorFlag = 0;
-		}
-		
-		printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
+        }
+
+        printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
       }
       return errorFlag;
     }

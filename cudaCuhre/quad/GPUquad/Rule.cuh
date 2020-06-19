@@ -410,7 +410,7 @@ namespace quad {
       KEY = key;
       VERBOSE = verbose;
       fEvalPerRegion = fEval;
-     // printf("Function evaluations per region:%lu\n", fEvalPerRegion);
+      // printf("Function evaluations per region:%lu\n", fEvalPerRegion);
       if (key == 13 && ndim == 2)
         RULE = 13;
       else if (key == 1 && ndim == 3)

@@ -13,42 +13,38 @@ namespace quad {
   double
   Sq(double x){return x*x;}*/
 
-   /* struct weightsum_functor { 
-        __device__ __host__ 
-        double 
-        operator()(double err){return  1/fmax(Sq(err), ldexp(1., -104));} 
-    };
-  
-  template<typename T>
-  double
-  ComputeWeightSum(T *errors, size_t size){ 
-	 thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
-	 thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor()); 
-	 double weightsum = thrust::reduce(d_ptr, d_ptr + size);
-	 double sigsq = 1/weightsum;
-  }	*/
-	  
-	/*template<typename T>
-	void ApplyFinal0(T &avg, T &err, T &weightsum, T &avgsum, T &chisum,  T &chisqsum, T &chisq, const T guess){
-		double w = 0, sigsq = 0;
-		weightsum += w = 1/Max(sqrt(err), ldexp(1., -104));
-		sigsq = 1/weightsum;
-		avgsum += w*avg;
-		avg = sigsq*avgsum;
-		chisum += w *= avg - guess;
-		chisqsum += w*avg;
-		chisq = chisqsum - avg*chisum;
-  }*/
-		
-	/*template<typename T>
-  double
-  ComputeWeightSum(T *errors, size_t size){ 
-	 thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
-	 thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor()); 
-	 double weightsum = thrust::reduce(d_ptr, d_ptr + size);
-	 double sigsq = 1/weightsum;
-  }*/
-	
+  /* struct weightsum_functor {
+       __device__ __host__
+       double
+       operator()(double err){return  1/fmax(Sq(err), ldexp(1., -104));}
+   };
+
+ template<typename T>
+ double
+ ComputeWeightSum(T *errors, size_t size){
+        thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
+        thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor());
+        double weightsum = thrust::reduce(d_ptr, d_ptr + size);
+        double sigsq = 1/weightsum;
+ }	*/
+
+  /*template<typename T>
+  void ApplyFinal0(T &avg, T &err, T &weightsum, T &avgsum, T &chisum,  T
+&chisqsum, T &chisq, const T guess){ double w = 0, sigsq = 0; weightsum += w =
+1/Max(sqrt(err), ldexp(1., -104)); sigsq = 1/weightsum; avgsum += w*avg; avg =
+sigsq*avgsum; chisum += w *= avg - guess; chisqsum += w*avg; chisq = chisqsum -
+avg*chisum;
+}*/
+
+  /*template<typename T>
+double
+ComputeWeightSum(T *errors, size_t size){
+   thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
+   thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor());
+   double weightsum = thrust::reduce(d_ptr, d_ptr + size);
+   double sigsq = 1/weightsum;
+}*/
+
   template <typename IntegT, typename T, int NDIM>
   __device__ void
   INIT_REGION_POOL(IntegT* d_integrand,
@@ -85,29 +81,28 @@ namespace quad {
     __syncthreads();
   }
 
-	template<typename T, int NDIM>
-    __global__
-    void 
-    QuickMassSample(T *dRegions, 
-					T *dRegionsLength, 
-					size_t numRegions, 
-					Region<NDIM> sRegionPool[],
-					T *dRegionsIntegral, 
-					T *dRegionsError, 
-					Structures<T> constMem,
-					int FEVAL,
-					int NSETS)
-	{
-		T ERR = 0, RESULT = 0;	
-		INIT_REGION_POOL(dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS);
-		
-		if(threadIdx.x == 0){		  
-		  dRegionsIntegral[blockIdx.x] 			= sRegionPool[threadIdx.x].result.avg;
-		  dRegionsError[blockIdx.x]				= sRegionPool[threadIdx.x].result.err;   
-		__syncthreads();
-		 
-		}  
-	}
+  template <typename T, int NDIM>
+  __global__ void
+  QuickMassSample(T* dRegions,
+                  T* dRegionsLength,
+                  size_t numRegions,
+                  Region<NDIM> sRegionPool[],
+                  T* dRegionsIntegral,
+                  T* dRegionsError,
+                  Structures<T> constMem,
+                  int FEVAL,
+                  int NSETS)
+  {
+    T ERR = 0, RESULT = 0;
+    INIT_REGION_POOL(
+      dRegions, dRegionsLength, numRegions, &constMem, FEVAL, NSETS);
+
+    if (threadIdx.x == 0) {
+      dRegionsIntegral[blockIdx.x] = sRegionPool[threadIdx.x].result.avg;
+      dRegionsError[blockIdx.x] = sRegionPool[threadIdx.x].result.err;
+      __syncthreads();
+    }
+  }
 
   template <typename T>
   __global__ void
@@ -127,7 +122,7 @@ namespace quad {
 
       T selfErr = dRegionsError[blockIdx.x + numRegions];
       T selfRes = dRegionsIntegral[blockIdx.x + numRegions];
-		
+
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
@@ -197,7 +192,7 @@ namespace quad {
 
     T ERR = 0, RESULT = 0;
     int fail = 0;
-	
+
     INIT_REGION_POOL<IntegT>(d_integrand,
                              dRegions,
                              dRegionsLength,
@@ -247,16 +242,16 @@ namespace quad {
     __syncthreads();
   }
 
-
-/*
-	initializes shared memory with empty regions
-*/
+  /*
+          initializes shared memory with empty regions
+  */
   template <int NDIM>
   __device__ int
-  InitSMemRegions(Region<NDIM> sRegionPool[]){
-	int idx = 0;
+  InitSMemRegions(Region<NDIM> sRegionPool[])
+  {
+    int idx = 0;
     for (; idx < SM_REGION_POOL_SIZE / BLOCK_SIZE; ++idx) {
-	
+
       int index = idx * BLOCK_SIZE + threadIdx.x;
       sRegionPool[index].div = 0;
       sRegionPool[index].result.err = 0;
@@ -282,59 +277,59 @@ namespace quad {
         sRegionPool[index].bounds[dim].upper = 0;
       }
     }
-	return 1;
+    return 1;
   }
 
-/*
-	sets the bounds of the 1st region from 0 to 1 while the 
-	global bounds(1st region's real boundaries) are assigned to sBound
-	every time it is called it resets the global region list size to (SM_REGION_POOL_SIZE / 2)
-*/
+  /*
+          sets the bounds of the 1st region from 0 to 1 while the
+          global bounds(1st region's real boundaries) are assigned to sBound
+          every time it is called it resets the global region list size to
+     (SM_REGION_POOL_SIZE / 2)
+  */
 
-  __device__ 
-  size_t
-  GetSiblingIndex(size_t numRegions){
-	return   (2*blockIdx.x/numRegions) < 1 ? blockIdx.x + numRegions : blockIdx.x - numRegions;
+  __device__ size_t
+  GetSiblingIndex(size_t numRegions)
+  {
+    return (2 * blockIdx.x / numRegions) < 1 ? blockIdx.x + numRegions :
+                                               blockIdx.x - numRegions;
   }
 
   template <typename T, int NDIM>
-  __device__ int 
+  __device__ int
   SET_FIRST_SHARED_MEM_REGION(Region<NDIM> sRegionPool[],
-							  T* dRegions,
-							  T* dRegionsLength,
-							  size_t numRegions,
-							  size_t blockIndex){
-								  
-	size_t intervalIndex = blockIndex;
-	
-	if (threadIdx.x == 0) {
-		gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
-		for (int dim = 0; dim < NDIM; ++dim) {
-			sRegionPool[threadIdx.x].bounds[dim].lower = 0;
-			sRegionPool[threadIdx.x].bounds[dim].upper = 1;
-			T lower = dRegions[dim * numRegions + intervalIndex];
-			sBound[dim].unScaledLower = lower;
-			sBound[dim].unScaledUpper =
-				lower + dRegionsLength[dim * numRegions + intervalIndex];
-		}
+                              T* dRegions,
+                              T* dRegionsLength,
+                              size_t numRegions,
+                              size_t blockIndex)
+  {
+
+    size_t intervalIndex = blockIndex;
+
+    if (threadIdx.x == 0) {
+      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
+      for (int dim = 0; dim < NDIM; ++dim) {
+        sRegionPool[threadIdx.x].bounds[dim].lower = 0;
+        sRegionPool[threadIdx.x].bounds[dim].upper = 1;
+        T lower = dRegions[dim * numRegions + intervalIndex];
+        sBound[dim].unScaledLower = lower;
+        sBound[dim].unScaledUpper =
+          lower + dRegionsLength[dim * numRegions + intervalIndex];
+      }
     }
-	__syncthreads();
-	return 1;
+    __syncthreads();
+    return 1;
   }
-
-
 
   template <typename IntegT, typename T, int NDIM>
   __device__ void
-  ALIGN_GLOBAL_TO_SHARED(Region<NDIM> sRegionPool[],
-					     Region<NDIM>*& gPool)
+  ALIGN_GLOBAL_TO_SHARED(Region<NDIM> sRegionPool[], Region<NDIM>*& gPool)
   {
-	
-    //size_t intervalIndex = blockIdx.x;
+
+    // size_t intervalIndex = blockIdx.x;
     int idx = 0;
     int index = idx * BLOCK_SIZE + threadIdx.x;
-   //---------------------------------------------
-   //initializes shared memory with empty regions
+    //---------------------------------------------
+    // initializes shared memory with empty regions
     /*for (; idx < SM_REGION_POOL_SIZE / BLOCK_SIZE; ++idx) {
 
       int index = idx * BLOCK_SIZE + threadIdx.x;
@@ -363,8 +358,9 @@ namespace quad {
       }
     }*/
 
-//-------------------------------------------------------
-	//sets the bounds of the 1st region from 0 to 1 while the global bounds(1st region's real boundaries) are assigned to sBound
+    //-------------------------------------------------------
+    // sets the bounds of the 1st region from 0 to 1 while the global bounds(1st
+    // region's real boundaries) are assigned to sBound
     /*if (threadIdx.x == 0) {
       for (int dim = 0; dim < NDIM; ++dim) {
 
@@ -376,24 +372,25 @@ namespace quad {
           lower + dRegionsLength[dim * numRegions + intervalIndex];
       }
     }*/
-	//-------------------------------------------------------------
+    //-------------------------------------------------------------
 
     //__syncthreads();
 
-    //SampleRegionBlock<IntegT, T, NDIM>(
+    // SampleRegionBlock<IntegT, T, NDIM>(
     //  d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
 
-   /* if (threadIdx.x == 0) {
-      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
-    }
-	*/
+    /* if (threadIdx.x == 0) {
+       gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
+     }
+         */
 
     __syncthreads();
-	
-	/*
-		creates a deep copy of the regions in shared memory to global memory 
-		stores each shared memory region's corresponding index in global memory
-	*/
+
+    /*
+            creates a deep copy of the regions in shared memory to global memory
+            stores each shared memory region's corresponding index in global
+       memory
+    */
     for (idx = 0; idx < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE; ++idx) {
       size_t index = idx * BLOCK_SIZE + threadIdx.x;
       gRegionPos[index] = index;
@@ -405,7 +402,7 @@ namespace quad {
       gRegionPos[index] = index;
       gPool[index] = sRegionPool[index];
     }
-    //return 1;
+    // return 1;
   }
 
   template <class T>
@@ -423,35 +420,35 @@ namespace quad {
                       Region<NDIM>*& gRegionPool,
                       int gpuId,
                       Region<NDIM>*& gPool)
-  {   
-	
-   /* if (threadIdx.x == 0 && GlobalMemCopy) {
-	   gPool = (Region<NDIM>*)malloc(
-        sizeof(Region<NDIM>) * 2048);
-    }*/
-    __syncthreads();
-	
-    // Copy existing global regions into newly allocated spaced
-	
-    int iterationsPerThread = 0;
-	/*if(GlobalMemCopy){
-		
-		for (iterationsPerThread = 0;
-			 iterationsPerThread < gRegionPoolSize / BLOCK_SIZE;
-			 ++iterationsPerThread) {
-		  size_t dataIndex = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+  {
 
-		  gPool[dataIndex] = gRegionPool[dataIndex];
-		  __syncthreads();
-		}
-	
-		size_t dataIndex = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
-		if (dataIndex < gRegionPoolSize) {
-		  gPool[dataIndex] = gRegionPool[dataIndex];
-		}
-		
-	}*/
-	
+    /* if (threadIdx.x == 0 && GlobalMemCopy) {
+            gPool = (Region<NDIM>*)malloc(
+         sizeof(Region<NDIM>) * 2048);
+     }*/
+    __syncthreads();
+
+    // Copy existing global regions into newly allocated spaced
+
+    int iterationsPerThread = 0;
+    /*if(GlobalMemCopy){
+
+            for (iterationsPerThread = 0;
+                     iterationsPerThread < gRegionPoolSize / BLOCK_SIZE;
+                     ++iterationsPerThread) {
+              size_t dataIndex = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+
+              gPool[dataIndex] = gRegionPool[dataIndex];
+              __syncthreads();
+            }
+
+            size_t dataIndex = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+            if (dataIndex < gRegionPoolSize) {
+              gPool[dataIndex] = gRegionPool[dataIndex];
+            }
+
+    }*/
+
     for (iterationsPerThread = 0;
          iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;
          ++iterationsPerThread) {
@@ -460,8 +457,8 @@ namespace quad {
       gPool[gRegionPoolSize + index] =
         sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
-	
-	__syncthreads();
+
+    __syncthreads();
     int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
     if (index < (SM_REGION_POOL_SIZE / 2)) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
@@ -470,13 +467,13 @@ namespace quad {
         sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
 
-	__syncthreads();
-	if(threadIdx.x == 0){
-		gRegionPoolSize = gRegionPoolSize + (SM_REGION_POOL_SIZE / 2);
-	}
+    __syncthreads();
+    if (threadIdx.x == 0) {
+      gRegionPoolSize = gRegionPoolSize + (SM_REGION_POOL_SIZE / 2);
+    }
     __syncthreads();
 
-    //gRegionPool = gPool;
+    // gRegionPool = gPool;
   }
 
   template <typename T>
@@ -512,14 +509,14 @@ namespace quad {
                Region<NDIM>* gRegionPool,
                Region<NDIM>* gPool)
   {
-	
+
     // Comment 3 instructions these section if you are directly using new shared
     // memory instead of reusing shared memory
 
     T* sarray = (T*)&sRegionPool[0];
-	
+
     if (threadIdx.x == 0) {
-	
+
       if ((gRegionPoolSize * sizeof(T) + gRegionPoolSize * sizeof(size_t)) <
           sizeof(Region<NDIM>) * SM_REGION_POOL_SIZE) {
         serror = &sarray[0];
@@ -532,7 +529,7 @@ namespace quad {
       }
     }
     __syncthreads();
-	
+
     int offset = 0;
     for (offset = 0; (offset < MAX_GLOBALPOOL_SIZE / BLOCK_SIZE) &&
                      (offset < gRegionPoolSize / BLOCK_SIZE);
@@ -607,11 +604,11 @@ namespace quad {
   {
     // If array  for regions in shared is full
     if (sSize == SM_REGION_POOL_SIZE) {
-	  
+
       INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId, gPool);
       __syncthreads();
-		
-      //gRegionPool = gPool;
+
+      // gRegionPool = gPool;
       EXTRACT_TOPK<T>(sRegionPool, gRegionPool, gPool);
       sSize = (SM_REGION_POOL_SIZE / 2);
       __syncthreads();
@@ -664,95 +661,101 @@ namespace quad {
                              double* exitCondition,
                              T* lows,
                              T* highs,
-							 int Final,
-							 Region<NDIM>* ggRegionPool,
-							 T* dParentsIntegral,
-							 T* dParentsError,
-							 T phase1_lastavg, 
-							 T phase1_lasterr,
-							 T phase1_weightsum,
-							 T phase1_avgsum)
+                             int Final,
+                             Region<NDIM>* ggRegionPool,
+                             T* dParentsIntegral,
+                             T* dParentsError,
+                             T phase1_lastavg,
+                             T phase1_lasterr,
+                             T phase1_weightsum,
+                             T phase1_avgsum)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ Region<NDIM>* gPool;
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
-	__shared__ int max_global_pool_size;
-	
+    __shared__ int max_global_pool_size;
+
     if (threadIdx.x == 0) {
-	  memcpy(slows,  lows, 	sizeof(T)*NDIM);
-	  memcpy(shighs, highs, sizeof(T)*NDIM);
-	  max_global_pool_size = 2048;
-	  gPool = &ggRegionPool[blockIdx.x*MAX_GLOBALPOOL_SIZE];
+      memcpy(slows, lows, sizeof(T) * NDIM);
+      memcpy(shighs, highs, sizeof(T) * NDIM);
+      max_global_pool_size = 2048;
+      gPool = &ggRegionPool[blockIdx.x * MAX_GLOBALPOOL_SIZE];
     }
-	
-	InitSMemRegions(sRegionPool);
-	//First compute sibling region
-	//SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, GetSiblingIndex(blockIdx.x));
-	//SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
-	
-	//T siblIntegral = sRegionPool[0].result.avg;
-	//T siblError    = sRegionPool[0].result.err;
-	
-	int sRegionPoolSize = SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
-	SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
-	ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
-	
+
+    InitSMemRegions(sRegionPool);
+    // First compute sibling region
+    // SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength,
+    // numRegions, GetSiblingIndex(blockIdx.x)); SampleRegionBlock<IntegT, T,
+    // NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows,
+    // shighs);
+
+    // T siblIntegral = sRegionPool[0].result.avg;
+    // T siblError    = sRegionPool[0].result.err;
+
+    int sRegionPoolSize = SET_FIRST_SHARED_MEM_REGION(
+      sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
+    SampleRegionBlock<IntegT, T, NDIM>(
+      d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+    ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
+
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
-	//TODO  : ERR is not refined, dRegionsIntegral holds sibling, & self, we also have parentsIntegral & parentsError
-    //TODO  : May be redundance sync
+    // TODO  : ERR is not refined, dRegionsIntegral holds sibling, & self, we
+    // also have parentsIntegral & parentsError
+    // TODO  : May be redundance sync
     __syncthreads();
     int nregions = sRegionPoolSize; // is only 1 at this point
-	
-	//prep for final = 0
-	double lastavg 	 = RESULT;
-	double lasterr 	 = ERR;
-	double weightsum = 1/fmax(ERR*ERR, ldexp(1., -104));
-	double avgsum    = weightsum*lastavg;
-	
-	double w 		 = 0;
-	double avg 		 = 0;
-	double sigsq 	 = 0;
-	
-	/*
-	if(threadIdx.x == 0)
-		printf("%i, %.12f, %.12f, %i\n", blockIdx.x, RESULT, ERR, max_global_pool_size);
-	*/
-	
+
+    // prep for final = 0
+    double lastavg = RESULT;
+    double lasterr = ERR;
+    double weightsum = 1 / fmax(ERR * ERR, ldexp(1., -104));
+    double avgsum = weightsum * lastavg;
+
+    double w = 0;
+    double avg = 0;
+    double sigsq = 0;
+
+    /*
+    if(threadIdx.x == 0)
+            printf("%i, %.12f, %.12f, %i\n", blockIdx.x, RESULT, ERR,
+    max_global_pool_size);
+    */
+
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
-	
-      sRegionPoolSize = EXTRACT_MAX<T, NDIM>(
-        sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
+
+      sRegionPoolSize =
+        EXTRACT_MAX<T, NDIM>(sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
       Region<NDIM>*RegionLeft, *RegionRight;
       Result result;
-		
+
       if (threadIdx.x == 0) {
         Bounds *bL, *bR;
         Region<NDIM>* R = &sRegionPool[0];
         result.err = R->result.err;
         result.avg = R->result.avg;
         result.bisectdim = R->result.bisectdim;
-		
+
         int bisectdim = result.bisectdim;
-		
+
         RegionLeft = R;
         RegionRight = &sRegionPool[sRegionPoolSize];
-		
+
         bL = &RegionLeft->bounds[bisectdim];
         bR = &RegionRight->bounds[bisectdim];
-		
+
         RegionRight->div = ++RegionLeft->div;
         for (int dim = 0; dim < NDIM; ++dim) {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
         }
-		
+
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
-		
+
       sRegionPoolSize++;
-	  nregions++;
+      nregions++;
       __syncthreads();
       SampleRegionBlock<IntegT, T, NDIM>(
         d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
@@ -766,7 +769,7 @@ namespace quad {
                                          slows,
                                          shighs);
       __syncthreads();
-	
+
       if (threadIdx.x == 0) {
         Result* rL = &RegionLeft->result;
         Result* rR = &RegionRight->result;
@@ -774,7 +777,7 @@ namespace quad {
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
         T err = rL->err + rR->err;
-		
+
         if (err > 0) {
           T c = 1 + 2 * diff / err;
           rL->err *= c;
@@ -782,44 +785,45 @@ namespace quad {
         }
         rL->err += diff;
         rR->err += diff;
-		
-		lasterr += rL->err + rR->err - result.err;
-		lastavg += rL->avg + rR->avg - result.avg;
-		
-		weightsum 	 	+= w = 1/fmax(lasterr*lasterr, ldexp(1., -104));
-		avgsum		 	+= w*lastavg;
-		sigsq 			=  1/weightsum;
-		avg 			=	sigsq*avgsum;
-		
-		ERR 	= Final ? lasterr : sqrt(sigsq);
-		RESULT 	= Final ? lastavg : avg;
+
+        lasterr += rL->err + rR->err - result.err;
+        lastavg += rL->avg + rR->avg - result.avg;
+
+        weightsum += w = 1 / fmax(lasterr * lasterr, ldexp(1., -104));
+        avgsum += w * lastavg;
+        sigsq = 1 / weightsum;
+        avg = sigsq * avgsum;
+
+        ERR = Final ? lasterr : sqrt(sigsq);
+        RESULT = Final ? lastavg : avg;
       }
-	  __syncthreads();
+      __syncthreads();
     }
-	
+
     if (threadIdx.x == 0) {
       int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
-	  	
-      if (ERR > (1e+10)){
+
+      if (ERR > (1e+10)) {
         RESULT = 0.0;
         ERR = 0.0;
         isActive = 1;
       }
-	  
-	  /*if(blockIdx.x == 0){
-		  printf("===============\n");
-		  printf("Phase 1 brought stats:%.12f +- %.12f || Sums: (%f,%f)\n", phase1_lastavg, phase1_lasterr, phase1_avgsum, phase1_weightsum);
-		  printf("Phase 2 BL0 Local contribution %.12f +-%.12f Sums:%f\n", lastavg, lasterr, avgsum, weightsum);
-		  printf("===============\n");
-	  }*/
-	  
-      activeRegions[blockIdx.x] 	= isActive;
-      //dRegionsIntegral[blockIdx.x] 	= RESULT;
-      //dRegionsError[blockIdx.x] 	= ERR;
-	  dRegionsIntegral[blockIdx.x] 	= lastavg;
-      dRegionsError[blockIdx.x] 	= lasterr;
+
+      /*if(blockIdx.x == 0){
+              printf("===============\n");
+              printf("Phase 1 brought stats:%.12f +- %.12f || Sums: (%f,%f)\n",
+      phase1_lastavg, phase1_lasterr, phase1_avgsum, phase1_weightsum);
+              printf("Phase 2 BL0 Local contribution %.12f +-%.12f Sums:%f\n",
+      lastavg, lasterr, avgsum, weightsum); printf("===============\n");
+      }*/
+
+      activeRegions[blockIdx.x] = isActive;
+      // dRegionsIntegral[blockIdx.x] 	= RESULT;
+      // dRegionsError[blockIdx.x] 	= ERR;
+      dRegionsIntegral[blockIdx.x] = lastavg;
+      dRegionsError[blockIdx.x] = lasterr;
       dRegionsNumRegion[blockIdx.x] = nregions;
-      //free(gPool);
+      // free(gPool);
     }
   }
 }

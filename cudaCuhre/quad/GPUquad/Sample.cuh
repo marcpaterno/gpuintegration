@@ -114,7 +114,7 @@ namespace quad {
   {
 
     // read
-	__syncthreads();
+    __syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
