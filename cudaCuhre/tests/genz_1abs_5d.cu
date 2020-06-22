@@ -1,18 +1,14 @@
-#include <mpi.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 
 #include "function.cuh"
 #include "quad/quad.h"
 #include "quad/util/cudaUtil.h"
-#include <iomanip>
 
 #include "quad/GPUquad/Cuhre.cuh"
 #include "quad/util/Volume.cuh"
-//#include "demo_utils.h"
 
 #include <chrono>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 
 // From Mathematica 12.1 Integration, symbolic integration over unit hypercube.
@@ -55,8 +51,8 @@ time_and_call(F integrand, double epsrel, double correct_answer, char const* alg
   // Why does the integration algorithm need ndim as a template parameter?
   quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
  
-  auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = alg.integrate(integrand, epsrel, epsabs, &vol);
+  auto const t0 = std::chrono::high_resolution_clock::now();
+  auto const res = alg.integrate(integrand, epsrel, epsabs, &vol);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(res.value - correct_answer);
   bool const good = (res.status == 0);
