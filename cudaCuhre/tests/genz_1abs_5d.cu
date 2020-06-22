@@ -1,10 +1,9 @@
 #include "genz_1abs_5d.cuh"
-#include "function.cuh"
+
 #include "quad/quad.h"
 #include "quad/util/cudaUtil.h"
 
 #include "quad/GPUquad/Cuhre.cuh"
-#include "quad/util/Volume.cuh"
 
 #include <chrono>
 #include <cmath>
