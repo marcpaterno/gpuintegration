@@ -36,19 +36,23 @@ struct Genz_1abs_5d {
   }
 };
 
+// Integrate the provided integrand using quad::Cuhre, to the given relative
+// error tolerance, writing out timing information to std::cout.
+// Return true if the algorithm converged, and false otherwise.
+
 template <typename F>
 bool
 time_and_call(F integrand, double epsrel, double correct_answer, char const* algname)
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
-  double constexpr epsabs = 1.0e-16;
+  double constexpr epsabs = 1.0e-40;
 
   double lows[] =  {0., 0., 0., 0., 0.};
   double highs[] = {1., 1., 1., 1., 1.};
   constexpr int ndim = 5;
   quad::Volume<double, ndim> vol(lows, highs);
 
-  // Why does the integration algorithmn need ndim as a template parameter?
+  // Why does the integration algorithm need ndim as a template parameter?
   quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
  
   auto t0 = std::chrono::high_resolution_clock::now();
@@ -56,21 +60,20 @@ time_and_call(F integrand, double epsrel, double correct_answer, char const* alg
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(res.value - correct_answer);
   bool const good = (res.status == 0);
-  std::cerr << std::scientific
+  std::cout << std::scientific
     << algname << '\t'
     << epsrel << '\t';
   if (good) {
-    std::cerr << res.value << '\t'
+    std::cout << res.value << '\t'
       << res.error << '\t'
       << absolute_error << '\t';
   } else {
-    std::cerr << "NA\tNA\tNA\t";
+    std::cout << "NA\tNA\tNA\t";
   }
-  std::cerr << res.neval << '\t'
+  std::cout << res.neval << '\t'
     << res.nregions << '\t'
     << dt.count()
     << std::endl;
-  std::cout << "DID WE CONVERGE? " << std::boolalpha << good << std::endl;
   return good;
 }
 
@@ -78,21 +81,11 @@ int main()
 {
   Genz_1abs_5d integrand;
   double epsrel = 1.0e-3;
-  std::cerr<< "alg\tepsrel\tvalue\terrorest\terror\tneval\tnregions\ttime\n";
 
-  for (int i = 0; i < 6; ++i) {
-    bool converged = time_and_call(integrand, epsrel, 1.0, "gpucuhre");
-    std::cout << "DID WE CONVERGE? " << std::boolalpha << converged << std::endl;
-    // Even when the printout about is 'true', the following line seems to break
-    // out of the loop.
+  std::cout<< "alg\tepsrel\tvalue\terrorest\terror\tneval\tnregions\ttime\n";
 
-    //if (!converged) break;
-    std::cout << "REDUCING EPSREL" << std::endl;
-    epsrel /= 10.0;
+  while (time_and_call(integrand, epsrel, 1.0, "gpucuhre")) {
+      epsrel /= 5.0;
   }
-
-  //while (time_and_call(alg, integrand, epsrel, 1.0, "gpucuhre")) {
-  //    epsrel /= 5.0;
-  //}
 }
 
