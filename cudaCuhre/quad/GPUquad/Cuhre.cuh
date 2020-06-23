@@ -643,7 +643,7 @@ namespace quad {
       res.neval = 0;
       res.nregions = 0;
 
-      integrate<IntegT>(integrand,
+      res.status = integrate<IntegT>(integrand,
                         epsrel,
                         epsabs,
                         res.value,
