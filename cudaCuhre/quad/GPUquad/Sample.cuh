@@ -4,6 +4,8 @@
 #include "../util/Volume.cuh"
 #include "../util/cudaApply.cuh"
 #include "../util/cudaArray.cuh"
+#include "../util/cudaUtil.h"
+#include "../quad.h"
 
 namespace quad {
 

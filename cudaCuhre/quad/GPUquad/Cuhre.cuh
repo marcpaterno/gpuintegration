@@ -8,6 +8,7 @@
 #include "Kernel.cuh"
 #include <mpi.h>
 #include <stdio.h>
+#include <map>
 
 namespace quad {
 #if TIMING_DEBUG == 1

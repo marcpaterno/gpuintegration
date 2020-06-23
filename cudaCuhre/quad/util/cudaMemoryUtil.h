@@ -2,6 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
 
 #include <cuda.h>
+#include "cudaDebugUtil.h"
 
 namespace quad {
   template <typename T>
