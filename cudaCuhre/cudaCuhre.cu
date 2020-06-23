@@ -88,9 +88,9 @@ main(int argc, char** argv)
 	
     /*cuhre.integrate<GENZ_1_8d>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);*/
     auto t0 = std::chrono::high_resolution_clock::now();
-	cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol);
+	cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol, 3, 0);
 	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-	std::cout<< result.value <<"\t"<< result.error <<"\t"<<result.nregions<<std::endl;
+	std::cout<< result.value <<"\t"<< result.error <<"\t"<<result.nregions<<"\t"<<result.status<<std::endl;
 	std::cout<<"Time in ms:"<< dt.count()<<std::endl;
   return 0;
 }
