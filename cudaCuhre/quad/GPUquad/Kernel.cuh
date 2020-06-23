@@ -756,14 +756,15 @@ namespace quad {
 
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-
-      double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
-      weightsum += w; // adapted by Ioannis
-      avgsum += w * rG;
-      double sigsq = 1 / weightsum;
-      rG = sigsq * avgsum;
-      errG = sqrt(sigsq);
-
+	
+	  if(Final == 0){
+		double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
+		weightsum += w; // adapted by Ioannis
+		avgsum += w * rG;
+		double sigsq = 1 / weightsum;
+		rG = sigsq * avgsum;
+		errG = sqrt(sigsq);
+	  }
       // if (VERBOSE)
       {
         /*printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f
@@ -1096,7 +1097,7 @@ namespace quad {
                     epsrel,
                     numRegionsThread,
                     lambda_fp,
-                    "start_ratio.txt");
+                    "start_ratio.csv");
           //--------------------------------------------------------------------------------------
           BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
@@ -1136,8 +1137,8 @@ namespace quad {
                     epsrel,
                     numRegionsThread,
                     lambda_fp,
-                    "end_ratio.txt");
-            display(dRegionsNumRegion, numRegionsThread, "numRegions.txt");
+                    "end_ratio.csv");
+            display(dRegionsNumRegion, numRegionsThread, "numRegions.csv");
           }
 
           CudaCheckError();
@@ -1181,8 +1182,7 @@ namespace quad {
           thrust::device_ptr<int> int_ptr =
             thrust::device_pointer_cast(dRegionsNumRegion);
           int regionCnt = thrust::reduce(int_ptr, int_ptr + numRegionsThread);
-          // printf("Phase 2 contribution:%.12f +- %.12f\n", integResult,
-          // errorResult);
+
           if (Final == 0) {
             double w =
               numRegionsThread * 1 / fmax(error * error, ldexp(1., -104));
@@ -1191,14 +1191,12 @@ namespace quad {
             double sigsq = 1 / weightsum;
             integral = sigsq * avgsum;
             error = sqrt(sigsq);
-            // printf("Final = 0 Contribution: %.12f +- %.12f\n", integral,
-            // error);
           }
 
           if (outLevel >= 1) {
             out1 << integral << "," << error << ","
                  << (regionCnt - numRegionsThread) << std::endl;
-            PrintToFile(out1.str(), "Level_1.txt");
+            PrintToFile(out1.str(), "Level_1.csv");
           }
 
           nregions = regionCnt;
@@ -1209,7 +1207,7 @@ namespace quad {
           int_ptr = thrust::device_pointer_cast(activeRegions);
           numFailedRegions +=
             thrust::reduce(int_ptr, int_ptr + numRegionsThread);
-
+		
           QuadDebug(Device.ReleaseMemory(dRegionsError));
           QuadDebug(Device.ReleaseMemory(dRegionsIntegral));
           QuadDebug(Device.ReleaseMemory(dRegionsThread));
