@@ -1,6 +1,5 @@
 #include <chrono>
 #include <cmath>
-#include <mpi.h>
 
 #include "function.cuh"
 #include "quad/quad.h"
