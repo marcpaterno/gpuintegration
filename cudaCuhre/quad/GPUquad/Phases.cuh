@@ -700,6 +700,7 @@ ComputeWeightSum(T *errors, size_t size){
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
 
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
+	ERR = dRegionsError[blockIdx.x + numRegions];
     // TODO  : ERR is not refined, dRegionsIntegral holds sibling, & self, we
     // also have parentsIntegral & parentsError
     // TODO  : May be redundance sync
