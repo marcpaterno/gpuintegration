@@ -43,6 +43,7 @@ namespace quad {
           int verbose = 0,
           int numDevices = 1)
     {
+	  QuadDebug(cudaDeviceReset());
       argc = pargc;
       argv = pargv;
       // NDIM = dim;

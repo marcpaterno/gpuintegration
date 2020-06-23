@@ -820,8 +820,8 @@ ComputeWeightSum(T *errors, size_t size){
       activeRegions[blockIdx.x] = isActive;
       // dRegionsIntegral[blockIdx.x] 	= RESULT;
       // dRegionsError[blockIdx.x] 	= ERR;
-      dRegionsIntegral[blockIdx.x] = lastavg;
-      dRegionsError[blockIdx.x] = lasterr;
+      dRegionsIntegral[blockIdx.x] = RESULT;
+      dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
       // free(gPool);
     }

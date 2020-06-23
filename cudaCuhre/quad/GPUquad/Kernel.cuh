@@ -323,7 +323,7 @@ namespace quad {
     void
     InitKernel(int key, int verbose, int numDevices = 1)
     {
-      QuadDebug(cudaDeviceReset());
+      //QuadDebug(cudaDeviceReset());
       // NDIM = dim;
       KEY = key;
       VERBOSE = verbose;
