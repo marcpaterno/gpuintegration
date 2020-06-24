@@ -1,7 +1,7 @@
 ---
-title: "Comparing VEGAS and CUHRE"
+title: "Comparing VEGAS and CUHRE on Genz 1 (absolute value) in 5D"
 author: "Marc Paterno"
-date: "6/10/2020"
+date: "6/24/2020"
 output: html_document
 ---
 
@@ -25,17 +25,15 @@ This version uses all the volumes produced by the algorithm for determining the 
 `cuhre_1` is the serial CUHRE algorithm, as implemented in the CUBA library, using `flag` = 4.
 This version uses only the final set of volumes produced by the algorithm for determining the final result.
 
+For this analysis, the `cuhre_1` algorithm did not converge even for the largest fractional
+error tolerance.
+
 ## The integrand
 
-The integrand used for this comparison is:
-
-$$ k (u v +w^{y} x y / (1 + u) + z^2) $$
-
-where $k$ is a normalization constant that yields an integral of 1 over the unit hypercube.
-
-$$ k = 12 / (7 - 6  {\log(2)}^2 + \log(64)).$$
-
-The approximate value of the $k$ is `r  format(12.0 / (7.0 - 6 * log(2.0) * log(2.0) + log(64.0)), digits = 15)`.
+The integrand chosen is:
+$$ | \cos(4 v +5 w + 6 x +7 y + 8 z)/k |$$
+with $k = 0.6371054$. For this integrand, the normalization is approximate (meaning that the true value of the integrand is close to,
+but not exactly, 1.0).
 
 ## Testing environment
 
@@ -50,7 +48,7 @@ These tests were run on a MacBook Pro laptop.
 ```
 
 ```{r read_data, echo = FALSE, message = FALSE}
-d <- read_tsv("vegas_cuhre.txt") %>%
+d <- read_tsv("genz_1abs_5d_vegas_cuhre.out") %>%
   mutate(r = errorest/(epsrel*value)) %>%
   arrange(desc(epsrel), alg)
 
@@ -78,7 +76,7 @@ Except for low accuracies the `cuhre_0` algorithm requires fewer function evalua
 ### Time and function evaluations
 
 Does the *number* of function evaluations make a good proxy for the *time* spent in integrating?
-It appears so, at least approximately.
+For this integral, it seems to be a poor proxy for `cuhre_0` and a good proxy for `vegas`.
 
 ```{r, echo = FALSE, message = FALSE}
 ggplot(d, aes(neval, time)) +
@@ -89,24 +87,15 @@ ggplot(d, aes(neval, time)) +
 
 ## Error estimate and function evaluations
 
-For the rest of the analysis, we compare only `cuhre_0` and `cuhre_1`.
 
 ```{r echo = FALSE, message = FALSE}
-filter(d, alg %in% c("cuhre_0", "cuhre_1")) %>%
+d %>%
 ggplot(aes(neval, errorest, color = alg)) +
+  geom_smooth(method = "lm") +
   geom_point() +
   scale_x_log10() +
   scale_y_log10()
 ```
 
-The following table shows the number of calls to achieve a given error tolerance,
-and the ratio `r` of the number required for `cuhre_1`/`cuhre_0`.
 
-```{r, echo = FALSE}
-filter(d, alg %in% c("cuhre_0", "cuhre_1")) %>%
-  select(alg, epsrel, neval) %>%
-  pivot_wider(names_from = alg, values_from = neval) %>%
-  mutate(r = cuhre_1/cuhre_0) %>%
-  knitr::kable(digits = 15)
-```
 
