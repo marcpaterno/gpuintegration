@@ -126,11 +126,12 @@ ComputeWeightSum(T *errors, size_t size){
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
+	  
       int siblingIndex = (numRegions / 2) + blockIdx.x;
       if (siblingIndex < numRegions) {
         siblingIndex += numRegions;
       }
-
+	
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
 
@@ -284,7 +285,7 @@ ComputeWeightSum(T *errors, size_t size){
           sets the bounds of the 1st region from 0 to 1 while the
           global bounds(1st region's real boundaries) are assigned to sBound
           every time it is called it resets the global region list size to
-     (SM_REGION_POOL_SIZE / 2)
+		(SM_REGION_POOL_SIZE / 2)
   */
 
   __device__ size_t
@@ -675,7 +676,11 @@ ComputeWeightSum(T *errors, size_t size){
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
-
+	
+	int maxdiv = 0;
+	double smallest = 1;
+	if(blockIdx.x == 1922 && threadIdx.x == 0)
+		printf("inside phase 2\n");
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
@@ -701,28 +706,30 @@ ComputeWeightSum(T *errors, size_t size){
 
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
 	ERR = dRegionsError[blockIdx.x + numRegions];
-    // TODO  : ERR is not refined, dRegionsIntegral holds sibling, & self, we
-    // also have parentsIntegral & parentsError
+  
     // TODO  : May be redundance sync
     __syncthreads();
     int nregions = sRegionPoolSize; // is only 1 at this point
 
     // prep for final = 0
-    double lastavg = RESULT;
-    double lasterr = ERR;
-    double weightsum = 1 / fmax(ERR * ERR, ldexp(1., -104));
-    double avgsum = weightsum * lastavg;
+    T lastavg = RESULT;
+    T lasterr = ERR;
+    T weightsum = 1 / fmax(ERR * ERR, ldexp(1., -104));
+    T avgsum = weightsum * lastavg;
 
-    double w = 0;
-    double avg = 0;
-    double sigsq = 0;
-
+    T w = 0;
+    T avg = 0;
+    T sigsq = 0;
+	
     /*
     if(threadIdx.x == 0)
             printf("%i, %.12f, %.12f, %i\n", blockIdx.x, RESULT, ERR,
     max_global_pool_size);
     */
-
+	
+	if(blockIdx.x == 1922 && threadIdx.x == 0)
+		  printf("%i phase 2 regions %e vs %e\n", nregions, ERR, MaxErr(RESULT, epsrel, epsabs) );
+	
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
 
@@ -737,7 +744,9 @@ ComputeWeightSum(T *errors, size_t size){
         result.err = R->result.err;
         result.avg = R->result.avg;
         result.bisectdim = R->result.bisectdim;
-
+		
+		
+		
         int bisectdim = result.bisectdim;
 
         RegionLeft = R;
@@ -745,16 +754,46 @@ ComputeWeightSum(T *errors, size_t size){
 
         bL = &RegionLeft->bounds[bisectdim];
         bR = &RegionRight->bounds[bisectdim];
-
+	
         RegionRight->div = ++RegionLeft->div;
+		
+		if(blockIdx.x == 0 && threadIdx.x == 0 && nregions < 3){
+			for(int dim = 0; dim < NDIM; dim++){
+				printf("%f, %f -> %f, %f\n", RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper, 
+											 sBound[dim].unScaledLower+RegionLeft->bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower),
+											 sBound[dim].unScaledLower + RegionLeft->bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower));
+			}
+			printf("-----------------\n");
+			for(int dim = 0; dim < NDIM; dim++){
+				printf("%f, %f\n", sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
+			}
+			printf("============================\n");
+		}
+		
+		if(RegionRight->div > maxdiv)
+			maxdiv = RegionRight->div;
+		
         for (int dim = 0; dim < NDIM; ++dim) {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
+		  if(RegionLeft->bounds[dim].lower == RegionLeft->bounds[dim].upper)
+			  printf("During computation Block %i, unscaled bounds:%e,%e div:%i\n", blockIdx.x, RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper, RegionRight->div);
+		  //updates based on interval size
+		  if(smallest > RegionLeft->bounds[dim].upper - RegionLeft->bounds[dim].lower)
+			  smallest = RegionLeft->bounds[dim].upper - RegionLeft->bounds[dim].lower;
+		  if(smallest > RegionRight->bounds[dim].upper - RegionRight->bounds[dim].lower)
+			  smallest = RegionRight->bounds[dim].upper - RegionRight->bounds[dim].lower;
+		  
+		  /*if(smallest > RegionLeft->bounds[dim].upper)
+			  smallest = RegionLeft->bounds[dim].upper;
+		  if(smallest > RegionRight->bounds[dim].upper)
+			  smallest = RegionRight->bounds[dim].upper;*/
         }
-
+		
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
+		
       }
-
+	
       sRegionPoolSize++;
       nregions++;
       __syncthreads();
@@ -770,11 +809,11 @@ ComputeWeightSum(T *errors, size_t size){
                                          slows,
                                          shighs);
       __syncthreads();
-
+	
       if (threadIdx.x == 0) {
         Result* rL = &RegionLeft->result;
         Result* rR = &RegionRight->result;
-
+		
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
         T err = rL->err + rR->err;
@@ -799,8 +838,16 @@ ComputeWeightSum(T *errors, size_t size){
         RESULT = Final ? lastavg : avg;
       }
       __syncthreads();
+	  
+	  //this is uncessary workload if we dont' care about collecting phase 2 data for each block
+	  
     }
-
+	
+	__syncthreads();
+	if(sRegionPoolSize > 64 || nregions<64)
+		INSERT_GLOBAL_STORE<T>(sRegionPool, gPool, gpuId, gPool);
+	 __syncthreads();
+	
     if (threadIdx.x == 0) {
       int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
 
@@ -809,7 +856,7 @@ ComputeWeightSum(T *errors, size_t size){
         ERR = 0.0;
         isActive = 1;
       }
-
+	  //printf("%.30f, %i, %e, %e, %i\n", smallest, maxdiv, ERR, RESULT, isActive);
       /*if(blockIdx.x == 0){
               printf("===============\n");
               printf("Phase 1 brought stats:%.12f +- %.12f || Sums: (%f,%f)\n",
@@ -824,6 +871,8 @@ ComputeWeightSum(T *errors, size_t size){
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
+	  if(blockIdx.x == 1922)
+		  printf("%i phase 2 regions\n", nregions);
       // free(gPool);
     }
   }

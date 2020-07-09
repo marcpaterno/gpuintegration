@@ -742,7 +742,8 @@ namespace quad {
                                                    neval,
                                                    optionalInfo);
         }
-
+		
+		//printf("%.15f, %.15f, %f\n", error, MaxErr(integral, epsrel, epsabs), error/MaxErr(integral, epsrel, epsabs));
         if (error <= MaxErr(integral, epsrel, epsabs)) {
           errorFlag = 0;
         }
