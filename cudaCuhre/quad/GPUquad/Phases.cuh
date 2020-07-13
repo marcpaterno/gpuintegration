@@ -313,8 +313,57 @@ ComputeWeightSum(T *errors, size_t size){
         sRegionPool[threadIdx.x].bounds[dim].upper = 1;
         T lower = dRegions[dim * numRegions + intervalIndex];
         sBound[dim].unScaledLower = lower;
-        sBound[dim].unScaledUpper =
-          lower + dRegionsLength[dim * numRegions + intervalIndex];
+        sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions + intervalIndex];
+      }
+    }
+    __syncthreads();
+    return 1;
+  }
+
+template <typename T, int NDIM>
+  __device__ int
+  set_first_shared_mem_region(Region<NDIM> sRegionPool[],
+                              T* lows,
+                              T* highs,
+                              size_t numRegions,
+                              size_t blockIndex)
+  {
+	//*lows & highs are user defined bounds, they are ok being stored in sBound 
+    size_t intervalIndex = blockIndex;
+    if (threadIdx.x == 0) {
+      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
+      for (int dim = 0; dim < NDIM; ++dim) {
+        sRegionPool[threadIdx.x].bounds[dim].lower = 0;
+        sRegionPool[threadIdx.x].bounds[dim].upper = 1;
+        T lower = lows[dim * numRegions + intervalIndex];
+        sBound[dim].unScaledLower = lower;
+        sBound[dim].unScaledUpper = highs[dim * numRegions + intervalIndex];
+		if(sBound[dim].unScaledUpper > 1)
+			printf("ΗΕΡΕ [%i] dim:%i >1 (%f)\n", blockIdx.x, dim,  sBound[dim].unScaledUpper );
+      }
+    }
+    __syncthreads();
+    return 1;
+  }
+
+template <typename T, int NDIM>
+  __device__ int
+  set_first_shared_mem_region(Region<NDIM> sRegionPool[],
+                              Region<NDIM>* ggRegionPool,
+                              size_t numRegions,
+                              size_t blockIndex)
+  {
+	
+    size_t intervalIndex = blockIndex;
+
+    if (threadIdx.x == 0) {
+      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
+      for (int dim = 0; dim < NDIM; ++dim) {
+        sRegionPool[threadIdx.x].bounds[dim].lower = 0;
+        sRegionPool[threadIdx.x].bounds[dim].upper = 1;
+        T lower = ggRegionPool[intervalIndex].bounds[dim].lower;
+        sBound[dim].unScaledLower = lower;
+        sBound[dim].unScaledUpper = ggRegionPool[intervalIndex].bounds[dim].upper;
       }
     }
     __syncthreads();
@@ -455,8 +504,7 @@ ComputeWeightSum(T *errors, size_t size){
          ++iterationsPerThread) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
       gPool[gRegionPos[index]] = sRegionPool[index];
-      gPool[gRegionPoolSize + index] =
-        sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
+      gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
 
     __syncthreads();
@@ -464,8 +512,7 @@ ComputeWeightSum(T *errors, size_t size){
     if (index < (SM_REGION_POOL_SIZE / 2)) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
       gPool[gRegionPos[index]] = sRegionPool[index];
-      gPool[gRegionPoolSize + index] =
-        sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
+      gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
     }
 
     __syncthreads();
@@ -476,7 +523,64 @@ ComputeWeightSum(T *errors, size_t size){
 
     // gRegionPool = gPool;
   }
+	
+	
+template <typename T, int NDIM>
+  __device__ void
+  insert_global_store(Region<NDIM>* sRegionPool,
+                      Region<NDIM>*& gRegionPool,
+                      int gpuId,
+                      Region<NDIM>*& gPool)
+  {
 
+    __syncthreads();
+
+    int iterationsPerThread = 0;
+
+    for (iterationsPerThread = 0;
+         iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;
+         ++iterationsPerThread) {
+      int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+      gPool[gRegionPos[index]] = sRegionPool[index];
+      gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
+	  
+	  for(int dim=0; dim<NDIM; dim++){
+		gPool[gRegionPos[index]].bounds[dim].lower 		 = sBound[dim].unScaledLower + sRegionPool[index].bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);
+		gPool[gRegionPos[index]].bounds[dim].upper 		 = sBound[dim].unScaledLower + sRegionPool[index].bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);
+		
+		gPool[gRegionPoolSize + index].bounds[dim].lower = sBound[dim].unScaledLower + sRegionPool[(SM_REGION_POOL_SIZE / 2) + index].bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);  
+		gPool[gRegionPoolSize + index].bounds[dim].upper = sBound[dim].unScaledLower + sRegionPool[(SM_REGION_POOL_SIZE / 2) + index].bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);    
+	  }
+    }
+
+    __syncthreads();
+    int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+    if (index < (SM_REGION_POOL_SIZE / 2)) {
+      int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
+      gPool[gRegionPos[index]] = sRegionPool[index];
+      gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
+	  
+	  //printf("%i->%lu\n", index, gRegionPos[index]);
+	 // printf("%i->%lu\n", gRegionPoolSize + index, (SM_REGION_POOL_SIZE / 2) + index);
+	  
+	  for(int dim=0; dim<NDIM; dim++){
+		gPool[gRegionPos[index]].bounds[dim].lower 		 = sBound[dim].unScaledLower + sRegionPool[index].bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);
+		gPool[gRegionPos[index]].bounds[dim].upper 		 = sBound[dim].unScaledLower + sRegionPool[index].bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);
+		
+		gPool[gRegionPoolSize + index].bounds[dim].lower = sBound[dim].unScaledLower + sRegionPool[(SM_REGION_POOL_SIZE / 2) + index].bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);  
+		gPool[gRegionPoolSize + index].bounds[dim].upper = sBound[dim].unScaledLower + sRegionPool[(SM_REGION_POOL_SIZE / 2) + index].bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower);  
+	  }
+    }
+
+    __syncthreads();
+    if (threadIdx.x == 0) {
+      gRegionPoolSize = gRegionPoolSize + (SM_REGION_POOL_SIZE / 2);
+    }
+    __syncthreads();
+
+    // gRegionPool = gPool;
+  }	
+	
   template <typename T>
   __device__ void
   EXTRACT_MAX(T* serror, size_t* serrorPos, size_t gSize)
@@ -605,8 +709,8 @@ ComputeWeightSum(T *errors, size_t size){
   {
     // If array  for regions in shared is full
     if (sSize == SM_REGION_POOL_SIZE) {
-
-      INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId, gPool);
+	
+	  INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId, gPool);
       __syncthreads();
 
       // gRegionPool = gPool;
@@ -614,7 +718,7 @@ ComputeWeightSum(T *errors, size_t size){
       sSize = (SM_REGION_POOL_SIZE / 2);
       __syncthreads();
     }
-
+	
     for (size_t offset = (SM_REGION_POOL_SIZE / 2); offset > 0; offset >>= 1) {
       int idx = 0;
       for (idx = 0; idx < offset / BLOCK_SIZE; ++idx) {
@@ -677,58 +781,57 @@ ComputeWeightSum(T *errors, size_t size){
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
 	
+	int origin = 0;
 	int maxdiv = 0;
-	double smallest = 1;
-	if(blockIdx.x == 1922 && threadIdx.x == 0)
-		printf("inside phase 2\n");
+
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
       max_global_pool_size = 2048;
-      gPool = &ggRegionPool[blockIdx.x * MAX_GLOBALPOOL_SIZE];
     }
-
+	
+	gPool = &ggRegionPool[blockIdx.x * MAX_GLOBALPOOL_SIZE];
+	
     InitSMemRegions(sRegionPool);
-    // First compute sibling region
-    // SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength,
-    // numRegions, GetSiblingIndex(blockIdx.x)); SampleRegionBlock<IntegT, T,
-    // NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows,
-    // shighs);
-
-    // T siblIntegral = sRegionPool[0].result.avg;
-    // T siblError    = sRegionPool[0].result.err;
-
-    int sRegionPoolSize = SET_FIRST_SHARED_MEM_REGION(
-      sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
-    SampleRegionBlock<IntegT, T, NDIM>(
-      d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+	int sRegionPoolSize = 1;
+	
+	if(origin != 0)
+		SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
+	else if(numRegions == 0)
+		set_first_shared_mem_region(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
+	else
+		set_first_shared_mem_region<T, NDIM>(sRegionPool, ggRegionPool, numRegions, blockIdx.x);
+	
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
-
+	
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
-	ERR = dRegionsError[blockIdx.x + numRegions];
-  
+	
+	if(threadIdx.x == 0 && numRegions != 0 && dRegionsError[blockIdx.x + numRegions]!=0){
+		ERR = dRegionsError[blockIdx.x + numRegions];
+	}
+	else{
+		if(threadIdx.x == 0)
+			ERR = ggRegionPool[blockIdx.x].result.err;
+		//if(blockIdx.x == 32)
+		//	printf("(%i) avg:%.15f\n", threadIdx.x, gPool[0].result.avg);
+	}
+	__syncthreads();
+	//if(blockIdx.x == 32)
+	//	printf("(%i) avg:%.15f\n", threadIdx.x, gPool[0].result.avg);
     // TODO  : May be redundance sync
     __syncthreads();
     int nregions = sRegionPoolSize; // is only 1 at this point
-
+	
     // prep for final = 0
     T lastavg = RESULT;
     T lasterr = ERR;
     T weightsum = 1 / fmax(ERR * ERR, ldexp(1., -104));
     T avgsum = weightsum * lastavg;
-
+	
     T w = 0;
     T avg = 0;
     T sigsq = 0;
-	
-    /*
-    if(threadIdx.x == 0)
-            printf("%i, %.12f, %.12f, %i\n", blockIdx.x, RESULT, ERR,
-    max_global_pool_size);
-    */
-	
-	if(blockIdx.x == 1922 && threadIdx.x == 0)
-		  printf("%i phase 2 regions %e vs %e\n", nregions, ERR, MaxErr(RESULT, epsrel, epsabs) );
 	
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
@@ -744,20 +847,18 @@ ComputeWeightSum(T *errors, size_t size){
         result.err = R->result.err;
         result.avg = R->result.avg;
         result.bisectdim = R->result.bisectdim;
-		
-		
-		
+			
         int bisectdim = result.bisectdim;
-
+		
         RegionLeft = R;
         RegionRight = &sRegionPool[sRegionPoolSize];
-
+		
         bL = &RegionLeft->bounds[bisectdim];
         bR = &RegionRight->bounds[bisectdim];
-	
+		
         RegionRight->div = ++RegionLeft->div;
 		
-		if(blockIdx.x == 0 && threadIdx.x == 0 && nregions < 3){
+		/*(if(blockIdx.x == 0 && threadIdx.x == 0){
 			for(int dim = 0; dim < NDIM; dim++){
 				printf("%f, %f -> %f, %f\n", RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper, 
 											 sBound[dim].unScaledLower+RegionLeft->bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower),
@@ -768,7 +869,17 @@ ComputeWeightSum(T *errors, size_t size){
 				printf("%f, %f\n", sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
 			}
 			printf("============================\n");
-		}
+		}*/
+		
+		/*if(blockIdx.x == 0 && threadIdx.x == 0){
+			for(int dim = 0; dim < NDIM; dim++){
+				printf("%f, %f -> %f, %f\n", RegionLeft->bounds[dim].lower, 
+											 RegionLeft->bounds[dim].upper, 
+											 sBound[dim].unScaledLower + RegionLeft->bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower),
+											 sBound[dim].unScaledLower + RegionLeft->bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower));
+			}
+			printf("============================\n");
+		}*/
 		
 		if(RegionRight->div > maxdiv)
 			maxdiv = RegionRight->div;
@@ -776,18 +887,8 @@ ComputeWeightSum(T *errors, size_t size){
         for (int dim = 0; dim < NDIM; ++dim) {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
-		  if(RegionLeft->bounds[dim].lower == RegionLeft->bounds[dim].upper)
-			  printf("During computation Block %i, unscaled bounds:%e,%e div:%i\n", blockIdx.x, RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper, RegionRight->div);
-		  //updates based on interval size
-		  if(smallest > RegionLeft->bounds[dim].upper - RegionLeft->bounds[dim].lower)
-			  smallest = RegionLeft->bounds[dim].upper - RegionLeft->bounds[dim].lower;
-		  if(smallest > RegionRight->bounds[dim].upper - RegionRight->bounds[dim].lower)
-			  smallest = RegionRight->bounds[dim].upper - RegionRight->bounds[dim].lower;
-		  
-		  /*if(smallest > RegionLeft->bounds[dim].upper)
-			  smallest = RegionLeft->bounds[dim].upper;
-		  if(smallest > RegionRight->bounds[dim].upper)
-			  smallest = RegionRight->bounds[dim].upper;*/
+		 // if(RegionLeft->bounds[dim].lower == RegionLeft->bounds[dim].upper)
+		//	  printf("During computation Block %i, unscaled bounds:%e,%e div:%i\n", blockIdx.x, RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper, RegionRight->div);
         }
 		
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
@@ -833,9 +934,10 @@ ComputeWeightSum(T *errors, size_t size){
         avgsum += w * lastavg;
         sigsq = 1 / weightsum;
         avg = sigsq * avgsum;
-
+		
         ERR = Final ? lasterr : sqrt(sigsq);
         RESULT = Final ? lastavg : avg;
+		//printf("%.15f +- %.15f\n", RESULT, ERR);
       }
       __syncthreads();
 	  
@@ -843,9 +945,28 @@ ComputeWeightSum(T *errors, size_t size){
 	  
     }
 	
+	/*if(threadIdx.x == 0 && blockIdx.x == 0){
+		for(int dim=0; dim<NDIM; dim++){
+			printf("sRegionPool[0]:%f +- %f bound[0]:(%f,%f) sBound[0]:(%f,%f)\n", sRegionPool[0].result.avg, sRegionPool[0].result.err, 
+																										  sRegionPool[0].bounds[dim].lower, 
+																										  sRegionPool[0].bounds[dim].upper,
+																										  sBound[dim].unScaledLower,
+																										  sBound[dim].unScaledUpper);
+		}
+		for(int dim = 0; dim < NDIM; dim++){
+			printf("scaled[0] %f, %f -> %f, %f\n", sRegionPool[0].bounds[dim].lower, 
+												   sRegionPool[0].bounds[dim].upper, 
+											       sBound[dim].unScaledLower + sRegionPool[0].bounds[dim].lower*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower),
+											       sBound[dim].unScaledLower + sRegionPool[0].bounds[dim].upper*(sBound[dim].unScaledUpper - sBound[dim].unScaledLower));
+		}																		  
+	}*/
 	__syncthreads();
-	if(sRegionPoolSize > 64 || nregions<64)
+	if(sRegionPoolSize > 64 || nregions<64 && origin != 0){
 		INSERT_GLOBAL_STORE<T>(sRegionPool, gPool, gpuId, gPool);
+	}
+	if(sRegionPoolSize > 64 || nregions<64 && origin == 0){
+		insert_global_store<T>(sRegionPool, gPool, gpuId, gPool);
+	}
 	 __syncthreads();
 	
     if (threadIdx.x == 0) {
@@ -856,24 +977,15 @@ ComputeWeightSum(T *errors, size_t size){
         ERR = 0.0;
         isActive = 1;
       }
-	  //printf("%.30f, %i, %e, %e, %i\n", smallest, maxdiv, ERR, RESULT, isActive);
-      /*if(blockIdx.x == 0){
-              printf("===============\n");
-              printf("Phase 1 brought stats:%.12f +- %.12f || Sums: (%f,%f)\n",
-      phase1_lastavg, phase1_lasterr, phase1_avgsum, phase1_weightsum);
-              printf("Phase 2 BL0 Local contribution %.12f +-%.12f Sums:%f\n",
-      lastavg, lasterr, avgsum, weightsum); printf("===============\n");
-      }*/
-
+	 
       activeRegions[blockIdx.x] = isActive;
-      // dRegionsIntegral[blockIdx.x] 	= RESULT;
-      // dRegionsError[blockIdx.x] 	= ERR;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
-	  if(blockIdx.x == 1922)
-		  printf("%i phase 2 regions\n", nregions);
-      // free(gPool);
+	  
+	  if(blockIdx.x == 0)
+		  printf("Phase 1 result:%f+-%f\n", RESULT, ERR);
+
     }
   }
 }

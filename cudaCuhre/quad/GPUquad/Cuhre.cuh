@@ -626,7 +626,7 @@ namespace quad {
       // MPI_Finalize();
       return errorFlag;
     }
-
+	
     template <typename IntegT>
     cuhreResult
     integrate(IntegT integrand,
@@ -655,7 +655,7 @@ namespace quad {
                         Final);
       return res;
     }
-
+	
     template <typename IntegT>
     int
     integrate(IntegT integrand,
@@ -720,15 +720,24 @@ namespace quad {
         }
 
         FIRST_PHASE_MAXREGIONS *= numDevices;
-        kernel->IntegrateFirstPhase(d_integrand,
+        /*kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
                                     epsabs,
                                     integral,
                                     error,
                                     nregions,
                                     neval,
-                                    volume);
-
+                                    volume);*/
+									
+		kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+										epsrel,
+										epsabs,
+										integral,
+										error,
+										nregions,
+										neval,
+										volume);
+		printf("Post Phase 1 regions:%lu\n", nregions);
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 
         if (kernel->getNumActiveRegions() > 0) {
