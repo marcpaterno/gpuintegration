@@ -1279,6 +1279,7 @@ namespace quad {
             0,
             0,
             0,
+			phase_I_type,
 			0);
 			
 		PrintOutfileHeaders();
@@ -1409,14 +1410,14 @@ namespace quad {
           QuadDebug(Device.AllocateMemory((void**)&subDividingDimension, 	sizeof(int) * numRegionsThread));
           QuadDebug(Device.AllocateMemory((void**)&dRegionsNumRegion,  		sizeof(int) * numRegionsThread));
 		  
-		  if(origin != 0){
+		  if(phase_I_type == 0){
 			QuadDebug(Device.AllocateMemory((void**)&dRegionsThread,  		sizeof(T) * numRegionsThread * NDIM));
 			QuadDebug(Device.AllocateMemory((void**)&dRegionsLengthThread,  sizeof(T) * numRegionsThread * NDIM));
 		  }
           CudaCheckError();
           // NOTE:Copy order is important
 			
-		   if(origin != 0){
+		   if(phase_I_type == 0){
 			  for (int dim = 0; dim < NDIM; ++dim) {
 				QuadDebug(cudaMemcpy(dRegionsThread + dim * numRegionsThread,
 									 hRegions + dim * numRegions + startIndex,
@@ -1464,14 +1465,16 @@ namespace quad {
           //--------------------------------------------------------------------------------------
 		  
 		    //used to restructure 2048 array to 2048*size
-		    Region<NDIM>* ph1_regions = 0;
-			QuadDebug(Device.AllocateMemory((void**)&ph1_regions, sizeof(Region<NDIM>) * 2048));
-			cudaMemcpy(ph1_regions, gRegionPool, sizeof(Region<NDIM>) * 2048, cudaMemcpyDeviceToDevice);
-			
-		    std::stringstream tempOut;
+			Region<NDIM>* ph1_regions = 0;
 			Region<NDIM>* tmp = nullptr;
 			
+			if(phase_I_type == 1){
+				QuadDebug(Device.AllocateMemory((void**)&ph1_regions, sizeof(Region<NDIM>) * 2048));
+				cudaMemcpy(ph1_regions, gRegionPool, sizeof(Region<NDIM>) * 2048, cudaMemcpyDeviceToDevice);
+			}
+		    
 			if(outLevel >= 4){
+				std::stringstream tempOut;
 				tmp = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * 2048);
 				//cudaMemcpy(tmp, gRegionPool, sizeof(Region<NDIM>) * 2048, cudaMemcpyDeviceToHost);
 				cudaMemcpy(tmp, ph1_regions, sizeof(Region<NDIM>) * 2048, cudaMemcpyDeviceToHost);
@@ -1522,6 +1525,7 @@ namespace quad {
                                  lastErr,
                                  weightsum,
                                  avgsum,
+								 phase_I_type,
 								 ph1_regions);
 								 
 		cudaDeviceSynchronize();

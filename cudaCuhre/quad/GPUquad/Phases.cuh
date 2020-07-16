@@ -759,6 +759,7 @@ template <typename T, int NDIM>
                              T phase1_lasterr,
                              T phase1_weightsum,
                              T phase1_avgsum,
+							 int phase1_type = 0,
 							 Region<NDIM>* phase1_regs = nullptr)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
@@ -782,13 +783,11 @@ template <typename T, int NDIM>
 	
 	__syncthreads();
 	
-	if(origin != 0)
+	if(phase1_type == 0)
 		SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
 	else if(numRegions == 0)
 		set_first_shared_mem_region(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
 	else{
-		//set_first_shared_mem_region<T, NDIM>(sRegionPool, ggRegionPool, numRegions, blockIdx.x);
-		
 		set_first_shared_mem_region<T, NDIM>(sRegionPool, phase1_regs, numRegions, blockIdx.x);
 	}
 	
@@ -799,9 +798,8 @@ template <typename T, int NDIM>
 	
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
 	
-	if(threadIdx.x == 0 && origin != 0){
+	if(threadIdx.x == 0 && phase1_type == 0){
 		ERR = dRegionsError[blockIdx.x + numRegions];
-		printf("reading from here\n");
 	}
 	else{
 		if(threadIdx.x == 0 && numRegions!=0){
