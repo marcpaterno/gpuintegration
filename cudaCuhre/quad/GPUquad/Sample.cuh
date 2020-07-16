@@ -52,11 +52,11 @@ namespace quad {
       g[dim] = 0;
       x[dim] = 0;
     }
-
+	
     int posCnt = __ldg(&constMem->_gpuGenPermVarStart[pIndex + 1]) -
                  __ldg(&constMem->_gpuGenPermVarStart[pIndex]);
     int gIndex = constMem->_gpuGenPermGIndex[pIndex];
-
+	
     for (int posIter = 0; posIter < posCnt; ++posIter) {
       int pos = __ldg(
         &constMem->_gpuGenPos[__ldg(&constMem->_gpuGenPermVarStart[pIndex]) +
@@ -69,20 +69,6 @@ namespace quad {
       }
     }
 
-    /*sBound[0].unScaledLower = .5;sBound[0].unScaledUpper = 1;
-    sBound[1].unScaledLower = 0;;sBound[1].unScaledUpper = 1 ;
-    sBound[2].unScaledLower = 0;sBound[2].unScaledUpper = 1;
-    sBound[3].unScaledLower = 0;sBound[3].unScaledUpper = 1;
-    sBound[4].unScaledLower = 0;sBound[4].unScaledUpper = 1;
-    sBound[5].unScaledLower = 0;sBound[5].unScaledUpper = 1;*/
-
-    /*sBound[0].unScaledLower = .5;sBound[0].unScaledUpper = .75;
-    sBound[1].unScaledLower = 0;;sBound[1].unScaledUpper = 1 ;
-    sBound[2].unScaledLower = 0;sBound[2].unScaledUpper = 1;
-    sBound[3].unScaledLower = 0;sBound[3].unScaledUpper = 1;
-    sBound[4].unScaledLower = 0;sBound[4].unScaledUpper = 1;
-    sBound[5].unScaledLower = 0;sBound[5].unScaledUpper = 1;*/
-
     T jacobian = 1;
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
@@ -92,7 +78,6 @@ namespace quad {
       x[dim] = (highs[dim] - lows[dim]) * x[dim] + lows[dim];
     }
 
-    // T fun = IntegrandFunc<T>(x, NDIM);
     T fun = gpu::apply(*d_integrand, x);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun;
@@ -120,6 +105,7 @@ namespace quad {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
+	
     T g[NDIM];
     // T x[NDIM];
     gpu::cudaArray<double, NDIM> x;

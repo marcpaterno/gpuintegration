@@ -34,7 +34,26 @@ class GENZ_1_8d{
 	}
 };
 
+class MARC_2_6d{
+	public:
+	__device__ __host__ double
+	operator()(double u, double v, double w, double y, double x, double z){
+		double f = (12/(7 - 6*pow(log(2),2) + log(64)))*(u*v+(pow(w,y)*x*y)/(1+u)+pow(z,2));
+		if(f<0)
+			printf("negative\n");
+		return f;
+	}
+};
 
+class absCosSum5DWithoutK{
+	// ACTUAL ANSWER = 0.6371054
+	public:
+		__device__ __host__ double
+		operator()(double v, double w, double x, double y, double z){
+			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+		}
+	
+};
 
 int
 main(int argc, char** argv)
@@ -71,26 +90,26 @@ main(int argc, char** argv)
 
  // Initialize device
   QuadDebugExit(args.DeviceInit());
-  
+ 
   constexpr int ndim = 5;
   
   Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
 		
-	//Test integrand;
-	absCosSum5D integrand;
+  absCosSum5D integrand;
+  int _final 			= 0;
+  int outfileVerbosity  = 0;
+  int phase_I_type 		= 1; // alternative phase 1
+  
+  double highs[ndim] = {1, 1, 1, 1, 1};
+  double lows[ndim] =  {0, 0, 0, 0, 0};
+  Volume<double, ndim> vol(lows, highs);
+  
+  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
 	
-	//double highs[ndim] = {1, 1, 1, 1, 1, 1, 1, 1};
-    //double lows[ndim] =  {0, 0, 0, 0, 0, 0, 0, 0};
-	double highs[ndim] = {1, 1, 1, 1, 1};
-    double lows[ndim] =  {0, 0, 0, 0, 0};
-    Volume<double, ndim> vol(lows, highs);
-	using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
-	
-    /*cuhre.integrate<GENZ_1_8d>(&integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);*/
-    auto t0 = std::chrono::high_resolution_clock::now();
-	cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol, 3, 0);
-	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-	std::cout<< result.value <<"\t"<< result.error <<"\t"<<result.nregions<<"\t"<<result.status<<std::endl;
-	std::cout<<"Time in ms:"<< dt.count()<<std::endl;
+  auto t0 = std::chrono::high_resolution_clock::now();
+  cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, EPSABS, &vol, outfileVerbosity, _final, phase_I_type);
+  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+  printf("%.15f \t %.15f \t %lu %i\n", result.value, result.error, result.nregions, result.status);
+  std::cout<<"Time in ms:"<< dt.count()<<std::endl;
   return 0;
 }

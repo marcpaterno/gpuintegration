@@ -426,7 +426,7 @@ namespace quad {
 #endif
       return firstPhaseTime;
     }
-
+	
     template <typename IntegT>
     int
     MPI_INTEGRATE(IntegT* integrand,
@@ -634,7 +634,8 @@ namespace quad {
               double epsabs,
               Volume<T, NDIM>* volume = nullptr,
               int verbosity = 0,
-              int Final = 0)
+              int Final = 0,
+			  int phase1type = 0)
     {
       cuhreResult res;
 
@@ -652,7 +653,8 @@ namespace quad {
                         res.neval,
                         volume,
                         verbosity,
-                        Final);
+                        Final,
+						phase1type);
       return res;
     }
 	
@@ -667,13 +669,17 @@ namespace quad {
               size_t& neval,
               Volume<T, NDIM>* volume = nullptr,
               int verbosity = 0,
-              int Final = 0)
+              int Final = 0,
+			  int phase1type = 0)
     {
 
       this->epsrel = epsrel;
       this->epsabs = epsabs;
+	  
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
+	  kernel->SetPhase_I_type(phase1type);
+	  
       int errorFlag = 0;
       int numprocs = 0;
 
@@ -689,47 +695,23 @@ namespace quad {
           &integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
         MPI_Finalize();
       } else {
-
-        if (VERBOSE) {
-          sprintf(msg,
-                  "Cuhre input parameters:\nndim %i\nepsrel %f\nepsabs "
-                  "%f\nkey %i\n\n",
-                  NDIM,
-                  epsrel,
-                  epsabs,
-                  KEY);
-          Print(msg);
-        }
-
+		
         kernel->GenerateInitialRegions();
-        if (VERBOSE) {
-          // Show memory usage of GPU
-          size_t free_byte, total_byte;
-          QuadDebug(cudaMemGetInfo(&free_byte, &total_byte));
-
-          T free_db = (T)free_byte;
-          T total_db = (T)total_byte;
-          T used_db = total_db - free_db;
-          sprintf(msg,
-                  "\nMemory Usages:\nGPU memory usage\t: used = %.2f MB, free "
-                  "= %.2f MB, total = %.2f MB\n",
-                  used_db / 1024.0 / 1024.0,
-                  free_db / 1024.0 / 1024.0,
-                  total_db / 1024.0 / 1024.0);
-          Print(msg);
-        }
-
+  
         FIRST_PHASE_MAXREGIONS *= numDevices;
-        /*kernel->IntegrateFirstPhase(d_integrand,
+		
+		if(!phase1type){
+			kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
                                     epsabs,
                                     integral,
                                     error,
                                     nregions,
                                     neval,
-                                    volume);*/
-									
-		kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+                                    volume);
+		}
+		else{							
+			kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
 										epsrel,
 										epsabs,
 										integral,
@@ -737,6 +719,8 @@ namespace quad {
 										nregions,
 										neval,
 										volume);
+		}
+		
 		printf("Post Phase 1 regions:%lu\n", nregions);
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 
