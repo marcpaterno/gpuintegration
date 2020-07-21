@@ -1,7 +1,7 @@
 #include "cubacpp/cuhre.hh"
 #include "cuba.h"
 #include "demo_utils.h"
-#include "fun6.h"
+#include "fun6.cuh"
 
 #include <iostream>
 
@@ -11,7 +11,6 @@ using std::chrono::duration;
 
 int main()
 {
-  cubacores(0, 0); // turn off the forking use in CUBA's CUHRE.
   unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
 
   cubacpp::Cuhre cuhre;

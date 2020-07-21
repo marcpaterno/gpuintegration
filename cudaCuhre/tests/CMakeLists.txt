@@ -2,7 +2,8 @@ find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
 
 add_executable(test_cuhre_convergence test_cuhre_convergence.cu)
-target_compile_options(test_cuhre_convergence PRIVATE "-arch=sm_70")
+set_property(TARGET test_cuhre_convergence PROPERTY CUDA_ARCHITECTURES 70-real)
+#target_compile_options(test_cuhre_convergence PRIVATE "-arch=sm_70")
 set_target_properties(test_cuhre_convergence PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(test_cuhre_convergence util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
 target_include_directories(test_cuhre_convergence PRIVATE
@@ -121,13 +122,14 @@ target_include_directories(Genz6_2DGPU PRIVATE
 )
 add_test(Genz6_2DGPU Genz3_3DGPU)
 
-add_executable(fun6d_demo fun6d_demo.cc)
+add_executable(fun6d_demo fun6d_demo.cu)
 target_include_directories(fun6d_demo PRIVATE
   ${CMAKE_SOURCE_DIR}/../cubacpp
   ${CMAKE_SOURCE_DIR}/../cuba/include/
   ${CMAKE_SOURCE_DIR}
 )
 target_link_libraries(fun6d_demo PRIVATE ${CUBA_LIBRARIES})
+set_property(TARGET fun6d_demo PROPERTY CUDA_ARCHITECTURES 70-real)
 
 add_executable(B_22cpu B_22cpu.cc)
 target_include_directories(B_22cpu PRIVATE
@@ -218,7 +220,8 @@ target_include_directories(absCosSum5Dcpu PRIVATE
 target_link_libraries(absCosSum5Dcpu PRIVATE ${CUBA_LIBRARIES})
 
 add_executable(cuda_genz_1_8d genz_1_8d.cu)
-target_compile_options(cuda_genz_1_8d PRIVATE "-arch=sm_70" "-lineinfo")
+target_compile_options(cuda_genz_1_8d PRIVATE "-lineinfo")
+set_property(TARGET cuda_genz_1_8d PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(cuda_genz_1_8d PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cuda_genz_1_8d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(cuda_genz_1_8d PRIVATE
@@ -226,7 +229,8 @@ target_include_directories(cuda_genz_1_8d PRIVATE
 )
 
 add_executable(absCosSum5D absCosSum5D.cu)
-target_compile_options(absCosSum5D PRIVATE "-arch=sm_70" "-lineinfo")
+target_compile_options(absCosSum5D PRIVATE "-lineinfo")
+set_property(TARGET absCosSum5D PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(absCosSum5D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(absCosSum5D PRIVATE
@@ -234,7 +238,7 @@ target_include_directories(absCosSum5D PRIVATE
 )
 
 add_executable(cuda_genz_1abs_5d genz_1abs_5d.cu)
-target_compile_options(cuda_genz_1abs_5d PRIVATE "-arch=sm_70")
+set_property(TARGET cuda_genz_1abs_5d PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(cuda_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cuda_genz_1abs_5d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(cuda_genz_1abs_5d PRIVATE
