@@ -696,8 +696,8 @@ namespace quad {
         MPI_Finalize();
       } else {
 		
+		bool convergence = false;
         kernel->GenerateInitialRegions();
-  
         FIRST_PHASE_MAXREGIONS *= numDevices;
 		
 		if(!phase1type){
@@ -711,7 +711,7 @@ namespace quad {
                                     volume);
 		}
 		else{							
-			kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+			convergence = kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
 										epsrel,
 										epsabs,
 										integral,
@@ -724,7 +724,7 @@ namespace quad {
 		printf("Post Phase 1 regions:%lu\n", nregions);
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 
-        if (kernel->getNumActiveRegions() > 0) {
+        if (kernel->getNumActiveRegions() > 0 && convergence == false) {
 
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,

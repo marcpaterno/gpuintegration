@@ -46,8 +46,89 @@ class absCosSum5D{
 		__device__ __host__ double
 		operator()(double v, double w, double x, double y, double z){
 			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z)/0.6371054);
+			//return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
 		}
 	
+};
+
+/*class Box{
+	public:
+	__device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+		double s = 15;
+		double sum = 0;
+		for(int i=0; i<8; i++){
+			sum += pow(xx[i],2);
+		}
+		return pow(sum, s/2);
+};*/
+
+class BoxIntegral {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+	
+	double s = 15;
+	double sum = 0;
+	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
+	return pow(sum, s/2);
+  }
+};
+
+class BoxIntegral8_22 {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+	
+	double s = 22;
+	double sum = 0;
+	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
+	return pow(sum, s/2);
+  }
+};
+
+class BoxIntegral8_25 {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+	
+	double s = 25;
+	double sum = 0;
+	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
+	return pow(sum, s/2);
+  }
 };
 
 class FUNC2 {
@@ -133,6 +214,29 @@ public:
 	int NDIM = 8;
 	int N = 1;
 	double xx[8] = {x, y, z, k, l, m, n, o};
+	for (N = 1; N <= NDIM; ++N) {
+		sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
+	}
+	return sum / 2.0;
+  }
+};
+
+class FUNC55 {
+public:
+	//ANSWER = 4
+	//DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m)
+  {
+	double sum = 0;
+	int NDIM = 6;
+	int N = 1;
+	double xx[6] = {x, y, z, k, l, m};
 	for (N = 1; N <= NDIM; ++N) {
 		sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
 	}

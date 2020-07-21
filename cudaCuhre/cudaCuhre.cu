@@ -34,7 +34,7 @@ class GENZ_1_8d{
 	}
 };
 
-class MARC_2_6d{
+/*class MARC_2_6d{
 	public:
 	__device__ __host__ double
 	operator()(double u, double v, double w, double y, double x, double z){
@@ -43,7 +43,7 @@ class MARC_2_6d{
 			printf("negative\n");
 		return f;
 	}
-};
+};*/
 
 class absCosSum5DWithoutK{
 	// ACTUAL ANSWER = 0.6371054
@@ -72,7 +72,7 @@ main(int argc, char** argv)
     exit(0);
   }
 	
-  TYPE epsrel = 4e-5;
+  TYPE epsrel = 1e-4;
   if (args.CheckCmdLineFlag("e")) {
     args.GetCmdLineArgument("e", epsrel);
   }

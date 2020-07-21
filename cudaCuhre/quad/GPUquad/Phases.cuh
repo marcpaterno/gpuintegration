@@ -759,6 +759,7 @@ template <typename T, int NDIM>
                              T phase1_lasterr,
                              T phase1_weightsum,
                              T phase1_avgsum,
+							 int max_regions,
 							 int phase1_type = 0,
 							 Region<NDIM>* phase1_regs = nullptr)
   {
@@ -768,14 +769,14 @@ template <typename T, int NDIM>
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
 	
-	int origin = 0;
+	//int origin = 0;
 	int maxdiv = 0;
-
+	
     if (threadIdx.x == 0) {
       memcpy(slows, lows, 	sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
-      max_global_pool_size = 2048;
-	  gPool = &ggRegionPool[blockIdx.x * MAX_GLOBALPOOL_SIZE];
+      max_global_pool_size = max_regions;
+	  gPool = &ggRegionPool[blockIdx.x * max_regions];
     }
 	
     InitSMemRegions(sRegionPool); //sets every region in shared memory to zero
@@ -800,11 +801,13 @@ template <typename T, int NDIM>
 	
 	if(threadIdx.x == 0 && phase1_type == 0){
 		ERR = dRegionsError[blockIdx.x + numRegions];
+		//printf("%.15f, %.15f, ratio:%.15f\n", RESULT, ERR);
 	}
 	else{
 		if(threadIdx.x == 0 && numRegions!=0){
 			//ERR = ggRegionPool[blockIdx.x*2048].result.err;
 			ERR = phase1_regs[blockIdx.x].result.err;
+			//printf("%.15f, %.15f, ratio:%.15f\n", RESULT, ERR);
 		}
 	}
 
@@ -817,10 +820,12 @@ template <typename T, int NDIM>
     T weightsum = 1 / fmax(ERR * ERR, ldexp(1., -104));
     T avgsum = weightsum * lastavg;
 	
+	
+		
+
     T w = 0;
     T avg = 0;
     T sigsq = 0;
-	
 	
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
@@ -876,7 +881,7 @@ template <typename T, int NDIM>
       if (threadIdx.x == 0) {
         Result* rL = &RegionLeft->result;
         Result* rR = &RegionRight->result;
-		
+		//printf("lastavg:%.15f, lasterr:%.15f, weightsum:%15f, avgsum:%.15f\n", lastavg, lasterr , weightsum, avgsum);
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
         T err = rL->err + rR->err;
@@ -889,7 +894,8 @@ template <typename T, int NDIM>
 		
         rL->err += diff;
         rR->err += diff;
-
+		//printf("L: %.15f, %.15f diff:%.15f\n", rL->avg, rL->err, diff);
+		//printf("R: %.15f, %.15f\n", rR->avg, rR->err);
         lasterr += rL->err + rR->err - result.err;
         lastavg += rL->avg + rR->avg - result.avg;
 		
@@ -900,6 +906,9 @@ template <typename T, int NDIM>
 		
         ERR = Final ? lasterr : sqrt(sigsq);
         RESULT = Final ? lastavg : avg;
+		//printf("lastavg:%.15f, lasterr:%.15f, weightsum:%15f, avgsum:%.15f\n", RESULT, ERR , weightsum, avgsum);
+		//printf("%.15f, %.15f, ratio:%.15f\n", RESULT, ERR, ERR/MaxErr(RESULT, epsrel, epsabs));
+		
       }
       __syncthreads();
 	  
