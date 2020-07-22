@@ -11,6 +11,15 @@ target_include_directories(test_cuhre_convergence PRIVATE
 )
 add_test(test_cuhre_convergence test_cuhre_convergence)
 
+add_executable(BoxIntegrals BoxIntegrals.cu)
+target_compile_options(BoxIntegrals PRIVATE "-arch=sm_70")
+set_target_properties(BoxIntegrals PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(BoxIntegrals util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(BoxIntegrals PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(BoxIntegrals test_cuhre_convergence)
 
 add_executable(fun6d_demo fun6d_demo.cc)
 target_include_directories(fun6d_demo PRIVATE
