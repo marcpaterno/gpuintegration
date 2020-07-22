@@ -40,8 +40,18 @@ public:
   }
 };
 
+class absCosSum5DWithoutK{
+	// ESTIMATED ANSWER = 0.6371054
+	public:
+		__device__ __host__ double
+		operator()(double v, double w, double x, double y, double z){
+			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+		}
+	
+};
+
 class absCosSum5D{
-	// ACTUAL ANSWER = 0.6371054
+	// ESTIMATED ANSWER = 0.6371054
 	public:
 		__device__ __host__ double
 		operator()(double v, double w, double x, double y, double z){
@@ -51,27 +61,7 @@ class absCosSum5D{
 	
 };
 
-/*class Box{
-	public:
-	__device__ __host__ double
-  operator()(double x,
-             double y,
-             double z,
-             double k,
-             double l,
-             double m,
-             double n,
-             double o)
-  {
-		double s = 15;
-		double sum = 0;
-		for(int i=0; i<8; i++){
-			sum += pow(xx[i],2);
-		}
-		return pow(sum, s/2);
-};*/
-
-class BoxIntegral {
+class BoxIntegral8_15 {
 public:
   __device__ __host__ double
   operator()(double x,
@@ -127,6 +117,28 @@ public:
 	double s = 25;
 	double sum = 0;
 	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
+	return pow(sum, s/2);
+  }
+};
+
+class BoxIntegral10_15 {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o,
+			 double p,
+			 double q)
+  {
+	
+	double s = 15;
+	double sum = 0;
+	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2) + pow(p,2) + pow(q,2);
 	return pow(sum, s/2);
   }
 };
