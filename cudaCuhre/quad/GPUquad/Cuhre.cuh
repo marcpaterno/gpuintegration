@@ -9,6 +9,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <map>
+#include <chrono>
 
 namespace quad {
 #if TIMING_DEBUG == 1
@@ -672,7 +673,6 @@ namespace quad {
               int Final = 0,
 			  int phase1type = 0)
     {
-
       this->epsrel = epsrel;
       this->epsabs = epsabs;
 	  
@@ -700,6 +700,9 @@ namespace quad {
         kernel->GenerateInitialRegions();
         FIRST_PHASE_MAXREGIONS *= numDevices;
 		
+		//using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
+		//auto t1 = std::chrono::high_resolution_clock::now();
+		
 		if(!phase1type){
 			kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
@@ -720,12 +723,15 @@ namespace quad {
 										neval,
 										volume);
 		}
+		//MilliSeconds dt = std::chrono::high_resolution_clock::now() - t1;
+		//std::cout<<"Phase 1 time in ms:"<< dt.count()<<std::endl;
 		
-		printf("Post Phase 1 regions:%lu\n", nregions);
+		errorFlag = kernel->GetErrorFlag();
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
-
+		
+		auto t2 = std::chrono::high_resolution_clock::now();
         if (kernel->getNumActiveRegions() > 0 && convergence == false) {
-
+		
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
@@ -734,12 +740,14 @@ namespace quad {
                                                    nregions,
                                                    neval,
                                                    optionalInfo);
+		  if (error <= MaxErr(integral, epsrel, epsabs)) {
+			errorFlag = 0;
         }
-		
-		//printf("%.15f, %.15f, %f\n", error, MaxErr(integral, epsrel, epsabs), error/MaxErr(integral, epsrel, epsabs));
-        if (error <= MaxErr(integral, epsrel, epsabs)) {
-          errorFlag = 0;
         }
+		//dt = std::chrono::high_resolution_clock::now() - t2;
+		//std::cout<<"Phase 2 time in ms:"<< dt.count()<<std::endl;
+	
+        
 
         //printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
       }
