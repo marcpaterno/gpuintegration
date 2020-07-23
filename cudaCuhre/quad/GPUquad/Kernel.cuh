@@ -237,10 +237,10 @@ namespace quad {
     T* dRegionsLength;
     T* hRegions;
     T* hRegionsLength;
-
+	
     T* dParentsError;
     T* dParentsIntegral;
-
+	
     T* highs;
     T* lows;
 	
@@ -312,7 +312,7 @@ namespace quad {
     {
       Final = _Final;
     }
-
+	
     void
     ExpandcuArray(T*& array, int currentSize, int newSize)
     {
@@ -713,7 +713,7 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 	
-	 // printf("Bad Regions:%lu/%lu\n",numActiveRegions,  numRegions);
+	 printf("Bad Regions:%lu/%lu\n",numActiveRegions,  numRegions);
 	  if(outLevel >= 4)
 		  out4<<numActiveRegions<<","<<numRegions<<std::endl;
 	  
@@ -941,20 +941,19 @@ namespace quad {
       neval += numRegions * fEvalPerRegion;
 		
       thrust::device_ptr<T> wrapped_ptr;
-	  //rG: integral estimate considering leaves and prior good regions
-      wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
-      T rG = integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-	   //errG: integral estimate considering leaves and prior good regions	
-      wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
-      T errG = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 	
-	 //integral & error refer to the accumulated values from ONLY the good regions
+      wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
+      T rG = lastAvg + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+	  
+      wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
+      T errG = lastErr + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+	
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
-      integral =
-        integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      lastAvg =
+        lastAvg + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 		
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
-      error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      lastErr = lastErr + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 	
 	  if(Final == 0){
 		double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
@@ -964,19 +963,15 @@ namespace quad {
 		rG = sigsq * avgsum;
 		errG = sqrt(sigsq);
 	  }
-      
-    // printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f numRegions:%lu\n", rG, errG, integral, error, numRegions);
-
+	//the problem is with lastavg and integral
+     printf("rG:%f\t errG:%f\t | global results: integral:%f\t error:%f numRegions:%lu\n", rG, errG, integral, error, numRegions);
+	//IDEA, keep integral and error as was before, also keep track of lastAvg and lastErr that corrspond to final=0, that way you get the best of both worlds
       if (outLevel >= 1)
         out1 << rG << "," << errG << "," << nregions << std::endl;
 		  
-      
-
       if ((errG <= MaxErr(rG, epsrel, epsabs)) && GLOBAL_ERROR) {
 		PrintToFile(out1.str(), "Level_1.csv");
 		fail = 0;
-        integral = rG;
-        error = errG;
         numRegions = 0;
 		//lastErr = error;
 		//lastAvg = integral;
@@ -985,6 +980,7 @@ namespace quad {
       }
 		
       if (numRegions <= FIRST_PHASE_MAXREGIONS && fail == 1){
+		printf("About to split %lu regions in half\n", numRegions);
         GenerateActiveIntervals(activeRegions,
                                 subDividingDimension,
                                 dRegionsIntegral,
@@ -996,7 +992,7 @@ namespace quad {
       QuadDebug(cudaFree(newErrs));
       QuadDebug(cudaFree(activeRegions));
     }
-
+	
     template <typename IntegT>
     bool
     IntegrateFirstPhase(IntegT* d_integrand,
@@ -1031,8 +1027,8 @@ namespace quad {
         FirstPhaseIteration<IntegT>(d_integrand,
                                     epsrel,
                                     epsabs,
-                                    lastAvg,
-                                    lastErr,
+                                    integral,
+                                    error,
                                     nregions,
                                     neval,
                                     dParentsIntegral,
@@ -1051,8 +1047,8 @@ namespace quad {
 			FirstPhaseIteration<IntegT>(d_integrand,
                                       epsrel,
                                       epsabs,
-                                      lastAvg,
-                                      lastErr,
+                                      integral,
+                                      error,
                                       nregions,
                                       neval,
                                       dParentsIntegral,
@@ -1063,6 +1059,7 @@ namespace quad {
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
         }
+		printf("iteration:%i %.15f +- %15f\n", i, integral, lastErr);
       }
 	  
 	  if (numRegions <= FIRST_PHASE_MAXREGIONS) {
@@ -1085,14 +1082,16 @@ namespace quad {
                            cudaMemcpyDeviceToHost));
 						   
 	  if(fail == 0 || fail == 2){
-		  integral = lastAvg;
+		  printf("Returing fail:%i and bool is false\n", fail);
+		  //integral = lastAvg;
 		  error = lastErr;
-		  return false;
+		  return true;
 	  }
 	  else{
-		  integral = -1;
-		  error = -1;
-		  return true;
+		  printf("Returing fail:%i and bool is true\n", fail);
+		  integral = 0;
+		  error = 0;
+		  return false;
 	  }
     }
 	
@@ -1553,7 +1552,7 @@ namespace quad {
 			}
 			
 			int max_regions = MAX_GLOBALPOOL_SIZE;
-			
+			CudaCheckError();	
             BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
                numThreads,

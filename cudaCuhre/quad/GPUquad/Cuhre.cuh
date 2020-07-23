@@ -704,7 +704,7 @@ namespace quad {
 		//auto t1 = std::chrono::high_resolution_clock::now();
 		
 		if(!phase1type){
-			kernel->IntegrateFirstPhase(d_integrand,
+			convergence = kernel->IntegrateFirstPhase(d_integrand,
                                     epsrel,
                                     epsabs,
                                     integral,
@@ -730,6 +730,7 @@ namespace quad {
         T* optionalInfo = (T*)malloc(sizeof(T) * 2);
 		
 		auto t2 = std::chrono::high_resolution_clock::now();
+		printf("number of active regions before phase 2:%lu\n", kernel->getNumActiveRegions());
         if (kernel->getNumActiveRegions() > 0 && convergence == false) {
 		
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
