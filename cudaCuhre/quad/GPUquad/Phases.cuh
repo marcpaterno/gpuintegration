@@ -771,12 +771,13 @@ template <typename T, int NDIM>
 	int maxdiv = 0;
 	
     if (threadIdx.x == 0) {
+	 //printf("Starting\n");
       memcpy(slows, lows, 	sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
       max_global_pool_size = max_regions;
 	  gPool = &ggRegionPool[blockIdx.x * max_regions];
     }
-	
+	__syncthreads(); //added for testing
     InitSMemRegions(sRegionPool); //sets every region in shared memory to zero
 	int sRegionPoolSize = 1;
 	
@@ -796,7 +797,6 @@ template <typename T, int NDIM>
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
 	
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
-	
 	if(threadIdx.x == 0 && phase1_type == 0){
 		ERR = dRegionsError[blockIdx.x + numRegions];
 	}
@@ -818,7 +818,7 @@ template <typename T, int NDIM>
     T w = 0;
     T avg = 0;
     T sigsq = 0;
-	
+	//int currDiv = 0;
     while (nregions < max_global_pool_size &&
            ERR > MaxErr(RESULT, epsrel, epsabs)) {
 	
@@ -841,8 +841,9 @@ template <typename T, int NDIM>
         bL = &RegionLeft->bounds[bisectdim];
         bR = &RegionRight->bounds[bisectdim];
 		
+		//currDiv = RegionLeft->div;
         RegionRight->div = ++RegionLeft->div;
-	
+		
 		if(RegionRight->div > maxdiv)
 			maxdiv = RegionRight->div;
 		
@@ -874,8 +875,9 @@ template <typename T, int NDIM>
         Result* rL = &RegionLeft->result;
         Result* rR = &RegionRight->result;
 		
-		//printf("Pre Ref L: %.18f, %.18f diff:%.15f\n", rL->avg, rL->err, rL->avg + rR->avg - result.avg);
-		//printf("Pre Ref R: %.18f, %.18f\n", rR->avg, rR->err);
+		//printf("Parent:%.20f +- %.20f currdiv:%i\n", result.avg, result.err, currDiv);
+		//printf("Pre Ref L: %.20f, %.20f diff:%.15f\n", rL->avg, rL->err, rL->avg + rR->avg - result.avg);
+		//printf("Pre Ref R: %.20f, %.20f\n", rR->avg, rR->err);
 		//printf("lastavg:%.15f, lasterr:%.15f, weightsum:%15f, avgsum:%.15f\n", lastavg, lasterr , weightsum, avgsum);
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
@@ -932,11 +934,8 @@ template <typename T, int NDIM>
       }
 	 
       activeRegions[blockIdx.x] = isActive;
-	 // printf("[%i] active:%i nregions:%i ratio:%f\n", blockIdx.x, isActive, nregions, ERR/MaxErr(RESULT, epsrel, epsabs) );
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-	  if(ERR<0)
-		  printf("[%i] value:%.15f err:%.15f nregions:%i\n", blockIdx.x, RESULT, ERR, nregions);
       dRegionsNumRegion[blockIdx.x] = nregions;
 
     }

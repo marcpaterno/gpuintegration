@@ -32,16 +32,20 @@ struct Structures {
     , _cGeneratorCount(nullptr)
     , _GPUNorm(nullptr)
   {}
+  
+  ~Structures(){
+	
+  }
 
-  T* const __restrict__ _gpuG;
-  T* const __restrict__ _cRuleWt;
-  T* const __restrict__ _GPUScale;
-  T* const __restrict__ _GPUNorm;
-  int* const __restrict__ _gpuGenPos;
-  int* const __restrict__ _gpuGenPermGIndex;
-  int* const __restrict__ _gpuGenPermVarCount;
-  int* const __restrict__ _gpuGenPermVarStart;
-  size_t* const __restrict__ _cGeneratorCount;
+  T* /*const __restrict__*/ _gpuG;
+  T* /*const __restrict__*/ _cRuleWt;
+  T* /*const __restrict__*/ _GPUScale;
+  T* /*const __restrict__*/ _GPUNorm;
+  int* /*const __restrict__*/ _gpuGenPos;
+  int* /*const __restrict__*/ _gpuGenPermGIndex;
+  int* /*const __restrict__*/ _gpuGenPermVarCount;
+  int* /*const __restrict__*/ _gpuGenPermVarStart;
+  size_t* /*const __restrict__*/ _cGeneratorCount;
 };
 
 struct cuhreResult{

@@ -56,12 +56,9 @@ namespace quad {
     }
 
     ~Cuhre()
-    {
-      if (VERBOSE) {
-        sprintf(msg, "Cuhre Destructor");
-        Print(msg);
-      }
+    {	  
       delete kernel;
+	  printf("Deleted Kernel\n");
     }
 
 #define BUFSIZE 256
@@ -727,13 +724,13 @@ namespace quad {
 		//std::cout<<"Phase 1 time in ms:"<< dt.count()<<std::endl;
 		
 		errorFlag = kernel->GetErrorFlag();
-        T* optionalInfo = (T*)malloc(sizeof(T) * 2);
+        T* optionalInfo = nullptr;
 		
-		auto t2 = std::chrono::high_resolution_clock::now();
-		printf("number of active regions before phase 2:%lu\n", kernel->getNumActiveRegions());
+		//auto t2 = std::chrono::high_resolution_clock::now();
+		//printf("number of active regions before phase 2:%lu\n", kernel->getNumActiveRegions());
         if (kernel->getNumActiveRegions() > 0 && convergence == false) {
 		
-          errorFlag = kernel->IntegrateSecondPhase(d_integrand,
+			errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
                                                    integral,
@@ -741,17 +738,15 @@ namespace quad {
                                                    nregions,
                                                    neval,
                                                    optionalInfo);
-		  if (error <= MaxErr(integral, epsrel, epsabs)) {
-			errorFlag = 0;
+			printf("ratio:%f error:%f MaxErr:%f\n",  error/MaxErr(integral, epsrel, epsabs), error,MaxErr(integral, epsrel, epsabs) );
+		 
+			if (error <= MaxErr(integral, epsrel, epsabs)) {
+				errorFlag = 0;
+			}
         }
-        }
-		//dt = std::chrono::high_resolution_clock::now() - t2;
-		//std::cout<<"Phase 2 time in ms:"<< dt.count()<<std::endl;
-	
-        
-
-        //printf("%.12f, %.12f, %lu, %i\n", integral, error, nregions, errorFlag);
       }
+	  
+	  cudaFree(d_integrand);
       return errorFlag;
     }
   };
