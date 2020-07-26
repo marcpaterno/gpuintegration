@@ -10,7 +10,6 @@
 #include "quad/GPUquad/Cuhre.cuh"
 #include "quad/util/Volume.cuh"
 
-
 using namespace quad;
 
 TEST_CASE("BoxIntegral8_15")
@@ -24,6 +23,7 @@ TEST_CASE("BoxIntegral8_15")
     quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
 	BoxIntegral8_15 integrand;
 	
+	std::stringstream outfile;
 	std::string id 			= "BoxIntegral8_15";
 	std::string timefile 	= id + "_time.out";
 	int _final 				= 1;
@@ -31,11 +31,10 @@ TEST_CASE("BoxIntegral8_15")
 	int phase_I_type 		= 0; // alternative phase 1
 	double true_value 		= 8879.851175413485;
 	
-	
 	using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
 	auto t0 = std::chrono::high_resolution_clock::now();
 	auto const result = cuhre.integrate<BoxIntegral8_15>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
-
+	
 	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 	
 	//-------------------------------------------------
@@ -44,7 +43,7 @@ TEST_CASE("BoxIntegral8_15")
 	double last_recorded_time = 0;
 	
 		//output data for analysis
-	FinalDataPrint(id, true_value, epsrel, epsabs, result.value, result.error,
+	FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
 					result.nregions, result.status, _final, dt.count(), id + ".csv");
 	
 	if(myfile.is_open())
@@ -79,6 +78,7 @@ TEST_CASE("BoxIntegral8_25")
     quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
 	BoxIntegral8_25 integrand;
 	
+	std::stringstream outfile;
 	std::string id 			= "BoxIntegral8_25";
 	std::string timefile 	= id + "_time.out";
 	int _final 				= 1;
@@ -99,7 +99,7 @@ TEST_CASE("BoxIntegral8_25")
 	double last_recorded_time = 0;
 	
 	//output data for analysis
-	FinalDataPrint(id, true_value, epsrel, epsabs, result.value, result.error,
+	FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
 					result.nregions, result.status, _final, dt.count(), id + ".csv");
 	
 	if(myfile.is_open())
@@ -131,6 +131,7 @@ TEST_CASE("BoxIntegral8_22")
     quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
 	BoxIntegral8_22 integrand;
 	
+	std::stringstream outfile;
 	std::string id 			= "BoxIntegral8_22";
 	std::string timefile 	= id + "_time.out";
 	int _final 				= 1;
@@ -151,7 +152,7 @@ TEST_CASE("BoxIntegral8_22")
 	double last_recorded_time = 0;
 	
 	//output data for analysis
-	FinalDataPrint(id, true_value, epsrel, epsabs, result.value, result.error,
+	FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
 					result.nregions, result.status, _final, dt.count(), id + ".csv");
 	
 	if(myfile.is_open())

@@ -19,7 +19,17 @@ target_include_directories(BoxIntegrals PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
-add_test(BoxIntegrals test_cuhre_convergence)
+add_test(BoxIntegrals BoxIntegrals)
+
+add_executable(B8_22 B8_22.cu)
+target_compile_options(B8_22 PRIVATE "-arch=sm_70")
+set_target_properties(B8_22 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(B8_22 util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(B8_22 PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(B8_22 B8_22)
 
 add_executable(fun6d_demo fun6d_demo.cc)
 target_include_directories(fun6d_demo PRIVATE
