@@ -58,7 +58,7 @@ namespace quad {
     ~Cuhre()
     {	  
       delete kernel;
-	  printf("Deleted Kernel\n");
+	  QuadDebug(cudaDeviceReset());
     }
 
 #define BUFSIZE 256
@@ -679,12 +679,12 @@ namespace quad {
 	  
       int errorFlag = 0;
       int numprocs = 0;
-
+		
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
         d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-
+	  
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -729,7 +729,6 @@ namespace quad {
 		//auto t2 = std::chrono::high_resolution_clock::now();
 		//printf("number of active regions before phase 2:%lu\n", kernel->getNumActiveRegions());
         if (kernel->getNumActiveRegions() > 0 && convergence == false) {
-		
 			errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
@@ -738,11 +737,13 @@ namespace quad {
                                                    nregions,
                                                    neval,
                                                    optionalInfo);
-			printf("ratio:%f error:%f MaxErr:%f\n",  error/MaxErr(integral, epsrel, epsabs), error,MaxErr(integral, epsrel, epsabs) );
+			//printf("ratio:%f error:%f MaxErr:%f epsrel:%.15f\n",  error/MaxErr(integral, epsrel, epsabs), error,MaxErr(integral, epsrel, epsabs), epsrel);
 		 
 			if (error <= MaxErr(integral, epsrel, epsabs)) {
 				errorFlag = 0;
 			}
+			else
+				errorFlag = 1;
         }
       }
 	  
