@@ -336,7 +336,6 @@ namespace quad {
 	
 	~Rule()
     {
-		printf("Rule Destructor Start\n");
 		Host.ReleaseMemory(cpuG);
 		Host.ReleaseMemory(CPURuleWt);
 		Host.ReleaseMemory(CPUScale);
@@ -348,7 +347,6 @@ namespace quad {
 		Host.ReleaseMemory(cpuGenPermGIndex);
 		Host.ReleaseMemory(cpuGenPermVarStart);
 		Host.ReleaseMemory(genPtr);
-		printf("Rule Destructor End\n");
     }
    
     void
@@ -356,7 +354,7 @@ namespace quad {
     {
       Device.DeviceInit(device, VERBOSE);
 		
-	  printf("Const Memory size:%lu\n", sizeof(T) * NDIM * NSETS+
+	  /*printf("Const Memory size:%lu\n", sizeof(T) * NDIM * NSETS+
 										sizeof(T) * NRULES * NSETS+
 										sizeof(size_t) * NSETS+
 										sizeof(T) * NSETS * NRULES+
@@ -364,7 +362,7 @@ namespace quad {
 										sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE+
 										sizeof(int) * FEVAL+
 										sizeof(int) * FEVAL+
-										sizeof(int) * (FEVAL + 1));
+										sizeof(int) * (FEVAL + 1));*/
 										
 										
 										
