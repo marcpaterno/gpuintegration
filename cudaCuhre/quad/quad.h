@@ -53,7 +53,8 @@ struct cuhreResult{
 	double error;
 	size_t neval;
 	size_t nregions;
-	bool   status;
+	int   status;
+	size_t activeRegions;
 };
 
 struct Result {
