@@ -56,7 +56,7 @@ main(int argc, char** argv)
   Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
 		
   BoxIntegral8_22 integrand;
-  int _final 			= 1;
+  int _final 			= 0;
   int outfileVerbosity  = 0;
   int phase_I_type 		= 0; // alternative phase 1
   //double true_value 	= .999926247661939;
