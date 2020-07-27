@@ -8,20 +8,20 @@
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b)) ? a : b)
 
-
 class Test {
 public:
   __device__ __host__ double
-  operator()(double x, double y, double z, double k, double l, double m){
-	return sin(x + y + z + k +l + m);
+  operator()(double x, double y, double z, double k, double l, double m)
+  {
+    return sin(x + y + z + k + l + m);
   }
 };
 
 class FUNC1 {
 public:
-	//DCUHRE ANSWER with epsrel 1e-4: 2.705514721507 +- 2.70543224E-04
-	//range (0,1)
-	
+  // DCUHRE ANSWER with epsrel 1e-4: 2.705514721507 +- 2.70543224E-04
+  // range (0,1)
+
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -40,25 +40,25 @@ public:
   }
 };
 
-class absCosSum5DWithoutK{
-	// ESTIMATED ANSWER = 0.6371054
-	public:
-		__device__ __host__ double
-		operator()(double v, double w, double x, double y, double z){
-			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
-		}
-	
+class absCosSum5DWithoutK {
+  // ESTIMATED ANSWER = 0.6371054
+public:
+  __device__ __host__ double
+  operator()(double v, double w, double x, double y, double z)
+  {
+    return fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z));
+  }
 };
 
-class absCosSum5D{
-	// ESTIMATED ANSWER = 0.6371054
-	public:
-		__device__ __host__ double
-		operator()(double v, double w, double x, double y, double z){
-			return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z)/0.6371054);
-			//return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
-		}
-	
+class absCosSum5D {
+  // ESTIMATED ANSWER = 0.6371054
+public:
+  __device__ __host__ double
+  operator()(double v, double w, double x, double y, double z)
+  {
+    return fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z) / 0.6371054);
+    // return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+  }
 };
 
 class BoxIntegral8_15 {
@@ -73,11 +73,12 @@ public:
              double n,
              double o)
   {
-	
-	double s = 15;
-	double sum = 0;
-	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
-	return pow(sum, s/2);
+
+    double s = 15;
+    double sum = 0;
+    sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+          pow(m, 2) + pow(n, 2) + pow(o, 2);
+    return pow(sum, s / 2);
   }
 };
 
@@ -93,11 +94,12 @@ public:
              double n,
              double o)
   {
-	
-	double s = 22;
-	double sum = 0;
-	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
-	return pow(sum, s/2);
+
+    double s = 22;
+    double sum = 0;
+    sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+          pow(m, 2) + pow(n, 2) + pow(o, 2);
+    return pow(sum, s / 2);
   }
 };
 
@@ -113,11 +115,12 @@ public:
              double n,
              double o)
   {
-	
-	double s = 25;
-	double sum = 0;
-	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2);
-	return pow(sum, s/2);
+
+    double s = 25;
+    double sum = 0;
+    sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+          pow(m, 2) + pow(n, 2) + pow(o, 2);
+    return pow(sum, s / 2);
   }
 };
 
@@ -132,14 +135,15 @@ public:
              double m,
              double n,
              double o,
-			 double p,
-			 double q)
+             double p,
+             double q)
   {
-	
-	double s = 15;
-	double sum = 0;
-	sum = pow(x,2) + pow(y,2) + pow(z,2) + pow(k,2) +pow(l,2) + pow(m,2) + pow(n,2) +pow(o,2) + pow(p,2) + pow(q,2);
-	return pow(sum, s/2);
+
+    double s = 15;
+    double sum = 0;
+    sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+          pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p, 2) + pow(q, 2);
+    return pow(sum, s / 2);
   }
 };
 
@@ -155,23 +159,22 @@ public:
              double n,
              double o)
   {
-	//DCUHRE ANSWER with epsrel 1e-4: 0.992581686378 +- 9.92539990E-05
-	double xx[8] = {x, y, z, k, l, m, n, o};
-	double t1 = 1.0;
-	int N = 1;
-	int NDIM = 8;
-	for (N = 1; N <= NDIM; ++N) {
-		t1 = t1 * cos(pow(2.0, 2.0 * N) * xx[N - 1]);
-	}
+    // DCUHRE ANSWER with epsrel 1e-4: 0.992581686378 +- 9.92539990E-05
+    double xx[8] = {x, y, z, k, l, m, n, o};
+    double t1 = 1.0;
+    int N = 1;
+    int NDIM = 8;
+    for (N = 1; N <= NDIM; ++N) {
+      t1 = t1 * cos(pow(2.0, 2.0 * N) * xx[N - 1]);
+    }
 
-	return cos(t1);
-	
+    return cos(t1);
   }
 };
 
 class FUNC3 {
 public:
-	//DCUHRE ANSWER with epsrel 1e-4: 0.991177511809 +- 9.91162890E-05
+  // DCUHRE ANSWER with epsrel 1e-4: 0.991177511809 +- 9.91162890E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -191,7 +194,7 @@ public:
 
 class FUNC4 {
 public:
-	//DCUHRE ANSWER with epsrel 1e-4: 0.999020280358 +- 6.69561860E-05
+  // DCUHRE ANSWER with epsrel 1e-4: 0.999020280358 +- 6.69561860E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -210,8 +213,8 @@ public:
 
 class FUNC5 {
 public:
-	//ANSWER = 4
-	//DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
+  // ANSWER = 4
+  // DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -222,37 +225,32 @@ public:
              double n,
              double o)
   {
-	double sum = 0;
-	int NDIM = 8;
-	int N = 1;
-	double xx[8] = {x, y, z, k, l, m, n, o};
-	for (N = 1; N <= NDIM; ++N) {
-		sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
-	}
-	return sum / 2.0;
+    double sum = 0;
+    int NDIM = 8;
+    int N = 1;
+    double xx[8] = {x, y, z, k, l, m, n, o};
+    for (N = 1; N <= NDIM; ++N) {
+      sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
+    }
+    return sum / 2.0;
   }
 };
 
 class FUNC55 {
 public:
-	//ANSWER = 4
-	//DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
+  // ANSWER = 4
+  // DCUHRE ANSWER with epsrel 1e-4: 4.000009724 +- 0.000395233
   __device__ __host__ double
-  operator()(double x,
-             double y,
-             double z,
-             double k,
-             double l,
-             double m)
+  operator()(double x, double y, double z, double k, double l, double m)
   {
-	double sum = 0;
-	int NDIM = 6;
-	int N = 1;
-	double xx[6] = {x, y, z, k, l, m};
-	for (N = 1; N <= NDIM; ++N) {
-		sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
-	}
-	return sum / 2.0;
+    double sum = 0;
+    int NDIM = 6;
+    int N = 1;
+    double xx[6] = {x, y, z, k, l, m};
+    for (N = 1; N <= NDIM; ++N) {
+      sum = sum - cos(10.0 * xx[N - 1]) / 0.054402111088937;
+    }
+    return sum / 2.0;
   }
 };
 
@@ -268,7 +266,7 @@ public:
              double n,
              double o)
   {
-	//DCUHRE ANSWER with epsrel 1e-4: -0.731004131572 +- 0.00000000E+00
+    // DCUHRE ANSWER with epsrel 1e-4: -0.731004131572 +- 0.00000000E+00
     int NDIM = 8;
     double alpha = 110.0 / (NDIM * NDIM * sqrt(NDIM * 1.0));
     double sum = pow(alpha, NDIM) * (x + y + z + k + l + m + n + o);
@@ -277,10 +275,9 @@ public:
   }
 };
 
-
 class GENZ_2 {
 public:
-	//DCUHRE ANSWER with epsrel 1e-4: 0.329102695990 +- 3.16149770E-05
+  // DCUHRE ANSWER with epsrel 1e-4: 0.329102695990 +- 3.16149770E-05
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -305,7 +302,7 @@ public:
 
 class GENZ_4 {
 public:
-		//DCUHRE ANSWER with epsrel 1e-4: 0.720492998631 +- 5.00191000E-07
+  // DCUHRE ANSWER with epsrel 1e-4: 0.720492998631 +- 5.00191000E-07
   __device__ __host__ double
   operator()(double x,
              double y,
@@ -316,7 +313,7 @@ public:
              double n,
              double o)
   {
-    double alpha = 0.5; 
+    double alpha = 0.5;
     double beta = alpha;
     double t1 = pow(x - beta, 2) + pow(y - beta, 2) + pow(z - beta, 2) +
                 pow(k - beta, 2) + pow(l - beta, 2) + pow(m - beta, 2) +
@@ -337,8 +334,8 @@ public:
              double n,
              double o)
   {
-	//DCUHRE ANSWER with epsrel 1e-4: 0.375625473524 +- 3.69126870E-05
-    double alpha = 0.5; 
+    // DCUHRE ANSWER with epsrel 1e-4: 0.375625473524 +- 3.69126870E-05
+    double alpha = 0.5;
     double beta = alpha;
     // int N = 1;
 

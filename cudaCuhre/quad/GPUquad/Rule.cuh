@@ -18,7 +18,7 @@ namespace quad {
     size_t fEvalPerRegion;
     DeviceMemory<T> Device;
     HostMemory<T> Host;
-	
+
     void
     Rule9Generate()
     {
@@ -333,48 +333,52 @@ namespace quad {
     {
       return NSETS;
     }
-	
-	~Rule()
+
+    ~Rule()
     {
-		Host.ReleaseMemory(cpuG);
-		Host.ReleaseMemory(CPURuleWt);
-		Host.ReleaseMemory(CPUScale);
-		Host.ReleaseMemory(CPUNorm);
-		Host.ReleaseMemory(cpuGenCount);
-		Host.ReleaseMemory(indxCnt);
-		Host.ReleaseMemory(CPUGeneratorCount);
-		Host.ReleaseMemory(cpuGenPermVarCount);
-		Host.ReleaseMemory(cpuGenPermGIndex);
-		Host.ReleaseMemory(cpuGenPermVarStart);
-		Host.ReleaseMemory(genPtr);
+      Host.ReleaseMemory(cpuG);
+      Host.ReleaseMemory(CPURuleWt);
+      Host.ReleaseMemory(CPUScale);
+      Host.ReleaseMemory(CPUNorm);
+      Host.ReleaseMemory(cpuGenCount);
+      Host.ReleaseMemory(indxCnt);
+      Host.ReleaseMemory(CPUGeneratorCount);
+      Host.ReleaseMemory(cpuGenPermVarCount);
+      Host.ReleaseMemory(cpuGenPermGIndex);
+      Host.ReleaseMemory(cpuGenPermVarStart);
+      Host.ReleaseMemory(genPtr);
     }
-   
+
     void
     loadDeviceConstantMemory(Structures<T>* constMem, int device = 0)
     {
       Device.DeviceInit(device, VERBOSE);
-		
-	  /*printf("Const Memory size:%lu\n", sizeof(T) * NDIM * NSETS+
-										sizeof(T) * NRULES * NSETS+
-										sizeof(size_t) * NSETS+
-										sizeof(T) * NSETS * NRULES+
-										sizeof(T) * NSETS * NRULES+
-										sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE+
-										sizeof(int) * FEVAL+
-										sizeof(int) * FEVAL+
-										sizeof(int) * (FEVAL + 1));*/
-										
-										
-										
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuG, 				sizeof(T) * NDIM * NSETS));
-      QuadDebug(cudaMalloc((void**)&constMem->_cRuleWt, 			sizeof(T) * NRULES * NSETS));
-      QuadDebug(cudaMalloc((void**)&constMem->_cGeneratorCount,     sizeof(size_t) * NSETS));
-      QuadDebug(cudaMalloc((void**)&constMem->_GPUScale, 			sizeof(T) * NSETS * NRULES));
-      QuadDebug(cudaMalloc((void**)&constMem->_GPUNorm, 			sizeof(T) * NSETS * NRULES));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPos,   		sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarCount,  sizeof(int) * FEVAL));
-      QuadDebug( cudaMalloc((void**)&constMem->_gpuGenPermGIndex, 	sizeof(int) * FEVAL));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarStart, 	sizeof(int) * (FEVAL + 1)));
+
+      /*printf("Const Memory size:%lu\n", sizeof(T) * NDIM * NSETS+
+                                                                            sizeof(T)
+         * NRULES * NSETS+ sizeof(size_t) * NSETS+ sizeof(T) * NSETS * NRULES+
+                                                                            sizeof(T)
+         * NSETS * NRULES+ sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE+
+                                                                            sizeof(int)
+         * FEVAL+ sizeof(int) * FEVAL+ sizeof(int) * (FEVAL + 1));*/
+
+      QuadDebug(cudaMalloc((void**)&constMem->_gpuG, sizeof(T) * NDIM * NSETS));
+      QuadDebug(
+        cudaMalloc((void**)&constMem->_cRuleWt, sizeof(T) * NRULES * NSETS));
+      QuadDebug(cudaMalloc((void**)&constMem->_cGeneratorCount,
+                           sizeof(size_t) * NSETS));
+      QuadDebug(
+        cudaMalloc((void**)&constMem->_GPUScale, sizeof(T) * NSETS * NRULES));
+      QuadDebug(
+        cudaMalloc((void**)&constMem->_GPUNorm, sizeof(T) * NSETS * NRULES));
+      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPos,
+                           sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE));
+      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarCount,
+                           sizeof(int) * FEVAL));
+      QuadDebug(
+        cudaMalloc((void**)&constMem->_gpuGenPermGIndex, sizeof(int) * FEVAL));
+      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarStart,
+                           sizeof(int) * (FEVAL + 1)));
 
       QuadDebug(cudaMemcpy(constMem->_gpuG,
                            cpuG,
@@ -464,7 +468,8 @@ namespace quad {
                                                    sizeof(int) * (fEval + 1));
 
       T* cpuGCopy = 0;
-      cpuGCopy = (T*)Host.AllocateMemory((void*)cpuGCopy, sizeof(T) * NDIM * NSETS);
+      cpuGCopy =
+        (T*)Host.AllocateMemory((void*)cpuGCopy, sizeof(T) * NDIM * NSETS);
       for (int iter = 0; iter < NDIM * NSETS; ++iter) {
         cpuGCopy[iter] = cpuG[iter];
       }
@@ -549,10 +554,9 @@ namespace quad {
       cpuGenPermVarStart[permCnt] = genPtrPosIndex;
       genPtrPosIndex = 0;
       loadDeviceConstantMemory(constMem);
-	  
-	  //just added
-	  //Host.ReleaseMemory(cpuGCopy);
-	
+
+      // just added
+      // Host.ReleaseMemory(cpuGCopy);
     }
   };
 }

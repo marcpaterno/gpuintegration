@@ -1,11 +1,11 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
+#include "../quad.h"
 #include "../util/Volume.cuh"
 #include "../util/cudaApply.cuh"
 #include "../util/cudaArray.cuh"
 #include "../util/cudaUtil.h"
-#include "../quad.h"
 
 namespace quad {
 
@@ -52,11 +52,11 @@ namespace quad {
       g[dim] = 0;
       x[dim] = 0;
     }
-	
+
     int posCnt = __ldg(&constMem->_gpuGenPermVarStart[pIndex + 1]) -
                  __ldg(&constMem->_gpuGenPermVarStart[pIndex]);
     int gIndex = constMem->_gpuGenPermGIndex[pIndex];
-	
+
     for (int posIter = 0; posIter < posCnt; ++posIter) {
       int pos = __ldg(
         &constMem->_gpuGenPos[__ldg(&constMem->_gpuGenPermVarStart[pIndex]) +
@@ -79,14 +79,14 @@ namespace quad {
     }
 
     T fun = gpu::apply(*d_integrand, x);
-	//if(threadIdx.x == 0)
-	//	printf("%i, %.20f, %f, %f, %f, %f, %f, %f, %f, %f\n", threadIdx.x, fun, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+    // if(threadIdx.x == 0)
+    //	printf("%i, %.20f, %f, %f, %f, %f, %f, %f, %f, %f\n", threadIdx.x, fun,
+    //x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun;
-	
+
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem->_cRuleWt[gIndex * NRULES + rul]);
-	  
     }
   }
 
@@ -108,19 +108,19 @@ namespace quad {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
 
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
-	
+
     T g[NDIM];
     // T x[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
-	
+
     T ratio =
       Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
-	
-	__syncthreads(); 
+
+    __syncthreads();
     // set dimension range
     for (int dim = 0; dim < NDIM; ++dim) {
 
@@ -131,7 +131,7 @@ namespace quad {
         maxdim = dim;
       }
     }
-	
+
     T sum[NRULES];
     Zap(sum);
 
@@ -176,7 +176,7 @@ namespace quad {
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
-	
+
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
@@ -184,19 +184,19 @@ namespace quad {
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
-	
+
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = computeReduce<T>(sum[i]);
       __syncthreads();
     }
-	
+
     if (threadIdx.x == 0) {
       Result* r = &region->result;
       /* Search for the null rule, in the linear space spanned by two
          successive null rules in our sequence, which gives the greatest
          error estimate among all normalized (1-norm) null rules in this
          space.
-	  */
+          */
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0;
         for (int s = 0; s < NSETS; ++s) {
@@ -207,8 +207,8 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
-	  
-	  //printf("sum[0]:%.20f\n", sum[0]);
+
+      // printf("sum[0]:%.20f\n", sum[0]);
       r->avg = vol * sum[0];
       r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                        errcoeff[0] * sum[2] <= sum[3]) ?

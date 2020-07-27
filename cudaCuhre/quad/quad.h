@@ -32,10 +32,8 @@ struct Structures {
     , _cGeneratorCount(nullptr)
     , _GPUNorm(nullptr)
   {}
-  
-  ~Structures(){
-	
-  }
+
+  ~Structures() {}
 
   T* /*const __restrict__*/ _gpuG;
   T* /*const __restrict__*/ _cRuleWt;
@@ -48,13 +46,13 @@ struct Structures {
   size_t* /*const __restrict__*/ _cGeneratorCount;
 };
 
-struct cuhreResult{
-	double value;
-	double error;
-	size_t neval;
-	size_t nregions;
-	int   status;
-	size_t activeRegions;
+struct cuhreResult {
+  double value;
+  double error;
+  size_t neval;
+  size_t nregions;
+  int status;
+  size_t activeRegions;
 };
 
 struct Result {
@@ -70,7 +68,7 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
-template<int dim>
+template <int dim>
 struct Region {
   int div;
   Result result;

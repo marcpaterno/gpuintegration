@@ -24,7 +24,7 @@ time_and_call(F integrand, double epsrel, double true_value, char const* algname
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
   quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
-
+	
   std::string id 			= "BoxIntegral8_22";
   int outfileVerbosity  	= 0;
   int phase_I_type 			= 0; // alternative phase 1
@@ -38,7 +38,6 @@ time_and_call(F integrand, double epsrel, double true_value, char const* algname
   
   if(result.status == 0 || result.status == 2){
 	  good = true;
-	  //printf("good:%i\n", good);
   }
   outfile.precision(15);
   FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
