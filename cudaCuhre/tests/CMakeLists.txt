@@ -31,6 +31,16 @@ target_include_directories(B8_22 PRIVATE
 )
 add_test(B8_22 B8_22)
 
+add_executable(B8_15 B8_15.cu)
+target_compile_options(B8_15 PRIVATE "-arch=sm_70")
+set_target_properties(B8_15 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(B8_15 util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(B8_15 PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(B8_15 B8_15)
+
 add_executable(fun6d_demo fun6d_demo.cc)
 target_include_directories(fun6d_demo PRIVATE
   ${CMAKE_SOURCE_DIR}/../cubacpp
