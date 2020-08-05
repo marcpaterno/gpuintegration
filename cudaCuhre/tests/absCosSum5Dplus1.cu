@@ -77,6 +77,4 @@ int main(){
 	while (time_and_call(integrand, epsrel, true_value, "pdcuhre_f0", outfile, _final) == true && epsrel >= 2.56e-09) {
       epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
 	}
-	
-	printf("Here\n");
 }
