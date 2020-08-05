@@ -50,6 +50,17 @@ public:
   }
 };
 
+class absCosSum5DWithoutKPlus1 {
+  // ESTIMATED ANSWER = 0.6371054
+public:
+  __device__ __host__ double
+  operator()(double v, double w, double x, double y, double z)
+  {
+    return fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z) + 1.0);
+  }
+};
+
+
 class absCosSum5D {
   // ESTIMATED ANSWER = 0.6371054
 public:
@@ -99,7 +110,8 @@ public:
     double sum = 0;
     sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
           pow(m, 2) + pow(n, 2) + pow(o, 2);
-    return pow(sum, s / 2);
+	double f = pow(sum, s / 2);
+    return f;
   }
 };
 
@@ -164,10 +176,10 @@ public:
     double t1 = 1.0;
     int N = 1;
     int NDIM = 8;
+	
     for (N = 1; N <= NDIM; ++N) {
       t1 = t1 * cos(pow(2.0, 2.0 * N) * xx[N - 1]);
     }
-
     return cos(t1);
   }
 };
