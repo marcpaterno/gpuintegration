@@ -13,7 +13,7 @@ using namespace quad;
 
 template <typename F>
 bool
-time_and_call(F integrand, double epsrel, double true_value, char const* algname, std::stringstream& outfile,	int _final= 0)
+time_and_call(F integrand, double epsrel, double true_value, char const* algname, std::stringstream& outfile,	int _final= 0, int  phase_I_type=0)
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
@@ -25,13 +25,12 @@ time_and_call(F integrand, double epsrel, double true_value, char const* algname
   quad::Volume<double, ndim> vol(lows, highs);
   quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
 	
-  std::string id 			= "BoxIntegral8_22";
+  std::string id 			= "BoxIntegral8_15";
   int outfileVerbosity  	= 0;
-  int phase_I_type 			= 0; // alternative phase 1
   int appendMode			= 1;
   
   auto const t0 = std::chrono::high_resolution_clock::now();
-  cuhreResult const result = alg.integrate<BoxIntegral8_22>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
+  cuhreResult const result = alg.integrate<BoxIntegral8_15>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.value - true_value);
   bool good = false;
@@ -39,7 +38,7 @@ time_and_call(F integrand, double epsrel, double true_value, char const* algname
   if(result.status == 0 || result.status == 2){
 	  good = true;
   }
-  outfile.precision(20);
+  outfile.precision(15);
   FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
 					result.nregions, result.status, _final, dt.count(), id + ".csv", appendMode);
   outfile.str(""); //clear string stream
@@ -51,24 +50,24 @@ time_and_call(F integrand, double epsrel, double true_value, char const* algname
 int main(){
 	double epsrel  = 1.0e-3;  // starting error tolerance.	
 	int _final 			= 0;
-	double true_value 	= 1495369.283757217694;
+	double true_value 	= 8879.851175413485
+;
 	std::stringstream outfile;
-	BoxIntegral8_22 integrand;
+	BoxIntegral8_15 integrand;
 	outfile<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time"<<std::endl; 
-	printf("Testing final = 1\n");
+	int alternative_phase1 = 0;
+	printf("Testing final = 1 with alternative phase I\n");
 	_final = 1;
-	while (time_and_call(integrand, epsrel, true_value, "gpucuhre", outfile, _final) == true && epsrel>=1e-8) {
+	while (time_and_call(integrand, epsrel, true_value, "gpucuhre", outfile, _final, alternative_phase1) == true && epsrel>=1e-8) {
 		epsrel /= 5.0;
 	}
 	
 	_final = 0;
 	epsrel = 1.0e-3;
 	
-	
 	printf("Testing final = 0\n");
-	while (time_and_call(integrand, epsrel, true_value, "gpucuhre", outfile, _final) == true && epsrel >= 2.56e-09) {
+	while (time_and_call(integrand, epsrel, true_value, "gpucuhre", outfile, _final, alternative_phase1) == true && epsrel >= 2.56e-09) {
       epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
 	}
 	
-	printf("Here\n");
 }
