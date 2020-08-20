@@ -641,7 +641,7 @@ namespace quad {
       res.error = 0;
       res.neval = 0;
       res.nregions = 0;
-
+	  
       res.status = integrate<IntegT>(integrand,
                                      epsrel,
                                      epsabs,
@@ -676,7 +676,7 @@ namespace quad {
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
-
+		
       int errorFlag = 0;
       int numprocs = 0;
 
@@ -684,7 +684,7 @@ namespace quad {
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
         d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-
+	
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -696,11 +696,11 @@ namespace quad {
         bool convergence = false;
         kernel->GenerateInitialRegions();
         FIRST_PHASE_MAXREGIONS *= numDevices;
-
+		
         // using MilliSeconds = std::chrono::duration<double,
         // std::chrono::milliseconds::period>; auto t1 =
         // std::chrono::high_resolution_clock::now();
-
+		
         if (!phase1type) {
           convergence = kernel->IntegrateFirstPhase(d_integrand,
                                                     epsrel,
@@ -729,7 +729,7 @@ namespace quad {
         // auto t2 = std::chrono::high_resolution_clock::now();
         // printf("number of active regions before phase 2:%lu\n",
         // kernel->getNumActiveRegions());
-        if (kernel->getNumActiveRegions() > 0 && convergence == false) {
+        if (kernel->getNumActiveRegions() > 0 && convergence == false ) {
           errorFlag = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,

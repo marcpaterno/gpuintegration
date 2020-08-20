@@ -23,20 +23,21 @@ using std::chrono::duration;
 
 template <typename ALG, typename F>
 bool
-time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, char const* algname)
+time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::string algname)
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
   double constexpr epsabs = 1.0e-16;
   auto t0 = std::chrono::high_resolution_clock::now();
   auto res = a.integrate(f, epsrel, epsabs);
+  
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double absolute_error = std::abs(res.value - correct_answer);
   bool const good = (res.status == 0);
   int converge = !good;
   int _final = 0;
  
-  std::cout<<"dcuhre"<<","
+  std::cout<<algname<<","
 		   <<std::to_string(correct_answer)<<","
 			<<epsrel<<","
 			<<epsabs<<","
@@ -82,7 +83,14 @@ int main()
 
   double epsrel = 1.0e-3;
   double true_value = 1495369.283757217694;
-   while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "cuhre") == true && epsrel >= 2.56e-09)
+   while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dcuhre_f0") == true && epsrel >= 2.56e-09)
+  {
+     epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
+  }
+  
+  cuhre.flags = 4;
+  epsrel = 1.0e-3;
+  while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dcuhre_f1") == true && epsrel >= 2.56e-09)
   {
      epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   }
