@@ -1662,7 +1662,7 @@ namespace quad {
 			wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
 			T errorResult =
             thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
-
+			
 			error += errorResult;
 			thrust::device_ptr<int> int_ptr =
             thrust::device_pointer_cast(dRegionsNumRegion);

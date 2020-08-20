@@ -808,10 +808,11 @@ __device__ void cuprintf(const char* fmt, ...)
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
-	
-	 T pseudo_global_val;
-	 T pseudo_global_err;
-	
+	__shared__ int iterations_without;
+	T pseudo_global_val;
+	T pseudo_global_err;
+	T prev_ratio = 0;
+	T prev_error = 0;
 	int maxdiv 		= 0;
 	//T origerr;
 	//T origavg;
@@ -826,6 +827,7 @@ __device__ void cuprintf(const char* fmt, ...)
       memcpy(shighs, highs, sizeof(T) * NDIM);
       max_global_pool_size = max_regions;
       gPool = &ggRegionPool[blockIdx.x * max_regions];
+	  iterations_without = 0;
     }
 	
 	pseudo_global_val = dPh1res[0];
@@ -859,11 +861,15 @@ __device__ void cuprintf(const char* fmt, ...)
     }
 	
     __syncthreads();
+	prev_error = ERR;
+	prev_ratio = ERR/MaxErr(RESULT, epsrel, epsabs);
 	
 	personal_estimate_ratio = RESULT/dPh1res[0];
 	
 	if(numRegions != 0)
 		local_region_cap = min(2048, (int)(personal_estimate_ratio*2048*numRegions));
+	
+	T required_ratio_decrease = abs(1 - prev_ratio)/local_region_cap;
 	
     int nregions = sRegionPoolSize; // is only 1 at this point
     T  lastavg = RESULT;
@@ -999,14 +1005,29 @@ __device__ void cuprintf(const char* fmt, ...)
         ERR 	= Final ? lasterr : sqrt(sigsq);
         RESULT 	= Final ? lastavg : avg;
 		
-		//if(blockIdx.x == 5)
-		//	printf("%i, %.20f, %.20f, local ratio:%.20f pseudo_global ratio:%.20f\n", threadIdx.x, RESULT, ERR, ERR/MaxErr(RESULT, epsrel, epsabs),pseudo_global_err/MaxErr(pseudo_global_val, epsrel, epsabs));
+		if(abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio)< required_ratio_decrease){
+			iterations_without++;
+		}
+		prev_ratio = abs(ERR/MaxErr(RESULT, epsrel, epsabs));
+		/*if(blockIdx.x == 6)
+			printf("%i, %.20f, %.20f, local ratio:%.20f pseudo_global ratio:%.20f local cap:%i rrd:%10f ard:%10f\n", threadIdx.x, 
+		RESULT, 
+		ERR,
+		ERR/MaxErr(RESULT, epsrel, epsabs),
+		pseudo_global_err/MaxErr(pseudo_global_val, epsrel, epsabs),
+		local_region_cap,
+		required_ratio_decrease,
+		abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio));*/
+		
 		//printf("iteration %i gRegionPoolSize:%lu\n", nregions, gRegionPoolSize);
 		//if(threadIdx.x == 0)
 		//printf("%.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %i\n", rL->avg, rL->err, rR->avg, rR->err, RESULT, ERR, nregions);
 	  }
       __syncthreads();
 	  
+	  if(iterations_without >= 1 && numRegions!=0){
+		break;
+	  }
 	  if(numRegions!=0 && pseudo_global_err < MaxErr(pseudo_global_val, epsrel, epsabs)){
 		  if(threadIdx.x == 0)
 			printf("%i, Pseudo Exit ratio: %f Local Ratio:%f\n", blockIdx.x, 
