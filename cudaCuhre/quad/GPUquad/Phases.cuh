@@ -1005,10 +1005,15 @@ __device__ void cuprintf(const char* fmt, ...)
         ERR 	= Final ? lasterr : sqrt(sigsq);
         RESULT 	= Final ? lastavg : avg;
 		
+		
+		
 		if(abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio)< required_ratio_decrease){
 			iterations_without++;
 		}
 		prev_ratio = abs(ERR/MaxErr(RESULT, epsrel, epsabs));
+		
+		
+		
 		/*if(blockIdx.x == 6)
 			printf("%i, %.20f, %.20f, local ratio:%.20f pseudo_global ratio:%.20f local cap:%i rrd:%10f ard:%10f\n", threadIdx.x, 
 		RESULT, 
