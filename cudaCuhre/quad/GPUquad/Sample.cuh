@@ -8,7 +8,7 @@
 #include "../util/cudaUtil.h"
 
 namespace quad {
-	
+
   template <typename T>
   __device__ T
   Sq(T x)
@@ -34,7 +34,7 @@ namespace quad {
 
     return sdata[0];
   }
-	
+
   template <typename IntegT, typename T, int NDIM>
   __device__ void
   computePermutation(IntegT* d_integrand,
@@ -68,7 +68,7 @@ namespace quad {
         g[absPos - 1] = -__ldg(&constMem->_gpuG[gIndex * NDIM + posIter]);
       }
     }
-	
+
     T jacobian = 1;
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
@@ -77,55 +77,56 @@ namespace quad {
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
       x[dim] = (highs[dim] - lows[dim]) * x[dim] + lows[dim];
     }
-	/*&gpu::cudaArray<T, NDIM> m;
-	m[0] = 0x1.f4b65783633c5p-1;
-	m[1] = 0x1.f4b65783633c5p-1;
-	m[2] = 0x1p-1;
-	m[3] = 0x1p-1;
-	m[4] = 0x1p-1;
-	m[5] = 0x1p-1;
-	m[6] = 0x1p-1;
-	m[7] = 0x1.69350f939876p-6;
-	printf("GPU result:%.17f\n", gpu::apply(*d_integrand, m));*/
-	
+    /*&gpu::cudaArray<T, NDIM> m;
+    m[0] = 0x1.f4b65783633c5p-1;
+    m[1] = 0x1.f4b65783633c5p-1;
+    m[2] = 0x1p-1;
+    m[3] = 0x1p-1;
+    m[4] = 0x1p-1;
+    m[5] = 0x1p-1;
+    m[6] = 0x1p-1;
+    m[7] = 0x1.69350f939876p-6;
+    printf("GPU result:%.17f\n", gpu::apply(*d_integrand, m));*/
+
     T fun = gpu::apply(*d_integrand, x);
-   /* if(b[0].lower == .5 && b[0].upper == 1.0 &&
-							b[1].lower == 0.75 &&
-							b[1].upper == .875 &&
-							b[2].lower == 0.0 && 
-							b[2].upper == 1.0 &&
-							b[3].lower == 0.0 && 
-							b[4].lower == 0.0 &&
-							b[4].upper == 1.0 &&
-							b[5].lower == .25 &&
-							b[5].upper == .50 &&
-							b[6].lower == 0.0 &&
-							b[6].upper == 0.0625 &&
-							b[7].lower == 0.5 &&
-							b[7].upper == .75)
-			printf("%i, %.20f, %f, %f, %f, %f, %f, %f, %f, %f\n", threadIdx.x, fun,
-				x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);	*/				
-	
+    /* if(b[0].lower == .5 && b[0].upper == 1.0 &&
+                                                         b[1].lower == 0.75 &&
+                                                         b[1].upper == .875 &&
+                                                         b[2].lower == 0.0 &&
+                                                         b[2].upper == 1.0 &&
+                                                         b[3].lower == 0.0 &&
+                                                         b[4].lower == 0.0 &&
+                                                         b[4].upper == 1.0 &&
+                                                         b[5].lower == .25 &&
+                                                         b[5].upper == .50 &&
+                                                         b[6].lower == 0.0 &&
+                                                         b[6].upper == 0.0625 &&
+                                                         b[7].lower == 0.5 &&
+                                                         b[7].upper == .75)
+                         printf("%i, %.20f, %f, %f, %f, %f, %f, %f, %f, %f\n",
+       threadIdx.x, fun, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+     */
+
     fun = fun * jacobian;
-    sdata[threadIdx.x] = fun;	//target for reduction
-	
+    sdata[threadIdx.x] = fun; // target for reduction
+
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem->_cRuleWt[gIndex * NRULES + rul]);
-	  if(rul == 0){
-		/*printf("%a, %a, %a,  %a, %a, %a, %a, %a, %a, %a, %a\n", fun*constMem->_cRuleWt[gIndex * NRULES + rul],
-																		 fun, 
-																		 constMem->_cRuleWt[gIndex * NRULES + rul],
-																		 x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);  */
-		  
-		/*printf("%i, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f\n",  threadIdx.x, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], 
-																		 fun*constMem->_cRuleWt[gIndex * NRULES + rul],
-																		 fun, 
-																		 constMem->_cRuleWt[gIndex * NRULES + rul]
-																		);*/
-	  }
+      if (rul == 0) {
+        /*printf("%a, %a, %a,  %a, %a, %a, %a, %a, %a, %a, %a\n",
+           fun*constMem->_cRuleWt[gIndex * NRULES + rul], fun,
+                                                                                                                                         constMem->_cRuleWt[gIndex * NRULES + rul],
+                                                                                                                                         x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);  */
+
+        /*printf("%i, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %.20f,
+           %.20f, %.20f, %.20f\n",  threadIdx.x, x[0], x[1], x[2], x[3], x[4],
+           x[5], x[6], x[7], fun*constMem->_cRuleWt[gIndex * NRULES + rul], fun,
+                                                                                                                                         constMem->_cRuleWt[gIndex * NRULES + rul]
+                                                                                                                                        );*/
+      }
     }
   }
-	
+
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
   template <typename IntegT, typename T, int NDIM>
   __device__ void
@@ -138,52 +139,54 @@ namespace quad {
                     T* lows,
                     T* highs)
   {
-	
+
     // read
     __syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
-	//T ranges[NDIM];
+    // T ranges[NDIM];
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
-	
+
     T g[NDIM];
     // T x[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
-	
-    T ratio = Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
+
+    T ratio =
+      Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
-	
+
     __syncthreads();
     // set dimension range
     for (int dim = 0; dim < NDIM; ++dim) {
-		
+
       Bounds* b = &region->bounds[dim];
       T range = b->upper - b->lower;
       if (range > maxrange) {
         maxrange = range;
         maxdim = dim;
-		//ranges[dim] = range;
+        // ranges[dim] = range;
       }
     }
-	
+
     T sum[NRULES];
     Zap(sum);
-	
+
     // Compute first set of permutation outside for loop to extract the Function
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
     __syncthreads();
     if (pIndex < FEVAL) {
-      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
+      computePermutation<IntegT, T, NDIM>(
+        d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
-	
+
     __syncthreads();
     T* f = &sdata[0];
     __syncthreads();
-	
+
     if (threadIdx.x == 0) {
       Result* r = &region->result;
       T* f1 = f;
@@ -195,37 +198,40 @@ namespace quad {
         T* fm = fp + 1;
         T fourthdiff =
           fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
-		
+
         f1 = fm;
-		//printf("fourthdiff:%.20f, base:%.20f, ratio:%.20f, fp[0]:%.20f, fm[0]:%.20f, fp[offset]:%.20f, fm[offset]:%.20f\n", fourthdiff, base ,ratio ,fp[0] , fm[0] , fp[offset], fm[offset]);
+        // printf("fourthdiff:%.20f, base:%.20f, ratio:%.20f, fp[0]:%.20f,
+        // fm[0]:%.20f, fp[offset]:%.20f, fm[offset]:%.20f\n", fourthdiff, base
+        // ,ratio ,fp[0] , fm[0] , fp[offset], fm[offset]);
         if (fourthdiff > maxdiff) {
           maxdiff = fourthdiff;
           bisectdim = dim;
         }
       }
-	  
+
       r->bisectdim = bisectdim;
     }
     __syncthreads();
-	
+
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
-	__syncthreads();
+    __syncthreads();
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-      computePermutation<IntegT, T, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
+      computePermutation<IntegT, T, NDIM>(
+        d_integrand, pIndex, region->bounds, g, x, sum, constMem, lows, highs);
     }
-	 __syncthreads();
+    __syncthreads();
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = computeReduce<T>(sum[i]);
       __syncthreads();
     }
-	
+
     if (threadIdx.x == 0) {
       Result* r = &region->result;
       /* Search for the null rule, in the linear space spanned by two
@@ -243,7 +249,7 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
-	
+
       r->avg = vol * sum[0];
       r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                        errcoeff[0] * sum[2] <= sum[3]) ?

@@ -619,30 +619,34 @@ namespace quad {
       // MPI_Finalize();
       return errorFlag;
     }
-	
-	template <typename IntegT>
-	int 
-	ExecutePhaseI(IntegT* d_integrand, cuhreResult& res, Volume<T, NDIM>* volume, const int phase1type){
-		assert(phase1type == 0 || phase1type == 1);
-		if(phase1type)
-			return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
-                                                          epsrel,
-                                                          epsabs,
-                                                          res.estimate,
-                                                          res.errorest,
-                                                          res.nregions,
-                                                          res.neval,
-                                                          volume);
-		return kernel->IntegrateFirstPhase(d_integrand,
-                                                    epsrel,
-                                                    epsabs,
-                                                    res.estimate,
-                                                    res.errorest,
-                                                    res.nregions,
-                                                    res.neval,
-                                                    volume);												  
-	}
-	
+
+    template <typename IntegT>
+    int
+    ExecutePhaseI(IntegT* d_integrand,
+                  cuhreResult& res,
+                  Volume<T, NDIM>* volume,
+                  const int phase1type)
+    {
+      assert(phase1type == 0 || phase1type == 1);
+      if (phase1type)
+        return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+                                                 epsrel,
+                                                 epsabs,
+                                                 res.estimate,
+                                                 res.errorest,
+                                                 res.nregions,
+                                                 res.neval,
+                                                 volume);
+      return kernel->IntegrateFirstPhase(d_integrand,
+                                         epsrel,
+                                         epsabs,
+                                         res.estimate,
+                                         res.errorest,
+                                         res.nregions,
+                                         res.neval,
+                                         volume);
+    }
+
     template <typename IntegT>
     cuhreResult
     integrate(IntegT integrand,
@@ -653,48 +657,56 @@ namespace quad {
               int Final = 0,
               const int phase1type = 0)
     {
-		
-	  cuhreResult res;
-	  
+
+      cuhreResult res;
+
       this->epsrel = epsrel;
       this->epsabs = epsabs;
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
-		
+
       int numprocs = 0;
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-      cudaMemcpy(d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-		
+      cudaMemcpy(
+        d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
+
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-        res.status = MPI_INTEGRATE(&integrand, epsrel, epsabs, res.estimate, res.errorest, res.nregions, res.neval, volume);
+        res.status = MPI_INTEGRATE(&integrand,
+                                   epsrel,
+                                   epsabs,
+                                   res.estimate,
+                                   res.errorest,
+                                   res.nregions,
+                                   res.neval,
+                                   volume);
         MPI_Finalize();
-		return res;
-      } 
-	 
+        return res;
+      }
+
       bool convergence = false;
       kernel->GenerateInitialRegions();
-      FIRST_PHASE_MAXREGIONS *= numDevices;	
-	
-	  convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
-	  if(convergence)
-		return res;
- 
-	  res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
-															 epsrel,
-															 epsabs,
-															 res.estimate,
-															 res.errorest,
-															 res.nregions,
-															 res.neval,
-															 nullptr);														 
-	  res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
-	  
+      FIRST_PHASE_MAXREGIONS *= numDevices;
+
+      convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
+      if (convergence)
+        return res;
+
+      res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
+                                                             epsrel,
+                                                             epsabs,
+                                                             res.estimate,
+                                                             res.errorest,
+                                                             res.nregions,
+                                                             res.neval,
+                                                             nullptr);
+      res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
+
       cudaFree(d_integrand);
-	  return res;
+      return res;
     }
   };
 }
