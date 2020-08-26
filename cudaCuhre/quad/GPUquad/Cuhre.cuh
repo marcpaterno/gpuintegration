@@ -56,7 +56,7 @@ namespace quad {
       QuadDebug(cudaDeviceReset());
     }
 
-#define BUFSIZE 256
+int const BUFSIZE = 512;
 #define TAG 0
 
     void
@@ -66,7 +66,7 @@ namespace quad {
       int devCount = 0, namelen = 0;
       char processor_name[MPI_MAX_PROCESSOR_NAME];
       // char idstr[256], idstr2[256], buff[BUFSIZE];
-      char idstr[320], idstr2[320], buff[BUFSIZE];
+      char idstr[BUFSIZE], idstr2[BUFSIZE], buff[BUFSIZE];
       MPI_Recv(buff, BUFSIZE, MPI_CHAR, 0, TAG, MPI_COMM_WORLD, &stat);
       MPI_Get_processor_name(processor_name, &namelen);
       cudaGetDeviceCount(&devCount);
@@ -84,8 +84,7 @@ namespace quad {
             cudaDeviceProp devProp;
             cudaGetDeviceProperties(&devProp, gpuNode);
             sprintf(idstr2, " %s (%i) ", devProp.name, gpuNode);
-            strncat(idstr, idstr2, BUFSIZE);
-          }
+            strncat(idstr, idstr2, BUFSIZE-1);}
         } else {
           cudaDeviceProp devProp;
           cudaGetDeviceProperties(&devProp, nodeRank);
