@@ -18,7 +18,7 @@ time_and_call(std::string id,
               double epsrel,
               double true_value,
               char const* algname,
-              std::stringstream& outfile,
+              std::ostream& outfile,
               int _final = 0)
 {
   using MilliSeconds =
@@ -30,7 +30,10 @@ time_and_call(std::string id,
 
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
+  int const key = 0;
+  int const verbose = 0;
+  int const numdevices = 1;
+  quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
 
   // std::string id 			= "BoxIntegral8_22";
   int outfileVerbosity = 0;
@@ -47,12 +50,12 @@ time_and_call(std::string id,
     good = true;
   }
 
-  std::cout << std::fixed << id << ",\t" << std::fixed << true_value << ",\t"
-            << std::scientific << epsrel << ",\t\t\t" << std::scientific
-            << epsabs << ",\t" << std::fixed << result.estimate << ",\t"
-            << std::fixed << result.errorest << ",\t" << std::fixed
-            << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-            << _final << ",\t" << dt.count() << std::endl;
+  outfile << std::fixed << id << ",\t" << std::fixed << true_value << ",\t"
+          << std::scientific << epsrel << ",\t\t\t" << std::scientific
+          << epsabs << ",\t" << std::fixed << result.estimate << ",\t"
+          << std::fixed << result.errorest << ",\t" << std::fixed
+          << result.nregions << ",\t" << std::fixed << result.status << ",\t"
+          << _final << ",\t" << dt.count() << std::endl;
   // printf("%.15f +- %.15f epsrel:%e final:%i nregions:%lu flag:%i time:%f\n",
   // result.value, result.error, epsrel, _final, result.nregions, result.status,
   // dt.count());
@@ -63,22 +66,20 @@ int
 main()
 {
   double epsrel = 1.0e-3; // starting error tolerance.
-  int _final = 0;
+  double const epsrel_min = 1.0e-12;
   double true_value = 1495369.283757217694;
-  std::stringstream outfile;
   BoxIntegral8_22 integrand;
-  outfile << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time"
-          << std::endl;
-  _final = 1;
+  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
+             "converge, final, total_time\n";
+  int _final = 1;
   while (time_and_call("pdcuhre_f1",
                        integrand,
                        epsrel,
                        true_value,
                        "gpucuhre",
-                       outfile,
+                       std::cout,
                        _final) == true &&
-         epsrel >= 1e-8) {
+         epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }
 
@@ -90,9 +91,9 @@ main()
                        epsrel,
                        true_value,
                        "gpucuhre",
-                       outfile,
+                       std::cout,
                        _final) == true &&
-         epsrel >= 2.56e-09) {
+         epsrel >= epsrel_min) {
     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   }
 }
