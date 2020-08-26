@@ -620,6 +620,33 @@ namespace quad {
       return errorFlag;
     }
 	
+	template <typename IntegT>
+	bool 
+	ExecutePhaseI(IntegT* d_integrand, cuhreResult& res, Volume<T, NDIM>* volume, const int phase1type){
+		
+		switch(phase1type){
+			case 0 :
+				return kernel->IntegrateFirstPhase(d_integrand,
+                                                    epsrel,
+                                                    epsabs,
+                                                    res.estimate,
+                                                    res.errorest,
+                                                    res.nregions,
+                                                    res.neval,
+                                                    volume);
+			case 1:
+				return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+                                                          epsrel,
+                                                          epsabs,
+                                                          res.estimate,
+                                                          res.errorest,
+                                                          res.nregions,
+                                                          res.neval,
+                                                          volume);
+		  
+	  }
+	}
+	
     template <typename IntegT>
     cuhreResult
     integrate(IntegT integrand,
@@ -635,7 +662,6 @@ namespace quad {
 	  
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
@@ -648,55 +674,29 @@ namespace quad {
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-        res.status = MPI_INTEGRATE(
-          &integrand, epsrel, epsabs, res.estimate, res.errorest, res.nregions, res.neval, volume);
+        res.status = MPI_INTEGRATE(&integrand, epsrel, epsabs, res.estimate, res.errorest, res.nregions, res.neval, volume);
         MPI_Finalize();
-      } else {
-
-        bool convergence = false;
-        kernel->GenerateInitialRegions();
-        FIRST_PHASE_MAXREGIONS *= numDevices;
-
-        if (!phase1type) {
-          convergence = kernel->IntegrateFirstPhase(d_integrand,
-                                                    epsrel,
-                                                    epsabs,
-                                                    res.estimate,
-                                                    res.errorest,
-                                                    res.nregions,
-                                                    res.neval,
-                                                    volume);
-        } else {
-          convergence = kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
-                                                          epsrel,
-                                                          epsabs,
-                                                          res.estimate,
-                                                          res.errorest,
-                                                          res.nregions,
-                                                          res.neval,
-                                                          volume);
-        }
-
-        res.status = kernel->GetErrorFlag();
-        T* optionalInfo = nullptr;
-
-        if (kernel->getNumActiveRegions() > 0 && convergence == false ) {
-          res.status = kernel->IntegrateSecondPhase(d_integrand,
-                                                   epsrel,
-                                                   epsabs,
-                                                   res.estimate,
-                                                   res.errorest,
-                                                   res.nregions,
-                                                   res.neval,
-                                                   optionalInfo);
-
-          if (res.errorest <= MaxErr(res.estimate, epsrel, epsabs)) {
-            res.status = 0;
-          } else
-            res.status = 1;
-        }
-      }
-
+		return res;
+      } 
+	 
+      bool convergence = false;
+      kernel->GenerateInitialRegions();
+      FIRST_PHASE_MAXREGIONS *= numDevices;	
+	
+	  convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
+	  if(convergence)
+		return res;
+	  
+	  res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
+															 epsrel,
+															 epsabs,
+															 res.estimate,
+															 res.errorest,
+															 res.nregions,
+															 res.neval,
+															 nullptr);														 
+	  res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
+	  
       cudaFree(d_integrand);
 	  return res;
     }
