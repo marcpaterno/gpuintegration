@@ -621,21 +621,11 @@ namespace quad {
     }
 	
 	template <typename IntegT>
-	bool 
+	int 
 	ExecutePhaseI(IntegT* d_integrand, cuhreResult& res, Volume<T, NDIM>* volume, const int phase1type){
-		
-		switch(phase1type){
-			case 0 :
-				return kernel->IntegrateFirstPhase(d_integrand,
-                                                    epsrel,
-                                                    epsabs,
-                                                    res.estimate,
-                                                    res.errorest,
-                                                    res.nregions,
-                                                    res.neval,
-                                                    volume);
-			case 1:
-				return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+		assert(phase1type == 0 || phase1type == 1);
+		if(phase1type)
+			return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
                                                           epsrel,
                                                           epsabs,
                                                           res.estimate,
@@ -643,8 +633,14 @@ namespace quad {
                                                           res.nregions,
                                                           res.neval,
                                                           volume);
-		  
-	  }
+		return kernel->IntegrateFirstPhase(d_integrand,
+                                                    epsrel,
+                                                    epsabs,
+                                                    res.estimate,
+                                                    res.errorest,
+                                                    res.nregions,
+                                                    res.neval,
+                                                    volume);												  
 	}
 	
     template <typename IntegT>
@@ -655,7 +651,7 @@ namespace quad {
               Volume<T, NDIM>* volume = nullptr,
               int verbosity = 0,
               int Final = 0,
-              int phase1type = 0)
+              const int phase1type = 0)
     {
 		
 	  cuhreResult res;
@@ -686,7 +682,7 @@ namespace quad {
 	  convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
 	  if(convergence)
 		return res;
-	  
+ 
 	  res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
 															 epsrel,
 															 epsabs,
