@@ -50,8 +50,8 @@ TEST_CASE("BoxIntegral8_15")
                  true_value,
                  epsrel,
                  epsabs,
-                 result.value,
-                 result.error,
+                 result.estimate,
+                 result.errorest,
                  result.nregions,
                  result.status,
                  _final,
@@ -63,10 +63,10 @@ TEST_CASE("BoxIntegral8_15")
     CHECK(dt.count() <= last_recorded_time + 100);
   }
 
-  double const ratio = result.error / (epsrel * result.value);
+  double const ratio = result.errorest / (epsrel * result.estimate);
   CHECK(ratio <= 1.0);
-  double true_err = abs(true_value - result.value);
-  CHECK(true_err <= result.error);
+  double true_err = abs(true_value - result.estimate);
+  CHECK(true_err <= result.errorest);
 
   //-----------------------------------------------------------------------------
   // record new timing if all assertions are passed
@@ -113,8 +113,8 @@ TEST_CASE("BoxIntegral8_25")
                  true_value,
                  epsrel,
                  epsabs,
-                 result.value,
-                 result.error,
+                 result.estimate,
+                 result.errorest,
                  result.nregions,
                  result.status,
                  _final,
@@ -126,10 +126,10 @@ TEST_CASE("BoxIntegral8_25")
     CHECK(dt.count() <= last_recorded_time + 100);
   }
 
-  double const ratio = result.error / (epsrel * result.value);
+  double const ratio = result.errorest / (epsrel * result.estimate);
   CHECK(ratio <= 1.0);
-  double true_err = abs(true_value - result.value);
-  CHECK(true_err <= result.error);
+  double true_err = abs(true_value - result.estimate);
+  CHECK(true_err <= result.errorest);
 
   //-----------------------------------------------------------------------------
   // record new timing if all assertions are passed
@@ -176,8 +176,8 @@ TEST_CASE("BoxIntegral8_22")
                  true_value,
                  epsrel,
                  epsabs,
-                 result.value,
-                 result.error,
+                 result.estimate,
+                 result.errorest,
                  result.nregions,
                  result.status,
                  _final,
@@ -189,10 +189,10 @@ TEST_CASE("BoxIntegral8_22")
     CHECK(dt.count() <= last_recorded_time + 100);
   }
 
-  double const ratio = result.error / (epsrel * result.value);
+  double const ratio = result.errorest / (epsrel * result.estimate);
   CHECK(ratio <= 1.0);
-  double true_err = abs(true_value - result.value);
-  CHECK(true_err <= result.error);
+  double true_err = abs(true_value - result.estimate);
+  CHECK(true_err <= result.errorest);
 
   //-----------------------------------------------------------------------------
   // record new timing if all assertions are passed

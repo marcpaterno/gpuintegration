@@ -35,7 +35,7 @@ int main()
 	auto t0 = std::chrono::high_resolution_clock::now();
 	cuhreResult result = cuhre.integrate<absCosSum5D>(integrand, epsrel, epsabs, &vol, 0);
 	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-	std::cout<< result.value <<"\t"<< result.error <<"\t"<<result.nregions<<std::endl;
+	std::cout<< result.estimate <<"\t"<< result.errorest <<"\t"<<result.nregions<<std::endl;
 	std::cout<<"Time in ms:"<< dt.count()<<std::endl;
 	return 0;
 }

@@ -32,7 +32,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
   auto const t0 = std::chrono::high_resolution_clock::now();
   cuhreResult const result = alg.integrate<BoxIntegral8_15>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  double const absolute_error = std::abs(result.value - true_value);
+  double const absolute_error = std::abs(result.estimate - true_value);
   bool good = false;
   
   if(result.status == 0 || result.status == 2){
@@ -43,8 +43,8 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 		   <<true_value<<",\t"
 			<<epsrel<<",\t\t\t"
 			<<epsabs<<",\t"
-			<<result.value<<",\t"
-			<<result.error<<",\t"
+			<<result.estimate<<",\t"
+			<<result.errorest<<",\t"
 			<<result.nregions<<",\t"
 			<<result.status<<",\t"
 			<<_final<<",\t"
@@ -58,7 +58,7 @@ int main(){
 	double true_value 	= 8879.851175413485;
 	std::stringstream outfile;
 	BoxIntegral8_15 integrand;
-	outfile<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time"<<std::endl; 
+	//outfile<<"id, estimate, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time"<<std::endl; 
 	int alternative_phase1 = 1;
 	//printf("Testing final = 1 with alternative phase I\n");
 	_final = 1;

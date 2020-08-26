@@ -33,7 +33,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
   auto const t0 = std::chrono::high_resolution_clock::now();
   cuhreResult const result = alg.integrate<BoxIntegral8_22>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  double const absolute_error = std::abs(result.value - true_value);
+  double const absolute_error = std::abs(result.estimate - true_value);
   bool good = false;
   
   if(result.status == 0 || result.status == 2){
@@ -44,8 +44,8 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 		    <<std::fixed<<true_value<<",\t"
 			<<std::scientific<<epsrel<<",\t\t\t"
 			<<std::scientific<<epsabs<<",\t"
-			<<std::fixed<<result.value<<",\t"
-			<<std::fixed<<result.error<<",\t"
+			<<std::fixed<<result.estimate<<",\t"
+			<<std::fixed<<result.errorest<<",\t"
 			<<std::fixed<<result.nregions<<",\t"
 			<<std::fixed<<result.status<<",\t"
 			<<_final<<",\t"

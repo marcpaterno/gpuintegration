@@ -40,7 +40,7 @@ time_and_call(F integrand, double epsrel, double true_value, std::string id , st
   
   outfile.precision(20);
   std::cout.precision(17);
-  FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
+  FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.estimate, result.errorest,
 					result.nregions, result.status, _final, dt.count(), "absCosSumPlus1.csv", appendMode);
 					
   outfile.str(""); //clear string stream
@@ -48,8 +48,8 @@ time_and_call(F integrand, double epsrel, double true_value, std::string id , st
 		   <<true_value<<",\t"
 			<<epsrel<<",\t\t\t"
 			<<epsabs<<",\t"
-			<<result.value<<",\t"
-			<<result.error<<",\t"
+			<<result.estimate<<",\t"
+			<<result.errorest<<",\t"
 			<<result.nregions<<",\t"
 			<<result.status<<",\t"
 			<<_final<<",\t"

@@ -33,14 +33,14 @@ time_and_call(F integrand, double epsrel, double correct_answer, char const* alg
   auto const t0 = std::chrono::high_resolution_clock::now();
   auto const res = alg.integrate(integrand, epsrel, epsabs, &vol);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  double const absolute_error = std::abs(res.value - correct_answer);
+  double const absolute_error = std::abs(res.estimate - correct_answer);
   bool const good = (res.status == 0);
   std::cout << std::scientific
     << algname << '\t'
     << epsrel << '\t';
   if (good) {
-    std::cout << res.value << '\t'
-      << res.error << '\t'
+    std::cout << res.estimate << '\t'
+      << res.errorest << '\t'
       << absolute_error << '\t';
   } else {
     std::cout << "NA\tNA\tNA\t";

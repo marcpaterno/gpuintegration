@@ -51,13 +51,24 @@ struct Structures {
 };
 
 struct cuhreResult {
-  double value;
-  double error;
+	
+  cuhreResult(){
+	  estimate = 0.;
+	  errorest = 0.;
+	  neval = 0.;
+	  nregions = 0.;
+	  status = 0.;
+	  activeRegions = 0.;
+	  phase2_failedblocks = 0.;
+  };
+  
+  double estimate;
+  double errorest;
   size_t neval;
   size_t nregions;
   int status;
-  size_t activeRegions;
-  int phase2_failedblocks;
+  size_t activeRegions;		//is not currently being set
+  int phase2_failedblocks;  //is not currently being set
 };
 
 struct Result {

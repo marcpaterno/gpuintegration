@@ -22,7 +22,7 @@ TEST_CASE("genz_1abs_5d")
  
     auto const res = alg.integrate(integrand, epsrel, epsabs, &vol);
     CHECK(res.status == true);
-    double const ratio = res.error/(epsrel * res.value);
+    double const ratio = res.errorest/(epsrel * res.estimate);
     CHECK(ratio <= 1.0);
   }
 };

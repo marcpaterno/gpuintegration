@@ -624,52 +624,20 @@ namespace quad {
       // MPI_Finalize();
       return errorFlag;
     }
-
+	
     template <typename IntegT>
     cuhreResult
     integrate(IntegT integrand,
-              double epsrel,
-              double epsabs,
-              Volume<T, NDIM>* volume = nullptr,
-              int verbosity = 0,
-              int Final = 0,
-              int phase1type = 0)
-    {
-      cuhreResult res;
-
-      res.value = 0;
-      res.error = 0;
-      res.neval = 0;
-      res.nregions = 0;
-	  
-      res.status = integrate<IntegT>(integrand,
-                                     epsrel,
-                                     epsabs,
-                                     res.value,
-                                     res.error,
-                                     res.nregions,
-                                     res.neval,
-                                     volume,
-                                     verbosity,
-                                     Final,
-                                     phase1type);
-      return res;
-    }
-
-    template <typename IntegT>
-    int
-    integrate(IntegT integrand,
               T epsrel,
               T epsabs,
-              T& integral,
-              T& error,
-              size_t& nregions,
-              size_t& neval,
               Volume<T, NDIM>* volume = nullptr,
               int verbosity = 0,
               int Final = 0,
               int phase1type = 0)
     {
+		
+	  cuhreResult res;
+	  
       this->epsrel = epsrel;
       this->epsabs = epsabs;
 
@@ -677,9 +645,7 @@ namespace quad {
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
 		
-      int errorFlag = 0;
       int numprocs = 0;
-
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
@@ -688,8 +654,8 @@ namespace quad {
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-        errorFlag = MPI_INTEGRATE(
-          &integrand, epsrel, epsabs, integral, error, nregions, neval, volume);
+        res.status = MPI_INTEGRATE(
+          &integrand, epsrel, epsabs, res.estimate, res.errorest, res.nregions, res.neval, volume);
         MPI_Finalize();
       } else {
 
@@ -705,52 +671,53 @@ namespace quad {
           convergence = kernel->IntegrateFirstPhase(d_integrand,
                                                     epsrel,
                                                     epsabs,
-                                                    integral,
-                                                    error,
-                                                    nregions,
-                                                    neval,
+                                                    res.estimate,
+                                                    res.errorest,
+                                                    res.nregions,
+                                                    res.neval,
                                                     volume);
         } else {
           convergence = kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
                                                           epsrel,
                                                           epsabs,
-                                                          integral,
-                                                          error,
-                                                          nregions,
-                                                          neval,
+                                                          res.estimate,
+                                                          res.errorest,
+                                                          res.nregions,
+                                                          res.neval,
                                                           volume);
         }
         // MilliSeconds dt = std::chrono::high_resolution_clock::now() - t1;
         // std::cout<<"Phase 1 time in ms:"<< dt.count()<<std::endl;
 
-        errorFlag = kernel->GetErrorFlag();
+        res.status = kernel->GetErrorFlag();
         T* optionalInfo = nullptr;
 
         // auto t2 = std::chrono::high_resolution_clock::now();
         // printf("number of active regions before phase 2:%lu\n",
         // kernel->getNumActiveRegions());
         if (kernel->getNumActiveRegions() > 0 && convergence == false ) {
-          errorFlag = kernel->IntegrateSecondPhase(d_integrand,
+          res.status = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
                                                    epsabs,
-                                                   integral,
-                                                   error,
-                                                   nregions,
-                                                   neval,
+                                                   res.estimate,
+                                                   res.errorest,
+                                                   res.nregions,
+                                                   res.neval,
                                                    optionalInfo);
           // printf("ratio:%f error:%f MaxErr:%f epsrel:%.15f\n",
           // error/MaxErr(integral, epsrel, epsabs), error,MaxErr(integral,
           // epsrel, epsabs), epsrel);
 
-          if (error <= MaxErr(integral, epsrel, epsabs)) {
-            errorFlag = 0;
+          if (res.errorest <= MaxErr(res.estimate, epsrel, epsabs)) {
+            res.status = 0;
           } else
-            errorFlag = 1;
+            res.status = 1;
         }
       }
 
       cudaFree(d_integrand);
-      return errorFlag;
+      //return errorFlag;
+	  return res;
     }
   };
 }

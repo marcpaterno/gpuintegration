@@ -96,27 +96,16 @@ main(int argc, char** argv)
   cuhreResult result = cuhre.integrate<BoxIntegral8_22>(
     integrand, epsrel, EPSABS, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-	
-  std::cout.precision(17);
-  /*std::cout<<true_value<<",\t"
-			<<epsrel<<",\t"
-			<<EPSABS<<",\t"
-			<<result.value<<",\t"
-			<<result.error<<",\t"
-			<<result.nregions<<",\t"
-			<<result.status<<",\t"
-			<<_final<<",\t"
-			<<dt.count()<<std::endl;*/
 			
   printf("%.20f +- %.20f epsrel:%f, nregions:%lu flag:%i time:%f error:%.17f, ratio:%.17f actual error:%f\n",
-         result.value,
-         result.error,
+         result.estimate,
+         result.errorest,
          epsrel,
          result.nregions,
          result.status,
          dt.count(),
-		 abs(true_value-result.value),
-		 result.error/MaxErr(result.value, epsrel, EPSABS),
-		 abs(true_value - result.value));
+		 abs(true_value-result.estimate),
+		 result.errorest/MaxErr(result.estimate, epsrel, EPSABS),
+		 abs(true_value - result.estimate));
   return 0;
 }
