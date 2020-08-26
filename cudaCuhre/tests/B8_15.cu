@@ -38,12 +38,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
   if(result.status == 0 || result.status == 2){
 	  good = true;
   }
-  outfile.precision(15);
-  FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
-					result.nregions, result.status, _final, dt.count(), id + ".csv", appendMode);
-  outfile.str(""); //clear string stream
  std::cout.precision(17);
-  //printf("%.15f +- %.15f epsrel:%e final:%i nregions:%lu flag:%i time:%f\n", result.value, result.error, epsrel, _final, result.nregions, result.status, dt.count());
   std::cout<<id<<",\t"
 		   <<true_value<<",\t"
 			<<epsrel<<",\t\t\t"
@@ -60,23 +55,21 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 int main(){
 	double epsrel  = 1.0e-3;  // starting error tolerance.	
 	int _final 			= 0;
-	double true_value 	= 8879.851175413485
-;
+	double true_value 	= 8879.851175413485;
 	std::stringstream outfile;
 	BoxIntegral8_15 integrand;
 	outfile<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time"<<std::endl; 
-	int alternative_phase1 = 0;
+	int alternative_phase1 = 1;
 	//printf("Testing final = 1 with alternative phase I\n");
 	_final = 1;
-	while (time_and_call("pdcuhre_f1", integrand, epsrel, true_value, "gpucuhre", outfile, _final) == true && epsrel>=1e-8) {
+	while (time_and_call("pdc_Alt_ph1_f1_b2", integrand, epsrel, true_value, "gpucuhre", outfile, _final, alternative_phase1) == true && epsrel>=1e-8) {
 		epsrel /= 5.0;
 	}
 	
 	_final = 0;
 	epsrel = 1.0e-3;
 	
-	printf("Testing final = 0\n");
-	while (time_and_call("pdcuhre_f1", integrand, epsrel, true_value, "gpucuhre", outfile, _final) == true && epsrel >= 2.56e-09) {
+	while (time_and_call("pdc_Alt_ph1_f0_b2", integrand, epsrel, true_value, "gpucuhre", outfile, _final, alternative_phase1) == true && epsrel >= 2.56e-09) {
       epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
 	}
 	

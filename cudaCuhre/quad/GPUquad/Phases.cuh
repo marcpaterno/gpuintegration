@@ -244,12 +244,12 @@ __device__ void cuprintf(const char* fmt, ...)
       if (ratio > 1) {
         fail = 1;
       }
-
+		
       activeRegions[blockIdx.x] = fail;
       subDividingDimension[blockIdx.x] = fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-
+		
       __syncthreads();
 
       if (ratio > 1 && numRegions == 1) {
@@ -383,7 +383,7 @@ __device__ void cuprintf(const char* fmt, ...)
 
     size_t intervalIndex = blockIndex;
     if (threadIdx.x == 0) {
-      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
+      gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);	//why start with 64 as gRegionPoolSize
 
       for (int dim = 0; dim < NDIM; ++dim) {
         sRegionPool[threadIdx.x].bounds[dim].lower = 0;
@@ -513,9 +513,9 @@ __device__ void cuprintf(const char* fmt, ...)
                       Region<NDIM>* gPool,
                       int sRegionPoolSize)
   {
-
+	
     __syncthreads();
-
+	
     int iterationsPerThread = 0;
 
     for (iterationsPerThread = 0; iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE; ++iterationsPerThread) {
@@ -681,9 +681,7 @@ __device__ void cuprintf(const char* fmt, ...)
     __syncthreads();
 
     // Copy top K into SM and reset the remaining
-    for (iterationsPerThread = 0;
-         iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;
-         ++iterationsPerThread) {
+    for (iterationsPerThread = 0; iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;  ++iterationsPerThread) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
       sRegionPool[index] = gPool[gRegionPos[index]];
       sRegionPool[(SM_REGION_POOL_SIZE / 2) + index].result.err = 0;
@@ -720,6 +718,8 @@ __device__ void cuprintf(const char* fmt, ...)
       __syncthreads();
     }
 	
+	
+	//this checks entire array, but empty values have error of 0, wont' be selected
     for (size_t offset = (SM_REGION_POOL_SIZE / 2); offset > 0; offset >>= 1) {
       int idx = 0;
       for (idx = 0; idx < offset / BLOCK_SIZE; ++idx) {
@@ -746,7 +746,6 @@ __device__ void cuprintf(const char* fmt, ...)
 	
     return sSize;
   }
-  
   
   template <typename T, int NDIM>
   __device__ void SetBlockVars(T* slows, T* shighs, int &max_global_pool_size, Region<NDIM>*& gPool, const T* lows, const T* highs, const int max_regions, /*const*/ Region<NDIM>* ggRegionPool){
@@ -801,7 +800,9 @@ __device__ void cuprintf(const char* fmt, ...)
                              int max_regions,
                              int phase1_type = 0,
                              Region<NDIM>* phase1_regs = nullptr,
-							 Snapshot<NDIM> snap = Snapshot<NDIM>())
+							 Snapshot<NDIM> snap = Snapshot<NDIM>(),
+							 double* global_errorest = nullptr,
+							 int* numContributors = nullptr)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ Region<NDIM>* gPool;
@@ -809,18 +810,22 @@ __device__ void cuprintf(const char* fmt, ...)
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
 	__shared__ int iterations_without;
-	T pseudo_global_val;
-	T pseudo_global_err;
+	
+	
 	T prev_ratio = 0;
 	T prev_error = 0;
+	
+	
 	int maxdiv 		= 0;
 	//T origerr;
 	//T origavg;
-    int current_snap_array_index = 0;
+    //int current_snap_array_index = 0;
 	
 	//SetBlockVars<T, NDIM>(slows, shighs, max_global_pool_size, gPool, lows, highs, max_regions, ggRegionPool);
+	
 	double personal_estimate_ratio = 0;
 	int local_region_cap = 32734;
+	
 	
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
@@ -828,15 +833,14 @@ __device__ void cuprintf(const char* fmt, ...)
       max_global_pool_size = max_regions;
       gPool = &ggRegionPool[blockIdx.x * max_regions];
 	  iterations_without = 0;
+	  
     }
-	
-	pseudo_global_val = dPh1res[0];
-	pseudo_global_err = dPh1res[1];
 	
     __syncthreads();              // added for testing 
     InitSMemRegions(sRegionPool); // sets every region in shared memory to zero
     int sRegionPoolSize = 1;
     __syncthreads();
+	
 	//temporary solution
     if (phase1_type == 0)
       SET_FIRST_SHARED_MEM_REGION(sRegionPool, dRegions, dRegionsLength, numRegions, blockIdx.x);
@@ -846,7 +850,7 @@ __device__ void cuprintf(const char* fmt, ...)
       set_first_shared_mem_region<T, NDIM>(sRegionPool, phase1_regs, numRegions, blockIdx.x);
     
     __syncthreads();
-	
+	//ERR and sRegionPool[0].result.err are not the same in the beginning
     SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
@@ -854,22 +858,29 @@ __device__ void cuprintf(const char* fmt, ...)
 	//temporary solution
     if (threadIdx.x == 0 && phase1_type == 0) {
        ERR = dRegionsError[blockIdx.x + numRegions]; 
+	   sRegionPool[0].result.err = ERR;
     } else {
       if (threadIdx.x == 0 && numRegions != 0) {
         ERR = phase1_regs[blockIdx.x].result.err;
+		sRegionPool[0].result.err = ERR;
+		//atomicAdd(global_errorest, ERR); 
       }
     }
 	
     __syncthreads();
+	
 	prev_error = ERR;
 	prev_ratio = ERR/MaxErr(RESULT, epsrel, epsabs);
 	
 	personal_estimate_ratio = RESULT/dPh1res[0];
 	
+	
+	
 	if(numRegions != 0)
 		local_region_cap = min(2048, (int)(personal_estimate_ratio*2048*numRegions));
 	
 	T required_ratio_decrease = abs(1 - prev_ratio)/local_region_cap;
+	
 	
     int nregions = sRegionPoolSize; // is only 1 at this point
     T  lastavg = RESULT;
@@ -880,7 +891,7 @@ __device__ void cuprintf(const char* fmt, ...)
     T w = 0;
     T avg = 0;
     T sigsq = 0;
-	int snapshot_id = 0;
+	//int snapshot_id = 0;
 	
     while (nregions < max_global_pool_size &&
            (ERR > MaxErr(RESULT, epsrel, epsabs)) && nregions < local_region_cap) {
@@ -888,27 +899,6 @@ __device__ void cuprintf(const char* fmt, ...)
       sRegionPoolSize = EXTRACT_MAX<T, NDIM>(sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
       Region<NDIM>*RegionLeft, *RegionRight;
       Result result;
-	  if(nregions == 3968 && threadIdx.x == 0 && blockIdx.x == 0){
-				/*for(int n=0; n<SM_REGION_POOL_SIZE; n++){
-					printf("shared,");
-					for(int i=0; i<NDIM; i++)
-						printf("%f, %f, ", sRegionPool[n].bounds[i].lower, sRegionPool[n].bounds[i].upper);
-					printf("%.17f, %.17f, %i\n", sRegionPool[n].result.avg, sRegionPool[n].result.err, sRegionPool[n].div);
-				}*/
-				/*for(int i=0; i < nregions; i++){
-					
-					for(int dim = 0; dim < NDIM; dim++){
-						printf("%.15f, %.15f,", gPool[i].bounds[dim].upper, gPool[i].bounds[dim].lower);
-					}
-					printf("%.20f, %.20f,", gPool[i].result.avg, gPool[i].result.err);
-					printf("%i\n", gPool[i].div);
-				}*/	
-	  }
-		  /*for(int n=0; n<nregions; n++){
-				for(int i=0; i<NDIM; i++)
-					printf("%f, %f, ", gPool[n].bounds[i].lower, gPool[n].bounds[i].upper);
-				printf("%.17f, %.17f, %i\n", gPool[n].result.avg, gPool[n].result.err, gPool[n].result.bisectdim);
-			}*/
 	  __syncthreads();
 	  //needed for investingating dcuhre differences
       if (threadIdx.x == 0) {
@@ -933,13 +923,8 @@ __device__ void cuprintf(const char* fmt, ...)
         for (int dim = 0; dim < NDIM; ++dim) {
           RegionRight->bounds[dim].lower = RegionLeft->bounds[dim].lower;
           RegionRight->bounds[dim].upper = RegionLeft->bounds[dim].upper;
-		  /*for debugging, will essentially print each selected region
-		   if(blockIdx.x == 0 && numRegions == 0)
-				printf("%f, %f, ", RegionLeft->bounds[dim].lower, RegionLeft->bounds[dim].upper);
-		  */
         }
 		
-		//printf("%i, %i, ", bisectdim, RegionLeft->div-1);
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
 		
@@ -961,17 +946,7 @@ __device__ void cuprintf(const char* fmt, ...)
       if (threadIdx.x == 0) {
         Result* rL = &RegionLeft->result;
         Result* rR = &RegionRight->result;
-		
-		/* 
-		 printf("Parent:%a +- %a \n", result.avg, result.err); 
-		 printf("Pre Ref L: %a, %a diff:%a\n", rL->avg, rL->err, rL->avg + rR->avg - result.avg); 
-		 printf("Pre Ref R: %a, %a\n", rR->avg, rR->err); 
-		 printf("Parent:%.15f +- %.15f \n", result.avg, result.err); 
-		 printf("Pre Ref L: %.15f, %.15f diff:%.15f\n", rL->avg, rL->err, rL->avg + rR->avg - result.avg); 
-		 printf("Pre Ref R: %a, %a\n", rR->avg, rR->err); 
-		 printf("lastavg:%.15f, lasterr:%.15f, weightsum:%15f, avgsum:%.15f\n", lastavg, lasterr , weightsum, avgsum);
-		 */
-		
+			
         T diff = rL->avg + rR->avg - result.avg;
         diff = fabs(.25 * diff);
         T err = rL->err + rR->err;
@@ -985,68 +960,52 @@ __device__ void cuprintf(const char* fmt, ...)
         rL->err += diff;
         rR->err += diff;
 		
-		/*
-		printf("After Ref L: %.15f, %.15f diff:%.15f\n", rL->avg, rL->err,  diff); 
-		printf("After Ref R: %.15f, %.15f nregions:%i\n", rR->avg, rR->err, diff, nregions);
-        printf("After Ref L: %a, %a diff:%a\n", rL->avg, rL->err,  diff); 
-		printf("After Ref R: %a, %a\n", rR->avg, rR->err, diff);*/
-		
         lasterr += rL->err + rR->err - result.err;
         lastavg += rL->avg + rR->avg - result.avg;
 		
-        weightsum 	+= w = 1 / fmax(lasterr * lasterr, ldexp(1., -104));
-        avgsum 		+= w * lastavg;
-        sigsq = 1 / weightsum;
-        avg = sigsq * avgsum;
-		
-		pseudo_global_err = pseudo_global_err + lasterr - ERR;
-		pseudo_global_val = pseudo_global_val + lastavg - RESULT;
+		if(Final == 0){
+			weightsum 	+= w = 1 / fmax(lasterr * lasterr, ldexp(1., -104));
+			avgsum 		+= w * lastavg;
+			sigsq = 1 / weightsum;
+			avg = sigsq * avgsum;
+		}
 		
         ERR 	= Final ? lasterr : sqrt(sigsq);
         RESULT 	= Final ? lastavg : avg;
 		
+		/*
+		if(numRegions!=0){
+			atomicAdd(global_errorest+nregions, ERR); 
+			atomicAdd(numContributors+nregions, 1);
+		}
+		*/
 		
 		
-		if(abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio)< required_ratio_decrease){
+		if(abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio)< 1.5*required_ratio_decrease){
 			iterations_without++;
 		}
 		prev_ratio = abs(ERR/MaxErr(RESULT, epsrel, epsabs));
 		
-		
-		
-		/*if(blockIdx.x == 6)
-			printf("%i, %.20f, %.20f, local ratio:%.20f pseudo_global ratio:%.20f local cap:%i rrd:%10f ard:%10f\n", threadIdx.x, 
-		RESULT, 
-		ERR,
-		ERR/MaxErr(RESULT, epsrel, epsabs),
-		pseudo_global_err/MaxErr(pseudo_global_val, epsrel, epsabs),
-		local_region_cap,
-		required_ratio_decrease,
-		abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio));*/
-		
-		//printf("iteration %i gRegionPoolSize:%lu\n", nregions, gRegionPoolSize);
-		//if(threadIdx.x == 0)
-		//printf("%.20f, %.20f, %.20f, %.20f, %.20f, %.20f, %i\n", rL->avg, rL->err, rR->avg, rR->err, RESULT, ERR, nregions);
 	  }
       __syncthreads();
 	  
-	  if(iterations_without >= 1 && numRegions!=0){
+	  
+	 if(iterations_without >= 1 && numRegions!=0){
 		break;
 	  }
-	  if(numRegions!=0 && pseudo_global_err < MaxErr(pseudo_global_val, epsrel, epsabs)){
-		  if(threadIdx.x == 0)
-			printf("%i, Pseudo Exit ratio: %f Local Ratio:%f\n", blockIdx.x, 
-																pseudo_global_err/MaxErr(pseudo_global_val, epsrel, epsabs), 
-																ERR/MaxErr(RESULT, epsrel, epsabs));
+	  
+	 
+	 
+	  /*
+	  if(numRegions!=0 && dPh1res[1]/numRegions > ERR){
 		  break;
 	  }
+	  */
 	  
-	  /*if(numRegions!=0 && dPh1res[1]/numRegions > ERR){
-		  if(threadIdx.x == 0)
-			  printf("%i Exiting because of budget error nregions:%i\n", blockIdx.x, nregions);
-	  }*/
 	  
-	  if(0 == 1 && ExistsIn(nregions, snap.sizes, snap.numSnapshots) == true){
+	 
+	 // if(ExistsIn(nregions, snap.sizes, snap.numSnapshots) == true)
+	  {
 			
 			/*if(threadIdx.x == 0){
 				//printf("About to capture snapshot for %i th iteration at array index %i\n", snap.sizes[snapshot_id], current_snap_array_index);
@@ -1061,29 +1020,13 @@ __device__ void cuprintf(const char* fmt, ...)
 				}
 			}*/
 			
-			__syncthreads();
-			insert_global_store<T>(sRegionPool, &snap.arr[current_snap_array_index], gpuId, &snap.arr[current_snap_array_index], sRegionPoolSize);
-			__syncthreads();
+			//__syncthreads();
+			//insert_global_store<T>(sRegionPool, &snap.arr[current_snap_array_index], gpuId, &snap.arr[current_snap_array_index], sRegionPoolSize);
+			//__syncthreads();
 			
-			if (threadIdx.x == 0)
-				gRegionPoolSize = gRegionPoolSize - (SM_REGION_POOL_SIZE / 2);
-			__syncthreads();
-			
-			if(nregions == 4022 && threadIdx.x == 0 && blockIdx.x == 0){
-				/*for(int n=0; n<nregions; n++){
-					printf("gpool,");
-					for(int i=0; i<NDIM; i++)
-						printf("%f, %f, ", gPool[n].bounds[i].lower, gPool[n].bounds[i].upper);
-					printf("%.17f, %.17f, %i\n", gPool[n].result.avg, gPool[n].result.err, gPool[n].div);
-				}*/
-				
-				/*for(int n=0; n < SM_REGION_POOL_SIZE; n++){
-					printf("shared,");
-					for(int i=0; i<NDIM; i++)
-						printf("%f, %f, ", sRegionPool[n].bounds[i].lower, sRegionPool[n].bounds[i].upper);
-					printf("%.17f, %.17f, %i\n", sRegionPool[n].result.avg, sRegionPool[n].result.err, sRegionPool[n].div);
-				}*/
-			}
+			//if (threadIdx.x == 0)
+				//gRegionPoolSize = gRegionPoolSize - (SM_REGION_POOL_SIZE / 2);
+			//__syncthreads();
 			
 			/*
 			if(threadIdx.x == 0){
@@ -1099,15 +1042,18 @@ __device__ void cuprintf(const char* fmt, ...)
 			}
 			*/
 			
-			current_snap_array_index = current_snap_array_index + snap.sizes[snapshot_id];
-			snapshot_id++;
+			//current_snap_array_index = current_snap_array_index + snap.sizes[snapshot_id];
+			//snapshot_id++;
 		}
     }
+	
+	
 	
     __syncthreads();
     // this is uncessary workload if we dont' care about collecting phase 2 data
     // for each block
-    if (nregions != 1) {
+   /*
+   if (nregions != 1) {
       if ((sRegionPoolSize > 64 || nregions < 64) && numRegions != 0) {
         INSERT_GLOBAL_STORE2<T>(sRegionPool, gPool, gpuId, gPool, sRegionPoolSize);
       }
@@ -1115,10 +1061,22 @@ __device__ void cuprintf(const char* fmt, ...)
         insert_global_store<T>(sRegionPool, gPool, gpuId, gPool, sRegionPoolSize);
       }
     }
-	
+	*/
     __syncthreads();
 	
     if (threadIdx.x == 0) {
+		
+		
+	 //if(nregions == 1)
+	//	printf("%i, %.20f, %.20f, %.20f,%.20f, %i\n", blockIdx.x, lastavg, lasterr, ERR,  fabs(lasterr-ERR), nregions);	
+	
+/*	
+	 if(nregions!= 2048 && numRegions!=0){
+		for(int i=nregions+1; i<=2048; i++)
+			atomicAdd(global_errorest+i, ERR);  
+			//printf("%i, %.20f, %.20f, %.20f,%.20f, %i\n", blockIdx.x, RESULT, ERR, 0,  0, i);
+	 }		 
+	*/	
       int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
 	
       if (ERR > (1e+10)) {

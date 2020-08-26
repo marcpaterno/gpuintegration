@@ -67,6 +67,14 @@ target_include_directories(B_22cpu PRIVATE
 )
 target_link_libraries(B_22cpu PRIVATE ${CUBA_LIBRARIES})
 
+add_executable(B_15cpu B_15cpu.cc)
+target_include_directories(B_15cpu PRIVATE
+  ${CMAKE_SOURCE_DIR}/../cubacpp
+  ${CMAKE_SOURCE_DIR}/../cuba/include/
+  ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(B_15cpu PRIVATE ${CUBA_LIBRARIES})
+
 add_executable(absCosSum5Dplus1cpu absCosSum5Dplus1cpu.cc)
 target_include_directories(absCosSum5Dplus1cpu PRIVATE
   ${CMAKE_SOURCE_DIR}/../cubacpp

@@ -105,13 +105,11 @@ public:
              double n,
              double o)
   {
-
     double s = 22;
     double sum = 0;
     sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
           pow(m, 2) + pow(n, 2) + pow(o, 2);
-	double f = pow(sum, s / 2);
-    return f;
+	return pow(sum, s / 2);
   }
 };
 

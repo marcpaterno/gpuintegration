@@ -40,10 +40,6 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 	  good = true;
   }
   
-  outfile.precision(20);
-  FinalDataPrint(outfile, id, true_value, epsrel, epsabs, result.value, result.error,
-					result.nregions, result.status, _final, dt.count(), id + ".csv", appendMode);
-  outfile.str(""); //clear string stream
   std::cout <<std::fixed<<id<<",\t"
 		    <<std::fixed<<true_value<<",\t"
 			<<std::scientific<<epsrel<<",\t\t\t"

@@ -50,7 +50,7 @@ main(int argc, char** argv)
     exit(0);
   }
 	
-  TYPE epsrel = 3.2e-7;
+  TYPE epsrel = 8.0e-08;
   if (args.CheckCmdLineFlag("e")) {
     args.GetCmdLineArgument("e", epsrel);
   }
@@ -75,13 +75,13 @@ main(int argc, char** argv)
   BoxIntegral8_22 integrand;
   int _final = 1;
   int outfileVerbosity = 0;
-  int phase_I_type = 1; // alternative phase 1
+  int phase_I_type = 0; // alternative phase 1
 	
   double highs[ndim] = {1., 1., 1., 1., 1., 1., 1., 1.};
   double lows[ndim]  = {0., 0., 0., 0., 0., 0., 0., 0.};
   Volume<double, ndim> vol(lows, highs);
   double true_value = 1495369.283757217694;
-  
+ // double true_value = 8879.851175413485;
   //double *darray = 0;
   //double *dsum = 0;
   //cudaMalloc((double**)&darray, 32678*sizeof(double);
