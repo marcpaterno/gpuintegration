@@ -13,7 +13,7 @@ using namespace quad;
 
 template <typename F>
 bool
-time_and_call(std::string id, F integrand, double epsrel, double true_value, char const* algname, std::stringstream& outfile,	int _final= 0, int  phase_I_type=0)
+time_and_call(std::string id, F integrand, double epsrel, double true_value, char const* algname, std::stringstream& outfile,	int _final= 0, const int  phase_I_type=0)
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
@@ -27,8 +27,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 	
   //std::string id 			= "BoxIntegral8_15";
   int outfileVerbosity  	= 0;
-  int appendMode			= 1;
-  
+
   auto const t0 = std::chrono::high_resolution_clock::now();
   cuhreResult const result = alg.integrate<BoxIntegral8_15>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
@@ -59,7 +58,7 @@ int main(){
 	std::stringstream outfile;
 	BoxIntegral8_15 integrand;
 	//outfile<<"id, estimate, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time"<<std::endl; 
-	int alternative_phase1 = 1;
+	constexpr  int alternative_phase1 = 1;
 	//printf("Testing final = 1 with alternative phase I\n");
 	_final = 1;
 	while (time_and_call("pdc_Alt_ph1_f1_b2", integrand, epsrel, true_value, "gpucuhre", outfile, _final, alternative_phase1) == true && epsrel>=1e-8) {

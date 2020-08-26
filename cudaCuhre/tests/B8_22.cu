@@ -27,9 +27,8 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value, cha
 	
   //std::string id 			= "BoxIntegral8_22";
   int outfileVerbosity  	= 0;
-  int phase_I_type 			= 0; // alternative phase 1
-  int appendMode			= 1;
-  
+  constexpr  int phase_I_type 			= 0; // alternative phase 1
+
   auto const t0 = std::chrono::high_resolution_clock::now();
   cuhreResult const result = alg.integrate<BoxIntegral8_22>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
