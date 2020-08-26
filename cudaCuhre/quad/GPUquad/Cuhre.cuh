@@ -21,12 +21,8 @@ namespace quad {
 
     // Debug message
     char msg[256];
-
-    // Quadrature Parameters
-    // int NDIM;
     int KEY;
 
-    // Verbose
     int VERBOSE;
     int numDevices;
 
@@ -47,7 +43,6 @@ namespace quad {
       QuadDebug(cudaDeviceReset());
       argc = pargc;
       argv = pargv;
-      // NDIM = dim;
       KEY = key;
       VERBOSE = verbose;
       this->numDevices = numDevices;
@@ -648,9 +643,8 @@ namespace quad {
       int numprocs = 0;
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-      cudaMemcpy(
-        d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-	
+      cudaMemcpy(d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
+		
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -662,11 +656,7 @@ namespace quad {
         bool convergence = false;
         kernel->GenerateInitialRegions();
         FIRST_PHASE_MAXREGIONS *= numDevices;
-		
-        // using MilliSeconds = std::chrono::duration<double,
-        // std::chrono::milliseconds::period>; auto t1 =
-        // std::chrono::high_resolution_clock::now();
-		
+
         if (!phase1type) {
           convergence = kernel->IntegrateFirstPhase(d_integrand,
                                                     epsrel,
@@ -686,15 +676,10 @@ namespace quad {
                                                           res.neval,
                                                           volume);
         }
-        // MilliSeconds dt = std::chrono::high_resolution_clock::now() - t1;
-        // std::cout<<"Phase 1 time in ms:"<< dt.count()<<std::endl;
 
         res.status = kernel->GetErrorFlag();
         T* optionalInfo = nullptr;
 
-        // auto t2 = std::chrono::high_resolution_clock::now();
-        // printf("number of active regions before phase 2:%lu\n",
-        // kernel->getNumActiveRegions());
         if (kernel->getNumActiveRegions() > 0 && convergence == false ) {
           res.status = kernel->IntegrateSecondPhase(d_integrand,
                                                    epsrel,
@@ -704,9 +689,6 @@ namespace quad {
                                                    res.nregions,
                                                    res.neval,
                                                    optionalInfo);
-          // printf("ratio:%f error:%f MaxErr:%f epsrel:%.15f\n",
-          // error/MaxErr(integral, epsrel, epsabs), error,MaxErr(integral,
-          // epsrel, epsabs), epsrel);
 
           if (res.errorest <= MaxErr(res.estimate, epsrel, epsabs)) {
             res.status = 0;
@@ -716,7 +698,6 @@ namespace quad {
       }
 
       cudaFree(d_integrand);
-      //return errorFlag;
 	  return res;
     }
   };
