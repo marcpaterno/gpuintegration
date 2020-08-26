@@ -809,12 +809,13 @@ __device__ void cuprintf(const char* fmt, ...)
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
+	/*
 	__shared__ int iterations_without;
 	
 	
 	T prev_ratio = 0;
 	T prev_error = 0;
-	
+	*/
 	
 	int maxdiv 		= 0;
 	//T origerr;
@@ -823,17 +824,19 @@ __device__ void cuprintf(const char* fmt, ...)
 	
 	//SetBlockVars<T, NDIM>(slows, shighs, max_global_pool_size, gPool, lows, highs, max_regions, ggRegionPool);
 	
+	/*
 	double personal_estimate_ratio = 0;
 	int local_region_cap = 32734;
-	
+	*/
 	
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
       max_global_pool_size = max_regions;
       gPool = &ggRegionPool[blockIdx.x * max_regions];
+	  /*
 	  iterations_without = 0;
-	  
+	  */
     }
 	
     __syncthreads();              // added for testing 
@@ -869,6 +872,7 @@ __device__ void cuprintf(const char* fmt, ...)
 	
     __syncthreads();
 	
+	/*
 	prev_error = ERR;
 	prev_ratio = ERR/MaxErr(RESULT, epsrel, epsabs);
 	
@@ -880,7 +884,7 @@ __device__ void cuprintf(const char* fmt, ...)
 		local_region_cap = min(2048, (int)(personal_estimate_ratio*2048*numRegions));
 	
 	T required_ratio_decrease = abs(1 - prev_ratio)/local_region_cap;
-	
+	*/
 	
     int nregions = sRegionPoolSize; // is only 1 at this point
     T  lastavg = RESULT;
@@ -894,7 +898,7 @@ __device__ void cuprintf(const char* fmt, ...)
 	//int snapshot_id = 0;
 	
     while (nregions < max_global_pool_size &&
-           (ERR > MaxErr(RESULT, epsrel, epsabs)) && nregions < local_region_cap) {
+           (ERR > MaxErr(RESULT, epsrel, epsabs)) /*&& nregions < local_region_cap*/) {
 	  
       sRegionPoolSize = EXTRACT_MAX<T, NDIM>(sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
       Region<NDIM>*RegionLeft, *RegionRight;
@@ -980,20 +984,20 @@ __device__ void cuprintf(const char* fmt, ...)
 		}
 		*/
 		
-		
+		/*
 		if(abs(ERR/MaxErr(RESULT, epsrel, epsabs)-prev_ratio)< 1.5*required_ratio_decrease){
 			iterations_without++;
 		}
 		prev_ratio = abs(ERR/MaxErr(RESULT, epsrel, epsabs));
-		
+		*/
 	  }
       __syncthreads();
 	  
-	  
+	  /*
 	 if(iterations_without >= 1 && numRegions!=0){
 		break;
 	  }
-	  
+	  */
 	 
 	 
 	  /*
