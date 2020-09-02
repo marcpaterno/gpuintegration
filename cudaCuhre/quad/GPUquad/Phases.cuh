@@ -640,19 +640,15 @@ ComputeWeightSum(T *errors, size_t size){
 
     // Comment 3 instructions these section if you are directly using new shared
     // memory instead of reusing shared memory
-
+	
     T* sarray = (T*)&sRegionPool[0];
 
     if (threadIdx.x == 0) {
-      // if double the gRegionSize < SM_REGION_POOL_SIZE we can sort in shared
-      // memory
-      if ((gRegionPoolSize * sizeof(T) + gRegionPoolSize * sizeof(size_t)) <
-          sizeof(Region<NDIM>) * SM_REGION_POOL_SIZE) {
+      if ((gRegionPoolSize * sizeof(T) + gRegionPoolSize * sizeof(size_t)) < sizeof(Region<NDIM>) * SM_REGION_POOL_SIZE) {
         serror = &sarray[0];
         // TODO:Size of sRegionPool vs sarray constrain
         serrorPos = (size_t*)&sarray[gRegionPoolSize];
       } else {
-        // otherwise we need to allocate more space for the sorting
         serror = (T*)malloc(sizeof(T) * gRegionPoolSize);
         serrorPos = (size_t*)malloc(sizeof(size_t) * gRegionPoolSize);
       }
@@ -770,7 +766,7 @@ ComputeWeightSum(T *errors, size_t size){
           }
         }
       }
-
+	
       size_t index = idx * BLOCK_SIZE + threadIdx.x;
       if (index < offset) {
         Region<NDIM>* r1 = &sRegionPool[index];
@@ -988,7 +984,7 @@ ComputeWeightSum(T *errors, size_t size){
 
         bL->upper = bR->lower = 0.5 * (bL->lower + bL->upper);
       }
-
+		
       sRegionPoolSize++;
       nregions++;
       __syncthreads();
@@ -1149,7 +1145,9 @@ ComputeWeightSum(T *errors, size_t size){
         ERR = 0.0;
         isActive = 1;
       }
-
+	  
+	  //if(nregions > 2048)
+	//	  printf("[%i] nregions:%i\n", blockIdx.x, nregions);
       // printf("Final result%.20f \n %.20f\n", RESULT, ERR);
       activeRegions[blockIdx.x] = isActive;
       dRegionsIntegral[blockIdx.x] = RESULT;

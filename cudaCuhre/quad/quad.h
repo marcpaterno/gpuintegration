@@ -15,12 +15,13 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-
+//static int FIRST_PHASE_MAXREGIONS = (1 << 15);
 __constant__ TYPE errcoeff[] = {5, 1, 5};
 
 // Utilities
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
+#include "GPUquad/Interp2D.cuh"
 
 template <typename T>
 struct Structures {

@@ -8,12 +8,41 @@
 #define PI 3.14159265358979323844
 #define MIN(a, b) (((a) < (b)) ? a : b)
 
-class Test {
+class Gauss9D {
+public:
+  __device__ __host__ 
+  double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o,
+			 double p)
+	{
+		double sum = pow(x,2) + pow(y,2) + pow(z, 2) + pow(k, 2) + pow(l,2) + pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p,2);
+		return exp(-1*sum/(2*pow(0.01,2)))*(1/pow(sqrt(2*PI)*0.01, 9));
+	}
+};
+
+
+class SinSum6D {
 public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k, double l, double m)
   {
     return sin(x + y + z + k + l + m);
+  }
+};
+
+class SinSum6Dscaled {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m)
+  {
+    return pow(10, 6)*sin(10*(x + y + z + k + l + m));
   }
 };
 
@@ -56,10 +85,9 @@ public:
   __device__ __host__ double
   operator()(double v, double w, double x, double y, double z)
   {
-    return fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z) + 1.0);
+    return cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z) + 1.0;
   }
 };
-
 
 class absCosSum5D {
   // ESTIMATED ANSWER = 0.6371054
@@ -68,7 +96,6 @@ public:
   operator()(double v, double w, double x, double y, double z)
   {
     return fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z) / 0.6371054);
-    // return fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
   }
 };
 
