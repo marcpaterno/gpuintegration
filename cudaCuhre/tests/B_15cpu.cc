@@ -78,21 +78,21 @@ int main()
 	
   cubacpp::Cuhre cuhre;
   cuhre.maxeval = maxeval;
-	
+  double const epsrel_min = 1.0e-12;
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
 	
   double epsrel = 1.0e-3;
   double true_value = 8879.851175413485;
-   while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true && epsrel >= 2.56e-09)
+ /*  while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true && epsrel >= epsrel_min)
   {
      epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  }*/
   
   cuhre.flags = 4;
   epsrel = 1.0e-3;
-  while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f1") == true && epsrel >= 2.56e-09)
+  while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
   {
-     epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
+     epsrel /= 5.0;
   }
   return 0;
 }

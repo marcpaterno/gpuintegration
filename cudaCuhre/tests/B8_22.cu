@@ -56,9 +56,17 @@ time_and_call(std::string id,
           << std::fixed << result.errorest << ",\t" << std::fixed
           << result.nregions << ",\t" << std::fixed << result.status << ",\t"
           << _final << ",\t" << dt.count() << std::endl;
-  // printf("%.15f +- %.15f epsrel:%e final:%i nregions:%lu flag:%i time:%f\n",
-  // result.value, result.error, epsrel, _final, result.nregions, result.status,
-  // dt.count());
+	
+  /*printf("%s, %.20f, %e, %e, %.20f, %.20f, %lu, %i, %i, %.15f\n", id.c_str(), 
+																 true_value,
+																 epsrel,
+																 epsabs, 
+																 result.estimate,
+																 result.errorest,
+																 result.nregions, 
+																 result.status,
+																 _final,
+																 dt.count());*/
   return good;
 }
 
@@ -72,7 +80,7 @@ main()
   std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
              "converge, final, total_time\n";
   int _final = 1;
-  while (time_and_call("pdcuhre_f1",
+  while (time_and_call("pdc_f1_latest",
                        integrand,
                        epsrel,
                        true_value,
@@ -86,7 +94,7 @@ main()
   _final = 0;
   epsrel = 1.0e-3;
 
-  while (time_and_call("pdcuhre_f0",
+  while (time_and_call("pdc_f0_latest",
                        integrand,
                        epsrel,
                        true_value,

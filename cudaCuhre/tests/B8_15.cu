@@ -60,14 +60,15 @@ main()
   double epsrel = 1.0e-3; // starting error tolerance.
   int _final = 0;
   double true_value = 8879.851175413485;
+  double const epsrel_min = 1.0e-12;
   std::stringstream outfile;
   BoxIntegral8_15 integrand;
   // outfile<<"id, estimate, epsrel, epsabs, estimate, errorest, regions,
   // converge, final, total_time"<<std::endl;
-  constexpr int alternative_phase1 = 1;
+  constexpr int alternative_phase1 = 0;
   // printf("Testing final = 1 with alternative phase I\n");
   _final = 1;
-  while (time_and_call("pdc_Alt_ph1_f1_b2",
+  while (time_and_call("pdc_f1_latest",
                        integrand,
                        epsrel,
                        true_value,
@@ -75,7 +76,7 @@ main()
                        outfile,
                        _final,
                        alternative_phase1) == true &&
-         epsrel >= 1e-8) {
+         epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }
 
@@ -90,7 +91,7 @@ main()
                        outfile,
                        _final,
                        alternative_phase1) == true &&
-         epsrel >= 2.56e-09) {
+         epsrel >= epsrel_min) {
     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   }
 }

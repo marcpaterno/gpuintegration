@@ -31,6 +31,16 @@ target_include_directories(B8_22 PRIVATE
 )
 add_test(B8_22 B8_22)
 
+add_executable(Gauss9D Gauss9D.cu)
+target_compile_options(Gauss9D PRIVATE "-arch=sm_70")
+set_target_properties(Gauss9D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Gauss9D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(Gauss9D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(B8_22 Gauss9D)
+
 add_executable(absCosSum5Dplus1 absCosSum5Dplus1.cu)
 target_compile_options(absCosSum5Dplus1 PRIVATE "-arch=sm_70")
 set_target_properties(absCosSum5Dplus1 PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -59,6 +69,14 @@ target_include_directories(fun6d_demo PRIVATE
 )
 target_link_libraries(fun6d_demo PRIVATE ${CUBA_LIBRARIES})
 
+add_executable(interpolation interpolation.cc)
+target_link_libraries(interpolation PRIVATE models utils ${GSL_LIBRARIES})
+target_include_directories(interpolation PRIVATE
+  ${CMAKE_SOURCE_DIR}/../cubacpp
+  ${CMAKE_SOURCE_DIR}/../cuba/include/
+  ${CMAKE_SOURCE_DIR}/../y3_cluster_cpp/utils/
+)
+
 add_executable(B_22cpu B_22cpu.cc)
 target_include_directories(B_22cpu PRIVATE
   ${CMAKE_SOURCE_DIR}/../cubacpp
@@ -66,6 +84,14 @@ target_include_directories(B_22cpu PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 target_link_libraries(B_22cpu PRIVATE ${CUBA_LIBRARIES})
+
+add_executable(Gauss9Dcpu Gauss9Dcpu.cc)
+target_include_directories(Gauss9Dcpu PRIVATE
+  ${CMAKE_SOURCE_DIR}/../cubacpp
+  ${CMAKE_SOURCE_DIR}/../cuba/include/
+  ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(Gauss9Dcpu PRIVATE ${CUBA_LIBRARIES})
 
 add_executable(B_15cpu B_15cpu.cc)
 target_include_directories(B_15cpu PRIVATE
@@ -83,6 +109,13 @@ target_include_directories(absCosSum5Dplus1cpu PRIVATE
 )
 target_link_libraries(absCosSum5Dplus1cpu PRIVATE ${CUBA_LIBRARIES})
 
+add_executable(absCosSum5Dcpu absCosSum5Dcpu.cc)
+target_include_directories(absCosSum5Dcpu PRIVATE
+  ${CMAKE_SOURCE_DIR}/../cubacpp
+  ${CMAKE_SOURCE_DIR}/../cuba/include/
+  ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(absCosSum5Dcpu PRIVATE ${CUBA_LIBRARIES})
 
 add_executable(cuda_genz_1_8d genz_1_8d.cu)
 target_compile_options(cuda_genz_1_8d PRIVATE "-arch=sm_70" "-lineinfo")
@@ -105,6 +138,22 @@ target_compile_options(cuda_genz_1abs_5d PRIVATE "-arch=sm_70")
 set_target_properties(cuda_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cuda_genz_1abs_5d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 target_include_directories(cuda_genz_1abs_5d PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(SinSum6Dcpu SinSum6D.cc)
+target_include_directories(SinSum6Dcpu PRIVATE
+  ${CMAKE_SOURCE_DIR}/../cubacpp
+  ${CMAKE_SOURCE_DIR}/../cuba/include
+  ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(SinSum6Dcpu PRIVATE ${CUBA_LIBRARIES})
+
+add_executable(SinSum6gpu SinSum6D.cu)
+target_compile_options(SinSum6gpu PRIVATE "-arch=sm_70")
+set_target_properties(SinSum6gpu PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(SinSum6gpu util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(SinSum6gpu PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
