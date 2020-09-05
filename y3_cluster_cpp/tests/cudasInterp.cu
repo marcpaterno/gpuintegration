@@ -157,53 +157,30 @@ public:
     __device__ __host__ double
     operator()(double x, double y) const
     {
-	  //printf("Operator\n");
-	  //printf("Interpolating at %f, %f, rows:%lu, cols:%lu\n", x, y, _rows, _cols);
+	  //y1, y2, x1, x2, are the indices of where to find the four neighbouring points in the z-table
 	  size_t y1 = 0, y2 = 0;
 	  size_t x1 = 0, x2 = 0;
-	  
-	  //for(size_t i=0; i<_rows; i++)
-	  //	printf("interpR[%lu]:%f\n", i, interpR[i]);
-	  
-	  //for(size_t i=0; i<_cols; i++)
-	  //	printf("interpC[%lu]:%f\n", i, interpC[i]);
-	  
-	  //for(size_t i=0; i<_cols*_rows; i++)
-	  //	printf("interpT[%lu]:%e\n", i, interpT[i]);
-	  
+		
 	  FindNeighbourIndices(y, interpR, _rows, y1, y2);
 	  FindNeighbourIndices(x, interpC, _cols, x1, x2);
 	  
 	  //printf("coordinates: %lu, %lu, %lu, %lu\n", y1, y2, x1, x2);
-	  //double q11 = __ldg(&interpT[x1 + y1*_cols]);
-	  //double q12 = __ldg(&interpT[x1 + y2*_cols]);
-	  //double q21 = __ldg(&interpT[x2 + y1*_cols]);
-	  //double q22 = __ldg(&interpT[x2 + y2*_cols]);
+	  //this is how  zij is accessed by gsl2.6 Interp2D i.e. zij = z[j*xsize+i], where i=0,...,xsize-1, j=0, ..., ysize-1
+	  const double q11 = interpT[y1*_cols + x1];
+	  const double q12 = interpT[y2*_cols + x1];
+	  const double q21 = interpT[y1*_cols + x2];
+	  const double q22 = interpT[y2*_cols + x2];
+	  //printf("values at coordinats:%.8f, %.8f, %.8f, %.8f\n", q11, q12, q21, q22);
 	  
-	  printf("Rows:%lu, %lu\n", y1, y2);
-	  printf("Cols:%lu, %lu\n", x1, x2);
-	  //1st way
-	  /*double q11 = interpT[x1*_rows + y1];
-	  double q12 = interpT[x1*_rows + y2];
-	  double q21 = interpT[x2*_rows + y1];
-	  double q22 = interpT[x2*_rows + y2];*/
+	  const double x1_val = interpC[x1];
+	  const double x2_val = interpC[x2];
+	  const double y1_val = interpR[y1];
+	  const double y2_val = interpR[y2];
 	  
-	  //flip y and x, return s1.83e02 vs 2.34e-6
-	  /*double q11 = interpT[y1*_rows + x1];
-	  double q12 = interpT[y1*_rows + x2];
-	  double q21 = interpT[y2*_rows + x1];
-	  double q22 = interpT[y2*_rows + x2];*/
+	  const double f_x_y1 = q11*(x2_val-x)/(x2_val-x1) + q21*(x-x1_val)/(x2_val-x1_val);
+	  const double f_x_y2 = q12*(x2_val-x)/(x2_val-x1_val) + q22*(x-x1_val)/(x2_val-x1_val);
 	  
-	  //this is the correct one
-	  double q11 = interpT[y1*_cols + x1];
-	  double q12 = interpT[y1*_cols + x2];
-	  double q21 = interpT[y2*_cols + x1];
-	  double q22 = interpT[y2*_cols + x2];
-	  //printf("values at coordinates: %e, %e, %e, %e\n", q11, q12, q21, q22);
-	  double f_x_y1 = q11*(x2-x)/(x2-x1) + q21*(x-x1)/(x2-x1);
-	  double f_x_y2 = q12*(x2-x)/(x2-x1) + q22*(x-x1)/(x2-x1);
-	  
-	  double f_x_y = f_x_y1*(y2-y)/(y2-y1) + f_x_y2*(y-y1)/(y2-y1); 
+	  double f_x_y = f_x_y1*(y2_val-y)/(y2_val-y1_val) + f_x_y2*(y-y1_val)/(y2_val-y1_val); 
 	  return f_x_y;
     }
 	
@@ -317,8 +294,7 @@ __global__
 void
 testKernel(T* model, double x, double y){
 	//printf("Entered kernel\n");
-	
-	printf("gpu model:%e\n", model->operator()(x, y));
+	printf("quad:cudac gpu model:%.8f\n", model->operator()(x, y));
 }
 
 template <class M>
@@ -383,6 +359,19 @@ class example{
 	
 };
 
+  template<class T>
+  class X{
+	public:
+		hmf_t<T> model1;
+		hmf_t<T> model2;
+	    
+		__device__ __host__
+		double operator()(double x, double y){
+			printf("model 1:%.8f\n", model1(x, y));
+			printf("model 2:%.8f\n", model2(x, y));
+		}
+  };
+
 int main(){
   hmf_t<CPU> hmf  = make_from_file<hmf_t<CPU>>("data/HMF_t.dump");
   hmf_t<GPU> hmf2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
@@ -390,11 +379,15 @@ int main(){
   cudaMallocManaged((void**)&dhmf2, sizeof(hmf_t<GPU>));
   cudaDeviceSynchronize();
   memcpy(dhmf2, &hmf2, sizeof(hmf_t<GPU>));
+  X<GPU> x;
+  x.model1 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
+  x.model2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
   double const zt = 0x1.cccccccccccccp-2;
   double const lnM = 0x1.0cp+5;
+  x(lnM, zt);
   
-  printf("cpu model:%e\n", hmf(lnM, zt));
-  printf("simualted cpu model:%e\n", hmf2(lnM, zt));
+  printf("y3_cluster cpu model:%.8f\n", hmf(lnM, zt));
+  printf("quad:cudac cpu model:%.8f\n", dhmf2->operator()(lnM, zt));
   
   testKernel<hmf_t<GPU>><<<1,1>>>(dhmf2, lnM, zt);
   cudaDeviceSynchronize();
