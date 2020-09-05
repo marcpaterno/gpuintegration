@@ -11,8 +11,6 @@
 
 //using namespace y3_cluster;
 
-
-
 namespace quad {
 	
   class Managed 
@@ -83,44 +81,24 @@ public:
 	  interp._cols = xs.size();
 	  interp._rows = ys.size();
 	  cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
-	  //printf("1st & Last Values read from buffer\n");
-	  //printf("%f, %f\n", xs.data()[0], xs.data()[xs.size()-1]);
-	  
-	  //cudaMalloc((void**)&interp.interpR, sizeof(double)*ys.size());
-	  //cudaMalloc((void**)&interp.interpC, sizeof(double)*xs.size());
-	  //cudaMalloc((void**)&interp.interpT, sizeof(double)*zs.size());
-		
-	  //cudaMemcpy(interp.interpR, ys.data(), sizeof(double)*ys.size(), cudaMemcpyHostToDevice);
-	  //cudaMemcpy(interp.interpC, xs.data(), sizeof(double)*xs.size(), cudaMemcpyHostToDevice);
-	  //cudaMemcpy(interp.interpT, zs.data(), sizeof(double)*zs.size(), cudaMemcpyHostToDevice);
-	  
-	  //cudaMallocManaged(&(interp.interpR), sizeof(double)*ys.size());
-	  //cudaMallocManaged(&(interp.interpC), sizeof(double)*xs.size());
-	  //cudaMallocManaged(&(interp.interpT), sizeof(double)*zs.size());
-	  //interp.interpR = new double[ys.size()];
-	  //interp.interpC = new double[xs.size()];
-	  //interp.interpT = new double[zs.size()];
-	  
-	  //memcpy(interp.interpR, ys.data(), sizeof(double)*ys.size());
-	  //memcpy(interp.interpC, xs.data(), sizeof(double)*xs.size());
-	  //memcpy(interp.interpT, zs.data(), sizeof(double)*zs.size());
-	  
+
 	  cudaMallocManaged((void**)&interp.interpR, sizeof(double)*ys.size());
 	  cudaDeviceSynchronize();
 	  cudaMallocManaged((void**)&interp.interpC, sizeof(double)*xs.size());
 	  cudaDeviceSynchronize();
 	  cudaMallocManaged((void**)&interp.interpT, sizeof(double)*zs.size());
 	  cudaDeviceSynchronize();
+	  
 	  memcpy(interp.interpR, ys.data(), sizeof(double)*ys.size());
 	  memcpy(interp.interpC, xs.data(), sizeof(double)*xs.size());
 	  memcpy(interp.interpT, zs.data(), sizeof(double)*zs.size());
 	  
-	  for(int i=0; i< interp._rows; i++)
+	  /*for(int i=0; i< interp._rows; i++)
 		  printf("ys[%i]:%f\n", i, interp.interpR[i]);
 	  for(int i=0; i< interp._cols; i++)
 		  printf("xs[%i]:%f\n", i, interp.interpC[i]);
 	  for(int i=0; i< zs.size(); i++)
-		  printf("zs[%i]:%f\n", i, interp.interpT[i]);
+		  printf("zs[%i]:%f\n", i, interp.interpT[i]);*/
 	  
       return is;
     }
@@ -180,40 +158,53 @@ public:
     operator()(double x, double y) const
     {
 	  //printf("Operator\n");
+	  //printf("Interpolating at %f, %f, rows:%lu, cols:%lu\n", x, y, _rows, _cols);
 	  size_t y1 = 0, y2 = 0;
 	  size_t x1 = 0, x2 = 0;
 	  
 	  //for(size_t i=0; i<_rows; i++)
-	  //	  printf("interpR[%lu]:%f\n", i, interpR[i]);
+	  //	printf("interpR[%lu]:%f\n", i, interpR[i]);
 	  
 	  //for(size_t i=0; i<_cols; i++)
-	  //	  printf("interpC[%lu]:%f\n", i, interpC[i]);
+	  //	printf("interpC[%lu]:%f\n", i, interpC[i]);
 	  
 	  //for(size_t i=0; i<_cols*_rows; i++)
-	 //	  printf("interpT[%lu]:%e\n", i, interpT[i]);
+	  //	printf("interpT[%lu]:%e\n", i, interpT[i]);
 	  
 	  FindNeighbourIndices(y, interpR, _rows, y1, y2);
 	  FindNeighbourIndices(x, interpC, _cols, x1, x2);
 	  
-	  //printf("coordinates: %lu, %lu, %lu, %lu\n", x1, x2, y1, y2);
-	 // printf("indices in rolled array:%lu, %lu, %lu, %lu\n", x1*_cols + y1, x1*_cols + y2, x2*_cols + y1, x2*_cols + y2);
-	  //printf("array size:%lu\n", _cols*_rows);
+	  //printf("coordinates: %lu, %lu, %lu, %lu\n", y1, y2, x1, x2);
 	  //double q11 = __ldg(&interpT[x1 + y1*_cols]);
 	  //double q12 = __ldg(&interpT[x1 + y2*_cols]);
 	  //double q21 = __ldg(&interpT[x2 + y1*_cols]);
 	  //double q22 = __ldg(&interpT[x2 + y2*_cols]);
 	  
-	  double q11 = interpT[x1 + y1*_cols];
-	  double q12 = interpT[x1 + y2*_cols];
-	  double q21 = interpT[x2 + y1*_cols];
-	  double q22 = interpT[x2 + y2*_cols];
-	  //printf("After computation\n");
-	  //printf("values at coordinates: %e, %e, %e, %e\n", q11, q12, q21, q22);
+	  printf("Rows:%lu, %lu\n", y1, y2);
+	  printf("Cols:%lu, %lu\n", x1, x2);
+	  //1st way
+	  /*double q11 = interpT[x1*_rows + y1];
+	  double q12 = interpT[x1*_rows + y2];
+	  double q21 = interpT[x2*_rows + y1];
+	  double q22 = interpT[x2*_rows + y2];*/
 	  
-	  double t1 = (x2 - x) / ((x2 - x1) * (y2 - y1));
-      double t2 = (x - x1) / ((x2 - x1) * (y2 - y1));
-	  //printf("Value returned:%e\n", ((q11 * (y2 - y) + q12 * (y - y1)) * t1 + (q21 * (y2 - y) + q22 * (y - y1)) * t2));
-      return ((q11 * (y2 - y) + q12 * (y - y1)) * t1 + (q21 * (y2 - y) + q22 * (y - y1)) * t2);
+	  //flip y and x, return s1.83e02 vs 2.34e-6
+	  /*double q11 = interpT[y1*_rows + x1];
+	  double q12 = interpT[y1*_rows + x2];
+	  double q21 = interpT[y2*_rows + x1];
+	  double q22 = interpT[y2*_rows + x2];*/
+	  
+	  //this is the correct one
+	  double q11 = interpT[y1*_cols + x1];
+	  double q12 = interpT[y1*_cols + x2];
+	  double q21 = interpT[y2*_cols + x1];
+	  double q22 = interpT[y2*_cols + x2];
+	  //printf("values at coordinates: %e, %e, %e, %e\n", q11, q12, q21, q22);
+	  double f_x_y1 = q11*(x2-x)/(x2-x1) + q21*(x-x1)/(x2-x1);
+	  double f_x_y2 = q12*(x2-x)/(x2-x1) + q22*(x-x1)/(x2-x1);
+	  
+	  double f_x_y = f_x_y1*(y2-y)/(y2-y1) + f_x_y2*(y-y1)/(y2-y1); 
+	  return f_x_y;
     }
 	
 	__device__ __host__ double
@@ -270,8 +261,8 @@ class hmf_t {
 		__device__ __host__
 		double
 		operator()(double lnM, double zt) const{
-		  printf("Inside operator ");
-		  printf("interpolation result:%f\n", _nmz->clamp(lnM, zt));
+		  //printf("Inside operator ");
+		  //printf("interpolation result:%f\n", _nmz->clamp(lnM, zt));
 		  return _nmz->clamp(lnM, zt) *
 				 (_s * (lnM * 0.4342944819 - 13.8124426028) + _q);
 		}
@@ -292,7 +283,6 @@ class hmf_t {
 		  //needs to be deleted
 		  typename T::Interp2D *table = new typename T::Interp2D;
 		  is >> *table;
-		  
 		  
 		  std::string buffer;
 		  std::getline(is, buffer);
@@ -326,8 +316,9 @@ template<typename T>
 __global__ 
 void
 testKernel(T* model, double x, double y){
-	printf("Entered kernel\n");
-	printf("model:%f\n", model->operator()(0x1.0cp+5, 0x1.cccccccccccccp-2));
+	//printf("Entered kernel\n");
+	
+	printf("gpu model:%e\n", model->operator()(x, y));
 }
 
 template <class M>
@@ -395,9 +386,6 @@ class example{
 int main(){
   hmf_t<CPU> hmf  = make_from_file<hmf_t<CPU>>("data/HMF_t.dump");
   hmf_t<GPU> hmf2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
-  //hmf_t<GPU>* hmf2 ;
-  //cudaMallocManaged(&hmf2, sizeof(hmf_t<GPU>));
-  //*hmf2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
   hmf_t<GPU> *dhmf2;
   cudaMallocManaged((void**)&dhmf2, sizeof(hmf_t<GPU>));
   cudaDeviceSynchronize();
@@ -405,30 +393,11 @@ int main(){
   double const zt = 0x1.cccccccccccccp-2;
   double const lnM = 0x1.0cp+5;
   
-  std::cout<< hmf(lnM, zt) << "\n\n";
-  std::cout<< "here:"<< dhmf2->operator()(lnM, zt) << "\n";
-	
-  //hmf_t<GPU>* test;
-  //cudaMalloc((void**)&test, sizeof( hmf_t<GPU>));
-  //cudaMemcpy(test, &hmf2, sizeof(hmf_t<GPU>), cudaMemcpyHostToDevice);
-  //printf("here\n");
-  //printf("cpu:%i\n", ex->call(4));
-  //delete ex->data;
+  printf("cpu model:%e\n", hmf(lnM, zt));
+  printf("simualted cpu model:%e\n", hmf2(lnM, zt));
+  
   testKernel<hmf_t<GPU>><<<1,1>>>(dhmf2, lnM, zt);
   cudaDeviceSynchronize();
-	
-   DataElement *e = new DataElement;
-   cudaMallocManaged((void**)&(e), sizeof(DataElement));
-   e->value = 10;
-   cudaMallocManaged((void**)&(e->name), sizeof(char) * (strlen("hello") + 1) );
-   strcpy(e->name, "hello");
-//
-  launch(e);
-
-  printf("On host: name=%s, value=%d\n", e->name, e->value);
-
-  //cudaFree(e->name);
-  //delete e;
-	
-	return 0;
+  
+  return 0;
 }
