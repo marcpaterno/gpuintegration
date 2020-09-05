@@ -177,7 +177,7 @@ public:
 	  const double y1_val = interpR[y1];
 	  const double y2_val = interpR[y2];
 	  
-	  const double f_x_y1 = q11*(x2_val-x)/(x2_val-x1) + q21*(x-x1_val)/(x2_val-x1_val);
+	  const double f_x_y1 = q11*(x2_val-x)/(x2_val-x1_val) + q21*(x-x1_val)/(x2_val-x1_val);
 	  const double f_x_y2 = q12*(x2_val-x)/(x2_val-x1_val) + q22*(x-x1_val)/(x2_val-x1_val);
 	  
 	  double f_x_y = f_x_y1*(y2_val-y)/(y2_val-y1_val) + f_x_y2*(y-y1_val)/(y2_val-y1_val); 
