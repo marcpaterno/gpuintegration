@@ -13,9 +13,9 @@
 
 namespace quad {
 	
-  class Managed 
+class Managed 
 {
-public:
+ public:
   void *operator new(size_t len) {
     void *ptr;
     cudaMallocManaged(&ptr, len);
@@ -29,12 +29,12 @@ public:
   }
 };	
 	
-  class Interp2D : public Managed{
+class Interp2D : public Managed{
   
   public:
     __device__ __host__
     Interp2D(){};
-	
+	//change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
     double* interpT;
     double* interpR;
     double* interpC;
@@ -43,14 +43,6 @@ public:
 	
     __host__ __device__
 	Interp2D(double* xs, double* ys, double* zs, size_t cols, size_t rows){
-		printf("Constructor called\n");
-		//cudaMalloc((void**)&interpR, sizeof(double)*rows);
-		//cudaMalloc((void**)&interpC, sizeof(double)*cols);
-		//cudaMalloc((void**)&interpT, sizeof(double)*rows*cols);
-		
-		//cudaMemcpy(interpR, ys, sizeof(double)*rows, cudaMemcpyHostToDevice);
-		//cudaMemcpy(interpC, xs, sizeof(double)*cols, cudaMemcpyHostToDevice);
-		//cudaMemcpy(interpT, zs, sizeof(double)*rows*cols, cudaMemcpyHostToDevice);
 		memcpy(interpR, ys, sizeof(double)*rows);
 		memcpy(interpC, xs, sizeof(double)*cols);
 		memcpy(interpT, zs, sizeof(double)*rows*cols);
@@ -93,19 +85,12 @@ public:
 	  memcpy(interp.interpC, xs.data(), sizeof(double)*xs.size());
 	  memcpy(interp.interpT, zs.data(), sizeof(double)*zs.size());
 	  
-	  /*for(int i=0; i< interp._rows; i++)
-		  printf("ys[%i]:%f\n", i, interp.interpR[i]);
-	  for(int i=0; i< interp._cols; i++)
-		  printf("xs[%i]:%f\n", i, interp.interpC[i]);
-	  for(int i=0; i< zs.size(); i++)
-		  printf("zs[%i]:%f\n", i, interp.interpT[i]);*/
-	  
       return is;
     }
 	
+	//is this needed?
 	__host__ __device__
 	Interp2D(const Interp2D &source) {
-		printf("Copy constructor called\n");
 		interpT = source.interpT;
 		interpC = source.interpC;
 		interpR = source.interpR;
@@ -113,45 +98,29 @@ public:
 		_rows = source._rows;
 	} 
 	
-	//what to do if extrapolation is attempted?
 	__device__ __host__
 	void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
-		//assert for improper sizes?
+
 		size_t currentIndex = size/2;
 		size_t lastIndex = size - 1;
 		leftI = 0;
 		rightI = size - 1;
-		
-		//for(size_t i=0; i<size; ++i)
-		//	printf("arr[%lu]:%f\n", i, arr[i]);
-		
+
 		while(currentIndex != 0 && currentIndex != lastIndex){
 			currentIndex = leftI + (rightI - leftI)/2;
-			//printf("currentIndex:%lu looking for %f within %lu range\n", currentIndex, val, size);
 			if(AreNeighbors(val, arr, currentIndex-1, currentIndex)){
 				leftI = currentIndex -1;
 				rightI = currentIndex;
 				return;
 			}
-			
-			//printf("%f vs %f\n", arr[currentIndex], val);
-			
+					
 			if(arr[currentIndex] > val){
-				//printf("changing rightI from %lu to %lu\n", rightI, currentIndex);
 				rightI = currentIndex;
 			}
 			else{
-				//printf("changing leftI from %lu to %lu\n", leftI, currentIndex);
 				leftI = currentIndex;
 			}
-			//currentIndex = arr[currentIndex] > val ? currentIndex /= 2 : currentIndex + (size-currentIndex)/2;
-			//currentIndex = arr[currentIndex] > val ? (currentIndex-leftI) / 2 : currentIndex + (size-currentIndex)/2;
-			
 		}
-		
-		//values can't be found, how to handle?
-		leftI  = 0;
-		rightI = 0;
 	}
 	
     __device__ __host__ double
@@ -164,13 +133,11 @@ public:
 	  FindNeighbourIndices(y, interpR, _rows, y1, y2);
 	  FindNeighbourIndices(x, interpC, _cols, x1, x2);
 	  
-	  //printf("coordinates: %lu, %lu, %lu, %lu\n", y1, y2, x1, x2);
 	  //this is how  zij is accessed by gsl2.6 Interp2D i.e. zij = z[j*xsize+i], where i=0,...,xsize-1, j=0, ..., ysize-1
 	  const double q11 = interpT[y1*_cols + x1];
 	  const double q12 = interpT[y2*_cols + x1];
 	  const double q21 = interpT[y1*_cols + x2];
 	  const double q22 = interpT[y2*_cols + x2];
-	  //printf("values at coordinats:%.8f, %.8f, %.8f, %.8f\n", q11, q12, q21, q22);
 	  
 	  const double x1_val = interpC[x1];
 	  const double x2_val = interpC[x2];
@@ -225,21 +192,21 @@ public:
 template <class T>
 class hmf_t {
 	  public:
-	  
-		__device__ __host__ 
+		__host__ 
 		hmf_t() = default;
+		
 		__device__ __host__
+		//hmf_t(std::shared_ptr<Interp2D const> nmz, double s, double q)
 		hmf_t(typename T::Interp2D* nmz, double s, double q)
 		  : _nmz(nmz), _s(s), _q(q)
 		{}
 		
 		using doubles = std::vector<double>;
 		
+		//ADD DATABLOCK CONSTRUCTOR
 		__device__ __host__
 		double
 		operator()(double lnM, double zt) const{
-		  //printf("Inside operator ");
-		  //printf("interpolation result:%f\n", _nmz->clamp(lnM, zt));
 		  return _nmz->clamp(lnM, zt) *
 				 (_s * (lnM * 0.4342944819 - 13.8124426028) + _q);
 		}
@@ -252,12 +219,11 @@ class hmf_t {
 		  os.flags(old_flags);
 		  return os;
 		}
-
+		
 		friend std::istream&
 		operator>>(std::istream& is, hmf_t& m){
 		  assert(is.good());
-		  //auto table = std::make_shared<typename T::Interp2D>();
-		  //needs to be deleted
+		  //doing the line below instead //auto table = std::make_shared<typename T::Interp2D>();
 		  typename T::Interp2D *table = new typename T::Interp2D;
 		  is >> *table;
 		  
@@ -276,7 +242,9 @@ class hmf_t {
 		}
 		
 	  private:
-		typename T::Interp2D* _nmz;
+		//typename T::Interp2D* _nmz;
+		std::shared_ptr<typename T::Interp2D const> _nmz;
+		
 		double _s = 0.0;
 		double _q = 0.0;
 };
@@ -292,9 +260,8 @@ struct CPU {
 template<typename T>
 __global__ 
 void
-testKernel(T* model, double x, double y){
-	//printf("Entered kernel\n");
-	printf("quad:cudac gpu model:%.8f\n", model->operator()(x, y));
+testKernel(T* model, double x, double y, double* result){
+	*result = model->operator()(x, y);
 }
 
 template <class M>
@@ -318,6 +285,7 @@ make_from_file(char const* filename)
   return result;
 }
 
+/*
 struct DataElement //: public Managed
 {
   char *name;
@@ -331,6 +299,7 @@ void Kernel(DataElement *elem) {
   elem->name[0] = 'd';
   elem->value++;
 }
+
 
 void launch(DataElement *elem) {
   Kernel<<< 1, 1 >>>(elem);
@@ -357,21 +326,70 @@ class example{
 		int y; 
 		int *data;
 	
-};
+};*/
 
-  template<class T>
-  class X{
+template<class T>
+class MockIntegrand{
 	public:
-		hmf_t<T> model1;
-		hmf_t<T> model2;
+		hmf_t<T> modelA;
+		hmf_t<T> modelB;
 	    
 		__device__ __host__
 		double operator()(double x, double y){
-			printf("model 1:%.8f\n", model1(x, y));
-			printf("model 2:%.8f\n", model2(x, y));
+			return modelA(x,y) + modelB(x,y);
 		}
-  };
+};
 
+TEST_CASE("CONDITIONAL MODEL EXECUTION")
+{
+	double const zt = 0x1.cccccccccccccp-2;
+	double const lnM = 0x1.0cp+5;
+	
+	hmf_t<CPU> hmf  = make_from_file<hmf_t<CPU>>("data/HMF_t.dump");
+	hmf_t<GPU> hmf2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
+	
+	SECTION("SAME BEHAVIOR WITH <GPU> OBJECT")
+	{
+		CHECK(hmf2(lnM,  zt) == hmf(lnM,  zt));
+	}
+	
+	SECTION("SAME BEHAVIOR WITH <GPU> OBJECT ON GPU")
+	{
+		hmf_t<GPU> *dhmf2;
+		cudaMallocManaged((void**)&dhmf2, sizeof(hmf_t<GPU>));
+		cudaDeviceSynchronize();
+		memcpy(dhmf2, &hmf2, sizeof(hmf_t<GPU>));
+		
+		double* result;
+		cudaMallocManaged((void**)&result, sizeof(double));
+		
+		testKernel<hmf_t<GPU>><<<1,1>>>(dhmf2, lnM, zt, result);
+		cudaDeviceSynchronize();
+		CHECK(dhmf2->operator()(lnM,  zt) == hmf(lnM,  zt));
+		CHECK(*result == hmf(lnM,  zt));
+	}
+	
+	SECTION("MOCK INTEGRAL WITH TWO IDENTICAL MODELS, EACH WITH EACH OWN INTERP2D")
+	{
+		MockIntegrand<GPU> integrand;
+		integrand.modelA = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
+		integrand.modelB = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
+		
+		MockIntegrand<GPU> *d_integrand;
+		cudaMallocManaged((void**)&d_integrand, sizeof(MockIntegrand<GPU>));
+		cudaDeviceSynchronize();
+		memcpy(d_integrand, &integrand, sizeof(MockIntegrand<GPU>));
+		
+		double* result;
+		cudaMallocManaged((void**)&result, sizeof(double));
+		
+		testKernel<MockIntegrand<GPU>><<<1,1>>>(d_integrand, lnM, zt, result);
+		cudaDeviceSynchronize();
+		CHECK((double)(*result)/2 == hmf(lnM,  zt));
+	}
+}
+
+/*
 int main(){
   hmf_t<CPU> hmf  = make_from_file<hmf_t<CPU>>("data/HMF_t.dump");
   hmf_t<GPU> hmf2 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
@@ -389,8 +407,9 @@ int main(){
   printf("y3_cluster cpu model:%.8f\n", hmf(lnM, zt));
   printf("quad:cudac cpu model:%.8f\n", dhmf2->operator()(lnM, zt));
   
-  testKernel<hmf_t<GPU>><<<1,1>>>(dhmf2, lnM, zt);
-  cudaDeviceSynchronize();
+  //testKernel<hmf_t<GPU>><<<1,1>>>(dhmf2, lnM, zt);
+  //cudaDeviceSynchronize();
   
   return 0;
 }
+*/
