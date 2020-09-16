@@ -15,9 +15,20 @@
 #include "models/omega_z_des.hh"
 #include "models/int_zo_zt_des_t.hh"
 #include "models/mor_des_t.hh"
+#include "models/roffset_t.hh"
+#include "models/dv_do_dz_t.hh"
+#include "models/lo_lc_t.hh"
 //using namespace y3_cluster;
 
 namespace quad {
+	
+	__device__ __host__
+	inline double
+	gaussian(double x, double mu, double sigma)
+	{
+    double const z = (x - mu) / sigma;
+    return exp(-z * z / 2.) * 0.3989422804014327 / sigma;
+	}
 	
 	class Managed 
 	{
@@ -58,58 +69,39 @@ namespace quad {
 		Interp2D(std::array<double, M> const& xs, std::array<double, N> const& ys, std::array<double, (N)*(M)> const& zs)
 		{
 			Alloc(M, N);
-			//cudaMallocManaged((void**)&interpR, sizeof(double)*N);
-			//cudaDeviceSynchronize();
-			//cudaMallocManaged((void**)&interpC, sizeof(double)*M);
-			//cudaDeviceSynchronize();
-			//cudaMallocManaged((void**)&interpT, sizeof(double)*N*M);
-			//cudaDeviceSynchronize();
-			
 			memcpy(interpR, ys.data(), sizeof(double)*N);
 			memcpy(interpC, xs.data(), sizeof(double)*M);
 			memcpy(interpT, zs.data(), sizeof(double)*N*M);
-			
-			//_rows = N;
-			//_cols = M;
 		}
 		
 		Interp2D(double* xs, double* ys, double* zs, size_t cols, size_t rows)
 		{
 			Alloc(cols, rows);
-			//cudaMallocManaged((void**)&interpR, sizeof(double)*rows);
-			//cudaDeviceSynchronize();
-			//cudaMallocManaged((void**)&interpC, sizeof(double)*cols);
-			//cudaDeviceSynchronize();
-			//cudaMallocManaged((void**)&interpT, sizeof(double)*rows*cols);
-			//cudaDeviceSynchronize();
-			
 			memcpy(interpR, ys, sizeof(double)*rows);
 			memcpy(interpC, xs, sizeof(double)*cols);
 			memcpy(interpT, zs, sizeof(double)*rows*cols);
-			
-			//_rows = rows;
-			//_cols = cols;
 		}
 		
-		Interp2D(std::vector<double>&& xs,
-                           std::vector<double>&& ys,
-                           std::vector<std::vector<double>> const& zs)//: xs_(std::move(xs)), ys_(std::move(ys)), zs_(xs.size() * ys.size())
-		{
-			assert(zs.size() == xs.size());
+		//Interp2D(std::vector<double>&& xs, std::vector<double>&& ys, std::vector<std::vector<double>> const& zs)
+		//Look at mor_des_t model, is the data in .cc file given in wrong format?
+		template<size_t M, size_t N>
+		Interp2D(std::array<double, M> xs, std::array<double, N> ys, std::array<std::array<double, N>, M> zs)
+		{		
+			Alloc(M, N);
+			memcpy(interpR, ys.data(), sizeof(double)*N);
+			memcpy(interpC, xs.data(), sizeof(double)*M);
 			
-			/*for (std::size_t i = 0; i < xs.size(); ++i) {
-				std::vector<double> const& row = zs[i];
-				assert(row.size() == ys.size());
-				for (std::size_t j = 0; j < ys.size(); ++j) {
-					zs_[i + j * ys.size()] = row[j];
+			//printf("cols:%lu rows:%lu\n", M, N);
+			for (std::size_t i = 0; i < M; ++i) {
+				std::array<double, N> const& row = zs[i];
+				for (std::size_t j = 0; j < N; ++j) {
+					interpT[i + j * M] = row[j];
+					//interpT[i + j * N] = zs[i][j];
+					//printf("custom: row[%lu]:%f -> InterpT[%lu]\n", j, row[j], i+j*N);
 				}
-			}*/
-			
-			//assert(zs_.size() != nx() * ny());
-		
-			//interp_ = gsl_interp2d_alloc(gsl_interp2d_bilinear, nx(), ny());
-			//gsl_interp2d_init(interp_, xs_.data(), ys_.data(), zs_.data(), nx(), ny());
-	  }
+			}
+			//printf("%f, %f, %f, %f\n", min_x(), max_x(), min_y(), max_y());
+	    }
 		
 		__device__ __host__
 		bool AreNeighbors(const double val, double* arr, const size_t leftIndex, const size_t RightIndex) const{
@@ -132,8 +124,8 @@ namespace quad {
 		  
 		  interp._cols = xs.size();
 		  interp._rows = ys.size();
+		  
 		  cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
-			
 		  cudaMallocManaged((void**)&interp.interpR, sizeof(double)*ys.size());
 		  cudaDeviceSynchronize();
 		  cudaMallocManaged((void**)&interp.interpC, sizeof(double)*xs.size());
@@ -184,6 +176,10 @@ namespace quad {
 		__device__ __host__ double
 		operator()(double x, double y) const
 		{
+		//printf("custom: interpolating on %.20f, %.20f\n", x, y);
+		 // for(int i=0; i< _rows*_cols; ++i)
+		//	printf("interpT[%i]:%f\n", i, interpT[i]);
+	
 		  //y1, y2, x1, x2, are the indices of where to find the four neighbouring points in the z-table
 		  size_t y1 = 0, y2 = 0;
 		  size_t x1 = 0, x2 = 0;
@@ -205,25 +201,25 @@ namespace quad {
 		  const double f_x_y1 = q11*(x2_val-x)/(x2_val-x1_val) + q21*(x-x1_val)/(x2_val-x1_val);
 		  const double f_x_y2 = q12*(x2_val-x)/(x2_val-x1_val) + q22*(x-x1_val)/(x2_val-x1_val);
 		  
-		  double f_x_y = f_x_y1*(y2_val-y)/(y2_val-y1_val) + f_x_y2*(y-y1_val)/(y2_val-y1_val); 
+		  //printf("indices of neighbors:x1:%lu, x2:%lu, y1:%lu, y2:%lu\n", x1, x2, y1, y2);
+		  //printf("q11:%f, q12:%f, q21:%f, q22:%f\n", q11, q12, q21, q22);
+		  
+		  double f_x_y = 0.;
+		  f_x_y = f_x_y1*(y2_val-y)/(y2_val-y1_val) + f_x_y2*(y-y1_val)/(y2_val-y1_val); 
 		  return f_x_y;
 		}
 		
 		__device__ __host__ double
-		min_x() const{ 
-		return interpC[0]; }
+		min_x() const{ return interpC[0]; }
 		
 		__device__ __host__ double
-		max_x() const{ 
-		return interpC[_cols-1];  }
+		max_x() const{ return interpC[_cols-1]; }
 		
 		__device__  __host__  double
-		min_y() const{ 
-		return interpR[0]; }
+		min_y() const{ return interpR[0]; }
 		
 		__device__ __host__ double
-		max_y() const{ 
-		return interpC[_rows-1]; }
+		max_y() const{ return interpR[_rows-1]; }
 		
 		__device__  __host__ double
 		do_clamp(double v, double lo, double hi) const
@@ -243,6 +239,139 @@ namespace quad {
 		clamp(double x, double y) const
 		{
 		  return eval(do_clamp(x, min_x(), max_x()), do_clamp(y, min_y(), max_y()));
+		}
+	  };
+	
+	
+	class Interp1D : public Managed{
+	  public:
+		__host__ __device__
+		Interp1D(){}
+		//change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
+		double* interpT;
+		double* interpC;
+		size_t _cols;
+		
+		void Alloc(size_t cols){
+			_cols = cols;
+			cudaMallocManaged((void**)&interpC, sizeof(double)*_cols);
+			cudaMallocManaged((void**)&interpT, sizeof(double)*_cols);
+		}
+		
+		template<size_t M>
+		Interp1D(std::array<double, M> const& xs, std::array<double,M> const& zs)
+		{
+			Alloc(M);
+			memcpy(interpC, xs.data(), sizeof(double)*M);
+			memcpy(interpT, zs.data(), sizeof(double)*M);
+		}
+		
+		Interp1D(double* xs, double* ys, double* zs, size_t cols)
+		{
+			Alloc(cols);
+			memcpy(interpC, xs, sizeof(double)*cols);
+			memcpy(interpT, zs, sizeof(double)*cols);
+		}
+		
+		__device__ __host__
+		bool AreNeighbors(const double val, double* arr, const size_t leftIndex, const size_t RightIndex) const{
+			if(arr[leftIndex] <= val && arr[RightIndex] >= val)
+				return true;
+			return false;
+		}
+		
+		friend std::istream&
+		operator>>(std::istream& is, Interp1D& interp)
+		{
+		  assert(is.good());
+		  std::string buffer;
+		  std::getline(is, buffer);
+		  std::vector<double> xs = cosmosis::str_to_doubles(buffer);
+		  std::getline(is, buffer);
+		  std::vector<double> zs  = cosmosis::str_to_doubles(buffer);
+		  
+		  interp._cols = xs.size();
+		  cudaMallocManaged((void**)&(*&interp), sizeof(Interp1D));
+		  cudaDeviceSynchronize();
+		  cudaMallocManaged((void**)&interp.interpC, sizeof(double)*xs.size());
+		  cudaDeviceSynchronize();
+		  cudaMallocManaged((void**)&interp.interpT, sizeof(double)*zs.size());
+		  cudaDeviceSynchronize();
+		  
+		  memcpy(interp.interpC, xs.data(), sizeof(double)*xs.size());
+		  memcpy(interp.interpT, zs.data(), sizeof(double)*zs.size());
+		  
+		  return is;
+		}
+		
+		Interp1D(const Interp1D &source) {
+			interpT = source.interpT;
+			interpC = source.interpC;
+			_cols = source._cols;
+		} 
+		
+		__device__ __host__
+		void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
+
+			size_t currentIndex = size/2;
+			size_t lastIndex = size - 1;
+			leftI = 0;
+			rightI = size - 1;
+
+			while(currentIndex != 0 && currentIndex != lastIndex){
+				currentIndex = leftI + (rightI - leftI)/2;
+				if(AreNeighbors(val, arr, currentIndex-1, currentIndex)){
+					leftI = currentIndex -1;
+					rightI = currentIndex;
+					return;
+				}
+				
+				if(arr[currentIndex] > val){
+					rightI = currentIndex;
+				}
+				else{
+					leftI = currentIndex;
+				}
+			}
+		}
+		
+		__device__ __host__ double
+		operator()(double x) const
+		{
+		  size_t x0_index = 0, x1_index = 0;
+		  FindNeighbourIndices(x, interpC, _cols, x0_index, x1_index);
+		  const double y0 = interpT[x0_index];
+		  const double y1 = interpT[x1_index];
+		  const double x0 = interpC[x0_index];
+		  const double x1 = interpC[x1_index];
+		  const double y = (y0*(x1 - x) + y1*(x - x0))/(x1 - x0);
+		  return y;
+		}
+		
+		__device__ __host__ double
+		min_x() const{ return interpC[0]; }
+		
+		__device__ __host__ double
+		max_x() const{ return interpC[_cols-1]; }
+		
+		__device__  __host__ double
+		do_clamp(double v, double lo, double hi) const
+		{
+			assert(!(hi < lo));
+			return (v < lo) ? lo : (hi < v) ? hi : v;
+		}
+		
+		__device__ __host__ double
+		eval(double x) const
+		{
+		  return this->operator()(x);
+		};
+		
+		__device__  __host__
+		double
+		clamp(double x) const
+		{
+		  return eval(do_clamp(x, min_x(), max_x()));
 		}
 	  };
 	
@@ -326,15 +455,16 @@ class hmf_t {
 struct GPU {
   template<size_t order>
   using polynomial = quad::polynomial<order>;
-  
   typedef quad::Interp2D Interp2D;
+  typedef quad::Interp1D Interp1D;
+  //typedef quad::ez ez;
 };
 
 struct CPU {
   template<size_t order>
   using polynomial = y3_cluster::polynomial<order>;
-  
   typedef y3_cluster::Interp2D Interp2D;
+  typedef y3_cluster::Interp1D Interp1D;
 };
 
 template<typename T>
@@ -356,6 +486,14 @@ __global__
 void
 testKernel(T* model, double x, double* result){
 	*result = model->operator()(x);
+}
+
+template<typename T>
+__global__ 
+void
+testKernel(T* model, double x1, double x2, double x3, double x4, double x5, double x6, double x7, double* result){
+	//printf("From kernel:%a\n", model->operator()(x1, x2, x3, x4, x5, x6, x7));
+	*result = model->operator()(x1, x2, x3, x4, x5, x6, x7);
 }
 
 template <class M>
@@ -1056,17 +1194,17 @@ TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
 
   // Create an Interp2D from an x-axis, y-axis, and z "matrix", with the matrix
   // unrolled into a one-dimenstional array.
-  template <size_t M, std::size_t N>
-  y3_cluster::Interp2D
-  make_Interp2D_aux(std::array<double, M> const& xs,
+template <size_t M, std::size_t N>
+y3_cluster::Interp2D
+make_Interp2D_aux(std::array<double, M> const& xs,
                     std::array<double, N> const& ys,
                     std::array<double, (N) * (M)> const& zs)
-  {
+{
     return {make_vec(xs), make_vec(ys), make_vec(zs)};
-  }
+}
 
-  auto make_Interp2D = [](auto zs) 
-  {
+auto make_Interp2D = [](auto zs) 
+{
     return make_Interp2D_aux(lt_bins, zt_bins, zs);
   };
 
@@ -1178,8 +1316,7 @@ TEST_CASE("Omega_z DES to Test quad::Polynomial")
 	cudaDeviceSynchronize();
 	CHECK(result == cpu_result);
 	CHECK(result == *gpu_result);
-}
-
+} 
 
 class sigma_photoz_des_t {
   public:
@@ -1264,94 +1401,7 @@ TEST_CASE("Simple model"){
 	CHECK(*gpu_result == result);
 }
 
-template<class T>
-class mor_des_t {
-    // Read from l_sat_grid.dat
-    
-    typename T::Interp2D const sig_interp;
-    typename T::Interp2D const skews_interp;
-
-    double _A = 0.0;
-    double _B = 0.0;
-    double _C = 0.0;
-    double _sigma_intr = 0.0;
-    double _epsilon = 0.0;
-    double _z_pivot = 0.0;
-
-  public:
-    mor_des_t() = default;
-	
-    mor_des_t(double A,
-              double B,
-              double C,
-              double sigma_i,
-              double epsilon,
-              double z_pivot)
-      : _A(A)
-      , _B(B)
-      , _C(C)
-      , _sigma_intr(sigma_i)
-      , _epsilon(epsilon)
-      , _z_pivot(z_pivot)
-    {}
-	
-    double
-    operator()(double lt, double lnM, double zt) const
-    {
-      // Now _lambda returns the evaluation of the eq.(9) of the
-      // Matteo's paper, i.e., lambda_sat_given_M. 1. is a dummy
-      // value for z. We are not using z here.
-      double const ltm = pow((exp(lnM) - _A) / (_B - _A), _C) *
-                         pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
-
-      // Computing sigma from the interpolation
-      // ltm is lambda_true_given_M; _sigma_intr is sigma_intrisic
-
-      double const _sigma = sig_interp.clamp(_sigma_intr, ltm);
-      double const _skw = skews_interp.clamp(_sigma_intr, ltm);
-
-      // Eq. B1 of Matteo's paper, adding the normalization part
-      double const x = lt - ltm;
-      double const erfarg = -1.0 * _skw * (x) / (std::sqrt(2.) * _sigma);
-      double const erfterm = erfc(erfarg);
-      return y3_cluster::gaussian(x, 0.0, _sigma) * erfterm;
-    }
-
-    friend std::ostream&
-    operator<<(std::ostream& os, mor_des_t const& m)
-    {
-      auto const old_flags = os.flags();
-      os << std::hexfloat;
-      os << m._A << ' ' << m._B << ' ' << m._C << ' ' << m._sigma_intr << ' '
-         << m._epsilon << ' ' << m._z_pivot;
-      os.flags(old_flags);
-      return os;
-    }
-
-    friend std::istream&
-    operator>>(std::istream& is, mor_des_t& m)
-    {
-      std::string buffer;
-      std::getline(is, buffer);
-      std::vector<double> vals_read = cosmosis::str_to_doubles(buffer);
-      if (vals_read.size() == 6)
-      {
-        m._A = vals_read[0];
-        m._B = vals_read[1];
-        m._C = vals_read[2];
-        m._sigma_intr = vals_read[3];
-        m._epsilon = vals_read[4];
-        m._z_pivot = vals_read[5];
-      }
-      else
-      {
-        is.setstate(std::ios_base::failbit);
-      }
-      return is;
-    }
-  };
-  
-    std::array<double, 42> test_lsat = {
+std::array<double, 42> test_lsat = {
       0.500000,   0.600000,   0.700000,   0.800000,   0.900000,   1.000000,
       2.000000,   3.000000,   4.000000,   5.000000,   6.000000,   7.000000,
       8.000000,   9.000000,   10.000000,  11.000000,  12.000000,  13.000000,
@@ -1360,24 +1410,24 @@ class mor_des_t {
       134.000000, 144.000000, 154.000000, 164.000000, 174.000000, 184.000000,
       194.000000, 204.000000, 214.000000, 224.000000, 234.000000, 244.000000};
 	
-    // Read from sig_intr_grid.dat
-    std::array<double, 14> test_sigintr = {0.050000,
-                                           0.100000,
-                                           0.200000,
-                                           0.300000,
-                                           0.400000,
-                                           0.500000,
-                                           0.600000,
-                                           0.700000,
-                                           0.800000,
-                                           0.900000,
-                                           1.000000,
-                                           1.300000,
-                                           1.700000,
-                                           2.000000};
+// Read from sig_intr_grid.dat
+std::array<double, 14> test_sigintr = {0.050000,
+                                       0.100000,
+                                       0.200000,
+                                       0.300000,
+                                       0.400000,
+                                       0.500000,
+                                       0.600000,
+                                       0.700000,
+                                       0.800000,
+                                       0.900000,
+                                       1.000000,
+                                       1.300000,
+                                       1.700000,
+                                       2.000000};
 
-    // Read from sig_skew_table.dat;
-    std::array<std::array<double, 42>, 14> sig_skewnorml_flat = {
+// Read from sig_skew_table.dat;
+std::array<std::array<double, 42>, 14> sig_skewnorml_flat = {
       {
 	   {1.211319,  1.307980,  1.455547,  1.242204,  1.260416,  1.287859,
         1.604654,  1.883786,  2.133369,  2.357737,  2.565367,  2.759611,
@@ -1494,8 +1544,8 @@ class mor_des_t {
         468.212324, 488.220129}
 		}};
 
-    // Read from skew_table.dat;
-    std::array<std::array<double, 42>, 14> skews = {
+// Read from skew_table.dat;
+std::array<std::array<double, 42>, 14> skews = {
       {{9.120214, 11.475627, 38.412414, 2.221504, 1.684393, 1.446896, 0.781268,
         0.600871, 0.508428,  0.446559,  0.403048, 0.369343, 0.343748, 0.322870,
         0.304779, 0.289879,  0.276274,  0.265372, 0.255227, 0.191968, 0.160551,
@@ -1581,15 +1631,755 @@ class mor_des_t {
         0.005605, 0.004194, 0.004040, 0.004002, 0.004299, 0.004607, 0.004030,
         0.003770, 0.002902, 0.003709, 0.002591, 0.001857, 0.002333, 0.002402}}};
 
-  TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
-  {
+template<class T>
+class mor_des_t {
+    // Read from l_sat_grid.dat
+    
+    //typename T::Interp2D const sig_interp;
+    //typename T::Interp2D const skews_interp;
+	
+	std::shared_ptr<typename T::Interp2D const> sig_interp;
+	std::shared_ptr<typename T::Interp2D const> skews_interp;
+	
+    double _A = 0.0;
+    double _B = 0.0;
+    double _C = 0.0;
+    double _sigma_intr = 0.0;
+    double _epsilon = 0.0;
+    double _z_pivot = 0.0;
+
+  public:
+  __device__ __host__
+    mor_des_t() = default;
+	
+	mor_des_t(typename T::Interp2D* sig_int, typename T::Interp2D* skews_int):sig_interp(sig_int), skews_interp(skews_int){}
+	
+    mor_des_t(double A,
+              double B,
+              double C,
+              double sigma_i,
+              double epsilon,
+              double z_pivot)
+      : _A(A)
+      , _B(B)
+      , _C(C)
+      , _sigma_intr(sigma_i)
+      , _epsilon(epsilon)
+      , _z_pivot(z_pivot){}
+	  
+	__device__ __host__
+    double
+    operator()(double lt, double lnM, double zt) const
+    {
+      // Now _lambda returns the evaluation of the eq.(9) of the
+      // Matteo's paper, i.e., lambda_sat_given_M. 1. is a dummy
+      // value for z. We are not using z here.
+	  double const term1 = (exp(lnM) - _A) / (_B - _A);
+	  double const pow_term1 = pow(term1, _C);
+      double const ltm = pow(term1, _C) *
+                         pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
+		
+      // Computing sigma from the interpolation
+      // ltm is lambda_true_given_M; _sigma_intr is sigma_intrisic
+	  
+	  //printf("custom interpolating on %a, %a\n", _sigma_intr, ltm);
+	  //+0.04 gives different result, +.03 not
+	  printf("mor_des_t interp at %.20f, %.20f: (%a)\n",  _sigma_intr, ltm, sig_interp->clamp(_sigma_intr, ltm));
+      double const _sigma = sig_interp->clamp(_sigma_intr, ltm);
+      double const _skw = skews_interp->clamp(_sigma_intr, ltm);
+      // Eq. B1 of Matteo's paper, adding the normalization part
+
+	  printf("ltm:%a\n", ltm);
+	  //printf("ltm left:%a\n", pow((exp(lnM) - _A) / (_B - _A), _C));
+	  //printf("ltm left members: %a, %a, %a, %a\n", _A, _B, _C, lnM);
+	  //printf("ltm left numerator:%a\n", (exp(lnM) - _A));
+	  //printf("ltm denominator:%a\n", (_B - _A));
+	  //printf("what will be raised topower of C:%a\n", (exp(lnM) - _A) / (_B - _A));
+	  printf("term1:%a\n", term1);
+	  printf("pow_term1:%a\n", pow_term1);
+	  //printf("ltm right:%a\n", pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon));
+      double const x = lt - ltm;
+      double const erfarg = -1.0 * _skw * (x) / (sqrt(2.) * _sigma);
+	  //printf("erfarg:%a\n", erfarg);
+	  //printf("x:%a\n", x);
+      double const erfterm = erfc(erfarg);
+	  //printf("mordes.erfterm:%a\n", erfterm);
+      return quad::gaussian(x, 0.0, _sigma) * erfterm;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, mor_des_t const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat;
+      os << m._A << ' ' << m._B << ' ' << m._C << ' ' << m._sigma_intr << ' '
+         << m._epsilon << ' ' << m._z_pivot;
+      os.flags(old_flags);
+      return os;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& is, mor_des_t& m)
+    {
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 6)
+      {
+		typename T::Interp2D *sig_interp /*m.sig_interp*/    = new typename T::Interp2D(test_sigintr, test_lsat, sig_skewnorml_flat);
+		typename T::Interp2D *skews_interp/*m.skews_interp*/ = new typename T::Interp2D(test_sigintr, test_lsat, skews);
+      
+	    m = mor_des_t(sig_interp, skews_interp);
+		m._A = vals_read[0];
+        m._B = vals_read[1];
+        m._C = vals_read[2];
+        m._sigma_intr = vals_read[3];
+        m._epsilon = vals_read[4];
+        m._z_pivot = vals_read[5];	
+	  }
+      else
+      {
+        is.setstate(std::ios_base::failbit);
+      }
+      return is;
+    }
+  };
+
+TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
+{
 	double const lt = 0x1.b8p+4;
 	double const lnM = 0x1.0cp+5;
 	double const zt = 0x1.cccccccccccccp-2;
+	y3_cluster::MOR_DES_t mor = make_from_file<y3_cluster::MOR_DES_t>("data/MOR_DES_t.dump");
+	mor_des_t<GPU> dmor       = make_from_file<mor_des_t<GPU>>("data/MOR_DES_t.dump");
 	
-	y3_cluster::MOR_DES_t mor;
-	//mor_des_t dmor;
+	double result = mor(lt, lnM, zt);
+	double cpu_result = dmor(lt, lnM, zt);
+	CHECK(result == cpu_result);
 	
-	std::cout<<mor(lt, lnM, zt);
-	//std::cout<<dmor(lt, lnM, zt);
-  }
+	mor_des_t<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(mor_des_t<GPU>));
+	cudaDeviceSynchronize();
+	memcpy(dhmf2, &dmor, sizeof(mor_des_t<GPU>));
+		
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+		
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, lt, lnM, zt, gpu_result);
+	cudaDeviceSynchronize();
+	CHECK(*gpu_result == result);
+	printf("true:%.25f\n", result);
+	printf("cpu :%.25f\n", cpu_result);
+	printf("gpu :%.25f\n\n", *gpu_result);
+	
+	printf("true:%e\n", result);
+	printf("cpu :%e\n", cpu_result);
+	printf("gpu :%e\n\n", *gpu_result);
+	
+	printf("true:%a\n", result);
+	printf("cpu :%a\n", cpu_result);
+	printf("gpu :%a\n", *gpu_result);
+	printf("------------------------------\n");
+}
+
+  class roffset_t {
+  public:
+    roffset_t() = default;
+
+    explicit roffset_t(double tau) : _tau(tau) {}
+	
+	__device__ __host__
+    double
+    operator()(double x) const
+    {
+      // eq. 36
+      return x / _tau / _tau * exp(-x / _tau);
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, roffset_t const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat << m._tau;
+      os.flags(old_flags);
+      return os;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& is, roffset_t& m)
+    {
+      std::string buffer;
+      std::getline(is, buffer);
+      if (!is) return is;
+      m._tau = std::stod(buffer);
+      return is;
+    }
+
+  private:
+    double _tau = 0.0;
+  };
+  
+TEST_CASE("ROFFSET_t")
+{
+	double const rmis = 0x1p+0;
+	y3_cluster::ROFFSET_t roffset 	= make_from_file<y3_cluster::ROFFSET_t>("data/ROFFSET_t.dump");
+	double result = roffset(rmis);
+	roffset_t droffset = make_from_file<roffset_t>("data/ROFFSET_t.dump");
+	double cpu_result = droffset(rmis);
+	CHECK(result == cpu_result);
+	
+	roffset_t *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(roffset_t));
+	cudaDeviceSynchronize();
+	memcpy(dhmf2, &droffset, sizeof(roffset_t));
+		
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+		
+	testKernel<roffset_t><<<1,1>>>(dhmf2, rmis, gpu_result);
+	cudaDeviceSynchronize();
+	CHECK(*gpu_result == result);
+	
+	cudaFree(dhmf2);
+	cudaFree(gpu_result);
+}
+
+ class ez_sq {
+  public:
+  __host__ __device__
+    ez_sq() = default;
+	
+	__host__ __device__
+    ez_sq(double omega_m, double omega_l, double omega_k)
+      : _omega_m(omega_m), _omega_l(omega_l), _omega_k(omega_k)
+    {}
+	
+	__host__ __device__
+    double
+    operator()(double z) const
+    {
+      // NOTE: this is valid only for \Lambda CDM cosmology, not wCDM
+      double const zplus1 = 1.0 + z;
+      return (_omega_m * zplus1 * zplus1 * zplus1 + _omega_k * zplus1 * zplus1 +
+              _omega_l);
+    }
+
+	friend std::ostream&
+    operator<<(std::ostream& os, ez_sq const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat << m._omega_m << ' ' << m._omega_l << ' '
+         << m._omega_k;
+      os.flags(old_flags);
+      return os;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& is, ez_sq& m)
+    {
+      assert(is.good());
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> const vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 3)
+      {
+        m._omega_m = vals_read[0];
+        m._omega_l = vals_read[1];
+        m._omega_k = vals_read[2];
+      }
+      else
+      {
+        is.setstate(std::ios_base::failbit);
+      };
+      return is;
+    }
+
+  private:
+    double _omega_m = 0.0;
+    double _omega_l = 0.0;
+    double _omega_k = 0.0;
+  };
+
+
+class ez {
+  public:
+    ez() = default;
+	
+	__host__ __device__
+    ez(double omega_m, double omega_l, double omega_k)
+      : _ezsq(omega_m, omega_l, omega_k)
+    {}
+
+	__host__ __device__
+    double
+    operator()(double z) const
+    {
+      auto const sqr = _ezsq(z);
+      return sqrt(sqr);
+    }
+	
+    friend std::ostream&
+    operator<<(std::ostream& os, ez const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat;
+      os << m._ezsq;
+      os.flags(old_flags);
+      return os;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& is, ez& m)
+    {
+      assert(is.good());
+      is >> m._ezsq;
+      return is;
+    }
+
+  private:
+    ez_sq _ezsq;
+  };
+
+template<class T>
+class dv_do_dz_t {
+  public:
+	__host__ __device__
+    dv_do_dz_t() = default;
+	
+	__host__ __device__
+    dv_do_dz_t(typename T::Interp1D* da, ez ezt, double h)
+      : _da(da), _ezt(ezt), _h(h)
+    {}
+
+    using doubles = std::vector<double>;
+
+	__host__ __device__
+    double
+    operator()(double zt) const
+    {
+      double const da_z = _da->eval(zt); // da_z needs to be in Mpc
+      // Units: (Mpc/h)^3
+      // 2997.92 is Hubble distance, c/H_0
+      return 2997.92 * (1.0 + zt) * (1.0 + zt) * da_z * _h * da_z * _h /
+             _ezt(zt);
+    }
+	
+	/*
+    friend std::ostream&
+    operator<<(std::ostream& os, dv_do_dz_t const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat << *m._da << '\n' << m._ezt << '\n' << m._h;
+      os.flags(old_flags);
+      return os;
+    }*/
+
+    friend std::istream&
+    operator>>(std::istream& is, dv_do_dz_t& m)
+    {
+      assert(is.good());
+      //auto da = std::make_shared<typename T::Interp1D>();
+	  typename T::Interp1D *da = new typename T::Interp1D;
+      is >> *da;
+      if (!is) return is;
+      ez _ez;
+      is >> _ez;
+      if (!is) return is;
+      std::string buffer;
+      std::getline(is, buffer);
+      if (!is) return is;
+      double const h = std::stod(buffer);
+      m = dv_do_dz_t(da, _ez, h);
+      return is;
+    }
+
+  private:
+    std::shared_ptr<typename T::Interp1D const> _da;
+    ez _ezt;
+    double _h;
+  };
+  
+ TEST_CASE("dv_do_dz_t")
+ {
+	 double const zt = 0x1.cccccccccccccp-2;
+	 y3_cluster::DV_DO_DZ_t dv_do_dz 	= make_from_file<y3_cluster::DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
+	 double result = dv_do_dz(zt);
+	 
+	 dv_do_dz_t<GPU> d_dv_do_dz = make_from_file<dv_do_dz_t<GPU>>("data/DV_DO_DZ_t.dump");
+	 double cpu_result = d_dv_do_dz(zt);
+	 CHECK(result == cpu_result);
+
+	 dv_do_dz_t<GPU> *dhmf2;
+	 cudaMallocManaged((void**)&dhmf2, sizeof(dv_do_dz_t<GPU>));
+	 cudaDeviceSynchronize();
+	 memcpy(dhmf2, &d_dv_do_dz, sizeof(dv_do_dz_t<GPU>));
+	 CHECK(dhmf2->operator()(zt) == result);
+	 
+	 double* gpu_result;
+	 cudaMallocManaged((void**)&gpu_result, sizeof(double));
+	 
+	 testKernel<dv_do_dz_t<GPU>><<<1,1>>>(dhmf2, zt, gpu_result);
+	 cudaDeviceSynchronize();
+	 CHECK(*gpu_result == result);
+	 
+	 cudaFree(dhmf2);
+	 cudaFree(gpu_result);
+ }
+ 
+ template<class T>
+ class sig_sum {
+  private:
+    std::shared_ptr<typename T::Interp2D const> _sigma1;
+    std::shared_ptr<typename T::Interp2D const> _sigma2;
+    std::shared_ptr<typename T::Interp2D const> _bias;
+
+  public:
+    using doubles = std::vector<double>;
+
+    sig_sum() = default;
+	
+    sig_sum(typename T::Interp2D* sigma1,
+            typename T::Interp2D* sigma2,
+            typename T::Interp2D* bias)
+      : _sigma1(sigma1), _sigma2(sigma2), _bias(bias)
+    {}
+	
+	__host__ __device__
+    double
+    operator()(double r, double lnM, double zt) const
+    /*r in h^-1 Mpc */ /* M in h^-1 M_solar, represents M_{200} */
+    {
+      double _sig_1 = _sigma1->clamp(r, lnM);
+      double _sig_2 = _bias->clamp(zt, lnM) * _sigma2->clamp(r, zt);
+      // TODO: h factor?
+      // if (del_sig_1 >= del_sig_2) {
+      // return (1.+zt)*(1.+zt)*(1.+zt)*(_sig_1+_sig_2);
+      return (_sig_1 + _sig_2);
+      /*} else {
+        return 1e12*(1.+zt)*(1.+zt)*(1.+zt)*del_sig_2;
+      } */
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, sig_sum const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat << *m._sigma1 << '\n' << *m._sigma2 << '\n' << *m._bias;
+      os.flags(old_flags);
+      return os;
+    }
+	
+    friend std::istream&
+    operator>>(std::istream& is, sig_sum& m)
+    {
+      //auto sigma1 = std::make_shared<typename T::Interp2D>();
+	  typename T::Interp2D *sigma1 = new typename T::Interp2D;
+      is >> *sigma1;
+      if (!is) return is;
+      //auto sigma2 = std::make_shared<typename T::Interp2D>();
+	  typename T::Interp2D *sigma2 = new typename T::Interp2D;
+      is >> *sigma2;
+      if (!is) return is;
+      //auto bias = std::make_shared<typename T::Interp2D>();
+	  typename T::Interp2D *bias = new typename T::Interp2D;
+      is >> *bias;
+      if (!is) return is;
+      m = sig_sum(sigma1, sigma2, bias);
+      return is;
+    }
+  };
+  
+TEST_CASE("SIG_SUM")
+{
+	double const theta = 0x1.921fb54442eeap+1;
+	double const radius_ = 0x1p+0;
+	double const rmis = 0x1p+0;
+	double const lnM = 0x1.0cp+5;
+	double const zt = 0x1.cccccccccccccp-2;
+	double const scaled_Rmis = std::sqrt(radius_ * radius_ + rmis * rmis +
+                                       2 * rmis * radius_ * std::cos(theta));
+	y3_cluster::SIG_SUM sigma = make_from_file<y3_cluster::SIG_SUM>("data/SIG_SUM.dump");
+	double result  = sigma(scaled_Rmis, lnM, zt);
+	sig_sum<GPU> d_sigma = make_from_file<sig_sum<GPU>>("data/SIG_SUM.dump");
+	double cpu_result = d_sigma(scaled_Rmis, lnM, zt);
+	CHECK(result == cpu_result);
+	
+	sig_sum<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(sig_sum<GPU>));
+	cudaDeviceSynchronize();
+	memcpy(dhmf2, &d_sigma, sizeof(sig_sum<GPU>));
+	CHECK(dhmf2->operator()(scaled_Rmis, lnM, zt) == result);
+	 
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+	 
+	testKernel<sig_sum<GPU>><<<1,1>>>(dhmf2, scaled_Rmis, lnM, zt, gpu_result);
+	cudaDeviceSynchronize();
+	CHECK(*gpu_result == result);
+	 
+	cudaFree(dhmf2);
+	cudaFree(gpu_result);
+}
+
+class  lo_lc_t{
+  public:
+    lo_lc_t() = default;
+
+    lo_lc_t(double alpha, double a, double b, double R_lambda)
+      : _alpha(alpha), _a(a), _b(b), _R_lambda(R_lambda)
+    {}
+
+	__host__ __device__
+    double
+    operator()(double lo, double lc, double R_mis) const
+    {
+      /* eq. (35) */
+      double x = R_mis / _R_lambda;
+      double y = lo / lc;
+      double mu_y = exp(-x * x / _alpha / _alpha);
+      double sigma_y = _a * atan(_b * x);
+      // Need 1/lc scaling for total probability = 1
+      return quad::gaussian(y, mu_y, sigma_y) / lc;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, lo_lc_t const& m)
+    {
+      auto const old_flags = os.flags();
+      os << std::hexfloat << m._alpha << ' ' << m._a << ' ' << m._b << ' '
+         << m._R_lambda;
+      os.flags(old_flags);
+      return os;
+    }
+
+    friend std::istream&
+    operator>>(std::istream& is, lo_lc_t& m)
+    {
+      std::string buffer;
+      std::getline(is, buffer);
+      std::vector<double> const vals_read = cosmosis::str_to_doubles(buffer);
+      if (vals_read.size() == 4)
+      {
+        m._alpha = vals_read[0];
+        m._a = vals_read[1];
+        m._b = vals_read[2];
+        m._R_lambda = vals_read[3];
+      }
+      else {
+        is.setstate(std::ios_base::failbit);
+      }
+      return is;
+    }
+
+  private:
+    double _alpha = 0.0;
+    double _a = 0.0;
+    double _b = 0.0;
+    double _R_lambda = 0.0;
+};
+
+ 
+TEST_CASE("LO_LC_t")
+{
+	double const lo = 0x1.9p+4;
+    double const lc = 0x1.b8p+4;
+	double const rmis = 0x1p+0;
+	y3_cluster::LO_LC_t lo_lc = make_from_file<y3_cluster::LO_LC_t>("data/LO_LC_t.dump");
+	double result = lo_lc(lo, lc, rmis);
+	lo_lc_t d_lo_lc = make_from_file<lo_lc_t>("data/LO_LC_t.dump");
+	double cpu_result = d_lo_lc(lo, lc, rmis);
+	CHECK(result == cpu_result);
+	
+	lo_lc_t *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(lo_lc_t));
+	cudaDeviceSynchronize();
+	memcpy(dhmf2, &d_lo_lc, sizeof(lo_lc_t));
+	CHECK(dhmf2->operator()(lo, lc, rmis) == result);
+	 
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+	 
+	testKernel<lo_lc_t><<<1,1>>>(dhmf2, lo, lc, rmis, gpu_result);
+	cudaDeviceSynchronize();
+	CHECK(*gpu_result == result);
+	 
+	cudaFree(dhmf2);
+	cudaFree(gpu_result);
+}
+
+template<class T>
+class integral {
+public:
+  using grid_point_t = std::array<double, 3>; // we only vary radius.
+
+private:
+  using volume_t = cubacpp::IntegrationVolume<7>;
+
+  // State obtained from configuration. These things should be set in the
+  // constructor.
+  // <none in this example>
+
+  // State obtained from each sample.
+  // If there were a type X that did not have a default constructor,
+  // we would use optional<X> as our data member.
+  int_lc_lt_des_t<T> 	lc_lt;
+  mor_des_t<T>			mor;
+  omega_z_des<T>		omega_z;
+  dv_do_dz_t<T> 		dv_do_dz;
+  hmf_t<T> 				hmf;
+  int_zo_zt_des_t 		int_zo_zt;
+  roffset_t 			roffset;
+  lo_lc_t 				lo_lc;
+  sig_sum<T> 			sigma;
+
+  // State set for current 'bin' to be integrated.
+  double zo_low_ = 0.0;
+  double zo_high_ = 0.0;
+  double radius_ = 0.0;
+
+public:
+	// Default c'tor just for testing outside of CosmoSIS.
+	integral()
+	{
+		mor 	 = make_from_file<mor_des_t<GPU>>("data/MOR_DES_t.dump");
+		dv_do_dz = make_from_file<dv_do_dz_t<GPU>>("data/DV_DO_DZ_t.dump");
+		hmf 	 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
+		roffset  = make_from_file<roffset_t>("data/ROFFSET_t.dump");
+		sigma  = make_from_file<sig_sum<GPU>>("data/SIG_SUM.dump");
+		lo_lc 	 = make_from_file<lo_lc_t>("data/LO_LC_t.dump");
+	}
+
+	// Set any data members from values read from the current sample.
+	// Do not attempt to copy the sample!.
+	void set_sample(int_lc_lt_des_t<T> const& int_lc_lt_in,
+                  mor_des_t<T> const& mor_in,
+                  omega_z_des<T> const& omega_z_in,
+                  dv_do_dz_t<T> const& dv_do_dz_in,
+                  hmf_t<T> const& hmf_in,
+                  int_zo_zt_des_t const& int_zo_zt_in,
+                  roffset_t const& roffset_in,
+                  lo_lc_t const& lo_lc_in,
+                  sig_sum<T> const& sig_sum_in)
+	{
+		lc_lt = std::move(int_lc_lt_in);
+		mor = std::move(mor_in);
+		omega_z = std::move(omega_z_in);
+		dv_do_dz = std::move(dv_do_dz_in);
+		hmf = std::move(hmf_in);
+		int_zo_zt = std::move(int_zo_zt_in);
+		roffset = std::move(roffset_in);
+		lo_lc = std::move(lo_lc_in);
+		sigma = std::move(sig_sum_in);			  
+	}
+
+  // Set the data for the current bin.
+	void set_grid_point(grid_point_t const& grid_point)
+	{
+		radius_ = grid_point[2];
+		zo_low_ = grid_point[0];
+		zo_high_ = grid_point[1];
+	}
+
+	// The function to be integrated. All arguments to this function must be of
+	// type double, and there must be at least two of them (because our
+	// integration routine does not work for functions of one variable). The
+	// function is const because calling it does not change the state of the
+	// object.
+	__host__ __device__
+	double operator()(double lo,
+                    double lc,
+                    double lt,
+                    double zt,
+                    double lnM,
+                    double rmis,
+                    double theta) const{
+		bool do_print = true;
+		double const mor_des = (mor)(lt, lnM, zt);
+		double const common_term = (roffset)(rmis) * (lo_lc)(lo, lc, rmis) *
+                             (lc_lt)(lc, lt, zt) * mor_des *
+                             (dv_do_dz)(zt) * (hmf)(lnM, zt) *
+                             (omega_z)(zt) / 2.0 / 3.1415926535897;
+		double const scaled_Rmis = sqrt(radius_ * radius_ + rmis * rmis +
+                                       2 * rmis * radius_ * cos(theta));
+		auto const val = (sigma)(scaled_Rmis, lnM, zt) *
+                   (int_zo_zt)(zo_low_, zo_high_, zt) * common_term;
+		printf("common_term:%a\n", common_term);
+		//printf("    roffset:%a\n", (roffset)(rmis));
+		//printf("    lo_lc:%a\n", (lo_lc)(lo, lc, rmis));
+		//printf("    lc_lt:%a\n", (lc_lt)(lc, lt, zt));
+		printf("    mor:%a\n", mor_des);
+		//printf("    dv_do_dz:%a\n", (dv_do_dz)(zt));
+		//printf("    omega_z:%a\n", (omega_z)(zt));
+		//printf("    hmf:%a\n", (hmf)(lnM, zt));
+		
+		//printf("scaled_Rmis:%a\n", scaled_Rmis);
+		//printf("Sigma:%a\n", (sigma)(scaled_Rmis, lnM, zt));
+		//printf("int_zo_zt:%a\n", (int_zo_zt)(zo_low_, zo_high_, zt));
+		return val;		
+	}
+};
+
+TEST_CASE("integral call"){
+	printf("Final Test Case\n");
+	double const lo = 0x1.9p+4;
+    double const lc = 0x1.b8p+4;
+    double const lt = 0x1.b8p+4;
+    double const zt = 0x1.cccccccccccccp-2;
+    double const lnM = 0x1.0cp+5;
+    double const rmis = 0x1p+0;
+    double const theta = 0x1.921fb54442eeap+1;
+
+    double const radius_ = 0x1p+0;
+    double const zo_low_ = 0x1.999999999999ap-3;
+    double const zo_high_ = 0x1.6666666666666p-2;
+	
+	
+	y3_cluster::INT_LC_LT_DES_t lc_lt;     // we want the default
+	y3_cluster::OMEGA_Z_DES omega_z;       // we want the default
+	y3_cluster::INT_ZO_ZT_DES_t int_zo_zt; // we want the default
+
+	y3_cluster::MOR_DES_t mor 		= make_from_file<y3_cluster::MOR_DES_t>("data/MOR_DES_t.dump");
+	y3_cluster::DV_DO_DZ_t dv_do_dz 	= make_from_file<y3_cluster::DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
+	y3_cluster::HMF_t hmf 			= make_from_file<y3_cluster::HMF_t>("data/HMF_t.dump");
+	y3_cluster::ROFFSET_t roffset 	= make_from_file<y3_cluster::ROFFSET_t>("data/ROFFSET_t.dump");
+	y3_cluster::SIG_SUM sig_sum 		= make_from_file<y3_cluster::SIG_SUM>("data/SIG_SUM.dump");
+	y3_cluster::LO_LC_t lo_lc 		= make_from_file<y3_cluster::LO_LC_t>("data/LO_LC_t.dump");
+	
+	SigmaMiscentY1ScalarIntegrand integrand;
+	integrand.set_sample(lc_lt, mor, omega_z, dv_do_dz, hmf, int_zo_zt, roffset, lo_lc, sig_sum);
+  
+
+	integrand.set_grid_point({zo_low_, zo_high_, radius_});
+	double result = integrand(lo, lc, lt, zt, lnM, rmis, theta);
+	printf("\n\n CPU\n");	
+	integral<GPU> d_integrand;
+	d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
+	double cpu_result = d_integrand(lo, lc, lt, zt, lnM, rmis, theta);
+	CHECK(result == cpu_result);
+
+	integral<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(integral<GPU>));
+	cudaDeviceSynchronize();
+	memcpy(dhmf2, &d_integrand, sizeof(integral<GPU>));
+	
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+    printf("\n\n GPU\n");	 
+	testKernel<integral<GPU>><<<1,1>>>(dhmf2, lo, lc, lt, zt, lnM, rmis, theta, gpu_result);
+	cudaDeviceSynchronize();
+	printf("\n\ntrue:%.30f\n", result);
+	printf("cpu :%.30f\n", cpu_result);
+	printf("gpu :%.30f\n\n", *gpu_result);
+	
+	printf("true:%e\n", result);
+	printf("cpu :%e\n", cpu_result);
+	printf("gpu :%e\n\n", *gpu_result);
+	
+	printf("true:%a\n", result);
+	printf("cpu :%a\n", cpu_result);
+	printf("gpu :%a\n", *gpu_result);
+	CHECK(*gpu_result == cpu_result);
+	 
+	cudaFree(dhmf2);
+	cudaFree(gpu_result);
+}
