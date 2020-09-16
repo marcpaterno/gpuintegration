@@ -1,8 +1,6 @@
 #ifndef CUDACUHRE_FUNCTION_CUH
 #define CUDACUHRE_FUNCTION_CHH
 
-#include "quad/quad.h"
-
 #define FUN 11
 
 #define PI 3.14159265358979323844

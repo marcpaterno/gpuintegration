@@ -1,5 +1,5 @@
-#include "../../cuba/include/cuba.h"
-#include "../../cubacpp/cubacpp/cuhre.hh"
+#include "cuba.h"
+#include "cubacpp/cuhre.hh"
 
 #include "demo_utils.h"
 

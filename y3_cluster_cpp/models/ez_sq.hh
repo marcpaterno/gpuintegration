@@ -1,6 +1,7 @@
 #ifndef Y3_CLUSTER_CPP_EZ_SQ_HH
 #define Y3_CLUSTER_CPP_EZ_SQ_HH
 
+#include <assert.h>
 #include <iomanip>
 #include <istream>
 #include <ostream>

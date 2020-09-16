@@ -1,0 +1,12 @@
+.idea/
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+Makefile
+Testing/
+cmake_install.cmake
+integrand_test
+integrand_traits_test
+integration_test
+libtestmain.so
+toy_integrand_test

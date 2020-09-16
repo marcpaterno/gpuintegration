@@ -1,8 +1,3 @@
-add_library(testmain SHARED main.cc)
-target_include_directories(testmain
-                           PUBLIC ${CMAKE_SOURCE_DIR}
-                                  ${CMAKE_SOURCE_DIR}/externals)
-
 add_executable(sigma_miscent_y1_scalarintegrand_test sigma_miscent_y1_scalarintegrand_test.cc)
 target_link_libraries(sigma_miscent_y1_scalarintegrand_test PRIVATE testmain ${CUBA_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
 target_include_directories(sigma_miscent_y1_scalarintegrand_test
