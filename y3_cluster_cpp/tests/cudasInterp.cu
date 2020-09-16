@@ -1,4 +1,5 @@
 #include "catch2/catch.hpp"
+
 #include "modules/sigma_miscent_y1_scalarintegrand.hh"
 #include "../cudaCuhre/quad/util/cudaArray.cuh"
 
@@ -56,6 +57,12 @@ namespace quad {
 		double* interpC;
 		size_t _rows;
 		size_t _cols;
+		
+		~Interp2D(){
+			cudaFree(interpT);
+			cudaFree(interpR);
+			cudaFree(interpC);
+		}
 		
 		void Alloc(size_t cols, size_t rows){
 			_rows = rows;
@@ -251,6 +258,11 @@ namespace quad {
 		double* interpT;
 		double* interpC;
 		size_t _cols;
+		
+		~Interp1D(){
+			cudaFree(interpT);
+			cudaFree(interpC);
+		}
 		
 		void Alloc(size_t cols){
 			_cols = cols;
@@ -1382,7 +1394,6 @@ TEST_CASE("Simple model"){
 	double const zt = 0x1.cccccccccccccp-2;
 	double zo_low_ = 0.0;
 	double zo_high_ = 0.0;
-	double radius_ = 0.0;
 	
 	y3_cluster::INT_ZO_ZT_DES_t int_zo_zt;
 	double result = int_zo_zt(zo_low_, zo_high_, zt);
@@ -1649,7 +1660,6 @@ class mor_des_t {
     double _z_pivot = 0.0;
 
   public:
-  __device__ __host__
     mor_des_t() = default;
 	
 	mor_des_t(typename T::Interp2D* sig_int, typename T::Interp2D* skews_int):sig_interp(sig_int), skews_interp(skews_int){}
@@ -1671,39 +1681,23 @@ class mor_des_t {
     double
     operator()(double lt, double lnM, double zt) const
     {
-      // Now _lambda returns the evaluation of the eq.(9) of the
-      // Matteo's paper, i.e., lambda_sat_given_M. 1. is a dummy
-      // value for z. We are not using z here.
 	  double const term1 = (exp(lnM) - _A) / (_B - _A);
 	  double const pow_term1 = pow(term1, _C);
       double const ltm = pow(term1, _C) *
                          pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
 		
-      // Computing sigma from the interpolation
-      // ltm is lambda_true_given_M; _sigma_intr is sigma_intrisic
-	  
-	  //printf("custom interpolating on %a, %a\n", _sigma_intr, ltm);
 	  //+0.04 gives different result, +.03 not
 	  printf("mor_des_t interp at %.20f, %.20f: (%a)\n",  _sigma_intr, ltm, sig_interp->clamp(_sigma_intr, ltm));
       double const _sigma = sig_interp->clamp(_sigma_intr, ltm);
-      double const _skw = skews_interp->clamp(_sigma_intr, ltm);
-      // Eq. B1 of Matteo's paper, adding the normalization part
+      
+	  double const _skw = skews_interp->clamp(_sigma_intr, ltm);
 
 	  printf("ltm:%a\n", ltm);
-	  //printf("ltm left:%a\n", pow((exp(lnM) - _A) / (_B - _A), _C));
-	  //printf("ltm left members: %a, %a, %a, %a\n", _A, _B, _C, lnM);
-	  //printf("ltm left numerator:%a\n", (exp(lnM) - _A));
-	  //printf("ltm denominator:%a\n", (_B - _A));
-	  //printf("what will be raised topower of C:%a\n", (exp(lnM) - _A) / (_B - _A));
 	  printf("term1:%a\n", term1);
 	  printf("pow_term1:%a\n", pow_term1);
-	  //printf("ltm right:%a\n", pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon));
       double const x = lt - ltm;
       double const erfarg = -1.0 * _skw * (x) / (sqrt(2.) * _sigma);
-	  //printf("erfarg:%a\n", erfarg);
-	  //printf("x:%a\n", x);
       double const erfterm = erfc(erfarg);
-	  //printf("mordes.erfterm:%a\n", erfterm);
       return quad::gaussian(x, 0.0, _sigma) * erfterm;
     }
 
@@ -1846,7 +1840,6 @@ TEST_CASE("ROFFSET_t")
 
  class ez_sq {
   public:
-  __host__ __device__
     ez_sq() = default;
 	
 	__host__ __device__
@@ -1943,7 +1936,6 @@ class ez {
 template<class T>
 class dv_do_dz_t {
   public:
-	__host__ __device__
     dv_do_dz_t() = default;
 	
 	__host__ __device__
@@ -2293,7 +2285,6 @@ public:
                     double lnM,
                     double rmis,
                     double theta) const{
-		bool do_print = true;
 		double const mor_des = (mor)(lt, lnM, zt);
 		double const common_term = (roffset)(rmis) * (lo_lc)(lo, lc, rmis) *
                              (lc_lt)(lc, lt, zt) * mor_des *
