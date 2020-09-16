@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(y3_cluster_cpp VERSION 0.2.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+project(y3_cluster_cpp VERSION 0.2.0 LANGUAGES CXX CUDA)
 enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
 # the ABI here -- e.g., the standard level.
 add_compile_options(-W -Wall -Wextra) # -Werror excluded due to troubles in Eigen.
-add_compile_options(-Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual -Wpedantic -Wdouble-promotion)
+add_compile_options(-Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual  -Wdouble-promotion)
 SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-math-errno -mtune=native" )
 
 if (NOT APPLE)
@@ -23,7 +23,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mod
 
 find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 REQUIRED)
 
 add_subdirectory(models)
 add_subdirectory(modules)
