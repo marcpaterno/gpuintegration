@@ -656,21 +656,20 @@ int const BUFSIZE = 512;
               int Final = 0,
               const int phase1type = 0)
     {
-
       cuhreResult res;
-
+		
       this->epsrel = epsrel;
       this->epsabs = epsabs;
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
-
+		
       int numprocs = 0;
       IntegT* d_integrand = 0;
       cudaMalloc((void**)&d_integrand, sizeof(IntegT));
       cudaMemcpy(
         d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-
+		
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -691,9 +690,10 @@ int const BUFSIZE = 512;
       FIRST_PHASE_MAXREGIONS *= numDevices;
 
       convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
-      if (convergence)
-        return res;
-
+      if (convergence){
+		cudaFree(d_integrand);
+		return res;
+	  }
       res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
