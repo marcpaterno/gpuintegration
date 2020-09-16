@@ -26,7 +26,7 @@ time_and_call(std::string id,
   double constexpr epsabs = 1.0e-40;
 
   double lows[]  = {-1., -1., -1., -1., -1., -1., -1., -1., -1.};
-  double highs[] = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
+  double highs[] = { 1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.,  1.};
 
   constexpr int ndim = 9;
   quad::Volume<double, ndim> vol(lows, highs);
