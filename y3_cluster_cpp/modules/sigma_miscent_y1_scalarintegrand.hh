@@ -8,7 +8,7 @@
 #include "cubacpp/integration_volume.hh"
 #include "utils/datablock.hh"
 
-#include "Optional/optional.hpp"
+#include "../Optional/optional.hpp"
 #include "models/dv_do_dz_t.hh"
 #include "models/hmf_t.hh"
 #include "models/int_lc_lt_des_t.hh"
@@ -25,7 +25,7 @@
 namespace y3_cluster {
   using std::experimental::optional;
 }
-using namespace y3_cluster;
+//using namespace y3_cluster;
 
 using cosmosis::DataBlock;
 using cosmosis::ndarray;
@@ -72,15 +72,15 @@ private:
   // State obtained from each sample.
   // If there were a type X that did not have a default constructor,
   // we would use optional<X> as our data member.
-  optional<INT_LC_LT_DES_t> lc_lt;
-  optional<MOR_DES_t> mor;
-  optional<OMEGA_Z_DES> omega_z;
-  optional<DV_DO_DZ_t> dv_do_dz;
-  optional<HMF_t> hmf;
-  optional<INT_ZO_ZT_DES_t> int_zo_zt;
-  optional<ROFFSET_t> roffset;
-  optional<LO_LC_t> lo_lc;
-  optional<SIG_SUM> sigma;
+  y3_cluster::optional<y3_cluster::INT_LC_LT_DES_t> lc_lt;
+  y3_cluster::optional<y3_cluster::MOR_DES_t> mor;
+  y3_cluster::optional<y3_cluster::OMEGA_Z_DES> omega_z;
+  y3_cluster::optional<y3_cluster::DV_DO_DZ_t> dv_do_dz;
+  y3_cluster::optional<y3_cluster::HMF_t> hmf;
+  y3_cluster::optional<y3_cluster::INT_ZO_ZT_DES_t> int_zo_zt;
+  y3_cluster::optional<y3_cluster::ROFFSET_t> roffset;
+  y3_cluster::optional<y3_cluster::LO_LC_t> lo_lc;
+  y3_cluster::optional<y3_cluster::SIG_SUM> sigma;
 
   // State set for current 'bin' to be integrated.
   double zo_low_ = 0.0;
@@ -94,15 +94,15 @@ public:
   // Set any data members from values read from the current sample.
   // Do not attempt to copy the sample!.
   void set_sample(cosmosis::DataBlock& sample);
-  void set_sample(INT_LC_LT_DES_t const&,
-                  MOR_DES_t const&,
-                  OMEGA_Z_DES const&,
-                  DV_DO_DZ_t const&,
-                  HMF_t const&,
-                  INT_ZO_ZT_DES_t const&,
-                  ROFFSET_t const&,
-                  LO_LC_t const&,
-                  SIG_SUM const&);
+  void set_sample(y3_cluster::INT_LC_LT_DES_t const&,
+                  y3_cluster::MOR_DES_t const&,
+                  y3_cluster::OMEGA_Z_DES const&,
+                  y3_cluster::DV_DO_DZ_t const&,
+                  y3_cluster::HMF_t const&,
+                  y3_cluster::INT_ZO_ZT_DES_t const&,
+                  y3_cluster::ROFFSET_t const&,
+                  y3_cluster::LO_LC_t const&,
+                  y3_cluster::SIG_SUM const&);
 
   // Set the data for the current bin.
   void set_grid_point(grid_point_t const& pt);

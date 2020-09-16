@@ -2,7 +2,7 @@
 #include <fstream>
 #include <utility>
 
-using namespace y3_cluster;
+//using namespace y3_cluster;
 using cosmosis::DataBlock;
 using cosmosis::ndarray;
 using cubacpp::integration_result;
@@ -54,15 +54,15 @@ SigmaMiscentY1ScalarIntegrand::set_sample(DataBlock& sample)
 }
 
 void
-SigmaMiscentY1ScalarIntegrand::set_sample(INT_LC_LT_DES_t const& int_lc_lt_in,
-                                          MOR_DES_t const& mor_in,
-                                          OMEGA_Z_DES const& omega_z_in,
-                                          DV_DO_DZ_t const& dv_do_dz_in,
-                                          HMF_t const& hmf_in,
-                                          INT_ZO_ZT_DES_t const& int_zo_zt_in,
-                                          ROFFSET_t const& roffset_in,
-                                          LO_LC_t const& lo_lc_in,
-                                          SIG_SUM const& sig_sum_in)
+SigmaMiscentY1ScalarIntegrand::set_sample(y3_cluster::INT_LC_LT_DES_t const& int_lc_lt_in,
+                                          y3_cluster::MOR_DES_t const& mor_in,
+                                          y3_cluster::OMEGA_Z_DES const& omega_z_in,
+                                          y3_cluster::DV_DO_DZ_t const& dv_do_dz_in,
+                                          y3_cluster::HMF_t const& hmf_in,
+                                          y3_cluster::INT_ZO_ZT_DES_t const& int_zo_zt_in,
+                                          y3_cluster::ROFFSET_t const& roffset_in,
+                                          y3_cluster::LO_LC_t const& lo_lc_in,
+                                          y3_cluster::SIG_SUM const& sig_sum_in)
 {
   lc_lt = std::move(int_lc_lt_in);
   mor = std::move(mor_in);
