@@ -426,6 +426,7 @@ namespace quad {
       VERBOSE = verbose;
       fEvalPerRegion = fEval;
       // printf("Function evaluations per region:%lu\n", fEvalPerRegion);
+	  //requiring RULE 11 is why it doesn't work
       if (key == 13 && ndim == 2)
         RULE = 13;
       else if (key == 1 && ndim == 3)
@@ -436,11 +437,14 @@ namespace quad {
         RULE = 7;
       else if (ndim == 2)
         RULE = 9;
-      else if (ndim == 3)
-        RULE = 11;
+      //else if (ndim == 3)
+      //  RULE = 11;
       else
         RULE = 9;
-
+	 
+		//temporary
+		RULE = 9;
+	 	
       if (RULE == 13)
         NSETS = 14;
       else if (RULE == 11)
@@ -449,7 +453,7 @@ namespace quad {
         NSETS = 9;
       else if (RULE == 7)
         NSETS = 6;
-
+	  
       FEVAL = (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
                2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
                4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
@@ -459,13 +463,14 @@ namespace quad {
          4 * ndim * (ndim - 1) * (ndim - 2) * 3 / 3 + ndim * (1 << ndim));
       // NRULES = 5;
       Rule9Generate();
-
+	  //printf("After Rule9Generate\n");
       cpuGenPermVarCount = (int*)Host.AllocateMemory((void*)cpuGenPermVarCount,
                                                      sizeof(int) * fEval);
       cpuGenPermVarStart = (int*)Host.AllocateMemory((void*)cpuGenPermVarStart,
                                                      sizeof(int) * fEval);
       cpuGenPermGIndex = (int*)Host.AllocateMemory((void*)cpuGenPermGIndex,
                                                    sizeof(int) * (fEval + 1));
+	  //printf("After hostmallocs\n");
 
       T* cpuGCopy = 0;
       cpuGCopy =
@@ -473,7 +478,7 @@ namespace quad {
       for (int iter = 0; iter < NDIM * NSETS; ++iter) {
         cpuGCopy[iter] = cpuG[iter];
       }
-
+	//printf("After 2nd hostmalloc\n");
       /*size_t countPos = 0;
       for(int gIndex = 0; gIndex< NSETS; ++gIndex){
         countPos += cpuGenCount[gIndex]*indxCnt[gIndex];
@@ -551,10 +556,10 @@ namespace quad {
           }
         }
       }
+	  
       cpuGenPermVarStart[permCnt] = genPtrPosIndex;
       genPtrPosIndex = 0;
       loadDeviceConstantMemory(constMem);
-
       // just added
       // Host.ReleaseMemory(cpuGCopy);
     }
