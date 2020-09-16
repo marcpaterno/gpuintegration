@@ -21,12 +21,11 @@ public:
              double n,
              double o,
 			 double p)
-	{
-		double sum = pow(x,2) + pow(y,2) + pow(z, 2) + pow(k, 2) + pow(l,2) + pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p,2);
-		return exp(-1*sum/(2*pow(0.01,2)))*(1/pow(sqrt(2*PI)*0.01, 9));
-	}
+{
+	double sum = pow(x,2) + pow(y,2) + pow(z, 2) + pow(k, 2) + pow(l,2) + pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p,2);
+	return exp(-1*sum/(2*pow(0.01,2)))*(1/pow(sqrt(2*PI)*0.01, 9));
+}
 };
-
 
 class SinSum6D {
 public:
@@ -372,14 +371,76 @@ public:
              double o)
   {
     // DCUHRE ANSWER with epsrel 1e-4: 0.375625473524 +- 3.69126870E-05
-    double alpha = 0.5;
-    double beta = alpha;
+    double alpha = 10.0;
+    double beta = .5;
     // int N = 1;
-
+	
     double t1 = fabs(x - beta) + fabs(y - beta) + fabs(z - beta) +
                 fabs(k - beta) + fabs(l - beta) + fabs(m - beta) +
                 fabs(n - beta) + fabs(o - beta);
-    return exp(-1 * t1 * alpha);
+    return exp(-1 * alpha);
+  }
+};
+
+class GENZ_5_2D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y)
+  {
+    double beta = .5;
+    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
+    return exp(t1);
+  }
+};
+
+class GENZ_3_3D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z)
+  {
+    return pow(1+3*x+2*y+z, -4);
+  }
+};
+
+class GENZ_3_6D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double u)
+  {
+    return pow(1+6*u+5*v+4*w+3*x+2*y+z, -7);
+  }
+};
+
+class GENZ_3_8D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double u, double t, double s)
+  {
+    return pow(1+8*s+7*t+6*u+5*v+4*w+3*x+2*y+z, -9);
+  }
+};
+
+class GENZ_6_2D {
+public:
+  __device__ __host__ double
+  operator()(double y, double z)
+  {
+	  if(z > .9 || y > .8 )
+		  return 0.;
+	  else
+		  return exp(10*z + 9*y);
+  }
+};
+
+class GENZ_6_6D {
+public:
+  __device__ __host__ double
+  operator()(double u, double v, double w, double x, double y, double z)
+  {
+	  if(z > .9 || y > .8 || x > .7 || w > .6 || v >.5 || u > .4)
+		  return 0.;
+	  else
+		  return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u);
   }
 };
 
