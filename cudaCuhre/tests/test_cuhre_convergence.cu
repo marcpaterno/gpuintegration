@@ -31,13 +31,13 @@ TEST_CASE("fun6")
       // The fractional error error estimate should be
       // no larger than the specified fractional error
       // tolerance
-      CHECK(res.error/res.value <= epsrel);
+      CHECK(res.errorest/res.estimate <= epsrel);
 
       // The error estimate should be no larger than the previous iteration.
-      CHECK(res.error <= previous_error_estimate);
+      CHECK(res.errorest <= previous_error_estimate);
 
       // Prepare for the next loop.
-      previous_error_estimate = res.error;
+      previous_error_estimate = res.errorest;
       epsrel /= 2.0;
     }
   }
@@ -53,11 +53,11 @@ TEST_CASE("genz_1abs_5d")
 
     double constexpr epsabs = 1.0e-40;
 
-double lows[] = {0., 0., 0., 0., 0.};
-double highs[] = {1., 1., 1., 1., 1.};
-constexpr int ndim = 5;
-quad::Volume<double, ndim> vol(lows, highs);
-quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
+    double lows[] = {0., 0., 0., 0., 0.};
+    double highs[] = {1., 1., 1., 1., 1.};
+    constexpr int ndim = 5;
+    quad::Volume<double, ndim> vol(lows, highs);
+    quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
 
     Genz_1abs_5d integrand;
     double previous_error_estimate = 1.0; // larger than ever should be returned
@@ -70,22 +70,15 @@ quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
       // The fractional error error estimate should be
       // no larger than the specified fractional error
       // tolerance
-      CHECK(res.error/res.value <= epsrel);
+      CHECK(res.errorest/res.estimate <= epsrel);
 
       // The error estimate should be no larger than the previous iteration.
-      CHECK(res.error <= previous_error_estimate);
+      CHECK(res.errorest <= previous_error_estimate);
 
       // Prepare for the next loop.
-      previous_error_estimate = res.error;
+      previous_error_estimate = res.errorest;
       epsrel /= 2.0;
     }
   }
 };
 
-auto const res = alg.integrate(integrand, epsrel, epsabs, &vol);
-CHECK(res.status == true);
-double const ratio = res.errorest / (epsrel * res.estimate);
-CHECK(ratio <= 1.0);
-}
-}
-;
