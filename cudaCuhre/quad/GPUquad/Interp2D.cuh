@@ -5,7 +5,7 @@
 #include "../util/cudaTimerUtil.h"
 #include "../util/cudaArray.cuh"
 
-namespace quad {
+namespace old_quad {
 	
   template<typename T>	
   class Interp2D {
