@@ -60,6 +60,15 @@ double GENZ_5_2D(double x, double y)
     return exp(t1);
 }
 
+class example{
+	public:
+	example() = default;
+	double operator()(double x, double y){
+		double beta = .5;
+		double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
+		return exp(t1);
+	}
+};
 
 int main()
 {
@@ -73,12 +82,15 @@ int main()
   
   double epsrel = 1.0e-3;
   double true_value = 0.039462780237263662026;
-   //while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
-  //{
-   //  epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  //}
+  while(time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
+  {
+     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
+  }
   
+  
+  //example ex;
   cuhre.flags = 4;
+  //time_and_call_alt<cubacpp::Cuhre, example>(cuhre, ex, epsrel, true_value, "dc_f1");
   epsrel = 1.0e-3;
   while(time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
   {

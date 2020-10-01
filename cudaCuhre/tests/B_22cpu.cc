@@ -88,7 +88,8 @@ int main()
    //  epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   //}
   
-  cuhre.flags = 4;
+  //cuhre.flags = 4;
+  cuhre.flags = 1 | 1;
   epsrel = 1.0e-3;
   while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
   {

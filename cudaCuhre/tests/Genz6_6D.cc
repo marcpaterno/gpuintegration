@@ -74,10 +74,10 @@ int main()
   
   double epsrel = 1.0e-3;
   double true_value = 1.5477367885091207413e8;
-   while(time_and_call_alt(cuhre, GENZ_6_6D, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
+  /* while(time_and_call_alt(cuhre, GENZ_6_6D, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
   {
      epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  }*/
   
   cuhre.flags = 4;
   epsrel = 1.0e-3;
