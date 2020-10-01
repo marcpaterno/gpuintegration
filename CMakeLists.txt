@@ -14,7 +14,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-include_directories(AFTER cubacpp externals y3_cluster_cpp cudaCuhre)
+include_directories(AFTER cubacpp externals y3_cluster_cpp cudaCuhre "/opt/openmpi-wahab/include" "/opt/gsl")
 
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 
@@ -22,7 +22,6 @@ find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
-
 
 add_subdirectory(cubacpp)
 add_subdirectory(cudaCuhre)
