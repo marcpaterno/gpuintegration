@@ -64,7 +64,7 @@ main(int argc, char** argv)
   constexpr int ndim = 8;
   
   Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
-  GENZ_3_8D integrand;
+  BoxIntegral8_22 integrand;
   int _final = 1;
   int outfileVerbosity = 0;
   int phase_I_type = 0; // alternative phase 1
@@ -73,7 +73,7 @@ main(int argc, char** argv)
   double highs[ndim] = {1., 1., 1., 1., 1., 1., 1., 1.};
   double lows[ndim]  = {0., 0., 0., 0., 0., 0., 0., 0.};
   Volume<double, ndim> vol(lows, highs);
-  double true_value = 2.2751965817917756076e-10;
+  double true_value = 1495369.283757217694;
 
   //size_t rows = 22;
   //size_t cols = 5;
@@ -84,7 +84,7 @@ main(int argc, char** argv)
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   auto t0 = std::chrono::high_resolution_clock::now();
-  cuhreResult result = cuhre.integrate<GENZ_3_8D>(
+  cuhreResult result = cuhre.integrate<BoxIntegral8_22>(
     integrand, epsrel, EPSABS, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 			

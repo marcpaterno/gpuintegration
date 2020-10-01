@@ -380,14 +380,62 @@ public:
   }
 };
 
-class GENZ_5_2D {
+
+//Genz_1 is not positive semi-definite
+
+//Genz_2 only known on 1D
+
+class GENZ_2_2D {
 public:
   __device__ __host__ double
   operator()(double x, double y)
   {
-    double beta = .5;
-    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
-    return exp(t1);
+	double a = 50.;
+    double b = .5;
+	
+    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
+    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
+	
+    double val  = term_1 * term_2;
+	return val;
+  }
+};
+
+class GENZ_2_4D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k)
+  {
+	double a = 50.;
+    double b = .5;
+	
+    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
+    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
+	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
+	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
+	
+    double val  = term_1 * term_2 * term_3 * term_4;
+	return val;
+  }
+};
+
+class GENZ_2_6D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m)
+  {
+	double a = 50.;
+    double b = .5;
+	
+    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
+    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
+	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
+	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
+	double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
+	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
+	
+    double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
+	return val;
   }
 };
 
@@ -415,6 +463,44 @@ public:
   operator()(double x, double y, double z, double w, double v, double u, double t, double s)
   {
     return pow(1+8*s+7*t+6*u+5*v+4*w+3*x+2*y+z, -9);
+  }
+};
+
+class GENZ_4_5D {
+public:
+	__device__ __host__ double
+	operator()(double x, double y, double z, double w, double v){
+		double alpha = 25.;
+		double beta = .5;
+		return exp(-1.0*(pow(25,2)*pow(x-beta, 2) + 
+				         pow(25,2)*pow(y-beta, 2) +
+				         pow(25,2)*pow(z-beta, 2) +
+				         pow(25,2)*pow(w-beta, 2) +
+				         pow(25,2)*pow(v-beta, 2))
+				  );
+	}
+};
+
+class GENZ_5_2D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y)
+  {
+    double beta = .5;
+    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
+    return exp(t1);
+  }
+};
+
+class GENZ_5_6D {
+public:
+//correct answer 3.77681814414355e-09
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double p)
+  {
+    double beta = .5;
+    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta) - 10.* fabs(z - beta)- 10.* fabs(w - beta)- 10.* fabs(v - beta)- 10.* fabs(p - beta);
+    return exp(t1);
   }
 };
 
