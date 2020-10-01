@@ -3,7 +3,8 @@
 #include "modules/sigma_miscent_y1_scalarintegrand.hh"
 #include "../cudaCuhre/quad/util/cudaArray.cuh"
 
-#include <iostream>					
+#include <iostream>
+#include <chrono>					
 #include "utils/str_to_doubles.hh"  
 #include <vector> 					
 
@@ -20,6 +21,17 @@
 #include "models/dv_do_dz_t.hh"
 #include "models/lo_lc_t.hh"
 //using namespace y3_cluster;
+
+//GPU integrator headers
+#include "quad/GPUquad/Cuhre.cuh"
+#include "quad/quad.h"
+#include "quad/util/Volume.cuh"
+#include "quad/util/cudaUtil.h"
+//#include "function.cuh"
+//CPU integrator headers
+#include "cuba.h"
+#include "cubacpp/cuhre.hh"
+#include "vegas.h"
 
 namespace quad {
 	
@@ -59,9 +71,9 @@ namespace quad {
 		size_t _cols;
 		
 		~Interp2D(){
-			cudaFree(interpT);
-			cudaFree(interpR);
-			cudaFree(interpC);
+			//cudaFree(interpT);
+			//cudaFree(interpR);
+			//cudaFree(interpC);
 		}
 		
 		void Alloc(size_t cols, size_t rows){
@@ -98,7 +110,7 @@ namespace quad {
 			memcpy(interpR, ys.data(), sizeof(double)*N);
 			memcpy(interpC, xs.data(), sizeof(double)*M);
 			
-			//printf("cols:%lu rows:%lu\n", M, N);
+			
 			for (std::size_t i = 0; i < M; ++i) {
 				std::array<double, N> const& row = zs[i];
 				for (std::size_t j = 0; j < N; ++j) {
@@ -110,8 +122,9 @@ namespace quad {
 			//printf("%f, %f, %f, %f\n", min_x(), max_x(), min_y(), max_y());
 	    }
 		
-		__device__ __host__
+		__device__ 
 		bool AreNeighbors(const double val, double* arr, const size_t leftIndex, const size_t RightIndex) const{
+			//printf("[%i](%i) evaluating neighbors %f, %f against val:%f index:%lu\n", blockIdx.x, threadIdx.x, arr[leftIndex], arr[RightIndex], val, leftIndex);
 			if(arr[leftIndex] <= val && arr[RightIndex] >= val)
 				return true;
 			return false;
@@ -129,10 +142,12 @@ namespace quad {
 		  std::getline(is, buffer);
 		  std::vector<double> zs  = cosmosis::str_to_doubles(buffer);
 		  
+		  cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
+		  
 		  interp._cols = xs.size();
 		  interp._rows = ys.size();
 		  
-		  cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
+		  
 		  cudaMallocManaged((void**)&interp.interpR, sizeof(double)*ys.size());
 		  cudaDeviceSynchronize();
 		  cudaMallocManaged((void**)&interp.interpC, sizeof(double)*xs.size());
@@ -148,26 +163,52 @@ namespace quad {
 		}
 		
 		Interp2D(const Interp2D &source) {
+			//cudaMallocManaged((void**)source, sizeof(Interp2D));
+			Alloc(source._cols, source._rows);
 			interpT = source.interpT;
 			interpC = source.interpC;
 			interpR = source.interpR;
 			_cols = source._cols;
 			_rows = source._rows;
+			//printf("Interp2D copy constructor called: %lu vs %lu\n", _cols, source._cols);
 		} 
 		
-		__device__ __host__
+		__device__
 		void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
-
+	
 			size_t currentIndex = size/2;
 			size_t lastIndex = size - 1;
 			leftI = 0;
 			rightI = size - 1;
 
-			while(currentIndex != 0 && currentIndex != lastIndex){
-				currentIndex = leftI + (rightI - leftI)/2;
-				if(AreNeighbors(val, arr, currentIndex-1, currentIndex)){
-					leftI = currentIndex -1;
-					rightI = currentIndex;
+			//while(currentIndex != 0 && currentIndex != lastIndex){
+			while(leftI<=rightI){
+				//currentIndex = leftI + (rightI - leftI)/2;
+				currentIndex = (rightI+leftI)*0.5;
+				/*if(val == 244.)
+					printf("[%i](%i) looking for %f l:%lu r:%lu checking:%f & %f currentIndex:%lu\n", blockIdx.x, 
+																								  threadIdx.x,  
+																								  val,
+																								  leftI, 
+																								  rightI,  
+																								  arr[leftI], 
+																								  arr[currentIndex],
+																								  currentIndex);*/
+				/*printf("[%i](%i) looking for %f l:%lu r:%lu checking:%f & %f currentIndex:%lu\n", blockIdx.x, 
+																								  threadIdx.x,  
+																								  val,
+																								  leftI, 
+																								  rightI,  
+																								  arr[leftI], 
+																								  arr[rightI],
+																								  currentIndex);*/
+				//if(AreNeighbors(val, arr, currentIndex-1, currentIndex)){
+				if(AreNeighbors(val, arr, currentIndex, currentIndex+1)){
+					//leftI = currentIndex -1;
+					//rightI = currentIndex;
+					leftI = currentIndex;
+					rightI = currentIndex+1;
+					//printf("returning indices :%lu, %lu\n", leftI, rightI);
 					return;
 				}
 				
@@ -177,13 +218,14 @@ namespace quad {
 				else{
 					leftI = currentIndex;
 				}
+				//printf("[%i](%i) currentIndex:%lu\n", currentIndex);
 			}
 		}
 		
-		__device__ __host__ double
+		__device__ double
 		operator()(double x, double y) const
 		{
-		//printf("custom: interpolating on %.20f, %.20f\n", x, y);
+		 //printf("custom: interpolating on %.20f, %.20f\n", x, y);
 		 // for(int i=0; i< _rows*_cols; ++i)
 		//	printf("interpT[%i]:%f\n", i, interpT[i]);
 	
@@ -193,7 +235,7 @@ namespace quad {
 			
 		  FindNeighbourIndices(y, interpR, _rows, y1, y2);
 		  FindNeighbourIndices(x, interpC, _cols, x1, x2);
-		  
+		  //printf("interpolation indices(%lu, %lu), (%lu, %lu)\n", x1, x2, y1, y2);
 		  //this is how  zij is accessed by gsl2.6 Interp2D i.e. zij = z[j*xsize+i], where i=0,...,xsize-1, j=0, ..., ysize-1
 		  const double q11 = interpT[y1*_cols + x1];
 		  const double q12 = interpT[y2*_cols + x1];
@@ -216,39 +258,55 @@ namespace quad {
 		  return f_x_y;
 		}
 		
-		__device__ __host__ double
-		min_x() const{ return interpC[0]; }
+		__device__ double
+		min_x() const{ 
+		//printf("min_x:%f\n", interpC[0]);
+		//printf("min_x:\n");
+		//printf("min _cols:%lu\n", _cols);
+		//printf("interpC[0]:%lu\n", interpC[0]);
+		return interpC[0]; }
 		
-		__device__ __host__ double
-		max_x() const{ return interpC[_cols-1]; }
+		__device__ double
+		max_x() const{ 
+		//printf("cols:%lu max_x:%f\n", _cols, interpC[_cols-1]);
+		//printf("max_x\n");
+		return interpC[_cols-1]; }
 		
-		__device__  __host__  double
-		min_y() const{ return interpR[0]; }
+		__device__   double
+		min_y() const{ 
+		//printf("min_y\n");
+		//printf("min_y\n");
+		return interpR[0]; }
 		
-		__device__ __host__ double
-		max_y() const{ return interpR[_rows-1]; }
+		__device__ double
+		max_y() const{ 
+		//printf("max_y\n");
+		return interpR[_rows-1]; }
 		
-		__device__  __host__ double
+		__device__  double
 		do_clamp(double v, double lo, double hi) const
 		{
+			//printf("inside do_clamp\n");
+			//printf("[%i](%i)do clamp (%f, %f, %f)\n", blockIdx.x, threadIdx.x, v, lo, hi);
 			assert(!(hi < lo));
 			return (v < lo) ? lo : (hi < v) ? hi : v;
 		}
 		
-		__device__ __host__ double
+		__device__ double
 		eval(double x, double y) const
 		{
+		  //printf("[%i](%i)evaluate interpolator at  (%f, %f)\n", blockIdx.x, threadIdx.x, x, y);
 		  return this->operator()(x, y);
 		};
 		
-		__device__  __host__
+		__device__ 
 		double
 		clamp(double x, double y) const
 		{
+	      //printf("[%i](%i)clamp (%f, %f)\n", blockIdx.x, threadIdx.x, x, y);
 		  return eval(do_clamp(x, min_x(), max_x()), do_clamp(y, min_y(), max_y()));
 		}
 	  };
-	
 	
 	class Interp1D : public Managed{
 	  public:
@@ -260,8 +318,8 @@ namespace quad {
 		size_t _cols;
 		
 		~Interp1D(){
-			cudaFree(interpT);
-			cudaFree(interpC);
+			//cudaFree(interpT);
+			//cudaFree(interpC);
 		}
 		
 		void Alloc(size_t cols){
@@ -285,7 +343,7 @@ namespace quad {
 			memcpy(interpT, zs, sizeof(double)*cols);
 		}
 		
-		__device__ __host__
+		__device__ 
 		bool AreNeighbors(const double val, double* arr, const size_t leftIndex, const size_t RightIndex) const{
 			if(arr[leftIndex] <= val && arr[RightIndex] >= val)
 				return true;
@@ -302,9 +360,11 @@ namespace quad {
 		  std::getline(is, buffer);
 		  std::vector<double> zs  = cosmosis::str_to_doubles(buffer);
 		  
-		  interp._cols = xs.size();
 		  cudaMallocManaged((void**)&(*&interp), sizeof(Interp1D));
 		  cudaDeviceSynchronize();
+		  
+		  interp._cols = xs.size();
+		  
 		  cudaMallocManaged((void**)&interp.interpC, sizeof(double)*xs.size());
 		  cudaDeviceSynchronize();
 		  cudaMallocManaged((void**)&interp.interpT, sizeof(double)*zs.size());
@@ -317,12 +377,13 @@ namespace quad {
 		}
 		
 		Interp1D(const Interp1D &source) {
+			Alloc(source._cols);
 			interpT = source.interpT;
 			interpC = source.interpC;
 			_cols = source._cols;
 		} 
 		
-		__device__ __host__
+		__device__
 		void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
 
 			size_t currentIndex = size/2;
@@ -330,11 +391,13 @@ namespace quad {
 			leftI = 0;
 			rightI = size - 1;
 
-			while(currentIndex != 0 && currentIndex != lastIndex){
-				currentIndex = leftI + (rightI - leftI)/2;
-				if(AreNeighbors(val, arr, currentIndex-1, currentIndex)){
-					leftI = currentIndex -1;
-					rightI = currentIndex;
+			//while(currentIndex != 0 && currentIndex != lastIndex){
+			while(leftI<=rightI){
+				//currentIndex = leftI + (rightI - leftI)/2;
+				currentIndex = (rightI + leftI)*0.5;
+				if(AreNeighbors(val, arr, currentIndex, currentIndex+1)){
+					leftI = currentIndex;
+					rightI = currentIndex+1;
 					return;
 				}
 				
@@ -347,7 +410,7 @@ namespace quad {
 			}
 		}
 		
-		__device__ __host__ double
+		__device__ double
 		operator()(double x) const
 		{
 		  size_t x0_index = 0, x1_index = 0;
@@ -360,26 +423,26 @@ namespace quad {
 		  return y;
 		}
 		
-		__device__ __host__ double
+		__device__ double
 		min_x() const{ return interpC[0]; }
 		
-		__device__ __host__ double
+		__device__ double
 		max_x() const{ return interpC[_cols-1]; }
 		
-		__device__  __host__ double
+		__device__  double
 		do_clamp(double v, double lo, double hi) const
 		{
 			assert(!(hi < lo));
 			return (v < lo) ? lo : (hi < v) ? hi : v;
 		}
 		
-		__device__ __host__ double
+		__device__ double
 		eval(double x) const
 		{
 		  return this->operator()(x);
 		};
 		
-		__device__  __host__
+		__device__ 
 		double
 		clamp(double x) const
 		{
@@ -457,8 +520,8 @@ class hmf_t {
 		}
 		
 	  private:
-		//typename T::Interp2D* _nmz;
-		std::shared_ptr<typename T::Interp2D const> _nmz;
+		typename T::Interp2D* _nmz;
+		//std::shared_ptr<typename T::Interp2D const> _nmz;
 		
 		double _s = 0.0;
 		double _q = 0.0;
@@ -506,6 +569,8 @@ void
 testKernel(T* model, double x1, double x2, double x3, double x4, double x5, double x6, double x7, double* result){
 	//printf("From kernel:%a\n", model->operator()(x1, x2, x3, x4, x5, x6, x7));
 	*result = model->operator()(x1, x2, x3, x4, x5, x6, x7);
+	//printf("Interpolator cols:%lu\n", model->mor.sig_interp->_cols);
+	//printf("(%i):%f\n", threadIdx.x, *result);
 }
 
 template <class M>
@@ -542,7 +607,7 @@ class MockIntegrand{
 		}
 };
 
-TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
+/*TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
 {
 	double const zt = 0x1.cccccccccccccp-2;
 	double const lnM = 0x1.0cp+5;
@@ -595,7 +660,7 @@ TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
 		cudaFree(d_integrand);
 		cudaFree(result);
 	}
-}
+}*/
 
   std::array<double, 16> constexpr zt_bins = {
 											  0.000000,
@@ -1251,7 +1316,7 @@ struct int_lc_lt_des_t {
     }
 };
 
-TEST_CASE("Model with member Interp2D inialized from std::array, Interp2D on a known point")
+/*TEST_CASE("Model with member Interp2D inialized from std::array, Interp2D on a known point")
 {
 	double const lc = 0x1.b8p+4;
     double const lt = 0x1.b8p+4;
@@ -1276,7 +1341,7 @@ TEST_CASE("Model with member Interp2D inialized from std::array, Interp2D on a k
 	
 	CHECK(*gpu_result == cpu_result);
 	CHECK(cpu_result == result);
-}
+}*/
 
 template<class T>
 struct omega_z_des {
@@ -1307,7 +1372,7 @@ struct omega_z_des {
     }
 };
 
-TEST_CASE("Omega_z DES to Test quad::Polynomial")
+/*TEST_CASE("Omega_z DES to Test quad::Polynomial")
 {
 	double const zt = 0x1.cccccccccccccp-2;
 	y3_cluster::OMEGA_Z_DES omega_z;
@@ -1328,7 +1393,7 @@ TEST_CASE("Omega_z DES to Test quad::Polynomial")
 	cudaDeviceSynchronize();
 	CHECK(result == cpu_result);
 	CHECK(result == *gpu_result);
-} 
+} */
 
 class sigma_photoz_des_t {
   public:
@@ -1390,7 +1455,7 @@ class int_zo_zt_des_t {
     sigma_photoz_des_t _sigma_photoz_des;
   };
 
-TEST_CASE("Simple model"){
+/*TEST_CASE("Simple model"){
 	double const zt = 0x1.cccccccccccccp-2;
 	double zo_low_ = 0.0;
 	double zo_high_ = 0.0;
@@ -1410,7 +1475,7 @@ TEST_CASE("Simple model"){
 	testKernel<int_zo_zt_des_t><<<1,1>>>(dhmf2, zo_low_, zo_high_, zt, gpu_result);
 	cudaDeviceSynchronize();
 	CHECK(*gpu_result == result);
-}
+}*/
 
 std::array<double, 42> test_lsat = {
       0.500000,   0.600000,   0.700000,   0.800000,   0.900000,   1.000000,
@@ -1649,20 +1714,10 @@ class mor_des_t {
     //typename T::Interp2D const sig_interp;
     //typename T::Interp2D const skews_interp;
 	
-	std::shared_ptr<typename T::Interp2D const> sig_interp;
-	std::shared_ptr<typename T::Interp2D const> skews_interp;
-	
-    double _A = 0.0;
-    double _B = 0.0;
-    double _C = 0.0;
-    double _sigma_intr = 0.0;
-    double _epsilon = 0.0;
-    double _z_pivot = 0.0;
-
   public:
     mor_des_t() = default;
 	
-	mor_des_t(typename T::Interp2D* sig_int, typename T::Interp2D* skews_int):sig_interp(sig_int), skews_interp(skews_int){}
+	mor_des_t(typename T::Interp2D* sig_int, typename T::Interp2D* skews_int):sig_interp(sig_int), skews_interp(skews_int) {}
 	
     mor_des_t(double A,
               double B,
@@ -1677,30 +1732,61 @@ class mor_des_t {
       , _epsilon(epsilon)
       , _z_pivot(z_pivot){}
 	  
+	~mor_des_t(){
+		//just added
+		//cudaFree(skews_interp);
+		//cudaFree(sig_interp);
+		//delete skews_interp;
+		//delete sig_interp;
+	}
+	  
 	__device__ __host__
     double
     operator()(double lt, double lnM, double zt) const
     {
-	  double const term1 = (exp(lnM) - _A) / (_B - _A);
-	  double const pow_term1 = pow(term1, _C);
-      double const ltm = pow(term1, _C) *
-                         pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
-		
+	  //#ifdef  __CUDA_ARCH__
+	  //printf("_cols:%lu _rows:%lu\n", sig_interp->_cols, sig_interp->_rows);
+	  //printf("[%i](%i)computing mor_des %f, %f, %f\n", blockIdx.x, threadIdx.x, lt, lnM, zt);
+	  //printf("[%i](%i)_z_pivot:%f _epsilon:%f\n", blockIdx.x, threadIdx.x, _z_pivot, _epsilon);
+	  //#endif
+	  
+	  double term1 = (exp(lnM) - _A) / (_B - _A);
+	   //#ifdef  __CUDA_ARCH__
+	  //printf("[%i](%i)1st:%f\n",  blockIdx.x, threadIdx.x, pow(term1, _C));
+	  //#endif
+	  double pow_term1 = pow(term1, _C);
+	  //#ifdef  __CUDA_ARCH__
+	  //printf("[%i](%i)2nd:%f\n", blockIdx.x, threadIdx.x , pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon));
+	  //#endif
+	  double  term1a = pow(term1, _C);
+	  //double  term2a = pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
+	   double  term2a = 0.;
+	  if(_epsilon<0){
+		  term2a = 1./pow((1.0 + zt) / (1.0 + _z_pivot), -1.*_epsilon);
+	  }
+	  else{
+		  term2a = pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
+	  }
+	  
+      //double const ltm = pow(term1, _C) *
+       //                  pow((1.0 + zt) / (1.0 + _z_pivot), _epsilon);
+	  double  ltm = term1a*term2a;
+	 
 	  //+0.04 gives different result, +.03 not
-	  printf("mor_des_t interp at %.20f, %.20f: (%a)\n",  _sigma_intr, ltm, sig_interp->clamp(_sigma_intr, ltm));
-      double const _sigma = sig_interp->clamp(_sigma_intr, ltm);
+	  //#ifdef  __CUDA_ARCH__
+	  //printf("[%i](%i) interpolating at %f, %f\n", blockIdx.x, threadIdx.x, _sigma_intr, ltm);
+	  //#endif
+	  
+      double  _sigma = sig_interp->clamp(_sigma_intr, ltm);
+	 
       
-	  double const _skw = skews_interp->clamp(_sigma_intr, ltm);
-
-	  printf("ltm:%a\n", ltm);
-	  printf("term1:%a\n", term1);
-	  printf("pow_term1:%a\n", pow_term1);
-      double const x = lt - ltm;
-      double const erfarg = -1.0 * _skw * (x) / (sqrt(2.) * _sigma);
-      double const erfterm = erfc(erfarg);
+	  double  _skw = skews_interp->clamp(_sigma_intr, ltm);
+      double  x = lt - ltm;
+      double  erfarg = -1.0 * _skw * (x) / (sqrt(2.) * _sigma);
+      double  erfterm = erfc(erfarg);
       return quad::gaussian(x, 0.0, _sigma) * erfterm;
     }
-
+	
     friend std::ostream&
     operator<<(std::ostream& os, mor_des_t const& m)
     {
@@ -1737,9 +1823,24 @@ class mor_des_t {
       }
       return is;
     }
+	
+	//private:
+	//std::shared_ptr<typename T::Interp2D const> sig_interp;
+	//std::shared_ptr<typename T::Interp2D const> skews_interp;
+	
+	typename T::Interp2D*  sig_interp;
+    typename T::Interp2D* skews_interp;
+	
+    double _A = 0.0;
+    double _B = 0.0;
+    double _C = 0.0;
+    double _sigma_intr = 0.0;
+    double _epsilon = 0.0;
+    double _z_pivot = 0.0;
+
   };
 
-TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
+/*TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
 {
 	double const lt = 0x1.b8p+4;
 	double const lnM = 0x1.0cp+5;
@@ -1774,7 +1875,7 @@ TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
 	printf("cpu :%a\n", cpu_result);
 	printf("gpu :%a\n", *gpu_result);
 	printf("------------------------------\n");
-}
+}*/
 
   class roffset_t {
   public:
@@ -1813,7 +1914,7 @@ TEST_CASE("MOR_DES_t utilizing gaussian on gpu and std::array initialization")
     double _tau = 0.0;
   };
   
-TEST_CASE("ROFFSET_t")
+/*TEST_CASE("ROFFSET_t")
 {
 	double const rmis = 0x1p+0;
 	y3_cluster::ROFFSET_t roffset 	= make_from_file<y3_cluster::ROFFSET_t>("data/ROFFSET_t.dump");
@@ -1836,7 +1937,7 @@ TEST_CASE("ROFFSET_t")
 	
 	cudaFree(dhmf2);
 	cudaFree(gpu_result);
-}
+}*/
 
  class ez_sq {
   public:
@@ -1892,7 +1993,6 @@ TEST_CASE("ROFFSET_t")
     double _omega_l = 0.0;
     double _omega_k = 0.0;
   };
-
 
 class ez {
   public:
@@ -1986,12 +2086,13 @@ class dv_do_dz_t {
     }
 
   private:
-    std::shared_ptr<typename T::Interp1D const> _da;
+    //std::shared_ptr<typename T::Interp1D const> _da;
+	typename T::Interp1D* _da; 
     ez _ezt;
     double _h;
   };
   
- TEST_CASE("dv_do_dz_t")
+/*TEST_CASE("dv_do_dz_t")
  {
 	 double const zt = 0x1.cccccccccccccp-2;
 	 y3_cluster::DV_DO_DZ_t dv_do_dz 	= make_from_file<y3_cluster::DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
@@ -2016,18 +2117,20 @@ class dv_do_dz_t {
 	 
 	 cudaFree(dhmf2);
 	 cudaFree(gpu_result);
- }
+ }*/
  
  template<class T>
  class sig_sum {
   private:
-    std::shared_ptr<typename T::Interp2D const> _sigma1;
-    std::shared_ptr<typename T::Interp2D const> _sigma2;
-    std::shared_ptr<typename T::Interp2D const> _bias;
 
+    //std::shared_ptr<typename T::Interp2D const> _sigma1;
+   // std::shared_ptr<typename T::Interp2D const> _sigma2;
+    //std::shared_ptr<typename T::Interp2D const> _bias;
+	typename T::Interp2D* _sigma1;
+	typename T::Interp2D* _sigma2;
+	typename T::Interp2D* _bias;
   public:
     using doubles = std::vector<double>;
-
     sig_sum() = default;
 	
     sig_sum(typename T::Interp2D* sigma1,
@@ -2035,6 +2138,16 @@ class dv_do_dz_t {
             typename T::Interp2D* bias)
       : _sigma1(sigma1), _sigma2(sigma2), _bias(bias)
     {}
+	
+	~sig_sum(){
+		//just added
+		//cudaFree(_sigma1);
+		//cudaFree(_sigma2);
+		//cudaFree(_bias);
+		//delete _sigma1;
+		//delete _sigma2;
+		//delete _bias;
+	}
 	
 	__host__ __device__
     double
@@ -2081,7 +2194,7 @@ class dv_do_dz_t {
     }
   };
   
-TEST_CASE("SIG_SUM")
+/*TEST_CASE("SIG_SUM")
 {
 	double const theta = 0x1.921fb54442eeap+1;
 	double const radius_ = 0x1p+0;
@@ -2111,7 +2224,7 @@ TEST_CASE("SIG_SUM")
 	 
 	cudaFree(dhmf2);
 	cudaFree(gpu_result);
-}
+}*/
 
 class  lo_lc_t{
   public:
@@ -2170,8 +2283,7 @@ class  lo_lc_t{
     double _R_lambda = 0.0;
 };
 
- 
-TEST_CASE("LO_LC_t")
+/*TEST_CASE("LO_LC_t")
 {
 	double const lo = 0x1.9p+4;
     double const lc = 0x1.b8p+4;
@@ -2197,14 +2309,14 @@ TEST_CASE("LO_LC_t")
 	 
 	cudaFree(dhmf2);
 	cudaFree(gpu_result);
-}
+}*/
 
 template<class T>
 class integral {
 public:
   using grid_point_t = std::array<double, 3>; // we only vary radius.
 
-private:
+//private:
   using volume_t = cubacpp::IntegrationVolume<7>;
 
   // State obtained from configuration. These things should be set in the
@@ -2214,9 +2326,10 @@ private:
   // State obtained from each sample.
   // If there were a type X that did not have a default constructor,
   // we would use optional<X> as our data member.
-  int_lc_lt_des_t<T> 	lc_lt;
-  mor_des_t<T>			mor;
-  omega_z_des<T>		omega_z;
+  
+   int_lc_lt_des_t<T> 	lc_lt;
+   mor_des_t<T>			mor;
+   omega_z_des<T>		omega_z;
   dv_do_dz_t<T> 		dv_do_dz;
   hmf_t<T> 				hmf;
   int_zo_zt_des_t 		int_zo_zt;
@@ -2237,7 +2350,7 @@ public:
 		dv_do_dz = make_from_file<dv_do_dz_t<GPU>>("data/DV_DO_DZ_t.dump");
 		hmf 	 = make_from_file<hmf_t<GPU>>("data/HMF_t.dump");
 		roffset  = make_from_file<roffset_t>("data/ROFFSET_t.dump");
-		sigma  = make_from_file<sig_sum<GPU>>("data/SIG_SUM.dump");
+		sigma  	 = make_from_file<sig_sum<GPU>>("data/SIG_SUM.dump");
 		lo_lc 	 = make_from_file<lo_lc_t>("data/LO_LC_t.dump");
 	}
 
@@ -2253,15 +2366,17 @@ public:
                   lo_lc_t const& lo_lc_in,
                   sig_sum<T> const& sig_sum_in)
 	{
-		lc_lt = std::move(int_lc_lt_in);
+		
 		mor = std::move(mor_in);
-		omega_z = std::move(omega_z_in);
 		dv_do_dz = std::move(dv_do_dz_in);
+		lc_lt = std::move(int_lc_lt_in);
+		omega_z = std::move(omega_z_in);
+		
 		hmf = std::move(hmf_in);
 		int_zo_zt = std::move(int_zo_zt_in);
 		roffset = std::move(roffset_in);
 		lo_lc = std::move(lo_lc_in);
-		sigma = std::move(sig_sum_in);			  
+		sigma = std::move(sig_sum_in);
 	}
 
   // Set the data for the current bin.
@@ -2277,7 +2392,7 @@ public:
 	// integration routine does not work for functions of one variable). The
 	// function is const because calling it does not change the state of the
 	// object.
-	__host__ __device__
+	__device__
 	double operator()(double lo,
                     double lc,
                     double lt,
@@ -2285,20 +2400,38 @@ public:
                     double lnM,
                     double rmis,
                     double theta) const{
+		
 		double const mor_des = (mor)(lt, lnM, zt);
+		//printf("mor_des:%f\n", mor_des);
 		double const common_term = (roffset)(rmis) * (lo_lc)(lo, lc, rmis) *
                              (lc_lt)(lc, lt, zt) * mor_des *
                              (dv_do_dz)(zt) * (hmf)(lnM, zt) *
                              (omega_z)(zt) / 2.0 / 3.1415926535897;
+		//printf("common_term:%f\n", common_term);					 
 		double const scaled_Rmis = sqrt(radius_ * radius_ + rmis * rmis +
                                        2 * rmis * radius_ * cos(theta));
-		auto const val = (sigma)(scaled_Rmis, lnM, zt) *
+		//printf("scaled_Rmis:%f\n", scaled_Rmis);
+		double const val = (sigma)(scaled_Rmis, lnM, zt) *
                    (int_zo_zt)(zo_low_, zo_high_, zt) * common_term;
-		printf("common_term:%a\n", common_term);
+		//if(blockIdx.x == 0)
+		//	printf("[%i](%i) %f, %f, %f, %f, %f, %f, %f = %.20f\n", blockIdx.x, threadIdx.x, lo, lc, lt, zt, lnM, rmis, theta, val);
+		/*if(threadIdx.x == 0)
+			printf("(%i) %f, %f, %f, %f, %f, %f, %f = %.20f\n", 
+																 threadIdx.x,
+																 lo,
+																 lc,
+																 lt, 
+																 zt,
+																 lnM,
+																 rmis,
+																 theta, 
+																 val);*/
+								
+		//printf("[%i](%i) val:%a\n", val);
 		//printf("    roffset:%a\n", (roffset)(rmis));
 		//printf("    lo_lc:%a\n", (lo_lc)(lo, lc, rmis));
 		//printf("    lc_lt:%a\n", (lc_lt)(lc, lt, zt));
-		printf("    mor:%a\n", mor_des);
+		//printf("    mor:%val\n", val);
 		//printf("    dv_do_dz:%a\n", (dv_do_dz)(zt));
 		//printf("    omega_z:%a\n", (omega_z)(zt));
 		//printf("    hmf:%a\n", (hmf)(lnM, zt));
@@ -2306,11 +2439,151 @@ public:
 		//printf("scaled_Rmis:%a\n", scaled_Rmis);
 		//printf("Sigma:%a\n", (sigma)(scaled_Rmis, lnM, zt));
 		//printf("int_zo_zt:%a\n", (int_zo_zt)(zo_low_, zo_high_, zt));
+		//printf("[%i](%i) %f, %f, %f, %f, %f, %f, %f, %.20f\n", blockIdx.x, threadIdx.x, lo, lc, lt, zt, lnM, rmis, theta, val);
 		return val;		
 	}
 };
 
-TEST_CASE("integral call"){
+using std::cout;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration;
+
+template <typename ALG, typename F>
+bool
+time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::string algname, int _final=0)
+{
+  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+  double constexpr epsabs = 1.0e-40;
+  cubacpp::array<7> lows  = {20., 5.,  5., .15,  29., 0., 0.};
+  cubacpp::array<7> highs = {30., 50., 50.,.75,  38., 1., 6.28318530718};
+  cubacpp::integration_volume_for_t<F> vol(lows, highs);
+  
+  auto t0 = std::chrono::high_resolution_clock::now();
+  printf("time-and-call\n");
+  auto res = a.integrate(f, epsrel, epsabs, vol);
+  
+  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+  double absolute_error = std::abs(res.value - correct_answer);
+  bool const good = (res.status == 0);
+  int converge = !good;
+  std::cout.precision(15); 
+  std::cout<<algname<<","
+		   <<std::to_string(correct_answer)<<","
+			<<epsrel<<","
+			<<epsabs<<","
+			<<std::to_string(res.value)<<","
+			<<std::to_string(res.error)<<","
+			<<res.nregions<<","
+			<<res.status<<","
+			<<_final<<","
+			<<dt.count()<<std::endl;
+  if(res.status == 0)
+	return true;
+  else
+	return false;
+}
+
+
+template <typename F>
+bool
+time_and_call(std::string id,
+              F integrand,
+              double epsrel,
+              double true_value,
+              char const* algname,
+              std::ostream& outfile,
+              int _final = 0)
+{
+	//printf("time_and_call d_integrand Mor des cols:%lu\n", integrand.mor.sig_interp->_cols);
+	//printf("inside time and call\n");
+	//printf("time_and_call d_integrand Mor des cols:%lu\n", integrand.mor.sig_interp->_cols);
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  double constexpr epsabs = 1.0e-40;
+
+  double lows[] =  {20., 5.,  5., .15,  29., 0., 0.};
+  double highs[] = {30., 50., 50.,.75,  38., 1., 6.28318530718};
+
+  constexpr int ndim = 7;
+  quad::Volume<double, ndim> vol(lows, highs);
+  int const key = 0;
+  int const verbose = 0;
+  int const numdevices = 1;
+  quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
+	
+  int outfileVerbosity = 4;
+  constexpr int phase_I_type = 0; // alternative phase 1
+
+  auto const t0 = std::chrono::high_resolution_clock::now();
+  
+  cuhreResult const result = alg.integrate<F>(integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
+  
+  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+  double const absolute_error = std::abs(result.estimate - true_value);
+  bool good = false;
+
+  if (result.status == 0 || result.status == 2) {
+    good = true;
+  }
+  outfile.precision(15);
+  outfile << std::fixed << id << ",\t" << std::scientific << true_value << ",\t"
+          << std::scientific << epsrel << ",\t\t\t" << std::scientific
+          << epsabs << ",\t" << std::scientific << result.estimate << ",\t"
+          << std::scientific << result.errorest << ",\t" << std::fixed
+          << result.nregions << ",\t" << std::fixed << result.status << ",\t"
+          << _final << ",\t" << dt.count() << std::endl;
+
+  return good;
+}
+
+template <typename F>
+void innerWrapper(F d_integrand){
+	printf("innerWrapper d_integrand Mor des cols:%lu\n", d_integrand.mor.sig_interp->_cols);
+	integral<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(integral<GPU>));
+	memcpy(dhmf2, &d_integrand, sizeof(integral<GPU>));
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+	
+	double const lo = 0x1.9p+4;
+    double const lc = 0x1.b8p+4;
+    double const lt = 0x1.b8p+4;
+    double const zt = 0x1.cccccccccccccp-2;
+    double const lnM = 0x1.0cp+5;
+    double const rmis = 0x1p+0;
+    double const theta = 0x1.921fb54442eeap+1;
+	
+    double const radius_ = 0x1p+0;
+    double const zo_low_ = 0x1.999999999999ap-3;
+    double const zo_high_ = 0x1.6666666666666p-2;
+	testKernel<integral<GPU>><<<1,1>>>(dhmf2, lo, lc, lt, zt, lnM, rmis, theta, gpu_result);
+	cudaDeviceSynchronize();
+	printf("End of kernel wrapper\n");
+}
+
+template <typename F>
+void kernel_wrapper(F d_integrand){
+	printf("kernel_wrapper d_integrand Mor des cols:%lu\n", d_integrand.mor.sig_interp->_cols);
+	//innerWrapper(d_integrand);
+}
+
+class test {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double p, double o)
+  {
+    return sin(x + y + z + k + l + m);
+  }
+};
+
+int
+main()
+{
+//TEST_CASE("integral call"){
+	test Testobj;
+	//time_and_call_vegas(newfuncgauss);
+	//time_and_call_vegas(Testobj);
 	printf("Final Test Case\n");
 	double const lo = 0x1.9p+4;
     double const lc = 0x1.b8p+4;
@@ -2319,58 +2592,183 @@ TEST_CASE("integral call"){
     double const lnM = 0x1.0cp+5;
     double const rmis = 0x1p+0;
     double const theta = 0x1.921fb54442eeap+1;
-
+	
     double const radius_ = 0x1p+0;
     double const zo_low_ = 0x1.999999999999ap-3;
     double const zo_high_ = 0x1.6666666666666p-2;
 	
-	
 	y3_cluster::INT_LC_LT_DES_t lc_lt;     // we want the default
-	y3_cluster::OMEGA_Z_DES omega_z;       // we want the default
+	y3_cluster::OMEGA_Z_DES	 	omega_z;       // we want the default
 	y3_cluster::INT_ZO_ZT_DES_t int_zo_zt; // we want the default
-
-	y3_cluster::MOR_DES_t mor 		= make_from_file<y3_cluster::MOR_DES_t>("data/MOR_DES_t.dump");
-	y3_cluster::DV_DO_DZ_t dv_do_dz 	= make_from_file<y3_cluster::DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
-	y3_cluster::HMF_t hmf 			= make_from_file<y3_cluster::HMF_t>("data/HMF_t.dump");
-	y3_cluster::ROFFSET_t roffset 	= make_from_file<y3_cluster::ROFFSET_t>("data/ROFFSET_t.dump");
-	y3_cluster::SIG_SUM sig_sum 		= make_from_file<y3_cluster::SIG_SUM>("data/SIG_SUM.dump");
-	y3_cluster::LO_LC_t lo_lc 		= make_from_file<y3_cluster::LO_LC_t>("data/LO_LC_t.dump");
+	
+	y3_cluster::MOR_DES_t 	mor 		= make_from_file<y3_cluster::MOR_DES_t>("data/MOR_DES_t.dump");
+	y3_cluster::DV_DO_DZ_t 	dv_do_dz 	= make_from_file<y3_cluster::DV_DO_DZ_t>("data/DV_DO_DZ_t.dump");
+	y3_cluster::HMF_t 		hmf 		= make_from_file<y3_cluster::HMF_t>("data/HMF_t.dump");
+	y3_cluster::ROFFSET_t 	roffset 	= make_from_file<y3_cluster::ROFFSET_t>("data/ROFFSET_t.dump");
+	y3_cluster::SIG_SUM 	sig_sum 	= make_from_file<y3_cluster::SIG_SUM>("data/SIG_SUM.dump");
+	y3_cluster::LO_LC_t 	lo_lc 		= make_from_file<y3_cluster::LO_LC_t>("data/LO_LC_t.dump");
 	
 	SigmaMiscentY1ScalarIntegrand integrand;
 	integrand.set_sample(lc_lt, mor, omega_z, dv_do_dz, hmf, int_zo_zt, roffset, lo_lc, sig_sum);
-  
-
 	integrand.set_grid_point({zo_low_, zo_high_, radius_});
 	double result = integrand(lo, lc, lt, zt, lnM, rmis, theta);
-	printf("\n\n CPU\n");	
+	
+	//time_and_call_vegas(integrand);
+    cubacores(0, 0);
+	unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
+	double const epsrel_min = 1.0e-12;
+	cubacpp::Cuhre cuhre;
+	//int verbose = 3;
+	int verbose = 0;
+	int _final  = 1;
+	cuhre.flags = verbose | 4;
+	//cuhre.flags = verbose | 0;
+	//cuhre.flags = 1;
+	cuhre.maxeval = maxeval;
+	double epsrel = 1.0e-3;
+	double true_value = 0.;
+	epsrel = 1.0e-3;
+	
+	/*while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f1", 0)){
+		epsrel = epsrel/1.5;
+	}*/
+	
 	integral<GPU> d_integrand;
 	d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
-	double cpu_result = d_integrand(lo, lc, lt, zt, lnM, rmis, theta);
-	CHECK(result == cpu_result);
-
-	integral<GPU> *dhmf2;
-	cudaMallocManaged((void**)&dhmf2, sizeof(integral<GPU>));
-	cudaDeviceSynchronize();
-	memcpy(dhmf2, &d_integrand, sizeof(integral<GPU>));
+	constexpr int ndim = 7;
+    //epsrel = epsrel/1.5;
+    
+	while(time_and_call<integral<GPU>>("pdc_f0_latest",
+								 d_integrand,
+								 epsrel,
+								 0.,
+							     "gpucuhre",
+							     std::cout,
+							     _final)){
+						epsrel = epsrel/1.5;	
+		break;
+								 }
+									 
 	
+	/*double bothEqual_cpu = integrand.mor->operator()(.6, 34., 0);
+	std::cout<<"cpu_result:"<<bothEqual_cpu<<std::endl;
+	
+	mor_des_t<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(mor_des_t<GPU>));
+	memcpy(dhmf2, &d_integrand.mor, sizeof(mor_des_t<GPU>));
 	double* gpu_result;
 	cudaMallocManaged((void**)&gpu_result, sizeof(double));
-    printf("\n\n GPU\n");	 
-	testKernel<integral<GPU>><<<1,1>>>(dhmf2, lo, lc, lt, zt, lnM, rmis, theta, gpu_result);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, .6, 34., 0, gpu_result);
 	cudaDeviceSynchronize();
-	printf("\n\ntrue:%.30f\n", result);
-	printf("cpu :%.30f\n", cpu_result);
-	printf("gpu :%.30f\n\n", *gpu_result);
 	
-	printf("true:%e\n", result);
-	printf("cpu :%e\n", cpu_result);
-	printf("gpu :%e\n\n", *gpu_result);
+	std::cout<<"gpu_result:"<<*gpu_result<<std::endl;
+	if(*gpu_result == bothEqual_cpu)
+		printf("Both equal Test Passed\n");
+	double x_equal = integrand.mor->operator()(.6, 34.5, 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, .6, 34.5, 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == x_equal)
+		printf("X equal Test Passed\n");
+	double y_equal = integrand.mor->operator()(.65, 34., 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, .65, 34., 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == y_equal)
+		printf("Y equal Test Passed\n");
 	
-	printf("true:%a\n", result);
-	printf("cpu :%a\n", cpu_result);
-	printf("gpu :%a\n", *gpu_result);
-	CHECK(*gpu_result == cpu_result);
+	double x1_equal = integrand.mor->operator()(0.050000, 34., 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, 0.050000, 34., 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == x1_equal)
+		printf("x1_equal Test Passed\n");
+	
+	double y1_equal = integrand.mor->operator()(.6, .5, 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, .6, .5, 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == y1_equal)
+		printf("y1_equal Test Passed\n");
+	else
+		printf("y1_equal Test Failed\n");
+	double xy1_equal = integrand.mor->operator()(0.050000, .5, 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, 0.050000, .5, 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == xy1_equal)
+		printf("xy1_equal Test Passed\n");
+	
+	double xy_last_equal = integrand.mor->operator()(2., 244., 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, 2., 244., 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == xy_last_equal)
+		printf("xy_last_equal Test Passed\n");
+	
+	double x_last_equal = integrand.mor->operator()(2., 243., 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, 2., 243., 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == x_last_equal)
+		printf("x_last_equal Test Passed\n");
+	
+	double y_last_equal = integrand.mor->operator()(1.9, 244., 0);
+	testKernel<mor_des_t<GPU>><<<1,1>>>(dhmf2, 1.9, 244., 0, gpu_result);
+	cudaDeviceSynchronize();
+	if(*gpu_result == y_last_equal)
+		printf("y_last_equal Test Passed\n");*/
+	//printf("d_integrand Mor des cols:%lu\n", d_integrand.mor.sig_interp->_cols);
+	//double cpu_result = d_integrand(lo, lc, lt, zt, lnM, rmis, theta);
+	//CHECK(result == cpu_result);
+	//kernel_wrapper<integral<GPU>>(d_integrand);
+	//printf("repeat d_integrand Mor des cols:%lu\n", d_integrand.mor.sig_interp->_cols);
+	
+	//printf("After time and call\n");
+	/*integral<GPU> *dhmf2;
+	cudaMallocManaged((void**)&dhmf2, sizeof(integral<GPU>));
+	memcpy(dhmf2, &d_integrand, sizeof(integral<GPU>));
+	double* gpu_result;
+	cudaMallocManaged((void**)&gpu_result, sizeof(double));
+	printf("===============================\n");
+	testKernel<integral<GPU>><<<1,1>>>(dhmf2, lo, lc, lt, zt, lnM, rmis, theta, gpu_result);
+	cudaDeviceSynchronize();*/
+	
+	/*printf("-------------------------------\n");
+	int _final = 0;
+	printf("About to enter time and call loop\n");
+	while (time_and_call<integral<GPU>>("pdc_f0_latest",
+                       d_integrand,
+                       epsrel,
+                       true_value,
+                       "gpucuhre",
+                       std::cout,
+                       _final) == true &&
+         epsrel >= epsrel_min) {
+    epsrel /= 5.0;
+    }*/
+  
+  
+    /*_final = 1;
+	while (time_and_call<integral<GPU>>("pdc_f1_latest",
+                       d_integrand,
+                       epsrel,
+                       true_value,
+                       "gpucuhre",
+                       std::cout,
+                       _final) == true &&
+         epsrel >= epsrel_min) {
+    epsrel /= 5.0;
+    }*/
+	
+	//printf("\n\ntrue:%.30f\n", result);
+	//printf("cpu :%.30f\n", cpu_result);
+	//printf("gpu :%.30f\n\n", *gpu_result);
+	
+	//printf("true:%e\n", result);
+	//printf("cpu :%e\n", cpu_result);
+	//printf("gpu :%e\n\n", *gpu_result);
+	
+	//printf("true:%a\n", result);
+	//printf("cpu :%a\n", cpu_result);
+	//printf("gpu :%a\n", *gpu_result);
+	//CHECK(*gpu_result == cpu_result);
 	 
-	cudaFree(dhmf2);
-	cudaFree(gpu_result);
+	//cudaFree(dhmf2);
+	//cudaFree(gpu_result);
+//}
+return 0;
 }
