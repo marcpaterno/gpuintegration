@@ -40,7 +40,7 @@ namespace quad {
           int verbose = 0,
           int numDevices = 1)
     {
-      QuadDebug(cudaDeviceReset());
+      //QuadDebug(cudaDeviceReset());
       argc = pargc;
       argv = pargv;
       KEY = key;
@@ -53,7 +53,7 @@ namespace quad {
     ~Cuhre()
     {
       delete kernel;
-      QuadDebug(cudaDeviceReset());
+      //QuadDebug(cudaDeviceReset());
     }
 
 int const BUFSIZE = 512;
@@ -627,6 +627,33 @@ int const BUFSIZE = 512;
                   const int phase1type)
     {
       assert(phase1type == 0 || phase1type == 1);
+	  
+	  /*
+		//This is to replace if stetement below
+		switch(phase1type){
+			case 0:
+				return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
+                                                 epsrel,
+                                                 epsabs,
+                                                 res.estimate,
+                                                 res.errorest,
+                                                 res.nregions,
+                                                 res.neval,
+                                                 volume);
+			case 1:
+				return kernel->IntegrateFirstPhase(d_integrand,
+                                         epsrel,
+                                         epsabs,
+                                         res.estimate,
+                                         res.errorest,
+                                         res.nregions,
+                                         res.neval,
+                                         volume);
+				
+			
+		}
+	  */
+	  
       if (phase1type)
         return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
                                                  epsrel,
@@ -645,6 +672,16 @@ int const BUFSIZE = 512;
                                          res.neval,
                                          volume);
     }
+
+	
+	template<typename IntegT>
+	IntegT* 
+	Make_GPU_Integrand(IntegT* integrand){
+		IntegT* d_integrand;
+		cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+		memcpy(d_integrand, &integrand, sizeof(IntegT));
+		return d_integrand;
+	}
 
     template <typename IntegT>
     cuhreResult
@@ -665,11 +702,18 @@ int const BUFSIZE = 512;
       kernel->SetPhase_I_type(phase1type);
 		
       int numprocs = 0;
-      IntegT* d_integrand = 0;
-      cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-      cudaMemcpy(
-        d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-		
+      IntegT* d_integrand;
+      //cudaMalloc((void**)&d_integrand, sizeof(IntegT));
+	  cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      //cudaMemcpy(d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
+	  memcpy(d_integrand, &integrand, sizeof(IntegT));
+	  //the above lines will be replace wiht the ones below
+	  /*
+	  IntegT* d_integrand = Make_GPU_Integrand(&integrand);
+	  
+	  */
+	 
+	 
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -688,7 +732,7 @@ int const BUFSIZE = 512;
       bool convergence = false;
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
-
+	  
       convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
       if (convergence){
 		cudaFree(d_integrand);

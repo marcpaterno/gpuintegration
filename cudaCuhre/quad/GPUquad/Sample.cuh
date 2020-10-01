@@ -47,7 +47,7 @@ namespace quad {
                      T* lows,
                      T* highs)
   {
-
+//this is maybe a problem, lows, highs are now unused, we rely on sBound for global bounds, and bounds b for the phase 2 starting dims, and phase 1 dims stored in dREgions, dREgionsLength
     for (int dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0;
       x[dim] = 0;
@@ -56,7 +56,7 @@ namespace quad {
     int posCnt = __ldg(&constMem->_gpuGenPermVarStart[pIndex + 1]) -
                  __ldg(&constMem->_gpuGenPermVarStart[pIndex]);
     int gIndex = constMem->_gpuGenPermGIndex[pIndex];
-
+	
     for (int posIter = 0; posIter < posCnt; ++posIter) {
       int pos = __ldg(
         &constMem->_gpuGenPos[__ldg(&constMem->_gpuGenPermVarStart[pIndex]) +
@@ -73,39 +73,21 @@ namespace quad {
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
       T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-      jacobian = jacobian * range * (highs[dim] - lows[dim]);
+	  //if(blockIdx.x == 0 && threadIdx.x == 0)
+		//printf("x[%i]:%f Sample sBound:%f,%f regular bounds:%f,%f\n", dim, x[dim], sBound[dim].unScaledLower, sBound[dim].unScaledUpper,  b[dim].lower, b[dim].upper);
+      //jacobian = jacobian * range * (highs[dim] - lows[dim]);
+	  jacobian = jacobian * range;
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
-      x[dim] = (highs[dim] - lows[dim]) * x[dim] + lows[dim];
+	   //if(blockIdx.x == 0 && threadIdx.x == 0)
+		//  printf("after half scaling  x[%i]:%f\n", dim, x[dim]);
+      //x[dim] = (highs[dim] - lows[dim]) * x[dim] + lows[dim];
+	  //if(blockIdx.x == 0 && threadIdx.x == 0)
+		//  printf("after scaling  x[%i]:%f\n", dim, x[dim]);
     }
-    /*&gpu::cudaArray<T, NDIM> m;
-    m[0] = 0x1.f4b65783633c5p-1;
-    m[1] = 0x1.f4b65783633c5p-1;
-    m[2] = 0x1p-1;
-    m[3] = 0x1p-1;
-    m[4] = 0x1p-1;
-    m[5] = 0x1p-1;
-    m[6] = 0x1p-1;
-    m[7] = 0x1.69350f939876p-6;
-    printf("GPU result:%.17f\n", gpu::apply(*d_integrand, m));*/
-
+	//if(blockIdx.x == 1)
+	//	printf("at compute permutation:%f, %f, %f, %f, %f, %f, %f\n", x[0], x[1], x[2], x[3], x[4], x[5], x[6], );
     T fun = gpu::apply(*d_integrand, x);
-    /* if(b[0].lower == .5 && b[0].upper == 1.0 &&
-                                                         b[1].lower == 0.75 &&
-                                                         b[1].upper == .875 &&
-                                                         b[2].lower == 0.0 &&
-                                                         b[2].upper == 1.0 &&
-                                                         b[3].lower == 0.0 &&
-                                                         b[4].lower == 0.0 &&
-                                                         b[4].upper == 1.0 &&
-                                                         b[5].lower == .25 &&
-                                                         b[5].upper == .50 &&
-                                                         b[6].lower == 0.0 &&
-                                                         b[6].upper == 0.0625 &&
-                                                         b[7].lower == 0.5 &&
-                                                         b[7].upper == .75)
-                         printf("%i, %.20f, %f, %f, %f, %f, %f, %f, %f, %f\n",
-       threadIdx.x, fun, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
-     */
+
 
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun; // target for reduction
@@ -113,6 +95,8 @@ namespace quad {
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem->_cRuleWt[gIndex * NRULES + rul]);
       if (rul == 0) {
+		  //if(blockIdx.x == 0)
+			//printf("(%i) (%f, %f, %f, %f, %f, %f, %f) funceval:%.20f weight:%.20f\n", threadIdx.x, x[0], x[1], x[2], x[3], x[4], x[5], x[6], fun, constMem->_cRuleWt[gIndex * NRULES + rul]);
         /*printf("%a, %a, %a,  %a, %a, %a, %a, %a, %a, %a, %a\n",
            fun*constMem->_cRuleWt[gIndex * NRULES + rul], fun,
                                                                                                                                          constMem->_cRuleWt[gIndex * NRULES + rul],
@@ -139,15 +123,27 @@ namespace quad {
                     T* lows,
                     T* highs)
   {
-
-    // read
     __syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     // T ranges[NDIM];
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
-
+	
+	/*
+	for(int dim=0; dim<NDIM; dim++){
+		if(blockIdx.x == 0 && threadIdx.x == 0){
+		if(region->bounds[dim].lower ==  region->bounds[dim].upper)
+			printf("Sample Bounds[%i]:%f-%f\n", dim, region->bounds[dim].lower, region->bounds[dim].upper);
+		}
+	}
+	
+	for(int dim=0; dim<NDIM; dim++){
+		if(blockIdx.x == 0 && threadIdx.x == 0){
+			if(sBound[dim].unScaledLower == sBound[dim].unScaledUpper)
+			printf("Shared Bounds[%i]:%f-%f\n", dim, sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
+		}
+	}*/
+	
     T g[NDIM];
-    // T x[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
 
@@ -200,9 +196,6 @@ namespace quad {
           fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
 
         f1 = fm;
-        // printf("fourthdiff:%.20f, base:%.20f, ratio:%.20f, fp[0]:%.20f,
-        // fm[0]:%.20f, fp[offset]:%.20f, fm[offset]:%.20f\n", fourthdiff, base
-        // ,ratio ,fp[0] , fm[0] , fp[offset], fm[offset]);
         if (fourthdiff > maxdiff) {
           maxdiff = fourthdiff;
           bisectdim = dim;
@@ -234,11 +227,6 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       Result* r = &region->result;
-      /* Search for the null rule, in the linear space spanned by two
-         successive null rules in our sequence, which gives the greatest
-         error estimate among all normalized (1-norm) null rules in this
-         space.
-          */
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0;
         for (int s = 0; s < NSETS; ++s) {
@@ -249,8 +237,18 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
-
+	  
       r->avg = vol * sum[0];
+	   
+	 // if(blockIdx.x != 0) 
+		/*printf("sum[%i]:%f vol:%f div:%i result:%f, %f, %f, %f, %f, %f, %f, %f bounds:%f-%f %f-%f, %f-%f, %f-%f, %f-%f, %f-%f, %f-%f\n", blockIdx.x, sum[0], vol, region->div, r->avg, x[0], x[1], x[2], x[3], x[4], x[5], x[6],
+																																region->bounds[0].lower,region->bounds[0].upper,
+																																region->bounds[1].lower,region->bounds[1].upper,
+																																region->bounds[2].lower,region->bounds[2].upper,
+																																region->bounds[3].lower,region->bounds[3].upper,
+																																region->bounds[4].lower,region->bounds[4].upper,
+																																region->bounds[5].lower,region->bounds[5].upper,
+																																region->bounds[6].lower,region->bounds[6].upper);*/
       r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                        errcoeff[0] * sum[2] <= sum[3]) ?
                         errcoeff[1] * sum[1] :
