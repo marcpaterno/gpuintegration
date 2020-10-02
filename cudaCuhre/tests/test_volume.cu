@@ -3,11 +3,8 @@
 #include "../quad/quad.h" // for cuhreResult
 #include "demos/function.cuh"
 
-TEST_CASE("fun6")
+TEST_CASE("Transform to Non-default Volume")
 {
-  
-  
-  
   double constexpr epsabs = 1.0e-40;
   int verbose = 0;
   int _final = 1;
@@ -28,7 +25,7 @@ TEST_CASE("fun6")
 	double error = fabs(true_answer - res.estimate);
 	double relative_error = error/true_answer;
 	bool converged = false; 
-	printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
+	//printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
 	if (res.status == 0 || res.status == 2) 
 		converged = true;
   
@@ -54,7 +51,7 @@ TEST_CASE("fun6")
 	double error = fabs(true_answer - res.estimate);
 	double relative_error = error/true_answer;
 	bool converged = false; 
-	printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
+	//printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
 	if (res.status == 0 || res.status == 2) 
 		converged = true;
   
@@ -79,7 +76,7 @@ TEST_CASE("fun6")
 	double error = fabs(true_answer - res.estimate);
 	double relative_error = error/true_answer;
 	bool converged = false; 
-	printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
+	//printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
 	
 	if (res.status == 0 || res.status == 2) 
 		converged = true;
@@ -88,7 +85,33 @@ TEST_CASE("fun6")
     CHECK(relative_error <= epsrel);
     CHECK(error <= res.errorest);
   }
-
+	
+  SECTION("Non-Unit Different ranges Smaller Space")
+  {
+	GENZ_2_2D integrand;	
+	
+	double epsrel = 1.0e-7;
+	constexpr int ndim = 2;
+	quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
+	double true_answer = 27.01361247915259511387;
+	double lows[] =  {.6, .65};
+    double highs[] = {.8, .9};
+	quad::Volume<double, ndim> vol(lows, highs);  
+	  
+	cuhreResult const res = alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
+	double error = fabs(true_answer - res.estimate);
+	double relative_error = error/true_answer;
+	bool converged = false; 
+	//printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
+	
+	if (res.status == 0 || res.status == 2) 
+		converged = true;
+  
+    CHECK(converged == true);
+    CHECK(relative_error <= epsrel);
+    CHECK(error <= res.errorest);
+  }	
+	
   SECTION("High Dimension Different ranges")
   {
 	  GENZ_2_6D integrand;	
@@ -105,7 +128,7 @@ TEST_CASE("fun6")
 	  double error = fabs(true_answer - res.estimate);
 	  double relative_error = error/true_answer;
 	  bool converged = false; 
-	  printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
+	  //printf("%e +- %e nregions:%i Phase 2 Reached:%i errorFlag:%i\n", res.estimate, res.errorest, res.nregions, res.lastPhase, res.status);
 	
 	  if (res.status == 0 || res.status == 2) 
 		converged = true;
