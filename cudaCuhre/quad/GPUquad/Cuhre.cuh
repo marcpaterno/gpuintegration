@@ -734,10 +734,13 @@ int const BUFSIZE = 512;
       FIRST_PHASE_MAXREGIONS *= numDevices;
 	  
       convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
+	  res.lastPhase = 1;
+	  
       if (convergence){
 		cudaFree(d_integrand);
 		return res;
 	  }
+	  
       res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
@@ -746,6 +749,7 @@ int const BUFSIZE = 512;
                                                              res.nregions,
                                                              res.neval,
                                                              nullptr);
+	  res.lastPhase = 2;													 
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 
       cudaFree(d_integrand);

@@ -1537,7 +1537,7 @@ namespace quad {
     }
 	
     template <typename IntegT>
-    int
+    size_t
     IntegrateSecondPhase(IntegT* d_integrand,
                          T epsrel,
                          T epsabs,
