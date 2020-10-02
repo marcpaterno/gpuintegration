@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <chrono>	
-#include "cudaCuhre/tests/function.cuh"
+#include "cudaCuhre/demos/function.cuh"
 /*#define MXDIM 20
 #define ALPH 1.5
 //#define ITMAX 32

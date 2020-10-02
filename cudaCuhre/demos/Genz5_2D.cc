@@ -1,9 +1,6 @@
 #include "cuba.h"
 #include "cubacpp/cuhre.hh"
-
 #include "demo_utils.h"
-
-//#include "../cudaCuhre/quad/quad.h"
 
 #include <cmath>
 #include <iostream>

@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "function.cuh"
+#include "demos/function.cuh"
 #include "quad/GPUquad/Cuhre.cuh"
 #include "quad/quad.h"
 #include "quad/util/Volume.cuh"
@@ -167,8 +167,8 @@ TEST_CASE("BoxIntegral8_22")
 
   //-------------------------------------------------
   // read old timing to compare
-  std::ifstream myfile(timefile.c_str());
-  double last_recorded_time = 0;
+  //std::ifstream myfile(timefile.c_str());
+  //double last_recorded_time = 0;
 
   // output data for analysis
   FinalDataPrint(outfile,
@@ -184,10 +184,10 @@ TEST_CASE("BoxIntegral8_22")
                  dt.count(),
                  id + ".csv");
 
-  if (myfile.is_open()) {
+ /* if (myfile.is_open()) {
     myfile >> last_recorded_time;
     CHECK(dt.count() <= last_recorded_time + 100);
-  }
+  }*/
 
   double const ratio = result.errorest / (epsrel * result.estimate);
   CHECK(ratio <= 1.0);
@@ -196,7 +196,7 @@ TEST_CASE("BoxIntegral8_22")
 
   //-----------------------------------------------------------------------------
   // record new timing if all assertions are passed
-  std::stringstream outfileTime;
-  outfileTime << dt.count() << std::endl;
-  PrintToFile(outfileTime.str(), timefile);
+//std::stringstream outfileTime;
+  //outfileTime << dt.count() << std::endl;
+  //PrintToFile(outfileTime.str(), timefile);
 };

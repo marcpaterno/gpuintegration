@@ -1,4 +1,4 @@
-#include "function.cuh"
+#include "demos/function.cuh"
 #include "quad/GPUquad/Cuhre.cuh"
 #include "quad/quad.h"
 #include "quad/util/Volume.cuh"
