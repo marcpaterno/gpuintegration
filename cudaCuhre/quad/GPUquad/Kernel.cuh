@@ -1734,8 +1734,8 @@ namespace quad {
 			  //Phase_I_PrintFile(numRegionsThread);
 		  }
 
-          printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,
-          lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
+          //printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,
+          //lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
 		   
            //printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
           // printf("-------\n");
