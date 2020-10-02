@@ -60,8 +60,9 @@ struct cuhreResult {
     neval = 0.;
     nregions = 0.;
     status = 0.;
-    activeRegions = 0.;
+    //activeRegions = 0.;
     phase2_failedblocks = 0.;
+	lastPhase = 0;
   };
 
   double estimate;
@@ -69,8 +70,9 @@ struct cuhreResult {
   size_t neval;
   size_t nregions;
   int status;
-  size_t activeRegions;    // is not currently being set
-  int phase2_failedblocks; // is not currently being set
+  int lastPhase;
+  //size_t activeRegions;    // is not currently being set
+  size_t phase2_failedblocks; // is not currently being set
 };
 
 struct Result {
