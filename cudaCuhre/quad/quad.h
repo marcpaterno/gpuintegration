@@ -88,6 +88,102 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
+/*template<int dim>
+class Phase_I_Type: public Managed{
+	double* dRegionsError;
+	double* dRegionsIntegral;
+	double* dRegions;
+	double* dRegionsLength;
+	int* 	subDividingDimension;
+	size_t numRegions;
+};*/
+
+/*template<int dim>
+class Phase_II_Type: public Managed{
+
+	
+	Region<dim>* regions;
+	size_t numRegions;
+	
+};
+
+Phase_II_Type::Phase_II_Type(){
+	
+	
+}
+*/
+class Managed 
+{
+	 public:
+	  void *operator new(size_t len) {
+		void *ptr;
+		cudaMallocManaged(&ptr, len);
+		cudaDeviceSynchronize();
+		return ptr;
+	  }
+
+	  void operator delete(void *ptr) {
+		cudaDeviceSynchronize();
+		cudaFree(ptr);
+	  }
+};	
+
+class RegionList: public Managed{
+	//Deriving from “Managed” allows pass-by-reference
+	public:
+		RegionList(){
+			ndim = 0;
+			numRegions = 0;
+			activeRegions = nullptr;
+			subDividingDimension = nullptr;
+			dRegionsLength = nullptr;
+			dRegions = nullptr;
+			dRegionsIntegral = nullptr;
+			dRegionsError = nullptr;
+		}
+		
+		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err , int* nextDim, int *active){
+			ndim = dim;
+			numRegions = num;
+			activeRegions = active;
+			subDividingDimension = nextDim;
+			dRegionsLength = regionsLength;
+			dRegions = regions;
+			dRegionsIntegral = regions_integral;
+			dRegionsError = regions_err;
+		}			
+		
+		RegionList (const RegionList &s) {
+			//Unified memory copy constructor allows pass-by-value
+			ndim = s.ndim;
+			numRegions = s.numRegions;
+			cudaMallocManaged(&activeRegions, sizeof(int)*numRegions);
+			cudaMallocManaged(&subDividingDimension, sizeof(int)*numRegions);
+			cudaMallocManaged(&dRegionsLength, sizeof(double)*numRegions);
+			cudaMallocManaged(&dRegions, sizeof(double)*numRegions);
+			cudaMallocManaged(&dRegionsIntegral, sizeof(double)*numRegions);
+			cudaMallocManaged(&dRegionsError, sizeof(double)*numRegions);
+			
+			memcpy(activeRegions, s.activeRegions, sizeof(int)*numRegions);
+			memcpy(subDividingDimension, s.subDividingDimension, sizeof(int)*numRegions);
+			memcpy(dRegionsLength, s.dRegionsLength, sizeof(double)*numRegions);
+			memcpy(dRegions, s.dRegions, sizeof(double)*numRegions);
+			memcpy(dRegionsIntegral, s.dRegionsIntegral, sizeof(double)*numRegions);
+			memcpy(dRegionsError, s.dRegionsError, sizeof(double)*numRegions);
+		}
+		
+		double* dRegionsError;
+		double* dRegionsIntegral;
+		double* dRegions;
+		double* dRegionsLength;
+		int* 	subDividingDimension;
+		
+		int ndim;
+		size_t numRegions;
+		int* activeRegions;
+};
+
+
 template <int dim>
 struct Region {
   int div;

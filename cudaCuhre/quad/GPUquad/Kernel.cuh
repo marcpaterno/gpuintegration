@@ -35,6 +35,7 @@ namespace quad {
       std::ofstream outfile(filename);
       outfile << outString << std::endl;
       outfile.close();
+	  printf("Done with outfile\n");
     }
   }
 
@@ -514,18 +515,6 @@ namespace quad {
       // QuadDebug(Device.SetHeapSize());
     }
 
-    template <class K>
-    void
-    display(K* array, size_t size)
-    {
-      K* tmp = (K*)malloc(sizeof(K) * size);
-      cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
-      for (int i = 0; i < size; ++i) {
-        //std::cout << tmp[i] << std::endl;
-         printf("%.20f \n", (T)tmp[i]);
-      }
-    }
-
     void
     PrintOutfileHeaders()
     {
@@ -537,27 +526,86 @@ namespace quad {
       }
     }
 
+	void
+    Phase_I_PrintFile(T epsrel, T epsabs)
+    {
+
+      if (outLevel >= 1 && phase_I_type == 0) {
+		printf("OutLevel 1\n");
+        PrintToFile(out1.str(), "Level_1.csv");
+      }
+
+      if (outLevel >= 3 && phase_I_type == 0) {
+		  printf("OutLevel 3\n");
+		  
+        auto callback = [](T integral, T error, T rel) {
+          return fabs(error / (rel * integral));
+        };
+		
+        using func_pointer = double (*)(T integral, T error, T rel);
+        func_pointer lambda_fp = callback;
+		
+		printf("About to display start_ratio\n");
+        display(dRegionsIntegral + numRegions,
+                dRegionsError + numRegions,
+                epsrel,
+                numRegions,
+                lambda_fp,
+                "start_ratio.csv",
+                "result, error, initratio");
+				
+      } else if (outLevel >= 3) {
+        out3 << "result, error, initratio" << std::endl;
+        Region<NDIM>* tmp = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * numRegions);
+        cudaMemcpy(tmp,
+                   gRegionPool,
+                   sizeof(Region<NDIM>) * numRegions,
+                   cudaMemcpyDeviceToHost);
+
+        for (int i = 0; i < numRegions; ++i) {
+          double val = tmp[i].result.avg;
+          double err = tmp[i].result.err;
+          out3 << val << "," << err << "," << err / MaxErr(val, epsrel, epsabs)
+               << std::endl;
+        }
+        PrintToFile(out3.str(), "start_ratio.csv");
+        free(tmp);
+      }
+    }
+
+
 	void 
-	Phase_I_PrintFile(size_t size){
+	Phase_I_PrintFile(size_t size)
+	{
 		std::stringstream outfile;
+		outfile.precision(20);
+		
 		double* hRegionsIntegral = new double[size];
 		double* hRegionsError 	 = nullptr;
+		
 		hRegionsIntegral = (double*)malloc(sizeof(double) * size);
 		hRegionsError = (double*)malloc(sizeof(double) * size);
+		
 		QuadDebug(cudaMemcpy(hRegionsIntegral,  dRegionsIntegral, 	sizeof(double) * size , cudaMemcpyDeviceToHost));
 		QuadDebug(cudaMemcpy(hRegionsError, 	dRegionsError,  	sizeof(double) * size , cudaMemcpyDeviceToHost));
-		display(dRegionsIntegral, size);
-		printf("end of display\n");
+		
+		//display(dRegionsIntegral, size);
+		
+		
 		for(int i=0; i<size; i++){
 			printf("%.15f, %.15f, ", hRegionsIntegral[i], hRegionsError[i]);
-			
+			outfile << hRegionsIntegral[i] << "," << hRegionsError << ",";
 			for(int dim=0; dim<NDIM; dim++){
 				double low = ScaleValue(hRegions[dim * size + i], lows[dim], highs[dim]);
 				double high = low + ScaleValue(hRegionsLength[dim * size + i], lows[dim], highs[dim]);
 				printf("%.15f, %.15f,", low, high);
+				outfile << low << "," << high << ",";
 			}
 			printf("\n");
+			outfile << "\n";
 		}
+		PrintToFile(outfile.str(), "Phase_1_regions.csv");
+		printf("Done with Phase_1_regions.csv\n");
 	}
 
     // void Phase_IΙ_Print_File(double integral, double error, double epsrel,
@@ -632,50 +680,15 @@ namespace quad {
       }
     }
 
+	template <class K>
     void
-    Phase_I_PrintFile(T epsrel, T epsabs)
+    display(K* array, size_t size)
     {
-
-      if (outLevel >= 1 && phase_I_type == 0) {
-        PrintToFile(out1.str(), "Level_1.csv");
-      }
-
-      if (outLevel >= 3 && phase_I_type == 0) {
-        auto callback = [](T integral, T error, T rel) {
-          return fabs(error / (rel * integral));
-        };
-
-        using func_pointer = double (*)(T integral, T error, T rel);
-        func_pointer lambda_fp = callback;
-
-        display(dRegionsIntegral + numRegions,
-                dRegionsError + numRegions,
-                epsrel,
-                numRegions,
-                lambda_fp,
-                "start_ratio.csv",
-                "result, error, initratio");
-      } else if (outLevel >= 3) {
-        out3 << "result, error, initratio" << std::endl;
-        Region<NDIM>* tmp =
-          (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * numRegions);
-        cudaMemcpy(tmp,
-                   gRegionPool,
-                   sizeof(Region<NDIM>) * numRegions,
-                   cudaMemcpyDeviceToHost);
-
-        for (int i = 0; i < numRegions; ++i) {
-          double val = tmp[i].result.avg;
-          double err = tmp[i].result.err;
-          out3 << val << "," << err << "," << err / MaxErr(val, epsrel, epsabs)
-               << std::endl;
-        }
-        PrintToFile(out3.str(), "start_ratio.csv");
-        free(tmp);
-      }
-
-      if (outLevel >= 4 && phase_I_type == 0) {
-        PrintToFile(out4.str(), "Level_4.csv");
+      K* tmp = (K*)malloc(sizeof(K) * size);
+      cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
+      for (int i = 0; i < size; ++i) {
+        //std::cout << tmp[i] << std::endl;
+         printf("%.20f \n", (T)tmp[i]);
       }
     }
 
@@ -1133,7 +1146,8 @@ namespace quad {
           fail = 2;
           Phase_I_PrintFile(epsrel, epsabs);
           break;
-        } else if (numRegions > first_phase_maxregions && fail == 1) {
+        } 
+		else if (numRegions > first_phase_maxregions && fail == 1) {
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -1149,22 +1163,18 @@ namespace quad {
 									  iteration,
                                       last_iteration);
           break;
-        } else {
+        }
+		else {
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
         }
-		//printf("iteration %i finished\n", iteration);
       }
-
-      Phase_I_PrintFile(epsrel, epsabs);
-
+		
       Host.ReleaseMemory(hRegions);
       Host.ReleaseMemory(hRegionsLength);
 
-      hRegions =
-        (T*)Host.AllocateMemory(&hRegions, sizeof(T) * numRegions * NDIM);
-      hRegionsLength =
-        (T*)Host.AllocateMemory(&hRegionsLength, sizeof(T) * numRegions * NDIM);
+      hRegions = (T*)Host.AllocateMemory(&hRegions, sizeof(T) * numRegions * NDIM);
+      hRegionsLength = (T*)Host.AllocateMemory(&hRegionsLength, sizeof(T) * numRegions * NDIM);
 
       QuadDebug(cudaMemcpy(hRegions,
                            dRegions,
@@ -1175,14 +1185,17 @@ namespace quad {
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToHost));
       CudaCheckError();
+	  Phase_I_PrintFile(epsrel, epsabs);
 	  
+	  printf("fail:%i\n", fail);
       if (fail == 0 || fail == 2) {
         integral = lastAvg;
         error = lastErr;
         QuadDebug(cudaFree(dRegionsError));
         QuadDebug(cudaFree(dRegionsIntegral));
         return true;
-      } else {
+      } 
+	  else {
         return false;
       }
     }
@@ -1224,7 +1237,7 @@ namespace quad {
             T scaledU =
               lower + cgRegionPool[j].bounds[dim].upper * (upper - lower);
             outfile << scaledU - scaledL << ",";
-            if ((scaledU - scaledL) <= 0. || (scaledU - scaledL) >= 1.)
+            /*if ((scaledU - scaledL) <= 0. || (scaledU - scaledL) >= 1.)
               printf("block:%lu, id:%lu scaled bounds:(%e %e) unscaled:(%e, "
                      "%e) div:%i nregions:%i diff:%e\n",
                      i,
@@ -1235,7 +1248,7 @@ namespace quad {
                      cgRegionPool[j].bounds[dim].upper,
                      cgRegionPool[j].div,
                      numRegions[i],
-                     scaledU - scaledL);
+                     scaledU - scaledL);*/
           }
           outfile << cgRegionPool[j].div << std::endl;
         }
@@ -1265,7 +1278,6 @@ namespace quad {
       // outer loop iterates phase 2 block array segments
       double total_vol = 0;
       // double unscaled_total_vol = 0;
-	  printf("About to output\n");
       for (size_t i = 0; i < start_size; ++i) {
 
         size_t startIndex = i * max_globalpool_size;
@@ -1296,7 +1308,7 @@ namespace quad {
             vol *= scaledU - scaledL;
 
             outfile << scaledU - scaledL << ",";
-            if ((scaledU - scaledL) <= 0 || (scaledU - scaledL) >= 1 ||
+            /*if ((scaledU - scaledL) <= 0 || (scaledU - scaledL) >= 1 ||
                 scaledU - scaledL == 0)
               printf(
                 "block:%lu, id:%lu dim:%i scaled bounds:(%f %f) unscaled:(%f, "
@@ -1312,7 +1324,7 @@ namespace quad {
                 upper,
                 cgRegionPool[j].div,
                 numRegions[i],
-                scaledU - scaledL);
+                scaledU - scaledL);*/
           }
 
           block_vol += vol;
@@ -1380,24 +1392,19 @@ namespace quad {
       CudaCheckError();
       QuadDebug(Device.AllocateMemory((void**)&dPh1res, sizeof(double) * 2));
 
-      cudaMalloc((void**)&converged, sizeof(int));
-      cudaMalloc((void**)&regions_generated, sizeof(int));
+      cudaMallocManaged((void**)&converged, sizeof(int));
+      cudaMallocManaged((void**)&regions_generated, sizeof(int));
       CudaCheckError();
       //==============================================================
       int max_regions = 32734; // worked great for 4e-5 finished in 730 ms
       // int max_regions  = 16367;
-	  //printf("About to call alternative phase 1 kernel\n");
+	  RegionList* currentBatch = new RegionList;
+	  cudaMallocManaged(&currentBatch, sizeof(RegionList));
+	  currentBatch->Set(NDIM, numCurrentRegions, lows, highs, dPh1res, dPh1res + 1 , nullptr, converged);
       BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
           d_integrand,
-          lows,
-          highs,
-          numCurrentRegions,
-          dPh1res,
-          dPh1res + 1,
-          regions_generated,
-          converged,
-          nullptr,
+		  regions_generated,
           epsrel,
           epsabs,
           gpu_id,
@@ -1417,6 +1424,7 @@ namespace quad {
           0,
           dPh1res,
           max_regions,
+		  *currentBatch,
           phase_I_type,
           0,
           snap);
@@ -1536,6 +1544,13 @@ namespace quad {
       return false;
     }
 	
+	
+	
+	void ExecutePhaseII(RegionList region_batch){
+		
+		
+	}
+	
     template <typename IntegT>
     size_t
     IntegrateSecondPhase(IntegT* d_integrand,
@@ -1608,12 +1623,9 @@ namespace quad {
           int *activeRegions = 0, *subDividingDimension = 0,
               *dRegionsNumRegion = 0;
 
-          QuadDebug(Device.AllocateMemory((void**)&activeRegions,
-                                          sizeof(int) * numRegionsThread));
-          QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
-                                          sizeof(int) * numRegionsThread));
-          QuadDebug(Device.AllocateMemory((void**)&dRegionsNumRegion,
-                                          sizeof(int) * numRegionsThread));
+          QuadDebug(Device.AllocateMemory((void**)&activeRegions, sizeof(int) * numRegionsThread));
+          QuadDebug(Device.AllocateMemory((void**)&subDividingDimension, sizeof(int) * numRegionsThread));
+          QuadDebug(Device.AllocateMemory((void**)&dRegionsNumRegion,  sizeof(int) * numRegionsThread));
 
           if (phase_I_type == 0) {
             QuadDebug(Device.AllocateMemory(
@@ -1624,7 +1636,7 @@ namespace quad {
           }
           CudaCheckError();
           // NOTE:Copy order is important
-
+		 
           if (phase_I_type == 0) {
             for (int dim = 0; dim < NDIM; ++dim) {
               QuadDebug(cudaMemcpy(dRegionsThread + dim * numRegionsThread,
@@ -1632,8 +1644,7 @@ namespace quad {
                                    sizeof(T) * numRegionsThread,
                                    cudaMemcpyHostToDevice));
 
-              QuadDebug(
-                cudaMemcpy(dRegionsLengthThread + dim * numRegionsThread,
+              QuadDebug(cudaMemcpy(dRegionsLengthThread + dim * numRegionsThread,
                            hRegionsLength + dim * numRegions + startIndex,
                            sizeof(T) * numRegionsThread,
                            cudaMemcpyHostToDevice));
@@ -1649,7 +1660,7 @@ namespace quad {
           QuadDebug(cudaEventRecord(start, stream[gpu_id]));
           CudaCheckError();
 			
-          //printf("Launching Phase 2 with %lu blocks\n", numBlocks);
+          printf("Launching Phase 2 with %lu blocks\n", numBlocks);
           double* exitCondition = nullptr;
           double* dPh1res = nullptr;
 			
@@ -1731,6 +1742,7 @@ namespace quad {
             PrintToFile(tempOut.str(), "phase1.csv");
           }
 		  else if(outLevel >= 4 && phase_I_type == 0){
+			  printf("just before phase_I_printfile in phase 2\n");
 			  //Phase_I_PrintFile(numRegionsThread);
 		  }
 
@@ -1739,22 +1751,19 @@ namespace quad {
 		   
            //printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
           // printf("-------\n");
+		  RegionList* currentBatch = new RegionList;
+		  cudaMallocManaged(&currentBatch, sizeof(RegionList));
+		  currentBatch->Set(NDIM, numRegionsThread, dRegionsThread, dRegionsLengthThread, dRegionsIntegral, dRegionsError , subDividingDimension, activeRegions);
 		  
           int max_regions = max_globalpool_size;
           CudaCheckError();
-          BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
+          
+		  BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
                numThreads,
                NDIM * sizeof(GlobalBounds),
                stream[gpu_id]>>>(d_integrand,
-                                 dRegionsThread,
-                                 dRegionsLengthThread,
-                                 numRegionsThread,
-                                 dRegionsIntegral,
-                                 dRegionsError,
-                                 dRegionsNumRegion,
-                                 activeRegions,
-                                 subDividingDimension,
+								 dRegionsNumRegion,
                                  epsrel,
                                  epsabs,
                                  gpu_id,
@@ -1774,12 +1783,13 @@ namespace quad {
                                  avgsum,
                                  dPh1res,
                                  max_regions,
+								 *currentBatch,
                                  phase_I_type,
                                  ph1_regions,
                                  Snapshot<NDIM>(),
                                  nullptr,
                                  nullptr);
-
+			
           cudaDeviceSynchronize();
           CudaCheckError();
           // QuadDebug(cudaMemcpy(&h_global_errorest, global_errorest,
@@ -1807,12 +1817,12 @@ namespace quad {
 
           thrust::device_ptr<T> wrapped_ptr;
 
-          wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
+          wrapped_ptr = thrust::device_pointer_cast(currentBatch->dRegionsIntegral);
           T integResult =
             thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
           integral += integResult;
 
-          wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
+          wrapped_ptr = thrust::device_pointer_cast(currentBatch->dRegionsError);
           T errorResult =
             thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
 
@@ -1845,7 +1855,7 @@ namespace quad {
           neval += (regionCnt - numRegionsThread) * fEvalPerRegion * 2 +
                    numRegionsThread * fEvalPerRegion;
 
-          int_ptr = thrust::device_pointer_cast(activeRegions);
+          int_ptr = thrust::device_pointer_cast(currentBatch->activeRegions);
           numFailedRegions +=
             thrust::reduce(int_ptr, int_ptr + numRegionsThread);
           phase2_failedblocks = numFailedRegions;
