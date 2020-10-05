@@ -380,9 +380,7 @@ public:
   }
 };
 
-
 //Genz_1 is not positive semi-definite
-
 //Genz_2 only known on 1D
 
 class GENZ_2_2D {
@@ -470,7 +468,7 @@ class GENZ_4_5D {
 public:
 	__device__ __host__ double
 	operator()(double x, double y, double z, double w, double v){
-		double alpha = 25.;
+		//double alpha = 25.;
 		double beta = .5;
 		return exp(-1.0*(pow(25,2)*pow(x-beta, 2) + 
 				         pow(25,2)*pow(y-beta, 2) +
