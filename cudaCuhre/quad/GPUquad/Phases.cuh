@@ -492,7 +492,7 @@ ComputeWeightSum(T *errors, size_t size){
                       Region<NDIM>* gPool)
   {
     __syncthreads();
-
+	
     int iterationsPerThread = 0;
     for (iterationsPerThread = 0;
          iterationsPerThread < (SM_REGION_POOL_SIZE / 2) / BLOCK_SIZE;
@@ -867,7 +867,6 @@ ComputeWeightSum(T *errors, size_t size){
                              Structures<T> constMem,
                              int FEVAL,
                              int NSETS,
-                             double* exitCondition,
                              T* lows,
                              T* highs,
                              int Final,
@@ -913,7 +912,7 @@ ComputeWeightSum(T *errors, size_t size){
     double personal_estimate_ratio = 0;
     int local_region_cap = 32734;
     */
-
+	
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
@@ -923,7 +922,7 @@ ComputeWeightSum(T *errors, size_t size){
       iterations_without = 0;
       */
     }
-
+	
     __syncthreads();              // added for testing
     InitSMemRegions(sRegionPool); // sets every region in shared memory to zero
     int sRegionPoolSize = 1;

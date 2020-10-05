@@ -157,8 +157,8 @@ int const BUFSIZE = 512;
                                                    th_integral,
                                                    th_error,
                                                    th_nregions,
-                                                   th_neval,
-                                                   optionalInfo);
+                                                   th_neval/*,
+                                                   optionalInfo*/);
 
         if (VERBOSE) {
           log << "\nIntegral:" << th_integral << "\nError:" << th_error
@@ -265,8 +265,8 @@ int const BUFSIZE = 512;
                                     T& error,
                                     size_t& nregions,
                                     size_t& neval,
-                                    Volume<T, NDIM>* dvol,
-                                    T* optionalInfo)
+                                    Volume<T, NDIM>* dvol/*,
+                                    T* optionalInfo*/)
     {
       int devCount = 0;
       cudaGetDeviceCount(&devCount);
@@ -278,33 +278,36 @@ int const BUFSIZE = 512;
       size_t numRegionsPerNode = numRegionsPerDevice * devCount;
       int startIndex = index * numRegionsPerDevice;
       int endIndex = (index + devCount) * numRegionsPerDevice;
+	  
       if (index == (numCUDADevices - 1)) {
         endIndex = numRegions;
       }
       numRegionsPerNode = endIndex - startIndex;
+	  
       if (VERBOSE) {
         log << "\nNode " << nodeRank << "\nData start index : " << startIndex
             << "\nData end index : " << endIndex
             << "\nNumber of regions per node : " << numRegionsPerNode
             << std::endl;
       }
+	  
       T* data = thkernel->getRegions(numRegionsPerNode, startIndex);
-
       thkernel->setRegionsData(data, numRegionsPerNode);
 
 #if TIMING_DEBUG == 1
       timer::event_pair timer_node;
       timer::start_timer(&timer_node);
 #endif
+		
       int errorFlag = thkernel->IntegrateSecondPhase(d_integrand,
                                                      epsrel,
                                                      epsabs,
                                                      integral,
                                                      error,
                                                      nregions,
-                                                     neval,
-                                                     optionalInfo);
-
+                                                     neval/*,
+                                                     optionalInfo*/);
+	  
       if (VERBOSE) {
 #if TIMING_DEBUG == 1
         T time = timer::stop_timer_returntime(&timer_node, "Second Phase");
@@ -537,8 +540,8 @@ int const BUFSIZE = 512;
                                                       error,
                                                       nregions,
                                                       neval,
-                                                      dvol,
-                                                      optionalInfo);
+                                                      dvol/*,
+                                                      optionalInfo*/);
         }
 
         // Get result
@@ -673,7 +676,6 @@ int const BUFSIZE = 512;
                                          volume);
     }
 
-	
 	template<typename IntegT>
 	IntegT* 
 	Make_GPU_Integrand(IntegT* integrand){
@@ -713,7 +715,6 @@ int const BUFSIZE = 512;
 	  
 	  */
 	 
-	 
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -747,8 +748,8 @@ int const BUFSIZE = 512;
                                                              res.estimate,
                                                              res.errorest,
                                                              res.nregions,
-                                                             res.neval,
-                                                             nullptr);
+                                                             res.neval/*,
+                                                             nullptr*/);
 	  res.lastPhase = 2;													 
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 

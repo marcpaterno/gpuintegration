@@ -88,30 +88,6 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
-/*template<int dim>
-class Phase_I_Type: public Managed{
-	double* dRegionsError;
-	double* dRegionsIntegral;
-	double* dRegions;
-	double* dRegionsLength;
-	int* 	subDividingDimension;
-	size_t numRegions;
-};*/
-
-/*template<int dim>
-class Phase_II_Type: public Managed{
-
-	
-	Region<dim>* regions;
-	size_t numRegions;
-	
-};
-
-Phase_II_Type::Phase_II_Type(){
-	
-	
-}
-*/
 class Managed 
 {
 	 public:
@@ -131,7 +107,8 @@ class Managed
 class RegionList: public Managed{
 	//Deriving from “Managed” allows pass-by-reference
 	public:
-		RegionList(){
+		RegionList()
+		{
 			ndim = 0;
 			numRegions = 0;
 			activeRegions = nullptr;
@@ -142,7 +119,61 @@ class RegionList: public Managed{
 			dRegionsError = nullptr;
 		}
 		
-		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err , int* nextDim, int *active){
+		RegionList(const int dim, const size_t size)
+		{
+			ndim = dim;
+			numRegions = size;
+			
+			cudaMallocManaged(&activeRegions, 		 sizeof(int)*size);
+			cudaMallocManaged(&subDividingDimension, sizeof(int)*size);
+			cudaMallocManaged(&dRegionsIntegral, 	 sizeof(double)*size);
+			cudaMallocManaged(&dRegionsError, 		 sizeof(double)*size);
+			
+			cudaMallocManaged(&dRegionsLength, 	sizeof(double)*size*ndim);
+			cudaMallocManaged(&dRegions, 		sizeof(double)*size*ndim);
+		}
+		
+		void UnifiedInit(const int dim, const size_t size)
+		{
+			//currently not required by kernel do be done this way
+			ndim = dim;
+			numRegions = size;
+			
+			cudaMallocManaged(&activeRegions, 		 sizeof(int)*size);
+			cudaMallocManaged(&subDividingDimension, sizeof(int)*size);
+			cudaMallocManaged(&dRegionsIntegral, 	 sizeof(double)*size);
+			cudaMallocManaged(&dRegionsError, 		 sizeof(double)*size);
+			
+			cudaMallocManaged(&dRegionsLength, 	sizeof(double)*size*ndim);
+			cudaMallocManaged(&dRegions, 		sizeof(double)*size*ndim);
+		}
+		
+		void Init(const int dim, const size_t size)
+		{
+			//currently not required by kernel do be done this way
+			ndim = dim;
+			numRegions = size;
+			
+			cudaMalloc((void**)&activeRegions, 		  sizeof(int)*size);
+			cudaMalloc((void**)&subDividingDimension, sizeof(int)*size);
+			cudaMalloc((void**)&dRegionsIntegral, 	  sizeof(double)*size);
+			cudaMalloc((void**)&dRegionsError, 		  sizeof(double)*size);
+			
+			cudaMalloc((void**)&dRegionsLength, 	 sizeof(double)*size*ndim);
+			cudaMalloc((void**)&dRegions, 			 sizeof(double)*size*ndim);
+		}
+		
+		void Clear(){
+			cudaFree(activeRegions);
+			cudaFree(subDividingDimension);
+			cudaFree(dRegionsIntegral);
+			cudaFree(dRegionsError);
+			cudaFree(dRegionsLength);
+			cudaFree(dRegions);
+		}
+		
+		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err , int* nextDim, int *active)
+		{
 			ndim = dim;
 			numRegions = num;
 			activeRegions = active;
@@ -153,7 +184,19 @@ class RegionList: public Managed{
 			dRegionsError = regions_err;
 		}			
 		
-		RegionList (const RegionList &s) {
+		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err )
+		{
+			//this is used if you want to use a region list with externally alloacted memory
+			ndim = dim;
+			numRegions = num;
+			dRegionsLength = regionsLength;
+			dRegions = regions;
+			dRegionsIntegral = regions_integral;
+			dRegionsError = regions_err;
+		}			
+		
+		RegionList (const RegionList &s) 
+		{
 			//Unified memory copy constructor allows pass-by-value
 			ndim = s.ndim;
 			numRegions = s.numRegions;
@@ -164,12 +207,12 @@ class RegionList: public Managed{
 			cudaMallocManaged(&dRegionsIntegral, sizeof(double)*numRegions);
 			cudaMallocManaged(&dRegionsError, sizeof(double)*numRegions);
 			
-			memcpy(activeRegions, s.activeRegions, sizeof(int)*numRegions);
+			memcpy(activeRegions, 		 s.activeRegions, sizeof(int)*numRegions);
 			memcpy(subDividingDimension, s.subDividingDimension, sizeof(int)*numRegions);
-			memcpy(dRegionsLength, s.dRegionsLength, sizeof(double)*numRegions);
-			memcpy(dRegions, s.dRegions, sizeof(double)*numRegions);
-			memcpy(dRegionsIntegral, s.dRegionsIntegral, sizeof(double)*numRegions);
-			memcpy(dRegionsError, s.dRegionsError, sizeof(double)*numRegions);
+			memcpy(dRegionsLength, 		 s.dRegionsLength, sizeof(double)*numRegions);
+			memcpy(dRegions, 			 s.dRegions, sizeof(double)*numRegions);
+			memcpy(dRegionsIntegral, 	 s.dRegionsIntegral, sizeof(double)*numRegions);
+			memcpy(dRegionsError, 		 s.dRegionsError, sizeof(double)*numRegions);
 		}
 		
 		double* dRegionsError;
@@ -177,12 +220,11 @@ class RegionList: public Managed{
 		double* dRegions;
 		double* dRegionsLength;
 		int* 	subDividingDimension;
+		int* 	activeRegions;
 		
 		int ndim;
 		size_t numRegions;
-		int* activeRegions;
 };
-
 
 template <int dim>
 struct Region {
