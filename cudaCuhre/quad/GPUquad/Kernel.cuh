@@ -1321,7 +1321,7 @@ namespace quad {
       PrintToFile(outfile.str(), filename);
       printf("Finished printing\n");
     }
-
+	
     template <typename IntegT>
     bool
     IntegrateFirstPhaseDCUHRE(IntegT* d_integrand,
@@ -1507,53 +1507,139 @@ namespace quad {
       return false;
     }
 	
-	
-	void Execute_PhaseII_Batch(RegionList*& batch){
-		
+	PhaseII_output Evaluate(RegionList* batch, int* dRegionsNumRegion/*, double& integral, double& error, int& regionCnt, int& numFailedRegions*/){
+		  PhaseII_output result;
+		  result.num_starting_blocks = batch->numRegions;
+		  thrust::device_ptr<T> wrapped_ptr;
+
+          wrapped_ptr = thrust::device_pointer_cast(batch->dRegionsIntegral);
+          result.estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + batch->numRegions);
+			
+          wrapped_ptr = thrust::device_pointer_cast(batch->dRegionsError);
+          result.errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + batch->numRegions);
+		  
+          thrust::device_ptr<int> int_ptr = thrust::device_pointer_cast(dRegionsNumRegion);
+          result.regions = thrust::reduce(int_ptr, int_ptr + batch->numRegions);
+		  
+		  int_ptr = thrust::device_pointer_cast(batch->activeRegions);
+          result.num_failed_blocks = thrust::reduce(int_ptr, int_ptr + batch->numRegions);
+		  
+		  printf("Batch Results:%f +- %f nregions:%i, numFailedRegions:%i\n", result.estimate, result.errorest, result.regions, result.num_failed_blocks);
+		  return result;
 	}
 	
+	template <typename IntegT>
+	PhaseII_output Execute_PhaseII_Batch(RegionList*& batch, 
+							   int *dRegionsNumRegion,
+							   int gpu_id,
+							   double* Phase_I_result,
+							   Region<NDIM>* ph1_regions,
+							   cudaStream_t stream,
+							   double epsrel,
+							   double epsabs,
+							   IntegT* d_integrand){
+								   
+		int max_regions = max_globalpool_size;
+		size_t numThreads = BLOCK_SIZE;
+        size_t numBlocks = batch->numRegions;
+		
+		std::cout<<"About to call kernel with "<<numBlocks <<" blocks and "<< numThreads <<" threads per block\n";
+		BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
+         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds),
+               stream>>>(d_integrand,
+						 dRegionsNumRegion,
+                         epsrel,
+                         epsabs,
+                         gpu_id,
+                         constMem,
+                         rule.GET_FEVAL(),
+                         rule.GET_NSETS(),
+                         lows,
+                         highs,
+                         Final,
+                         gRegionPool,
+                         nullptr,
+                         nullptr,
+                         lastAvg,
+                         lastErr,
+                         weightsum,
+                         avgsum,
+                         Phase_I_result,
+                         max_regions,
+						 *batch,
+                         phase_I_type,
+                         ph1_regions, //used for alternative phase 1
+                         Snapshot<NDIM>(),
+                         nullptr,
+                         nullptr);
+			
+          cudaDeviceSynchronize();
+          CudaCheckError();
+		  
+		  //double batch_estimate = 0., batch_errorest = 0.;
+		  //int batch_regions = 0.;
+		  //int num_failed_blocks = 0;
+		  return Evaluate(batch, dRegionsNumRegion/*, batch_estimate, batch_errorest, batch_regions, num_failed_blocks*/);
+	}
 	
-	void Execute_PhaseII_Batches(double* Regions, double* RegionsLength, size_t size){
-		/*
-		size_t max_num_blocks = FIRST_PHASE_MAXREGIONS*2; 
-		RegionList* currentBatch = new RegionList(NDIM, size);
-		size_t start = 0;
-		size_t end = max_num_blocks;
-		
-		int max_iters = size / max_num_blocks;
-		if( size % max_num_blocks != 0)
-			max_iters++;
-		
-		for(int it = 0; it < max_iters; it++){
-			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, start + it*max_num_blocks, start+it*max_num_blocks + max_num_blocks);
-			//Call GPU Phase 2 kernel, which will execute current batch
-			currentBatch->Clear();
-			start = end;
-		}*/
+	template<typename IntegT>
+	PhaseII_output Execute_PhaseII_Batches(double* Regions, 
+										   double* RegionsLength, 
+										   size_t size, 
+										   int gpu_id, 
+										   Region<NDIM>* ph1_regions, 
+										   cudaStream_t stream, 
+										   IntegT* d_integrand, 
+										   double epsrel,
+										   double epsabs,
+										   int *dRegionsNumRegion,
+										   double* Phase_I_result){
+									 
+		PhaseII_output final_result;
 		
 		size_t max_num_blocks = FIRST_PHASE_MAXREGIONS*2; 
 		RegionList* currentBatch = new RegionList(NDIM, size);
+		currentBatch->Set(dRegionsIntegral, dRegionsError);
 		size_t start = 0;
 		size_t end = max_num_blocks;
 		int iters = size / max_num_blocks;
 		
-		
 		for(int it = 0; it < iters; it++){
+			printf("regular iter\n");
 			size_t leftIndex  = start+it*max_num_blocks;
 			size_t rightIndex = leftIndex + max_num_blocks;
 			
 			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
-			//Call GPU Phase 2 kernel, which will execute current batch
+			final_result += Execute_PhaseII_Batch(currentBatch, 
+												  dRegionsNumRegion,
+												  gpu_id,
+												  Phase_I_result,
+												  ph1_regions,
+												  stream,
+												  epsrel,
+												  epsabs,
+												  d_integrand);
 			currentBatch->Clear();
 		}
 		
 		if( size % max_num_blocks != 0){
+			printf("last iter\n");
 			size_t leftIndex  = start+iters*max_num_blocks;
 			size_t rightIndex = size - 1;
 			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
-			//Call GPU Phase 2 kernel, which will execute current batch
+			Execute_PhaseII_Batch(currentBatch, 
+							      dRegionsNumRegion,
+							      gpu_id,
+							      Phase_I_result,
+							      ph1_regions,
+							      stream,
+							      epsrel,
+							      epsabs,
+							      d_integrand);
 			currentBatch->Clear();
 		}
+		
+		return final_result;
 	}
 	
 	void Phase_I_format_region_copy(RegionList*& batch,
@@ -1635,7 +1721,7 @@ namespace quad {
       }
 	  
       int num_cpu_procs = omp_get_num_procs();
-
+	
       if (NUM_DEVICES > num_gpus)
         NUM_DEVICES = num_gpus;
 
@@ -1696,12 +1782,12 @@ namespace quad {
           QuadDebug(cudaEventRecord(start, stream[gpu_id]));
           CudaCheckError();
 		  
+		  //this is where batch execution starts
           double* Phase_I_result = nullptr;
           QuadDebug(Device.AllocateMemory((void**)&Phase_I_result, sizeof(double) * 2));
           QuadDebug(cudaMemcpy(Phase_I_result, &lastAvg, 		sizeof(T), cudaMemcpyHostToDevice));
           QuadDebug(cudaMemcpy(Phase_I_result + 1, &lastErr, 	sizeof(T), cudaMemcpyHostToDevice));
-			
-
+		
           int start_regions = 32734;
           Region<NDIM>* ph1_regions = 0;
           if (phase_I_type == 1) {
@@ -1746,13 +1832,10 @@ namespace quad {
             }
             PrintToFile(tempOut.str(), "phase1.csv");
           }
-	
-			
-        /*  
-			printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
-			printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
-			printf("-------\n");
-		 */
+		  
+		  printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
+		  printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
+		  printf("-------\n");
 		  
           int max_regions = max_globalpool_size;
 		  size_t numThreads = BLOCK_SIZE;
@@ -1760,7 +1843,25 @@ namespace quad {
 		  
 		  CudaCheckError();
 		  
-		  BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
+		  //store good region phase 1 results in order to increment them with phase 2 results
+		  PhaseII_output phase_II_final_output;
+		  phase_II_final_output.estimate = integral;
+		  phase_II_final_output.errorest = error;
+		  
+		  //CALL EXECUTE BATCH HERE
+		  phase_II_final_output += Execute_PhaseII_Batches(dRegionsThread, 
+														   dRegionsLengthThread, 
+														   numBlocks, 
+														   gpu_id, 
+														   ph1_regions, 
+														   stream[gpu_id], 
+														   d_integrand, 
+														   epsrel,
+														   epsabs,
+														   dRegionsNumRegion,
+														   Phase_I_result);
+		 
+		  /*BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
             <<<numBlocks,
                numThreads,
                NDIM * sizeof(GlobalBounds),
@@ -1789,12 +1890,12 @@ namespace quad {
                                  ph1_regions, //used for alternative phase 1
                                  Snapshot<NDIM>(),
                                  nullptr,
-                                 nullptr);
+                                 nullptr);*/
 			
-          cudaDeviceSynchronize();
+          //cudaDeviceSynchronize();
+          //CudaCheckError();
           CudaCheckError();
-          CudaCheckError();
-
+		  	
           cudaEventRecord(event[gpu_id], stream[gpu_id]);
           cudaEventSynchronize(event[gpu_id]);
 
@@ -1803,8 +1904,12 @@ namespace quad {
 			
           cudaEventDestroy(start);
           cudaEventDestroy(event[gpu_id]);
-
-          thrust::device_ptr<T> wrapped_ptr;
+		  
+		  integral = phase_II_final_output.estimate,
+          error    = phase_II_final_output.errorest;
+          nregions = phase_II_final_output.regions;
+          //neval = don't forget to set this one too
+          /*thrust::device_ptr<T> wrapped_ptr;
 
           wrapped_ptr = thrust::device_pointer_cast(currentBatch->dRegionsIntegral);
           T integResult = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegionsThread);
@@ -1816,18 +1921,18 @@ namespace quad {
           error += errorResult;
           thrust::device_ptr<int> int_ptr =
             thrust::device_pointer_cast(dRegionsNumRegion);
-          int regionCnt = thrust::reduce(int_ptr, int_ptr + numRegionsThread);
+          int regionCnt = thrust::reduce(int_ptr, int_ptr + numRegionsThread);*/
 		  
-          if (Final == 0) {
+          /*if (Final == 0) {
             double w = numRegionsThread * 1 / fmax(error * error, ldexp(1., -104));
             weightsum += w; // adapted by Ioannis
             avgsum += w * integral;
             double sigsq = 1 / weightsum;
             integral = sigsq * avgsum;
             error = sqrt(sigsq);
-          }
+          }*/
 
-          Phase_II_PrintFile(integral,
+          /*Phase_II_PrintFile(integral,
                              error,
                              epsrel,
                              epsabs,
@@ -1860,7 +1965,7 @@ namespace quad {
           QuadDebug(Device.ReleaseMemory(Phase_I_result));
           CudaCheckError();
           //------------------------------------------------------
-          QuadDebug(cudaDeviceSynchronize());
+          QuadDebug(cudaDeviceSynchronize());*/
         }
 
         else

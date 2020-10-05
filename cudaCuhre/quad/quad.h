@@ -104,6 +104,46 @@ class Managed
 	  }
 };	
 
+struct PhaseII_output{
+	//perhaps activeRegions belongs here based on what attributes Region has
+	PhaseII_output() = default;
+	double estimate;
+	double errorest;
+	int    regions;
+	int    num_failed_blocks;
+	int    num_starting_blocks;
+	
+	PhaseII_output operator+(const PhaseII_output& b) {
+		PhaseII_output addedObj;
+		addedObj.estimate 				= this->estimate + b.estimate;
+		addedObj.errorest 				= this->errorest + b.errorest;
+		addedObj.regions 				= this->regions + b.regions;
+		addedObj.num_failed_blocks 		= this->num_failed_blocks + b.num_failed_blocks;
+		addedObj.num_starting_blocks 	= this->regions + b.num_starting_blocks;
+		return addedObj;
+    }
+	
+	  void operator = (const PhaseII_output &b ) { 
+		estimate 				= b.estimate;
+		errorest 				= b.errorest;
+		regions 				= b.regions;
+		num_failed_blocks 		= b.num_failed_blocks;
+		num_starting_blocks 	= b.num_starting_blocks;
+      }
+	  
+	  void operator+=(const PhaseII_output& b) {
+		estimate 				+=  b.estimate;
+		errorest 				+=  b.errorest;
+		regions 				+=  b.regions;
+		num_failed_blocks 		+=  b.num_failed_blocks;
+		num_starting_blocks 	+=  b.num_starting_blocks;
+    }
+};
+
+class openMP_params{
+	
+};
+
 class RegionList: public Managed{
 	//Deriving from “Managed” allows pass-by-reference
 	public:
@@ -172,6 +212,11 @@ class RegionList: public Managed{
 			cudaFree(dRegions);
 		}
 		
+		void Set(double* regions_integral, double* regions_err){
+			dRegionsIntegral = regions_integral;
+			dRegionsError = regions_err;
+		}
+		
 		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err , int* nextDim, int *active)
 		{
 			ndim = dim;
@@ -180,8 +225,8 @@ class RegionList: public Managed{
 			subDividingDimension = nextDim;
 			dRegionsLength = regionsLength;
 			dRegions = regions;
-			dRegionsIntegral = regions_integral;
-			dRegionsError = regions_err;
+			this->dRegionsIntegral = regions_integral;
+			this->dRegionsError = regions_err;
 		}			
 		
 		void Set(int dim, size_t num, double* regions, double* regionsLength, double* regions_integral, double* regions_err )
@@ -214,6 +259,7 @@ class RegionList: public Managed{
 			memcpy(dRegionsIntegral, 	 s.dRegionsIntegral, sizeof(double)*numRegions);
 			memcpy(dRegionsError, 		 s.dRegionsError, sizeof(double)*numRegions);
 		}
+		
 		
 		double* dRegionsError;
 		double* dRegionsIntegral;
