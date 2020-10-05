@@ -28,36 +28,43 @@ namespace quad {
   template <typename T>
   class DeviceMemory : public MemoryUtil<T> {
   public:
+	
     cudaError_t
     AllocateMemory(void** d_ptr, size_t n)
     {
       return cudaMalloc(d_ptr, n);
     }
-
+	
+	cudaError_t
+    AllocateUnifiedMemory(void** d_ptr, size_t n)
+    {
+      return cudaMallocManaged(d_ptr, n);
+    }
+	
     cudaError_t
     ReleaseMemory(void* d_ptr)
     {
       return cudaFree(d_ptr);
     }
-
+	
     cudaError_t
     SetHeapSize(size_t hSize = (size_t)2 * 1024 * 1024 * 1024)
     {
       return cudaDeviceSetLimit(cudaLimitMallocHeapSize, hSize);
     }
-
+	
     cudaError_t
     CopyHostToDeviceConstantMemory(const char* d_ptr, void* h_ptr, size_t n)
     {
       return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
     }
-
+	
     cudaError_t
     CopyHostToDeviceConstantMemory(const void* d_ptr, void* h_ptr, size_t n)
     {
       return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
     }
-
+	
     //@brief Initialize Device
     cudaError_t
     DeviceInit(int dev = -1, int verbose = 0)
