@@ -39,8 +39,8 @@ namespace quad {
 	inline double
 	gaussian(double x, double mu, double sigma)
 	{
-    double const z = (x - mu) / sigma;
-    return exp(-z * z / 2.) * 0.3989422804014327 / sigma;
+		double const z = (x - mu) / sigma;
+		return exp(-z * z / 2.) * 0.3989422804014327 / sigma;
 	}
 	
 	class Managed 
@@ -2484,7 +2484,6 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 	return false;
 }
 
-
 template <typename F>
 bool
 time_and_call(std::string id,
@@ -2512,7 +2511,7 @@ time_and_call(std::string id,
   int const numdevices = 1;
   quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
 	
-  int outfileVerbosity = 4;
+  int outfileVerbosity = 0;
   constexpr int phase_I_type = 0; // alternative phase 1
 
   auto const t0 = std::chrono::high_resolution_clock::now();
@@ -2638,7 +2637,7 @@ main()
 	constexpr int ndim = 7;
     //epsrel = epsrel/1.5;
     
-	while(time_and_call<integral<GPU>>("pdc_f0_latest",
+	while(time_and_call<integral<GPU>>("pdc_f1_latest",
 								 d_integrand,
 								 epsrel,
 								 0.,
