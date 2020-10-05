@@ -375,7 +375,7 @@ namespace quad {
 		}*/
 		
 		while(PredictSize(2*first_phase_maxregions, max_globalpool_size, free_physmem, total_physmem) < total_physmem){
-			//printf("first_phase_maxregions:%i can be increased\n", first_phase_maxregions);d
+			printf("first_phase_maxregions:%i can be increased\n", first_phase_maxregions);
 			first_phase_maxregions += first_phase_maxregions;
 		}
 
@@ -508,7 +508,7 @@ namespace quad {
         out4 << "badregions, regions" << std::endl;
       }
     }
-
+	
 	void
     Phase_I_PrintFile(T epsrel, T epsabs)
     {
@@ -1582,66 +1582,6 @@ namespace quad {
 		  return Evaluate(batch, dRegionsNumRegion/*, batch_estimate, batch_errorest, batch_regions, num_failed_blocks*/);
 	}
 	
-	template<typename IntegT>
-	PhaseII_output Execute_PhaseII_Batches(double* Regions, 
-										   double* RegionsLength, 
-										   size_t size, 
-										   int gpu_id, 
-										   Region<NDIM>* ph1_regions, 
-										   cudaStream_t stream, 
-										   IntegT* d_integrand, 
-										   double epsrel,
-										   double epsabs,
-										   int *dRegionsNumRegion,
-										   double* Phase_I_result){
-									 
-		PhaseII_output final_result;
-		
-		size_t max_num_blocks = FIRST_PHASE_MAXREGIONS*2; 
-		RegionList* currentBatch = new RegionList(NDIM, size);
-		currentBatch->Set(dRegionsIntegral, dRegionsError);
-		size_t start = 0;
-		size_t end = max_num_blocks;
-		int iters = size / max_num_blocks;
-		
-		for(int it = 0; it < iters; it++){
-			printf("regular iter\n");
-			size_t leftIndex  = start+it*max_num_blocks;
-			size_t rightIndex = leftIndex + max_num_blocks;
-			
-			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
-			final_result += Execute_PhaseII_Batch(currentBatch, 
-												  dRegionsNumRegion,
-												  gpu_id,
-												  Phase_I_result,
-												  ph1_regions,
-												  stream,
-												  epsrel,
-												  epsabs,
-												  d_integrand);
-			currentBatch->Clear();
-		}
-		
-		if( size % max_num_blocks != 0){
-			printf("last iter\n");
-			size_t leftIndex  = start+iters*max_num_blocks;
-			size_t rightIndex = size - 1;
-			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
-			Execute_PhaseII_Batch(currentBatch, 
-							      dRegionsNumRegion,
-							      gpu_id,
-							      Phase_I_result,
-							      ph1_regions,
-							      stream,
-							      epsrel,
-							      epsabs,
-							      d_integrand);
-			currentBatch->Clear();
-		}
-		
-		return final_result;
-	}
-	
 	void Phase_I_format_region_copy(RegionList*& batch,
 									double*& sourceRegions, 
 								    double*& sourceRegionsLength,
@@ -1667,6 +1607,66 @@ namespace quad {
 								 sizeof(T) * batch_size,
 								 cudaMemcpyHostToDevice));
         }
+	}
+	
+	template<typename IntegT>
+	PhaseII_output Execute_PhaseII_Batches(double* Regions, 
+										   double* RegionsLength, 
+										   size_t size, 
+										   int gpu_id, 
+										   Region<NDIM>* ph1_regions, 
+										   cudaStream_t stream, 
+										   IntegT* d_integrand, 
+										   double epsrel,
+										   double epsabs,
+										   int *dRegionsNumRegion,
+										   double* Phase_I_result){
+									 
+		PhaseII_output final_result;
+		
+		size_t max_num_blocks = FIRST_PHASE_MAXREGIONS*2; 
+		RegionList* currentBatch = new RegionList(NDIM, size);
+		currentBatch->Set(dRegionsIntegral, dRegionsError);
+		size_t start = 0;
+		size_t end = max_num_blocks;
+		int iters = size / max_num_blocks;
+		printf("Num Regions to be processed by phase 2:%lu\n", size);
+		for(int it = 0; it < iters; it++){
+			printf("regular iter\n");
+			size_t leftIndex  = start+it*max_num_blocks;
+			size_t rightIndex = leftIndex + max_num_blocks;
+			
+			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
+			final_result += Execute_PhaseII_Batch(currentBatch, 
+												  dRegionsNumRegion,
+												  gpu_id,
+												  Phase_I_result,
+												  ph1_regions,
+												  stream,
+												  epsrel,
+												  epsabs,
+												  d_integrand);
+			currentBatch->Clear();
+		}
+		
+		if( size % max_num_blocks != 0){
+			printf("last iter\n");
+			size_t leftIndex  = start+iters*max_num_blocks;
+			size_t rightIndex = size - 1;
+			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, size, leftIndex, rightIndex);
+			final_result += Execute_PhaseII_Batch(currentBatch, 
+												  dRegionsNumRegion,
+												  gpu_id,
+												  Phase_I_result,
+												  ph1_regions,
+												  stream,
+												  epsrel,
+												  epsabs,
+												  d_integrand);
+			currentBatch->Clear();
+		}
+		
+		return final_result;
 	}
 	
 	//This is supposed to work on all regions, ? maybe have a regionList for that too? why not
@@ -1710,7 +1710,6 @@ namespace quad {
                          size_t& nregions,
                          size_t& neval/*,T* optionalInfo = 0*/)
     {
-      
       int num_gpus = 0; // number of CUDA GPUs
 	  int numFailedRegions = 0;
 	  
@@ -1966,6 +1965,13 @@ namespace quad {
           CudaCheckError();
           //------------------------------------------------------
           QuadDebug(cudaDeviceSynchronize());*/
+		  if (phase_I_type == 0) 
+		  {
+            QuadDebug(Device.ReleaseMemory(dRegionsThread));
+            QuadDebug(Device.ReleaseMemory(dRegionsLengthThread));
+          }
+		  QuadDebug(Device.ReleaseMemory(Phase_I_result));
+		  QuadDebug(Device.ReleaseMemory(dRegionsNumRegion));
         }
 
         else
