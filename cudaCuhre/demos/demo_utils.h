@@ -1,6 +1,3 @@
-
-//#include "../cudaCuhre/quad/quad.h"
-
 #include <chrono>
 #include <cmath>
 #include <iomanip>
