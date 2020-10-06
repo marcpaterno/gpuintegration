@@ -210,11 +210,11 @@ ComputeWeightSum(T *errors, size_t size){
     }
 
     __syncthreads();
-    SampleRegionBlock<IntegT, T, NDIM>(
-      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
     __syncthreads();
 	//if(blockIdx.x == 0)
 	//	  printf("Done with Phase I INIT_REGION_POOL\n");
+
   }
 
   template <typename IntegT, typename T, int NDIM>
@@ -265,11 +265,29 @@ ComputeWeightSum(T *errors, size_t size){
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
       RESULT = sRegionPool[threadIdx.x].result.avg;
+	  if(blockIdx.x == 5){
+		printf("Phase 1 Block 5 result:%.20f +- %.20f\n", RESULT, ERR);
+		printf("sBound: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sBound[0].unScaledLower, sBound[0].unScaledUpper,
+																									  sBound[1].unScaledLower, sBound[1].unScaledUpper,
+																									  sBound[2].unScaledLower, sBound[2].unScaledUpper,
+																									  sBound[3].unScaledLower, sBound[3].unScaledUpper,
+																									  sBound[4].unScaledLower, sBound[4].unScaledUpper,
+																									  sBound[5].unScaledLower, sBound[5].unScaledUpper,
+																									  sBound[6].unScaledLower, sBound[6].unScaledUpper);
+																									  
+		printf("sRegionPool: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sRegionPool[0].bounds[0].lower, sRegionPool[0].bounds[0].upper,
+																									  sRegionPool[0].bounds[1].lower, sRegionPool[0].bounds[1].upper,
+																									  sRegionPool[0].bounds[2].lower, sRegionPool[0].bounds[2].upper,
+																									  sRegionPool[0].bounds[3].lower, sRegionPool[0].bounds[3].upper,
+																									  sRegionPool[0].bounds[4].lower, sRegionPool[0].bounds[4].upper,
+																									  sRegionPool[0].bounds[5].lower, sRegionPool[0].bounds[5].upper,
+																									  sRegionPool[0].bounds[6].lower, sRegionPool[0].bounds[6].upper);
+	}
       T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
       int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
       dRegionsError[gridDim.x + blockIdx.x] = ERR;
-
+		
       if (ratio > 1) {
         fail = 1;
       }
@@ -278,11 +296,12 @@ ComputeWeightSum(T *errors, size_t size){
       subDividingDimension[blockIdx.x] = fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-	 	  
+	  	  
      // __syncthreads();
 	 //printf("[%i] it:%i %.20f +- %.20f numRegions:%lu\n", blockIdx.x, iteration, RESULT, ERR, numRegions);
 	 //if(ERR == 0 || RESULT == 0)
 	//	 printf("[%i] it:%i %.20f +- %.20f numRegions:%lu\n", blockIdx.x, iteration, RESULT, ERR, numRegions);
+	
       if (ratio > 1 && numRegions == 1) {
         dRegionsIntegral[blockIdx.x] = 0;
         dRegionsError[blockIdx.x] = 0;
@@ -951,11 +970,27 @@ ComputeWeightSum(T *errors, size_t size){
         sRegionPool[0].result.err = ERR;
       }
     }
-
+	
     __syncthreads();
 	
-	if(threadIdx.x == 0 && blockIdx.x < 100)
+	if(threadIdx.x == 0 && blockIdx.x == 5){
 		printf("[%i] start conditions %.20f +- %.20f\n", blockIdx.x, RESULT, ERR);
+		printf("sBound: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sBound[0].unScaledLower, sBound[0].unScaledUpper,
+																									  sBound[1].unScaledLower, sBound[1].unScaledUpper,
+																									  sBound[2].unScaledLower, sBound[2].unScaledUpper,
+																									  sBound[3].unScaledLower, sBound[3].unScaledUpper,
+																									  sBound[4].unScaledLower, sBound[4].unScaledUpper,
+																									  sBound[5].unScaledLower, sBound[5].unScaledUpper,
+																									  sBound[6].unScaledLower, sBound[6].unScaledUpper);
+																									  
+		printf("sRegionPool: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sRegionPool[0].bounds[0].lower, sRegionPool[0].bounds[0].upper,
+																									  sRegionPool[0].bounds[1].lower, sRegionPool[0].bounds[1].upper,
+																									  sRegionPool[0].bounds[2].lower, sRegionPool[0].bounds[2].upper,
+																									  sRegionPool[0].bounds[3].lower, sRegionPool[0].bounds[3].upper,
+																									  sRegionPool[0].bounds[4].lower, sRegionPool[0].bounds[4].upper,
+																									  sRegionPool[0].bounds[5].lower, sRegionPool[0].bounds[5].upper,
+																									  sRegionPool[0].bounds[6].lower, sRegionPool[0].bounds[6].upper);
+	}
 	
     /*
     prev_error = ERR;

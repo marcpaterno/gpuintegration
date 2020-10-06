@@ -166,8 +166,8 @@ class RegionList: public Managed{
 			
 			cudaMallocManaged(&activeRegions, 		 sizeof(int)*size);
 			cudaMallocManaged(&subDividingDimension, sizeof(int)*size);
-			cudaMallocManaged(&dRegionsIntegral, 	 sizeof(double)*size);
-			cudaMallocManaged(&dRegionsError, 		 sizeof(double)*size);
+			//cudaMallocManaged(&dRegionsIntegral, 	 sizeof(double)*size);
+			//cudaMallocManaged(&dRegionsError, 		 sizeof(double)*size);
 			
 			cudaMallocManaged(&dRegionsLength, 	sizeof(double)*size*ndim);
 			cudaMallocManaged(&dRegions, 		sizeof(double)*size*ndim);
@@ -206,8 +206,8 @@ class RegionList: public Managed{
 		void Clear(){
 			cudaFree(activeRegions);
 			cudaFree(subDividingDimension);
-			cudaFree(dRegionsIntegral);
-			cudaFree(dRegionsError);
+			//cudaFree(dRegionsIntegral);
+			//cudaFree(dRegionsError);
 			cudaFree(dRegionsLength);
 			cudaFree(dRegions);
 		}

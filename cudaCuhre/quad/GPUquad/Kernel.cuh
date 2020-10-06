@@ -719,7 +719,25 @@ namespace quad {
       std::string outputS = outfile.str();
       PrintToFile(outputS, filename);
     }
+	
+	template <class K>
+    void
+    display(K* array1,
+            K* array2,
+            size_t size)
+    {
+      std::stringstream outfile;
+      K* tmp1 = (K*)malloc(sizeof(K) * size);
+      K* tmp2 = (K*)malloc(sizeof(K) * size);
 
+      cudaMemcpy(tmp1, array1, sizeof(K) * size, cudaMemcpyDeviceToHost);
+      cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
+
+      for (int i = 0; i < size; ++i)
+		  printf("[%i] %.20f, %.20f\n", i, tmp1[i], tmp2[i]);
+   
+    }
+	
     void
     GenerateInitialRegions()
     {
@@ -1185,7 +1203,8 @@ namespace quad {
         return true;
       } 
 	  else {
-		//display(dRegionsIntegral + numRegions, numRegions);
+		printf("About to display %lu regions\n", numRegions);
+		//display(dRegionsIntegral, dRegionsError, 2*numRegions);
         return false;
       }
     }
@@ -1608,7 +1627,7 @@ namespace quad {
 		batch->numRegions = batch_size;
 		batch->dRegionsIntegral = RegionsIntegral;
 		batch->dRegionsError = RegionsError;
-		
+		printf("Phase I format copying batch_size:%lu within %lu total_num_regions\n", batch_size, total_num_regions);
 		for (int dim = 0; dim < NDIM; ++dim) {
 			QuadDebug(cudaMemcpy(batch->dRegions + dim * batch_size,
 								 sourceRegions + dim * total_num_regions + startRegionIndex,
