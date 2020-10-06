@@ -922,8 +922,7 @@ ComputeWeightSum(T *errors, size_t size){
       iterations_without = 0;
       */
     }
-	if(threadIdx.x == 0 && blockIdx.x == 0)
-		printf("inside phase 2 kernel\n");
+
     __syncthreads();              // added for testing
     InitSMemRegions(sRegionPool); // sets every region in shared memory to zero
     int sRegionPoolSize = 1;
@@ -955,8 +954,8 @@ ComputeWeightSum(T *errors, size_t size){
 
     __syncthreads();
 	
-	if(threadIdx.x == 0 && blockIdx.x == 0)
-		printf("[0] start conditions %.20f +- %.20f\n", RESULT, ERR);
+	if(threadIdx.x == 0 && blockIdx.x < 100)
+		printf("[%i] start conditions %.20f +- %.20f\n", blockIdx.x, RESULT, ERR);
 	
     /*
     prev_error = ERR;
@@ -1182,12 +1181,13 @@ ComputeWeightSum(T *errors, size_t size){
 	  //if(nregions > 2048)
 	//	  printf("[%i] nregions:%i\n", blockIdx.x, nregions);
       // printf("Final result%.20f \n %.20f\n", RESULT, ERR);
+		//printf("%i, %i, %f, %.20f, %.20f\n", blockIdx.x, nregions, ERR/MaxErr(RESULT, epsrel, epsabs), RESULT, ERR);
 	   batch.activeRegions[blockIdx.x] = isActive;
        batch.dRegionsIntegral[blockIdx.x] = RESULT;
        batch.dRegionsError[blockIdx.x] = ERR;
        dRegionsNumRegion[blockIdx.x] = nregions;
 
-	  //printf("%i, %i, %f, %.20f, %.20f\n", blockIdx.x, nregions, ERR/MaxErr(RESULT, epsrel, epsabs), RESULT, ERR);
+	  
     }
   }
 }
