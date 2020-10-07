@@ -157,9 +157,6 @@ ComputeWeightSum(T *errors, size_t size){
       activeRegions[blockIdx.x] = fail;
       newErrs[blockIdx.x + numRegions] = selfErr;
 	  
-	  //if(selfErr == 0 || selfRes == 0)
-		// printf("[[%i]] %.20f +- %.20f numRegions:%lu\n", blockIdx.x, RESULT, ERR, numRegions);
-	  //printf("[%i] %.20f +- %.20f numRegions:%lu active:%i\n", blockIdx.x, selfRes, selfErr, numRegions, activeRegions[blockIdx.x]);
     }
   }
 
@@ -210,10 +207,8 @@ ComputeWeightSum(T *errors, size_t size){
     }
 
     __syncthreads();
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, lows, highs);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
     __syncthreads();
-	//if(blockIdx.x == 0)
-	//	  printf("Done with Phase I INIT_REGION_POOL\n");
 
   }
 
@@ -250,9 +245,6 @@ ComputeWeightSum(T *errors, size_t size){
     T ERR = 0, RESULT = 0;
     int fail = 0;
 	
-	//if(blockIdx.x == 0 && threadIdx.x == 0)
-	//	printf("phase 1 iteration:%i\n", iteration);
-	
     INIT_REGION_POOL<IntegT>(d_integrand,
                              dRegions,
                              dRegionsLength,
@@ -268,24 +260,7 @@ ComputeWeightSum(T *errors, size_t size){
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
       RESULT = sRegionPool[threadIdx.x].result.avg;
-	  /*if(blockIdx.x == 5){
-		printf("Phase 1 Block 5 result:%.20f +- %.20f\n", RESULT, ERR);
-		printf("sBound: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sBound[0].unScaledLower, sBound[0].unScaledUpper,
-																									  sBound[1].unScaledLower, sBound[1].unScaledUpper,
-																									  sBound[2].unScaledLower, sBound[2].unScaledUpper,
-																									  sBound[3].unScaledLower, sBound[3].unScaledUpper,
-																									  sBound[4].unScaledLower, sBound[4].unScaledUpper,
-																									  sBound[5].unScaledLower, sBound[5].unScaledUpper,
-																									  sBound[6].unScaledLower, sBound[6].unScaledUpper);
-																									  
-		printf("sRegionPool: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sRegionPool[0].bounds[0].lower, sRegionPool[0].bounds[0].upper,
-																									  sRegionPool[0].bounds[1].lower, sRegionPool[0].bounds[1].upper,
-																									  sRegionPool[0].bounds[2].lower, sRegionPool[0].bounds[2].upper,
-																									  sRegionPool[0].bounds[3].lower, sRegionPool[0].bounds[3].upper,
-																									  sRegionPool[0].bounds[4].lower, sRegionPool[0].bounds[4].upper,
-																									  sRegionPool[0].bounds[5].lower, sRegionPool[0].bounds[5].upper,
-																									  sRegionPool[0].bounds[6].lower, sRegionPool[0].bounds[6].upper);
-	}*/
+
       T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
       int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
@@ -299,12 +274,7 @@ ComputeWeightSum(T *errors, size_t size){
       subDividingDimension[blockIdx.x] = fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-	  	  
-     // __syncthreads();
-	 //printf("[%i] it:%i %.20f +- %.20f numRegions:%lu\n", blockIdx.x, iteration, RESULT, ERR, numRegions);
-	 //if(ERR == 0 || RESULT == 0)
-	//	 printf("[%i] it:%i %.20f +- %.20f numRegions:%lu\n", blockIdx.x, iteration, RESULT, ERR, numRegions);
-	
+
       if (ratio > 1 && numRegions == 1) {
         dRegionsIntegral[blockIdx.x] = 0;
         dRegionsError[blockIdx.x] = 0;
@@ -379,16 +349,13 @@ ComputeWeightSum(T *errors, size_t size){
   template <typename T, int NDIM>
   __device__ int
   SET_FIRST_SHARED_MEM_REGION(Region<NDIM> sRegionPool[],
-                              T* dRegions,
-                              T* dRegionsLength,
-							  T* lows,
-							  T* highs,
+                              const T* dRegions,
+                              const T* dRegionsLength,
+							  const T* lows,
+							  const T* highs,
                               size_t numRegions,
                               size_t blockIndex)
   {
-	//for multi-block Phase 2 after parallel phase 1, uses Phase 1 regions as shared bounds within a block? When does scaling happen?
-	//consider passing lows, highs (user-defined bounds) and scaling sBound accordingly, that way we dont' lose info
-	//ADD HIGHS/LOWS SCALING
     size_t intervalIndex = blockIndex;
 
     if (threadIdx.x == 0) {
@@ -397,17 +364,11 @@ ComputeWeightSum(T *errors, size_t size){
         sRegionPool[threadIdx.x].bounds[dim].lower = 0;
         sRegionPool[threadIdx.x].bounds[dim].upper = 1;
 		
-		//first get region's boundaries
         T lower = dRegions[dim * numRegions + intervalIndex];
 		T upper = lower + dRegionsLength[dim * numRegions + intervalIndex];
 		
-        //sBound[dim].unScaledLower = lower;
-        //sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions + intervalIndex];
-		//then sclale them based on integration space boundaries
 		sBound[dim].unScaledLower = ScaleValue(lower, lows[dim], highs[dim]);
 		sBound[dim].unScaledUpper = ScaleValue(upper, lows[dim], highs[dim]);
-		  //if(blockIdx.x == 0)
-			//	printf("sBound[%i]:(%f-%f)\n", dim, sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
       }
     }
     __syncthreads();
@@ -422,19 +383,14 @@ ComputeWeightSum(T *errors, size_t size){
                               size_t numRegions,
                               size_t blockIndex)
   {
-	//for single-block Phase 2, uses scaled integrand boundaries (0-1) or user defined ones
-    //*lows & highs are user defined bounds, they are ok being stored in sBound
-    //size_t intervalIndex = blockIndex;
     if (threadIdx.x == 0) {
       gRegionPoolSize = (SM_REGION_POOL_SIZE / 2);
       for (int dim = 0; dim < NDIM; ++dim) {
         sRegionPool[threadIdx.x].bounds[dim].lower = 0;
         sRegionPool[threadIdx.x].bounds[dim].upper = 1;
-       // T lower = lows[dim];
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
-		//if(blockIdx.x == 0)
-		//	printf("ssBound[%i]:(%f-%f)\n", dim, sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
+
       }
     }
     __syncthreads();
@@ -450,9 +406,6 @@ ComputeWeightSum(T *errors, size_t size){
                               size_t numRegions,
                               size_t blockIndex)
   {
-	//for multi-block Phase 2 after single-block phase 2, uses Phase 1 regions as shared bounds within a block? When does scaling happen?
-	//must probably scale here too with lows, and highs, how is sBounds info retained after phase 1 region finishes?
-	//ADD HIGHS/LOWS SCALING
     size_t intervalIndex = blockIndex;
     if (threadIdx.x == 0) {
       gRegionPoolSize =
@@ -466,10 +419,6 @@ ComputeWeightSum(T *errors, size_t size){
 		
 		sBound[dim].unScaledLower = ScaleValue(lower, lows[dim], highs[dim]);
 		sBound[dim].unScaledUpper = ScaleValue(upper, lows[dim], highs[dim]);
-        //sBound[dim].unScaledLower = lower;
-        //sBound[dim].unScaledUpper = ggRegionPool[intervalIndex].bounds[dim].upper;
-		//if(blockIdx.x == 0)
-		//	printf("sBound[%i]:(%f-%f)\n", dim, sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
       }
     }
     return 1;
@@ -508,10 +457,9 @@ ComputeWeightSum(T *errors, size_t size){
 
   template <typename T, int NDIM>
   __device__ void
-  INSERT_GLOBAL_STORE(Region<NDIM>* sRegionPool,
-                      Region<NDIM>* gRegionPool,
+  INSERT_GLOBAL_STORE(const Region<NDIM>* const sRegionPool,
                       int gpuId,
-                      Region<NDIM>* gPool)
+                      Region<NDIM>* const gPool)
   {
     __syncthreads();
 	
@@ -601,14 +549,10 @@ ComputeWeightSum(T *errors, size_t size){
          ++iterationsPerThread) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
       gPool[gRegionPos[index]] = sRegionPool[index];
-      // printf("%i->%lu (%.20f)\n", index, gRegionPos[index],
-      // sRegionPool[index].result.err);
+	  
       if ((SM_REGION_POOL_SIZE / 2) + index < sRegionPoolSize) {
         gPool[gRegionPoolSize + index] =
           sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
-        // printf("%i->%lu (%.20f)\n", gRegionPoolSize + index,
-        // (SM_REGION_POOL_SIZE / 2) + index, sRegionPool[(SM_REGION_POOL_SIZE /
-        // 2) + index].result.err);
       }
 
       for (int dim = 0; dim < NDIM; dim++) {
@@ -639,14 +583,11 @@ ComputeWeightSum(T *errors, size_t size){
     if (index < (SM_REGION_POOL_SIZE / 2)) {
       int index = iterationsPerThread * BLOCK_SIZE + threadIdx.x;
       gPool[gRegionPos[index]] = sRegionPool[index];
-      // printf("%i->%lu (%.20f)\n", index, gRegionPos[index],
-      // sRegionPool[index].result.err);
+
       if ((SM_REGION_POOL_SIZE / 2) + index < sRegionPoolSize) {
         gPool[gRegionPoolSize + index] =
           sRegionPool[(SM_REGION_POOL_SIZE / 2) + index];
-        // printf("%i->%lu (%.20f)\n", gRegionPoolSize + index,
-        // (SM_REGION_POOL_SIZE / 2) + index, sRegionPool[(SM_REGION_POOL_SIZE /
-        // 2) + index].result.err);
+ 
       }
 
       for (int dim = 0; dim < NDIM; dim++) {
@@ -683,11 +624,9 @@ ComputeWeightSum(T *errors, size_t size){
   __device__ void
   EXTRACT_MAX(T* serror, size_t* serrorPos, size_t gSize)
   {
-    // offset >>=1 offset /= 2
     for (size_t offset = gSize / 2; offset > 0; offset >>= 1) {
       int idx = 0;
 
-      // main loop
       for (idx = 0; idx < offset / BLOCK_SIZE; ++idx) {
         size_t index = idx * BLOCK_SIZE + threadIdx.x;
         if (index < offset) {
@@ -698,7 +637,6 @@ ComputeWeightSum(T *errors, size_t size){
         }
       }
 
-      // leftovers from loop above
       size_t index = idx * BLOCK_SIZE + threadIdx.x;
       if (index < offset) {
         if (serror[index] < serror[index + offset]) {
@@ -810,7 +748,7 @@ ComputeWeightSum(T *errors, size_t size){
     // memory array
     if (sSize == SM_REGION_POOL_SIZE) {
 
-      INSERT_GLOBAL_STORE<T>(sRegionPool, gRegionPool, gpuId, gPool);
+      INSERT_GLOBAL_STORE<T>(sRegionPool, gpuId, gPool);
       __syncthreads();
 
       // gRegionPool = gPool;
@@ -959,7 +897,7 @@ ComputeWeightSum(T *errors, size_t size){
 	
     __syncthreads();
     // ERR and sRegionPool[0].result.err are not the same in the beginning
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
 	
@@ -974,26 +912,7 @@ ComputeWeightSum(T *errors, size_t size){
       }
     }
 	
-    __syncthreads();
-	
-	/*if(threadIdx.x == 0 && RESULT != batch.dRegionsIntegral[blockIdx.x + batch.numRegions]){
-		printf("[%i] start conditions %.20f +- %.20f\n", blockIdx.x, RESULT, ERR);
-		printf("sBound: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sBound[0].unScaledLower, sBound[0].unScaledUpper,
-																									  sBound[1].unScaledLower, sBound[1].unScaledUpper,
-																									  sBound[2].unScaledLower, sBound[2].unScaledUpper,
-																									  sBound[3].unScaledLower, sBound[3].unScaledUpper,
-																									  sBound[4].unScaledLower, sBound[4].unScaledUpper,
-																									  sBound[5].unScaledLower, sBound[5].unScaledUpper,
-																									  sBound[6].unScaledLower, sBound[6].unScaledUpper);
-																									  
-		printf("sRegionPool: (%f, %f), (%f, %f) , (%f, %f) , (%f, %f) ,(%f, %f) , (%f, %f) , (%f, %f) \n", sRegionPool[0].bounds[0].lower, sRegionPool[0].bounds[0].upper,
-																									  sRegionPool[0].bounds[1].lower, sRegionPool[0].bounds[1].upper,
-																									  sRegionPool[0].bounds[2].lower, sRegionPool[0].bounds[2].upper,
-																									  sRegionPool[0].bounds[3].lower, sRegionPool[0].bounds[3].upper,
-																									  sRegionPool[0].bounds[4].lower, sRegionPool[0].bounds[4].upper,
-																									  sRegionPool[0].bounds[5].lower, sRegionPool[0].bounds[5].upper,
-																									  sRegionPool[0].bounds[6].lower, sRegionPool[0].bounds[6].upper);
-	}*/
+    __syncthreads();	
 	
     /*
     prev_error = ERR;
@@ -1057,16 +976,14 @@ ComputeWeightSum(T *errors, size_t size){
       sRegionPoolSize++;
       nregions++;
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
       __syncthreads();
       SampleRegionBlock<IntegT, T, NDIM>(d_integrand,
                                          sRegionPoolSize - 1,
                                          constMem,
                                          FEVAL,
                                          NSETS,
-                                         sRegionPool,
-                                         slows,
-                                         shighs);
+                                         sRegionPool);
       __syncthreads();
 
       if (threadIdx.x == 0) {
