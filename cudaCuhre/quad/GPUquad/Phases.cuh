@@ -169,7 +169,7 @@ ComputeWeightSum(T *errors, size_t size){
                    T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
-                   Structures<T>* constMem,
+                   const Structures<T>& constMem,
                    int FEVAL,
                    int NSETS,
                    Region<NDIM> sRegionPool[],
@@ -257,7 +257,7 @@ ComputeWeightSum(T *errors, size_t size){
                              dRegions,
                              dRegionsLength,
                              numRegions,
-                             &constMem,
+                             constMem,
                              FEVAL,
                              NSETS,
                              sRegionPool,
@@ -959,7 +959,7 @@ ComputeWeightSum(T *errors, size_t size){
 	
     __syncthreads();
     // ERR and sRegionPool[0].result.err are not the same in the beginning
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
 	
@@ -1057,11 +1057,11 @@ ComputeWeightSum(T *errors, size_t size){
       sRegionPoolSize++;
       nregions++;
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, &constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
+      SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, slows, shighs);
       __syncthreads();
       SampleRegionBlock<IntegT, T, NDIM>(d_integrand,
                                          sRegionPoolSize - 1,
-                                         &constMem,
+                                         constMem,
                                          FEVAL,
                                          NSETS,
                                          sRegionPool,

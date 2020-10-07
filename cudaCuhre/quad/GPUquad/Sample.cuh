@@ -43,7 +43,7 @@ namespace quad {
                      T* g,
                      gpu::cudaArray<T, NDIM>& x,
                      T* sum,
-                     Structures<T>* constMem,
+                     const Structures<T>& constMem,
                      T* lows,
                      T* highs)
   {
@@ -53,19 +53,19 @@ namespace quad {
       x[dim] = 0;
     }
 
-    int posCnt = __ldg(&constMem->_gpuGenPermVarStart[pIndex + 1]) -
-                 __ldg(&constMem->_gpuGenPermVarStart[pIndex]);
-    int gIndex = constMem->_gpuGenPermGIndex[pIndex];
+    int posCnt = (constMem._gpuGenPermVarStart[pIndex + 1]) -
+                 (constMem._gpuGenPermVarStart[pIndex]);
+    int gIndex = constMem._gpuGenPermGIndex[pIndex];
 	
     for (int posIter = 0; posIter < posCnt; ++posIter) {
-      int pos = __ldg(
-        &constMem->_gpuGenPos[__ldg(&constMem->_gpuGenPermVarStart[pIndex]) +
+      int pos = (
+        constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) +
                               posIter]);
       int absPos = abs(pos);
       if (pos == absPos) {
-        g[absPos - 1] = __ldg(&constMem->_gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = (constMem._gpuG[gIndex * NDIM + posIter]);
       } else {
-        g[absPos - 1] = -__ldg(&constMem->_gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = -(constMem._gpuG[gIndex * NDIM + posIter]);
       }
     }
 
@@ -92,7 +92,7 @@ namespace quad {
     sdata[threadIdx.x] = fun; // target for reduction
 
     for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * __ldg(&constMem->_cRuleWt[gIndex * NRULES + rul]);
+      sum[rul] += fun * (constMem._cRuleWt[gIndex * NRULES + rul]);
       if (rul == 0) {
 		  //if(blockIdx.x == 0)
 			//printf("(%i) (%f, %f, %f, %f, %f, %f, %f) funceval:%.20f weight:%.20f\n", threadIdx.x, x[0], x[1], x[2], x[3], x[4], x[5], x[6], fun, constMem->_cRuleWt[gIndex * NRULES + rul]);
@@ -115,7 +115,7 @@ namespace quad {
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     int sIndex,
-                    Structures<T>* constMem,
+                    const Structures<T>&  constMem,
                     int FEVAL,
                     int NSETS,
                     Region<NDIM> sRegionPool[],
@@ -147,7 +147,7 @@ namespace quad {
     int perm = 0;
 
     T ratio =
-      Sq(__ldg(&constMem->_gpuG[2 * NDIM]) / __ldg(&constMem->_gpuG[1 * NDIM]));
+      Sq((constMem._gpuG[2 * NDIM]) / (constMem._gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
@@ -231,15 +231,13 @@ namespace quad {
         for (int s = 0; s < NSETS; ++s) {
           maxerr = MAX(maxerr,
                        fabs(sum[rul + 1] +
-                            constMem->_GPUScale[s * NRULES + rul] * sum[rul]) *
-                         constMem->_GPUNorm[s * NRULES + rul]);
+                            constMem._GPUScale[s * NRULES + rul] * sum[rul]) *
+                         constMem._GPUNorm[s * NRULES + rul]);
         }
         sum[rul] = maxerr;
       }
 	  
       r->avg = vol * sum[0];
-	  if(threadIdx.x == 0 && blockIdx.x == 5 && (region->div == 12 || region->div == 0))
-		  printf("vol:%.20f sum[0]:%.20f\n", vol, sum[0]);
 	 // if(blockIdx.x != 0) 
 		/*printf("sum[%i]:%f vol:%f div:%i result:%f, %f, %f, %f, %f, %f, %f, %f bounds:%f-%f %f-%f, %f-%f, %f-%f, %f-%f, %f-%f, %f-%f\n", blockIdx.x, sum[0], vol, region->div, r->avg, x[0], x[1], x[2], x[3], x[4], x[5], x[6],
 																																region->bounds[0].lower,region->bounds[0].upper,
