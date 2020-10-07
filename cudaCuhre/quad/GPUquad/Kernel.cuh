@@ -1057,7 +1057,7 @@ namespace quad {
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 	  
-	  //printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions,lastAvg, lastErr);
+
 	  
       if (Final == 0) {
         double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
@@ -1073,7 +1073,7 @@ namespace quad {
         lastErr = errG;
          //printf("F1 rG:%f\t errG:%f\t global: %f +- %f numRegions:%lu\n", lastAvg, lastErr,  numRegions, integral, error);
       }
-	printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions, lastAvg, lastErr);
+	//printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions, lastAvg, lastErr);
       if (outLevel >= 1)
         out1 << lastAvg << "," << lastErr << "," << nregions << std::endl;
 
@@ -1098,7 +1098,7 @@ namespace quad {
       // printf("integral:%f\n", integral);
 	  //printf("FirstPhase Iteration %i  Checking numRegions <= first_phase_maxregions*2\n", iteration);
 	  //printf("numRegions:%lu first_phase_max_regions:%lu\n", numRegions, first_phase_maxregions*2);
-      if (numRegions <= first_phase_maxregions*2 && fail == 1) {
+      if (numRegions <= first_phase_maxregions*4 && fail == 1) {
 	  //if (numRegions <= first_phase_maxregions && fail == 1) {
         GenerateActiveIntervals(activeRegions,
                                 subDividingDimension,
@@ -1152,7 +1152,7 @@ namespace quad {
           break;
         } 
 		//else if (numRegions > first_phase_maxregions && fail == 1) {
-		else if (numRegions > first_phase_maxregions*2 && fail == 1) {
+		else if (numRegions > first_phase_maxregions*4 && fail == 1) {
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -1567,7 +1567,6 @@ namespace quad {
 		size_t numThreads = BLOCK_SIZE;
         size_t numBlocks = batch->numRegions;
 		
-		std::cout<<"About to call kernel with "<<numBlocks <<" blocks and "<< numThreads <<" threads per block\n";
 		BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
          <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds),
                stream>>>(d_integrand,
@@ -1624,10 +1623,9 @@ namespace quad {
 		batch->dRegionsIntegral = RegionsIntegral;
 		batch->dRegionsError = RegionsError;
 		CudaCheckError();
-		printf("Phase I format copying batch_size:%lu within %lu total_num_regions\n", batch_size, total_num_regions);
+		
 		for (int dim = 0; dim < NDIM; ++dim) {
-			printf("Dim %i Copying from %lu to %lu\n", dim, dim * total_num_regions + startRegionIndex, dim * total_num_regions + startRegionIndex + batch_size);
-			printf("Pasting to %lu\n", dim * batch_size);
+	
 			QuadDebug(cudaMemcpy(batch->dRegions + dim * batch_size,
 								 sourceRegions + dim * total_num_regions + startRegionIndex,
 								 sizeof(T) * batch_size,
@@ -1663,10 +1661,8 @@ namespace quad {
 		size_t start = 0;
 		size_t end = max_num_blocks;
 		int iters = size / max_num_blocks;
-		printf("Num Regions to be processed by phase 2:%lu\n", size);
 		
 		for(int it = 0; it < iters; it++){
-			printf("regular iter\n");
 			size_t leftIndex  = start+it*max_num_blocks;
 			size_t rightIndex = leftIndex + max_num_blocks - 1;
 			
@@ -1690,7 +1686,6 @@ namespace quad {
 			
 			size_t leftIndex  = start+iters*max_num_blocks;
 			size_t rightIndex = leftIndex + (size % max_num_blocks) - 1;
-			printf("last iter leftIndex:%lu rightIndex:%lu\n", leftIndex, rightIndex);
 			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, dRegionsIntegral + leftIndex, dRegionsError + leftIndex, size, leftIndex, rightIndex);
 			final_result += Execute_PhaseII_Batch(currentBatch, 
 												  dRegionsNumRegion,
