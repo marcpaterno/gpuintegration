@@ -559,7 +559,6 @@ namespace quad {
       }
     }
 
-
 	void 
 	Phase_I_PrintFile(size_t size)
 	{
@@ -973,7 +972,7 @@ namespace quad {
                                       sizeof(T) * numRegions * 2));
       QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
                                       sizeof(T) * numRegions * 2));
-	  printf("Allocating %lu for dRegionsIntegral/dRegionsError\n", numRegions*2);
+	  
       if (numRegions == startRegions && error == 0) {
         QuadDebug(Device.AllocateMemory((void**)&dParentsIntegral,
                                         sizeof(T) * numRegions * 2));
@@ -1011,7 +1010,6 @@ namespace quad {
       cudaDeviceSynchronize();
 
       if (numRegions != startRegions) {
-		printf("refining error\n");
         RefineError<T><<<numBlocks, numThreads>>>(dRegionsIntegral,
                                                   dRegionsError,
                                                   dParentsIntegral,
@@ -1060,7 +1058,7 @@ namespace quad {
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 	  
 	  //printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions,lastAvg, lastErr);
-	  printf("Computing integral from %lu regions rG:%.20f errG:%.20f integral:%.20f error:%.20f\n", numRegions,rG, errG, integral, error);
+	  //printf("Computing integral from %lu regions rG:%.20f errG:%.20f integral:%.20f error:%.20f\n", numRegions,rG, errG, integral, error);
       if (Final == 0) {
         double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
         weightsum += w; // adapted by Ioannis
@@ -1098,8 +1096,8 @@ namespace quad {
       }
 
       // printf("integral:%f\n", integral);
-	  printf("FirstPhase Iteration Checking numRegions <= first_phase_maxregions*2\n");
-	  printf("numRegions:%lu first_phase_max_regions:%lu\n", numRegions, first_phase_maxregions*2);
+	  //printf("FirstPhase Iteration %i  Checking numRegions <= first_phase_maxregions*2\n", iteration);
+	  //printf("numRegions:%lu first_phase_max_regions:%lu\n", numRegions, first_phase_maxregions*2);
      // if (numRegions <= first_phase_maxregions*2 && fail == 1) {
 	  if (numRegions <= first_phase_maxregions && fail == 1) {
         GenerateActiveIntervals(activeRegions,
@@ -1129,7 +1127,7 @@ namespace quad {
                         size_t& neval,
                         Volume<T, NDIM>* vol = nullptr)
     {
-		// idea, allocate maximum dParentsIntegral, will it improve performance?
+	  // idea, allocate maximum dParentsIntegral, will it improve performance?
 	  AllocVolArrays(vol);
       CudaCheckError();
       PrintOutfileHeaders();
@@ -1167,7 +1165,7 @@ namespace quad {
                                       neval,
                                       dParentsIntegral,
                                       dParentsError,
-									  iteration,
+									  iteration+1,
                                       last_iteration);
           break;
         }
@@ -1194,7 +1192,6 @@ namespace quad {
       CudaCheckError();
 	  Phase_I_PrintFile(epsrel, epsabs);
 	  
-	  printf("fail:%i\n", fail);
       if (fail == 0 || fail == 2) {
         integral = lastAvg;
         error = lastErr;
@@ -1203,7 +1200,6 @@ namespace quad {
         return true;
       } 
 	  else {
-		printf("About to display %lu regions\n", numRegions);
 		//display(dRegionsIntegral, dRegionsError, 2*numRegions);
         return false;
       }
@@ -1778,7 +1774,7 @@ namespace quad {
         warmUpKernel<<<first_phase_maxregions, BLOCK_SIZE>>>();
 
         if (cpu_thread_id < num_cpu_threads) {
-		  std::cout<<"Phase 2 has "<<numRegions<<" regions and "<<num_cpu_threads<< " cpu threads\n";
+		  //std::cout<<"Phase 2 has "<<numRegions<<" regions and "<<num_cpu_threads<< " cpu threads\n";
           size_t numRegionsThread = numRegions / num_cpu_threads;
           int startIndex = cpu_thread_id * numRegionsThread;
           int endIndex = (cpu_thread_id + 1) * numRegionsThread;
@@ -1867,9 +1863,9 @@ namespace quad {
             PrintToFile(tempOut.str(), "phase1.csv");
           }
 		  
-		  printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
-		  printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
-		  printf("-------\n");
+		  //printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
+		  //printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
+		  //printf("-------\n");
 		  
           int max_regions = max_globalpool_size;
 		  size_t numThreads = BLOCK_SIZE;

@@ -77,8 +77,8 @@ namespace quad {
 		//printf("x[%i]:%f Sample sBound:%f,%f regular bounds:%f,%f\n", dim, x[dim], sBound[dim].unScaledLower, sBound[dim].unScaledUpper,  b[dim].lower, b[dim].upper);
       //jacobian = jacobian * range * (highs[dim] - lows[dim]);
 	  jacobian = jacobian * range;
-	  if(blockIdx.x == 5 && threadIdx.x == 0)
-		  printf("scaling  x[%i]:%f with range%f to %f\n", dim, x[dim], range, sBound[dim].unScaledLower + x[dim] * range);
+	  //if(blockIdx.x == 5 && threadIdx.x == 0)
+		//  printf("scaling  x[%i]:%f with range%f to %f\n", dim, x[dim], range, sBound[dim].unScaledLower + x[dim] * range);
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
 	   //if(blockIdx.x == 0 && threadIdx.x == 0)
 		//  printf("after half scaling  x[%i]:%f\n", dim, x[dim]);
@@ -238,7 +238,7 @@ namespace quad {
       }
 	  
       r->avg = vol * sum[0];
-	  if(threadIdx.x == 0 && blockIdx.x == 5)
+	  if(threadIdx.x == 0 && blockIdx.x == 5 && (region->div == 12 || region->div == 0))
 		  printf("vol:%.20f sum[0]:%.20f\n", vol, sum[0]);
 	 // if(blockIdx.x != 0) 
 		/*printf("sum[%i]:%f vol:%f div:%i result:%f, %f, %f, %f, %f, %f, %f, %f bounds:%f-%f %f-%f, %f-%f, %f-%f, %f-%f, %f-%f, %f-%f\n", blockIdx.x, sum[0], vol, region->div, r->avg, x[0], x[1], x[2], x[3], x[4], x[5], x[6],
