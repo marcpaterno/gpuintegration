@@ -204,12 +204,12 @@ class RegionList: public Managed{
 		}
 		
 		void Clear(){
-			cudaFree(activeRegions);
-			cudaFree(subDividingDimension);
+			//cudaFree(activeRegions);
+			//cudaFree(subDividingDimension);
 			//cudaFree(dRegionsIntegral);
 			//cudaFree(dRegionsError);
-			cudaFree(dRegionsLength);
-			cudaFree(dRegions);
+			//cudaFree(dRegionsLength);
+			//cudaFree(dRegions);
 		}
 		
 		void Set(double* regions_integral, double* regions_err){

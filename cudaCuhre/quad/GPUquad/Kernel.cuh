@@ -1058,7 +1058,7 @@ namespace quad {
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 	  
 	  //printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions,lastAvg, lastErr);
-	  //printf("Computing integral from %lu regions rG:%.20f errG:%.20f integral:%.20f error:%.20f\n", numRegions,rG, errG, integral, error);
+	  
       if (Final == 0) {
         double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
         weightsum += w; // adapted by Ioannis
@@ -1073,7 +1073,7 @@ namespace quad {
         lastErr = errG;
          //printf("F1 rG:%f\t errG:%f\t global: %f +- %f numRegions:%lu\n", lastAvg, lastErr,  numRegions, integral, error);
       }
-
+	printf("Computing integral from %lu regions %.20f +- %.20f\n", numRegions, lastAvg, lastErr);
       if (outLevel >= 1)
         out1 << lastAvg << "," << lastErr << "," << nregions << std::endl;
 
@@ -1098,8 +1098,8 @@ namespace quad {
       // printf("integral:%f\n", integral);
 	  //printf("FirstPhase Iteration %i  Checking numRegions <= first_phase_maxregions*2\n", iteration);
 	  //printf("numRegions:%lu first_phase_max_regions:%lu\n", numRegions, first_phase_maxregions*2);
-     // if (numRegions <= first_phase_maxregions*2 && fail == 1) {
-	  if (numRegions <= first_phase_maxregions && fail == 1) {
+      if (numRegions <= first_phase_maxregions*2 && fail == 1) {
+	  //if (numRegions <= first_phase_maxregions && fail == 1) {
         GenerateActiveIntervals(activeRegions,
                                 subDividingDimension,
                                 dRegionsIntegral,
@@ -1151,8 +1151,8 @@ namespace quad {
           Phase_I_PrintFile(epsrel, epsabs);
           break;
         } 
-		//else if (numRegions > first_phase_maxregions*2 && fail == 1) {
-		else if (numRegions > first_phase_maxregions && fail == 1) {
+		//else if (numRegions > first_phase_maxregions && fail == 1) {
+		else if (numRegions > first_phase_maxregions*2 && fail == 1) {
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -1607,10 +1607,10 @@ namespace quad {
 	}
 	
 	void Phase_I_format_region_copy(RegionList*& batch,
-									double*& sourceRegions, 
-								    double*& sourceRegionsLength,
-									double* RegionsIntegral,
-									double* RegionsError,
+									double*& sourceRegions, 	//should not be by reference, const instead
+								    double*& sourceRegionsLength,	//should not be by reference, const instead
+									double* RegionsIntegral,		//should not be by reference, const instead
+									double* RegionsError,			//should not be by reference, const instead
 									size_t total_num_regions,
 									size_t startRegionIndex,
 									size_t endRegionIndex){
@@ -1618,24 +1618,28 @@ namespace quad {
 		//from a two based region array, copy a partion into batch
 		//size_t batch_size = endRegionIndex - startRegionIndex + 1;
 		size_t batch_size = endRegionIndex - startRegionIndex + 1;
-		
+		CudaCheckError();
 		assert(batch_size < 0);
 		batch->numRegions = batch_size;
 		batch->dRegionsIntegral = RegionsIntegral;
 		batch->dRegionsError = RegionsError;
+		CudaCheckError();
 		printf("Phase I format copying batch_size:%lu within %lu total_num_regions\n", batch_size, total_num_regions);
 		for (int dim = 0; dim < NDIM; ++dim) {
+			printf("Dim %i Copying from %lu to %lu\n", dim, dim * total_num_regions + startRegionIndex, dim * total_num_regions + startRegionIndex + batch_size);
+			printf("Pasting to %lu\n", dim * batch_size);
 			QuadDebug(cudaMemcpy(batch->dRegions + dim * batch_size,
 								 sourceRegions + dim * total_num_regions + startRegionIndex,
 								 sizeof(T) * batch_size,
-								 cudaMemcpyHostToDevice));
+								 cudaMemcpyDeviceToDevice));
 			  
 			QuadDebug(cudaMemcpy(batch->dRegionsLength + dim * batch_size,
 								 sourceRegionsLength + dim * total_num_regions + startRegionIndex,
 								 sizeof(T) * batch_size,
-								 cudaMemcpyHostToDevice));
+								 cudaMemcpyDeviceToDevice)); //this is not HostToDevice right?
+			CudaCheckError();
         }
-		CudaCheckError();
+		
 	}
 	
 	template<typename IntegT>
@@ -1677,13 +1681,16 @@ namespace quad {
 												  epsrel,
 												  epsabs,
 												  d_integrand);
+			CudaCheckError();
 			currentBatch->Clear();
+			CudaCheckError();
 		}
 		
 		if( size % max_num_blocks != 0){
-			printf("last iter\n");
+			
 			size_t leftIndex  = start+iters*max_num_blocks;
 			size_t rightIndex = leftIndex + (size % max_num_blocks) - 1;
+			printf("last iter leftIndex:%lu rightIndex:%lu\n", leftIndex, rightIndex);
 			Phase_I_format_region_copy(currentBatch, Regions, RegionsLength, dRegionsIntegral + leftIndex, dRegionsError + leftIndex, size, leftIndex, rightIndex);
 			final_result += Execute_PhaseII_Batch(currentBatch, 
 												  dRegionsNumRegion,
@@ -1694,7 +1701,9 @@ namespace quad {
 												  epsrel,
 												  epsabs,
 												  d_integrand);
+			CudaCheckError();
 			currentBatch->Clear();
+			CudaCheckError();
 		}
 		
 		return final_result;
@@ -1863,9 +1872,9 @@ namespace quad {
             PrintToFile(tempOut.str(), "phase1.csv");
           }
 		  
-		  //printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
-		  //printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
-		  //printf("-------\n");
+		  printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n", lastAvg,lastErr, lastErr/MaxErr(lastAvg, epsrel, epsabs), numRegions); 
+		  printf("Phase 1 good region results:%.17f +- %.17f\n", integral, error);
+		  printf("-------\n");
 		  
           int max_regions = max_globalpool_size;
 		  size_t numThreads = BLOCK_SIZE;
