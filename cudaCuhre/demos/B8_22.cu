@@ -94,7 +94,7 @@ main()
   _final = 0;
   epsrel = 1.0e-3;
 
-  while (time_and_call("pdc_f0_latest",
+  /*while (time_and_call("pdc_f0_latest",
                        integrand,
                        epsrel,
                        true_value,
@@ -103,5 +103,5 @@ main()
                        _final) == true &&
          epsrel >= epsrel_min) {
     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  }*/
 }
