@@ -104,11 +104,11 @@ TEST_CASE("BoxIntegral8_25")
 
   //-------------------------------------------------
   // read old timing to compare
-  std::ifstream myfile(timefile.c_str());
-  double last_recorded_time = 0;
+
+
 
   // output data for analysis
-  FinalDataPrint(outfile,
+  /*FinalDataPrint(outfile,
                  id,
                  true_value,
                  epsrel,
@@ -119,23 +119,15 @@ TEST_CASE("BoxIntegral8_25")
                  result.status,
                  _final,
                  dt.count(),
-                 id + ".csv");
+                 id + ".csv");*/
+  printf("%.20f +- %.20f nregions:%i\n", result.estimate, result.errorest, result.nregions);
 
-  if (myfile.is_open()) {
-    myfile >> last_recorded_time;
-    CHECK(dt.count() <= last_recorded_time + 100);
-  }
 
   double const ratio = result.errorest / (epsrel * result.estimate);
   CHECK(ratio <= 1.0);
   double true_err = abs(true_value - result.estimate);
   CHECK(true_err <= result.errorest);
 
-  //-----------------------------------------------------------------------------
-  // record new timing if all assertions are passed
-  std::stringstream outfileTime;
-  outfileTime << dt.count() << std::endl;
-  PrintToFile(outfileTime.str(), timefile);
 };
 
 TEST_CASE("BoxIntegral8_22")
