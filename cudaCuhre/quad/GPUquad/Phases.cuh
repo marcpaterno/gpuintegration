@@ -903,7 +903,7 @@ ComputeWeightSum(T *errors, size_t size){
 	
     // temporary solution
     if (threadIdx.x == 0 && phase1_type == 0) {
-      ERR = batch.dRegionsError[blockIdx.x + batch.numRegions];
+      ERR = batch.dRegionsError[blockIdx.x];
       sRegionPool[0].result.err = ERR;
     } else {
       if (threadIdx.x == 0 && batch.numRegions != 0) {
@@ -911,9 +911,10 @@ ComputeWeightSum(T *errors, size_t size){
         sRegionPool[0].result.err = ERR;
       }
     }
-	
+
     __syncthreads();	
-	
+	//if(threadIdx.x == 0)
+	//	printf("%i %.20f +- %.20f\n" , blockIdx.x, RESULT, ERR);
     /*
     prev_error = ERR;
     prev_ratio = ERR/MaxErr(RESULT, epsrel, epsabs);
@@ -926,7 +927,7 @@ ComputeWeightSum(T *errors, size_t size){
 
     T required_ratio_decrease = abs(1 - prev_ratio)/local_region_cap;
     */
-
+	
     int nregions = sRegionPoolSize; // is only 1 at this point
     T lastavg = RESULT;
     T lasterr = ERR;
@@ -999,13 +1000,13 @@ ComputeWeightSum(T *errors, size_t size){
           rL->err *= c;
           rR->err *= c;
         }
-
+		
         rL->err += diff;
         rR->err += diff;
-
+		
         lasterr += rL->err + rR->err - result.err;
         lastavg += rL->avg + rR->avg - result.avg;
-
+		
         if (Final == 0) {
           weightsum += w = 1 / fmax(lasterr * lasterr, ldexp(1., -104));
           avgsum += w * lastavg;
@@ -1124,9 +1125,9 @@ ComputeWeightSum(T *errors, size_t size){
                               //printf("%i, %.20f, %.20f, %.20f,%.20f, %i\n",
          blockIdx.x, RESULT, ERR, 0,  0, i);
                }
-              */
+      */
       int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
-	
+	  
       if (ERR > (1e+10)) {
         RESULT = 0.0;
         ERR = 0.0;
@@ -1134,9 +1135,9 @@ ComputeWeightSum(T *errors, size_t size){
       }
 	  
 	  //if(nregions > 2048)
-	//	  printf("[%i] nregions:%i\n", blockIdx.x, nregions);
+	  //	 printf("[%i] nregions:%i\n", blockIdx.x, nregions);
       // printf("Final result%.20f \n %.20f\n", RESULT, ERR);
-		//printf("%i, %i, %f, %.20f, %.20f\n", blockIdx.x, nregions, ERR/MaxErr(RESULT, epsrel, epsabs), RESULT, ERR);
+	   //printf("%i, %i, %f, %.20f, %.20f, %.20f, %.20f\n", blockIdx.x, nregions, ERR/MaxErr(RESULT, epsrel, epsabs), batch.dRegionsIntegral[blockIdx.x], batch.dRegionsError[blockIdx.x], RESULT, ERR);
 	   batch.activeRegions[blockIdx.x] = isActive;
        batch.dRegionsIntegral[blockIdx.x] = RESULT;
        batch.dRegionsError[blockIdx.x] = ERR;
