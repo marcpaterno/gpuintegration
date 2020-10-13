@@ -23,7 +23,7 @@ namespace quad {
     sdata[threadIdx.x] = sum;
 
     __syncthreads();
-	//is it wise to use shlf_down_sync, sdata[BLOCK_SIZE] 
+    // is it wise to use shlf_down_sync, sdata[BLOCK_SIZE]
     // contiguous range pattern
     for (size_t offset = blockDim.x / 2; offset > 0; offset >>= 1) {
       if (threadIdx.x < offset) {
@@ -45,7 +45,9 @@ namespace quad {
                      T* sum,
                      const Structures<T>& constMem)
   {
-//this is maybe a problem, lows, highs are now unused, we rely on sBound for global bounds, and bounds b for the phase 2 starting dims, and phase 1 dims stored in dREgions, dREgionsLength
+    // this is maybe a problem, lows, highs are now unused, we rely on sBound
+    // for global bounds, and bounds b for the phase 2 starting dims, and phase 1
+    // dims stored in dREgions, dREgionsLength
     for (int dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0;
       x[dim] = 0;
@@ -54,11 +56,10 @@ namespace quad {
     int posCnt = (constMem._gpuGenPermVarStart[pIndex + 1]) -
                  (constMem._gpuGenPermVarStart[pIndex]);
     int gIndex = constMem._gpuGenPermGIndex[pIndex];
-	
+
     for (int posIter = 0; posIter < posCnt; ++posIter) {
-      int pos = (
-        constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) +
-                              posIter]);
+      int pos =
+        (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) + posIter]);
       int absPos = abs(pos);
       if (pos == absPos) {
         g[absPos - 1] = (constMem._gpuG[gIndex * NDIM + posIter]);
@@ -71,10 +72,10 @@ namespace quad {
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = (.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper;
       T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-	  jacobian = jacobian * range;
+      jacobian = jacobian * range;
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
     }
-	
+
     T fun = gpu::apply(*d_integrand, x);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun; // target for reduction
@@ -89,21 +90,20 @@ namespace quad {
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     int sIndex,
-                    const Structures<T>&  constMem,
+                    const Structures<T>& constMem,
                     int FEVAL,
                     int NSETS,
                     Region<NDIM> sRegionPool[])
   {
     __syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
-    T vol = ldexp(1., -region->div); 
-	
+    T vol = ldexp(1., -region->div);
+
     T g[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
 
-    T ratio =
-      Sq((constMem._gpuG[2 * NDIM]) / (constMem._gpuG[1 * NDIM]));
+    T ratio = Sq((constMem._gpuG[2 * NDIM]) / (constMem._gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
@@ -191,7 +191,7 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
-	  
+
       r->avg = vol * sum[0];
       r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                        errcoeff[0] * sum[2] <= sum[3]) ?

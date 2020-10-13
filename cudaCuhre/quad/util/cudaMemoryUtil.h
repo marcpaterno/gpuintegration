@@ -29,6 +29,12 @@ namespace quad {
   class DeviceMemory : public MemoryUtil<T> {
   public:
 	
+	double GetFreeMemPercentage(){
+		size_t free_physmem, total_physmem;
+		QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+		return (double)free_physmem/total_physmem;
+	}
+	
     cudaError_t
     AllocateMemory(void** d_ptr, size_t n)
     {

@@ -42,7 +42,7 @@ main(int argc, char** argv)
     exit(0);
   }
 	
-  TYPE epsrel = 6.4e-08;
+  TYPE epsrel = 2.560e-09;
   if (args.CheckCmdLineFlag("e")) {
     args.GetCmdLineArgument("e", epsrel);
   }

@@ -40,7 +40,7 @@ namespace quad {
           int verbose = 0,
           int numDevices = 1)
     {
-      //QuadDebug(cudaDeviceReset());
+      // QuadDebug(cudaDeviceReset());
       argc = pargc;
       argv = pargv;
       KEY = key;
@@ -53,10 +53,10 @@ namespace quad {
     ~Cuhre()
     {
       delete kernel;
-      //QuadDebug(cudaDeviceReset());
+      // QuadDebug(cudaDeviceReset());
     }
 
-int const BUFSIZE = 512;
+    int const BUFSIZE = 512;
 #define TAG 0
 
     void
@@ -84,7 +84,8 @@ int const BUFSIZE = 512;
             cudaDeviceProp devProp;
             cudaGetDeviceProperties(&devProp, gpuNode);
             sprintf(idstr2, " %s (%i) ", devProp.name, gpuNode);
-            strncat(idstr, idstr2, BUFSIZE-1);}
+            strncat(idstr, idstr2, BUFSIZE - 1);
+          }
         } else {
           cudaDeviceProp devProp;
           cudaGetDeviceProperties(&devProp, nodeRank);
@@ -278,19 +279,19 @@ int const BUFSIZE = 512;
       size_t numRegionsPerNode = numRegionsPerDevice * devCount;
       int startIndex = index * numRegionsPerDevice;
       int endIndex = (index + devCount) * numRegionsPerDevice;
-	  
+
       if (index == (numCUDADevices - 1)) {
         endIndex = numRegions;
       }
       numRegionsPerNode = endIndex - startIndex;
-	  
+
       if (VERBOSE) {
         log << "\nNode " << nodeRank << "\nData start index : " << startIndex
             << "\nData end index : " << endIndex
             << "\nNumber of regions per node : " << numRegionsPerNode
             << std::endl;
       }
-	  
+
       T* data = thkernel->getRegions(numRegionsPerNode, startIndex);
       thkernel->setRegionsData(data, numRegionsPerNode);
 
@@ -298,7 +299,7 @@ int const BUFSIZE = 512;
       timer::event_pair timer_node;
       timer::start_timer(&timer_node);
 #endif
-		
+
       int errorFlag = thkernel->IntegrateSecondPhase(d_integrand,
                                                      epsrel,
                                                      epsabs,
@@ -307,7 +308,7 @@ int const BUFSIZE = 512;
                                                      nregions,
                                                      neval/*,
                                                      optionalInfo*/);
-	  
+
       if (VERBOSE) {
 #if TIMING_DEBUG == 1
         T time = timer::stop_timer_returntime(&timer_node, "Second Phase");
@@ -630,33 +631,32 @@ int const BUFSIZE = 512;
                   const int phase1type)
     {
       assert(phase1type == 0 || phase1type == 1);
-	  
-	  /*
-		//This is to replace if stetement below
-		switch(phase1type){
-			case 0:
-				return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
-                                                 epsrel,
-                                                 epsabs,
-                                                 res.estimate,
-                                                 res.errorest,
-                                                 res.nregions,
-                                                 res.neval,
-                                                 volume);
-			case 1:
-				return kernel->IntegrateFirstPhase(d_integrand,
-                                         epsrel,
-                                         epsabs,
-                                         res.estimate,
-                                         res.errorest,
-                                         res.nregions,
-                                         res.neval,
-                                         volume);
-				
-			
-		}
-	  */
-	  
+
+      /*
+            //This is to replace if stetement below
+            switch(phase1type){
+                    case 0:
+                            return
+         kernel->IntegrateFirstPhaseDCUHRE(d_integrand, epsrel, epsabs,
+                                             res.estimate,
+                                             res.errorest,
+                                             res.nregions,
+                                             res.neval,
+                                             volume);
+                    case 1:
+                            return kernel->IntegrateFirstPhase(d_integrand,
+                                     epsrel,
+                                     epsabs,
+                                     res.estimate,
+                                     res.errorest,
+                                     res.nregions,
+                                     res.neval,
+                                     volume);
+
+
+            }
+      */
+
       if (phase1type)
         return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
                                                  epsrel,
@@ -676,14 +676,15 @@ int const BUFSIZE = 512;
                                          volume);
     }
 
-	template<typename IntegT>
-	IntegT* 
-	Make_GPU_Integrand(IntegT* integrand){
-		IntegT* d_integrand;
-		cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-		memcpy(d_integrand, &integrand, sizeof(IntegT));
-		return d_integrand;
-	}
+    template <typename IntegT>
+    IntegT*
+    Make_GPU_Integrand(IntegT* integrand)
+    {
+      IntegT* d_integrand;
+      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      memcpy(d_integrand, &integrand, sizeof(IntegT));
+      return d_integrand;
+    }
 
     template <typename IntegT>
     cuhreResult
@@ -696,25 +697,26 @@ int const BUFSIZE = 512;
               const int phase1type = 0)
     {
       cuhreResult res;
-		
+
       this->epsrel = epsrel;
       this->epsabs = epsabs;
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
-		
+
       int numprocs = 0;
       IntegT* d_integrand;
-      //cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-	  cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-      //cudaMemcpy(d_integrand, &integrand, sizeof(IntegT), cudaMemcpyHostToDevice);
-	  memcpy(d_integrand, &integrand, sizeof(IntegT));
-	  //the above lines will be replace wiht the ones below
-	  /*
-	  IntegT* d_integrand = Make_GPU_Integrand(&integrand);
-	  
-	  */
-	 
+      // cudaMalloc((void**)&d_integrand, sizeof(IntegT));
+      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      // cudaMemcpy(d_integrand, &integrand, sizeof(IntegT),
+      // cudaMemcpyHostToDevice);
+      memcpy(d_integrand, &integrand, sizeof(IntegT));
+      // the above lines will be replace wiht the ones below
+      /*
+      IntegT* d_integrand = Make_GPU_Integrand(&integrand);
+
+      */
+
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -733,15 +735,15 @@ int const BUFSIZE = 512;
       bool convergence = false;
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
-	  
+
       convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
-	  res.lastPhase = 1;
-	  
-      if (convergence){
-		cudaFree(d_integrand);
-		return res;
-	  }
-	  
+      res.lastPhase = 1;
+
+      if (convergence) {
+        cudaFree(d_integrand);
+        return res;
+      }
+
       res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
@@ -750,7 +752,7 @@ int const BUFSIZE = 512;
                                                              res.nregions,
                                                              res.neval/*,
                                                              nullptr*/);
-	  res.lastPhase = 2;													 
+      res.lastPhase = 2;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 
       cudaFree(d_integrand);

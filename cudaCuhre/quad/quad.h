@@ -106,7 +106,15 @@ class Managed
 
 struct PhaseII_output{
 	//perhaps activeRegions belongs here based on what attributes Region has
-	PhaseII_output() = default;
+	PhaseII_output(){
+		estimate = 0.;
+		errorest = 0.;
+		regions = 0;
+		num_failed_blocks = 0;
+		num_starting_blocks = 0;
+		
+	}
+	
 	double estimate;
 	double errorest;
 	int    regions;
@@ -138,10 +146,6 @@ struct PhaseII_output{
 		num_failed_blocks 		+=  b.num_failed_blocks;
 		num_starting_blocks 	+=  b.num_starting_blocks;
     }
-};
-
-class openMP_params{
-	
 };
 
 class RegionList: public Managed{
