@@ -7,8 +7,7 @@
 #endif
 
 
-#define PI 3.14159265358979323844
-#define MIN(a, b) (((a) < (b))?a:b)
+double constexpr PI  = 3.14159265358979323844;
 
 #define TYPE double
 

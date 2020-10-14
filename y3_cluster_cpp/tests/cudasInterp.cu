@@ -177,7 +177,6 @@ namespace quad {
 		void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
 	
 			size_t currentIndex = size/2;
-			size_t lastIndex = size - 1;
 			leftI = 0;
 			rightI = size - 1;
 
@@ -387,7 +386,6 @@ namespace quad {
 		void FindNeighbourIndices(const double val, double* arr, const size_t size, size_t& leftI, size_t& rightI) const{
 
 			size_t currentIndex = size/2;
-			size_t lastIndex = size - 1;
 			leftI = 0;
 			rightI = size - 1;
 
@@ -2579,10 +2577,6 @@ public:
 int
 main()
 {
-//TEST_CASE("integral call"){
-	test Testobj;
-	//time_and_call_vegas(newfuncgauss);
-	//time_and_call_vegas(Testobj);
 	printf("Final Test Case\n");
 	double const lo = 0x1.9p+4;
     double const lc = 0x1.b8p+4;
@@ -2614,28 +2608,13 @@ main()
 	
 	//time_and_call_vegas(integrand);
     cubacores(0, 0);
-	unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
-	double const epsrel_min = 1.0e-12;
-	cubacpp::Cuhre cuhre;
-	//int verbose = 3;
-	int verbose = 0;
 	int _final  = 1;
-	cuhre.flags = verbose | 4;
-	//cuhre.flags = verbose | 0;
-	//cuhre.flags = 1;
-	cuhre.maxeval = maxeval;
 	double epsrel = 1.0e-3;
-	double true_value = 0.;
 	epsrel = 1.0e-3;
 	
-	/*while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f1", 0)){
-		epsrel = epsrel/1.5;
-	}*/
 	
 	integral<GPU> d_integrand;
 	d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
-	constexpr int ndim = 7;
-    //epsrel = epsrel/1.5;
     
 	while(time_and_call<integral<GPU>>("pdc_f1_latest",
 								 d_integrand,

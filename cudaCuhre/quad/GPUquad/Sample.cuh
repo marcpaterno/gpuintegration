@@ -184,7 +184,7 @@ namespace quad {
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0;
         for (int s = 0; s < NSETS; ++s) {
-          maxerr = MAX(maxerr,
+          maxerr = max(maxerr,
                        fabs(sum[rul + 1] +
                             constMem._GPUScale[s * NRULES + rul] * sum[rul]) *
                          constMem._GPUNorm[s * NRULES + rul]);
@@ -196,7 +196,7 @@ namespace quad {
       r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                        errcoeff[0] * sum[2] <= sum[3]) ?
                         errcoeff[1] * sum[1] :
-                        errcoeff[2] * MAX(MAX(sum[1], sum[2]), sum[3]));
+                        errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
     }
   }
 }

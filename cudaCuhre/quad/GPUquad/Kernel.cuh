@@ -8,6 +8,7 @@
 #include "Phases.cuh"
 #include "Rule.cuh"
 
+#include <omp.h>
 #include <cuda.h>
 #include <fstream>
 #include <iomanip>
@@ -1667,7 +1668,6 @@ namespace quad {
 		RegionList* currentBatch = new RegionList(NDIM, size); //why have the entire 
 		currentBatch->Set(dRegionsIntegral, dRegionsError); //at first we point to the entire thing, shallow copy
 		size_t start = 0;
-		size_t end = max_num_blocks;
 		int iters = size / max_num_blocks;
 		
 		for(int it = 0; it < iters; it++){
@@ -1880,8 +1880,6 @@ namespace quad {
 		  printf("Phase 1 good region results:%.17f +- %.17f nregions:%lu\n", integral, error, nregions);
 		  printf("-------\n");
 		  
-          int max_regions = max_globalpool_size;
-		  size_t numThreads = BLOCK_SIZE;
           size_t numBlocks = numRegionsThread;
 		  
 		  CudaCheckError();

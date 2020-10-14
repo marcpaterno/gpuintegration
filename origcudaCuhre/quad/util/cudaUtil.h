@@ -197,10 +197,6 @@ class CommandLineArgs{
 };
 
 #define INFTY DBL_MAX
-#define MAX(a, b) ((a > b)?a:b)
-#ifndef MIN
-#define MIN(a, b) ((a < b)?a:b)
-#endif
 #define Zap(d) memset(d, 0, sizeof(d))
 
 #define MaxErr(avg, epsrel, epsabs) MAX(epsrel*fabs(avg), epsabs)

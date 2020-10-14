@@ -3,8 +3,7 @@
 
 #define FUN 11
 
-#define PI 3.14159265358979323844
-#define MIN(a, b) (((a) < (b)) ? a : b)
+double constexpr PI = 3.14159265358979323844;
 
 class Gauss9D {
 public:

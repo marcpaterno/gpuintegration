@@ -4,12 +4,11 @@
 #include "cudaDebugUtil.h"
 #include "../quad.h"
 
-#include <math.h>
 #include <float.h>
-#include <omp.h>
 #include <stdio.h>
 
 #include "../deviceProp.h"
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -192,12 +191,13 @@ public:
 };
 
 #define INFTY DBL_MAX
-#define MAX(a, b) ((a > b) ? a : b)
-#ifndef MIN
-#define MIN(a, b) ((a < b) ? a : b)
-#endif
 #define Zap(d) memset(d, 0, sizeof(d))
 
-#define MaxErr(avg, epsrel, epsabs) MAX(epsrel* fabs(avg), epsabs)
+inline
+__device__ __host__
+double MaxErr(double avg, double epsrel, double epsabs) {
+  return max(epsrel * std::abs(avg), epsabs);
+}
+
 
 #endif

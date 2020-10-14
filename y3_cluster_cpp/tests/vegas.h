@@ -94,10 +94,9 @@ double funcgauss(double x[]) {
 double newfuncgauss(/*double x[]*/double x, double y, double l, double z, double m, double n, double o, double p) {
     double sigma = 0.06;
     double mu = 0.0;
-    double tsum = 0.0; double k;
-    int j;
-	int ndim = 8;
-    k = sigma * sqrt(2.0 * M_PI);
+    double tsum = 0.0;
+	  int ndim = 8;
+    double k = sigma * sqrt(2.0 * M_PI);
     k = pow(k, ndim);
     k = 1.0 / k;
     //for (j = 1; j <= ndim; j++) 

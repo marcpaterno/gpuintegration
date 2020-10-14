@@ -32,9 +32,6 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
   auto res = a.integrate(f, epsrel, epsabs);
   
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  double absolute_error = std::abs(res.value - correct_answer);
-  bool const good = (res.status == 0);
-  int converge = !good;
   int _final = 0;
  
   std::cout<<algname<<","

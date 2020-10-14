@@ -13,7 +13,7 @@ static double const fun6_normalization = 12.0/(7.0 - 6 * log(2.0) * std::log(2.0
 
 double __fun6(double u, double v, double w, double x, double y, double z)
 {
-  return (12.0/(7.0 - 6 * log(2.0) * std::log(2.0) + log(64.0))) * (u * v + (std::pow(w, y) * x * y)/(1+u) + z*z);
+  return fun6_normalization* (u * v + (std::pow(w, y) * x * y)/(1+u) + z*z);
 }
 
 struct Fun6 {
@@ -33,7 +33,7 @@ struct Genz_1abs_5d {
   __device__ __host__ double
     operator() (double v, double w, double x, double y, double z)
   {
-    return (1./6.371054e-01) * fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+    return normalization* fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
   }
 };
 
