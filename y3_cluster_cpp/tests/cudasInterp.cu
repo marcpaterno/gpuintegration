@@ -32,7 +32,7 @@
 #include "cuba.h"
 #include "cubacpp/cuhre.hh"
 #include "vegas.h"
-
+#include <limits>
 namespace quad {
 	
 	__device__ __host__
@@ -2608,12 +2608,28 @@ main()
 	
 	//time_and_call_vegas(integrand);
     cubacores(0, 0);
+
+	unsigned long long constexpr mmaxeval = std::numeric_limits<unsigned long long>::max();
+	std::cout<<"mmaxeval:"<<mmaxeval<<"\n";
+										    
+	unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
+	double const epsrel_min = 1.0e-12;
+	cubacpp::Cuhre cuhre;
+	int verbose = 3;
+	//int verbose = 0;
 	int _final  = 1;
-	double epsrel = 1.0e-3;
-	epsrel = 1.0e-3;
+	//cuhre.flags = verbose | 4;
+	//cuhre.flags = verbose | 0;
+	//cuhre.flags = 1;
+	cuhre.maxeval = maxeval;
+	double epsrel = 5.0e-3;
+	double true_value = 0.;
 	
+	while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f0", 0)){
+		epsrel = epsrel/1.5;
+	}
 	
-	integral<GPU> d_integrand;
+	/*integral<GPU> d_integrand;
 	d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
     
 	while(time_and_call<integral<GPU>>("pdc_f1_latest",
@@ -2625,7 +2641,7 @@ main()
 							     _final)){
 						epsrel = epsrel/1.5;	
 		break;
-								 }
+								 }*/
 									 
 	
 	/*double bothEqual_cpu = integrand.mor->operator()(.6, 34., 0);

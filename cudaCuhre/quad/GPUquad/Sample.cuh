@@ -82,6 +82,8 @@ namespace quad {
 
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * (constMem._cRuleWt[gIndex * NRULES + rul]);
+	  //if(constMem._cRuleWt[gIndex * NRULES + rul] > 0.)
+		//  printf("negative weight:%.20f\n", constMem._cRuleWt[gIndex * NRULES + rul]);
     }
   }
 
