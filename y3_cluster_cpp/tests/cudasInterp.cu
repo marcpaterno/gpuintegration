@@ -32,6 +32,7 @@
 #include "cuba.h"
 #include "cubacpp/cuhre.hh"
 #include "vegas.h"
+//#include "RZU.cuh"
 #include <limits>
 namespace quad {
 	
@@ -2568,7 +2569,7 @@ void kernel_wrapper(F d_integrand){
 class test {
 public:
   __device__ __host__ double
-  operator()(double x, double y, double z, double k, double l, double m, double p, double o)
+  operator()(double x, double y, double z, double k, double l, double m, double p)
   {
     return sin(x + y + z + k + l + m);
   }
@@ -2577,6 +2578,13 @@ public:
 int
 main()
 {
+
+    //TEST_CASE("integral call"){
+	//SigmaMiscentY1ScalarIntegrand integrand2;
+	//test Testobj;
+	
+	//time_and_call_vegas(Testobj);
+
 	printf("Final Test Case\n");
 	double const lo = 0x1.9p+4;
     double const lc = 0x1.b8p+4;
@@ -2605,7 +2613,8 @@ main()
 	integrand.set_sample(lc_lt, mor, omega_z, dv_do_dz, hmf, int_zo_zt, roffset, lo_lc, sig_sum);
 	integrand.set_grid_point({zo_low_, zo_high_, radius_});
 	double result = integrand(lo, lc, lt, zt, lnM, rmis, theta);
-	
+	time_and_call_vegas(integrand);
+	return 0;
 	//time_and_call_vegas(integrand);
     cubacores(0, 0);
 
@@ -2625,11 +2634,11 @@ main()
 	double epsrel = 5.0e-3;
 	double true_value = 0.;
 	
-	while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f0", 0)){
+	/*while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f0", 0)){
 		epsrel = epsrel/1.5;
-	}
+	}*/
 	
-	/*integral<GPU> d_integrand;
+	integral<GPU> d_integrand;
 	d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
     
 	while(time_and_call<integral<GPU>>("pdc_f1_latest",
@@ -2641,7 +2650,7 @@ main()
 							     _final)){
 						epsrel = epsrel/1.5;	
 		break;
-								 }*/
+								 }
 									 
 	
 	/*double bothEqual_cpu = integrand.mor->operator()(.6, 34., 0);

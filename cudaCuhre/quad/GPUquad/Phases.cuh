@@ -132,9 +132,9 @@ ComputeWeightSum(T *errors, size_t size){
 
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-
+		
       T parRes = dParentsIntegral[blockIdx.x];
-	  printf("[%i] self estimate:%.20f, parent estimate:%.20f\n", blockIdx.x, selfRes, parRes);
+	  //printf("[%i] self estimate:%.20f, parent estimate:%.20f\n", blockIdx.x, selfRes, parRes);
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
