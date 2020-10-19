@@ -10,14 +10,11 @@ target_include_directories(sigma_miscent_y1_scalarintegrand_test
                                    ${EIGEN3_INCLUDE_DIR}
 								   ${TOPDIR})
 add_test(sigma_miscent_y1_scalarintegrand_test sigma_miscent_y1_scalarintegrand_test)
-message(${GSL_LIBRARIES})
-message(${GSL_INCLUDE_DIRS})
-message(${GSL_LIBRARY})
-#message(${GSL_CLBAS_LIBRARY})
+
 add_executable(cudasInterp cudasInterp.cu)
 target_compile_features(cudasInterp PUBLIC cxx_std_17)
 target_compile_options(cudasInterp PRIVATE "-arch=sm_70" "-lineinfo" "--expt-relaxed-constexpr")
-set_target_properties(cudasInterp PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(cudasInterp PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES  70-real)
 target_link_libraries(cudasInterp PRIVATE testmain ${CUBA_LIBRARIES} ${GSL_LIBRARIES} ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
 target_include_directories(cudasInterp PRIVATE  ${CMAKE_SOURCE_DIR}
 												${CMAKE_SOURCE_DIR}/externals
