@@ -152,6 +152,8 @@ ComputeWeightSum(T *errors, size_t size){
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
       } else {
+	//if(selfRes< 0.)
+	 // printf("Good Region %e +- %e r:%e\n", selfRes, selfErr, (selfErr / MaxErr(selfRes, epsrel, epsabs)));
         newErrs[blockIdx.x] = selfErr;
       }
 
