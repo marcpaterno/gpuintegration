@@ -29,8 +29,6 @@
 #define RANGESIN 3.0        //upper limit for sin integral
 #define WARP_SIZE 32
 
-
-
 //void printgrid(double y[ndim+1][N+1]);
 
 //Macro for checking cuda errors following a cuda launch or api call
@@ -212,18 +210,36 @@ double blockReduceSum(double val) {
   return val;
 }
 
-template <typename IntegT, int NDIM>
-__global__ void vegas(IntegT* d_integrand, int it, double *dx, double xjacd, double *regn,
-                      double *result_dev, int totalSliceNum, int npb, double xi[],
-                      double d[], int N, int N1, int iter){
+//I just added this function for convenience
+__device__ __host__ double
+ScaleValue(double val, double min, double max)
+{
+  double range = fabs(max - min);
+  return min + val * range;
+}
 
+template <typename IntegT, int NDIM>
+__global__ void vegas(IntegT* d_integrand, 
+		      int it, 
+		      double *dx, 
+		      double xjacd, 
+		      double *regn, 
+		      double *result_dev, 
+		      int totalSliceNum, 
+		      int npb, 
+		      double xi[], 
+		      double d[], 
+		      int N, 
+		      int N1, 
+		      int iter){
+  
   int sliceId, i, j, npidx, kk, k, idx;
   double f2bd, slice_integ;
   double f, fd, f2d;
   double lbj, ubj, lb, ub, wgtp;
   double x[MXDIM + 1];
   double trn;
-	
+  	
   sliceId = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
 
@@ -237,64 +253,65 @@ __global__ void vegas(IntegT* d_integrand, int it, double *dx, double xjacd, dou
     //seed = seed_init + sliceId;
     slice_integ = 0.0;
     f2bd = 0.0;
+    
     lbj = xi[i * N1 + j];
     ubj = xi[i * N1 + j + 1];
+    
     for (npidx = 0; npidx < npb; npidx++) {
       wgtp = (ubj - lbj) * N * xjacd; // wgtp will be w(x) when we finish picking x in each iteration
       //printf("inside trn:  %d  %d  %d   %e\n", it, sliceId, npidx,  trn);
       trn = (ubj - lbj) * curand_uniform(&localState) + lbj;
       x[i] = regn[i] + trn * dx[i]; //*(ubj-lbj);
+      
+      //purpose of this loop is to determine the points for which to call the integrand
       for (k = i; k < i + NDIM - 1; k++) {
 	kk = (k % NDIM) + 1;
 	trn = curand_uniform(&localState);
 	idx = int(trn * N);
-	lb = xi[kk * N1 + idx];
+	lb = xi[kk * N1 + idx];  
 	ub = xi[kk * N1 + idx + 1];
-	wgtp *= (ub - lb) * N;
+	
+	wgtp *= (ub - lb) * N; //what is N, N1
 	trn = (ub - lb) * curand_uniform(&localState) + (lb);
-	x[kk] = regn[i] + trn * dx[i]; //*(ub-lb)
-
+	x[kk] = regn[kk] + trn * dx[kk];
       }
+      
       //f = newfuncgauss(x, ndim);
-      //in order to not change absolutely anything in the code, i creat a new array xx[NDIM] instead of using x[]
-      //x should be probably be adapted to be of size NDIM based on the template argument  insted of relying on MAX dimensions
-      gpu::cudaArray<double, NDIM> xx1;
-      for(int ii=0; ii<NDIM; ++ii)
-	xx[i] = x[i];
+      gpu::cudaArray<double, NDIM> xx;
+      for(int ii=1; ii<=NDIM; ++ii){
+      	xx[ii-1] = x[ii];
+      }
+      
+      //just checking if points are out of bounds
+      // if(xx[0] > .5 || xx[1] > .75)
+      // 	printf("f(%f, %f)\n", xx[0], xx[1]);
       
       f = gpu::apply(*d_integrand, xx);
+      
       fd = wgtp * f;
       f2d = fd * fd;
       slice_integ += fd;
       f2bd += f2d;
     }
-
+    
     d[(j + 1) * MXDIM1 + i] = f2bd;
-
-
     // Calculations below are for the variance estimate of the integral estimate within the slice
     // math gives = 1/((npb)^2(npb-1) * N^2)[npb*f2bp - fbp^2]
-
-    f2bd *= npb;
+    f2bd *= npb; 
     f2bd = sqrt(f2bd);
     f2bd = (f2bd - slice_integ) * (f2bd + slice_integ) ; //accomplishes the math,
     //realden is N^2(npb)^2(npb-1)
     if (f2bd <= TINY)
       f2bd = TINY;
 
-
     slice_integ = blockReduceSum(slice_integ);
     f2bd = blockReduceSum(f2bd);
-
 
     if (tx == 0) {
       atomicAdd(&result_dev[0], f2bd);
       atomicAdd(&result_dev[1], slice_integ);
     }
 
-
-    //result_dev[0] += f2bd;
-    // }
   }
 
 }
@@ -360,33 +377,29 @@ int VegasGPU (IntegT integrand) {
   double tsid, dim_integ;
   double rel_err = 0.0;
   float exp_rel_err;
-	
-
   double wgt;
   double uwidth;
-
-
-
   int nblocks;
 
   //double minNumEval = 43008;   //= 84 * 128 * 4  , num of streaming processors on v100 = 84
   int N, N1;
-  printf("Enter the expected relative error:\n");
-  scanf("%e", &exp_rel_err);
+  //printf("Enter the expected relative error:\n");
+  //scanf("%e", &exp_rel_err);
+  exp_rel_err = 1e-3;
   //printf("the expected relative error %e\n", exp_rel_err);
   //printf("Enter the number of dimensions:\n");
   //scanf("%d", &ndim);
-
+  
   int nthreads = 32;
   N = 8000;
   npb = 16000; 
-  //ndim = 9;
+  
   double numEval = double(N) * npb * NDIM ;
   printf("the num of eval is %f\n", numEval );
   N1 = N + 1;
   nblocks = int( ((N * NDIM) + nthreads - 1) / nthreads);
   double totalSliceNum = NDIM * N;
-
+  
   double d[(N + 1) * (MXDIM + 1)];
   double r[N + 1];
   double xin[N + 1];
@@ -396,14 +409,14 @@ int VegasGPU (IntegT integrand) {
   double result[2] = {0};
   double xjacd;
   double tmp = 0.0;
-
+  
   double *xi_dev, *d_dev, *result_dev, *dt_dev, *r_dev, *xin_dev, *integralCal_dev, *regn_dev, *dx_dev;
   cudaMalloc((void**)&d_dev, sizeof(double) * (N + 1) * (MXDIM + 1)); cudaCheckError();
   cudaMalloc((void**)&xi_dev, sizeof(double) * (MXDIM + 1) * (N + 1)); cudaCheckError();
   cudaMalloc((void**)&result_dev, sizeof(double) * 2); cudaCheckError();
   cudaMalloc((void**)&regn_dev, sizeof(double) * (2 * MXDIM + 1)); cudaCheckError();
   cudaMalloc((void**)&dx_dev, sizeof(double) * (MXDIM + 1)); cudaCheckError();
-
+  
   cudaMalloc((void**)&dt_dev, sizeof(double) * (MXDIM + 1)); cudaCheckError();
   cudaMalloc((void**)&r_dev, sizeof(double) * (N + 1)); cudaCheckError();
   cudaMalloc((void**)&xin_dev, sizeof(double) * (N + 1)); cudaCheckError();
@@ -412,65 +425,78 @@ int VegasGPU (IntegT integrand) {
 
   /* initialize withuniform grid spacing */
   uwidth = 1.0 / N;
-  for (i = 1; i <= NDIM; i++) {
-    regn[i] = -1.0;
-  }
-  // for (i = ndim + 1; i <= 2 * ndim; i++) {
-  //   regn[i] = 1.0;
-  // }
-  // cudaMemcpy(regn_dev, regn, sizeof(double) * (2 * MXDIM + 1), cudaMemcpyHostToDevice); cudaCheckError();
-
-  // for (i = 0; i < MXDIM1 * N1 - 1; i++) {
-  //   xi[i] = 0.0;
-  // }
-  
   //low bounds
-  regn[0] = 20.;
-  regn[1] = 5.;
+  regn[1] = 20.;
   regn[2] = 5.;
-  regn[3] = .15;
-  regn[4] = 29.;
-  regn[5] = 0.;
+  regn[3] = 5.;
+  regn[4] = .15;
+  regn[5] = 29.;
   regn[6] = 0.;
+  regn[7] = 0.;
   //high bounds
-  regn[7] = 30.;
-  regn[8] = 50.;
+  regn[8] = 30.;
   regn[9] = 50.;
-  regn[10] = .75;
-  regn[11] = 38.;
-  regn[12] = 1.;
-  regn[13] = 6.28318530718;
+  regn[10] = 50.;
+  regn[11] = .75;
+  regn[12] = 38.;
+  regn[13] = 1.;
+  regn[14] = 6.28318530718;
+  
+  //output of exp and exp2.out are based on the bounds below
+  // regn[1] = 0.;
+  // regn[2] = 1.;
+  // regn[3] = 2.;
+  // regn[4] = 3.;
+  // regn[5] = 4.;
+  // regn[6] = 5.;
+  // regn[7] = 6.;
+  // //high bounds
+  // regn[8] = 1.;
+  // regn[9] = 2.;
+  // regn[10] = 3.;
+  // regn[11] = 4.;
+  // regn[12] = 5.;
+  // regn[13] = 6.;
+  // regn[14] = 7.;
+  
+  
+  // regn[1] = 0.;
+  // regn[2] = 0.;
+  // regn[3] = .5;
+  // regn[4] = .75;
+  cudaMemcpy(regn_dev, regn, sizeof(double) * (2 * MXDIM + 1), cudaMemcpyHostToDevice); cudaCheckError();
 
+  for (i = 0; i < MXDIM1 * N1 - 1; i++) {
+    xi[i] = 0.0;
+  }
+  
   for (i = 1; i <= NDIM; i++) {
     for (j = 0; j <= N; j++) {
       xi[i * N1 + j] = j * uwidth;
-      //printf("xi j is %f", xi[i*N1 + j]);
     }
   }
-
 
   double si, swgt, schi, intgral, chi2a, sd;
   si = 0.0;  swgt = 0.0; schi = 0.0;
 
   xjacd = 1.0 / (N * npb * NDIM);
+  //does dx hold the ranges?
   for (j = 1; j <= NDIM; j++) {
     tmp = regn[j + NDIM] - regn[j];
     dx[j] = tmp;
-    xjacd *= tmp;
+    xjacd *= tmp; //volume per sample? 
   }
   //printf("xjacd is %e\n", xjacd);
   cudaMemcpy(dx_dev, dx, sizeof(double) * (MXDIM + 1), cudaMemcpyHostToDevice); cudaCheckError();
   printf("Total num of slices are: %f\n", totalSliceNum);
 	
-
   printf("it, intgral, sd, chi2a, rel_err\n");
   for (iter = 1; iter <= ITMAX; iter++) {
     cudaMemcpy( xi_dev, xi, sizeof(double) * (MXDIM + 1) * (N + 1), cudaMemcpyHostToDevice) ; cudaCheckError();
     cudaMemset(d_dev, 0, sizeof(double) * (N + 1) * (MXDIM + 1));
     cudaMemset(result_dev, 0, 2 * sizeof(double)); //result[0]=tsid , result[1]=dim_integ
 
-    vegas<IntegT, NDIM> <<< nblocks, nthreads>>>(d_integrand, iter, dx_dev, xjacd , regn_dev , result_dev,
-						 totalSliceNum, npb, xi_dev, d_dev, N, N1,iter);
+    vegas<IntegT, NDIM> <<< nblocks, nthreads>>>(d_integrand, iter, dx_dev, xjacd , regn_dev , result_dev, totalSliceNum, npb, xi_dev, d_dev, N, N1,iter);
 
     cudaDeviceSynchronize ();
 
@@ -490,6 +516,7 @@ int VegasGPU (IntegT integrand) {
       wgt = 1.0 / tsid;
       si += wgt * dim_integ;
       schi += wgt * dim_integ * dim_integ;
+      //printf("dim_integ:%f, wgt:%f\n", dim_integ, wgt); 
       swgt += wgt;
       intgral = si / swgt;
       chi2a = (schi - si * (intgral)) / (iter - 0.9999);
@@ -511,5 +538,5 @@ int VegasGPU (IntegT integrand) {
   cudaFree(dt_dev);
   cudaFree(result_dev);
   cudaFree(integralCal_dev);
-
+  return 0;
 }
