@@ -77,7 +77,9 @@ int main()
      epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   }
   
-  cuhre.flags = 4;
+   int verbose = 0;
+   int _final = 1;
+  cuhre.flags = verbose | _final;
   epsrel = 1.0e-3;
   while(time_and_call_alt(cuhre, SinSum6D, epsrel, true_value, "dc_f1") == true && epsrel >= 2.56e-09)
   {
