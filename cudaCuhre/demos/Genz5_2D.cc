@@ -68,7 +68,7 @@ int main()
 {
   cubacores(0, 0); // turn off the forking use in CUBA's CUHRE.
   unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.024e-10;
   cubacpp::Cuhre cuhre;
   cuhre.maxeval = maxeval;
 
@@ -76,17 +76,18 @@ int main()
   
   double epsrel = 1.0e-3;
   double true_value = 0.039462780237263662026;
-  while(time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f0") == true)
   {
-     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
+    epsrel /= 5.0; 
   }
   
   
-  //example ex;
-  cuhre.flags = 4;
+  int verbose = 0;
+  int _final = 4;
+  cuhre.flags = verbose | _final;
   //time_and_call_alt<cubacpp::Cuhre, example>(cuhre, ex, epsrel, true_value, "dc_f1");
   epsrel = 1.0e-3;
-  while(time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f1") == true)
   {
       epsrel /= 5.0;
   }

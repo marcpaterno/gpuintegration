@@ -42,7 +42,7 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 			<<std::to_string(res.error)<<","
 			<<res.nregions<<","
 			<<res.status<<","
-			<<_final<<","
+	                <<_final<<","
 			<<dt.count()<<std::endl;
   if(res.status == 0)
 	return true;
@@ -59,12 +59,12 @@ double B8_22(double x,
              double n,
              double o)
 {
-   double s = 22;
-    double sum = 0;
-    sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
-          pow(m, 2) + pow(n, 2) + pow(o, 2);
-	double f = pow(sum, s / 2);
-	return f;
+  double s = 22;
+  double sum = 0;
+  sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+    pow(m, 2) + pow(n, 2) + pow(o, 2);
+  double f = pow(sum, s / 2);
+  return f;
 }
 
 
@@ -72,7 +72,7 @@ int main()
 {
   cubacores(0, 0); // turn off the forking use in CUBA's CUHRE.
   unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.024e-10;
   cubacpp::Cuhre cuhre;
   cuhre.maxeval = maxeval;
 
@@ -80,15 +80,17 @@ int main()
   
   double epsrel = 1.0e-3;
   double true_value = 1495369.283757217694;
-   //while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
-  //{
-   //  epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  //}
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f0") == true)
+  {
+    epsrel /= 5.0;
+  }
   
-  //cuhre.flags = 4;
-  cuhre.flags = 1 | 1;
+   int verbose = 0;
+   int _final = 4;
+  
+  cuhre.flags = verbose | _final;
   epsrel = 1.0e-3;
-  while(time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_22, epsrel, true_value, "dc_f1") == true)
   {
       epsrel /= 5.0;
   }

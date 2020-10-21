@@ -54,7 +54,7 @@ time_and_call(std::string id,
           << epsabs << ",\t" << std::scientific << result.estimate << ",\t"
           << std::scientific << result.errorest << ",\t" << std::fixed
           << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << dt.count() << std::endl;
+          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
   return good;
 }
 

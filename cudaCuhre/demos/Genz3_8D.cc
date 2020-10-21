@@ -73,7 +73,9 @@ int main()
      epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
   }
   
-  cuhre.flags = 4;
+   int verbose = 0;
+   int final = 4;
+  cuhre.flags = verbose | final;
   epsrel = 1.0e-3;
   while(time_and_call_alt(cuhre, GENZ_3_8D, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
   {

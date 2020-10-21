@@ -42,7 +42,7 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 			<<std::to_string(res.error)<<","
 			<<res.nregions<<","
 			<<res.status<<","
-			<<_final<<","
+	                <<_final<<","
 			<<dt.count()<<std::endl;
   if(res.status == 0)
 	return true;
@@ -75,19 +75,21 @@ int main()
 	
   cubacpp::Cuhre cuhre;
   cuhre.maxeval = maxeval;
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.024e-10;
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
 	
   double epsrel = 1.0e-3;
   double true_value = 8879.851175413485;
- /*  while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true && epsrel >= epsrel_min)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true)
   {
-     epsrel = epsrel>=1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }*/
+    epsrel /= 5.0;
+  }
   
-  cuhre.flags = 4;
+  int verbose = 0;
+  int _final = 4;
+  cuhre.flags = verbose | _final;
   epsrel = 1.0e-3;
-  while(time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f1") == true && epsrel >= epsrel_min)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f1") == true)
   {
      epsrel /= 5.0;
   }

@@ -54,7 +54,7 @@ time_and_call(std::string id,
           << epsabs << ",\t" << std::fixed << result.estimate << ",\t"
           << std::fixed << result.errorest << ",\t" << std::fixed
           << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << dt.count() << std::endl;
+          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
   return good;
 }
 
@@ -79,17 +79,17 @@ main()
     epsrel /= 5.0;
   }
 
-  _final = 0;
-  epsrel = 1.0e-3;
+  // _final = 0;
+  // epsrel = 1.0e-3;
 
-  while (time_and_call("pdc_f0_latest",
-                       integrand,
-                       epsrel,
-                       true_value,
-                       "gpucuhre",
-                       std::cout,
-                       _final) == true &&
-         epsrel >= epsrel_min) {
-    epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  // while (time_and_call("pdc_f0_latest",
+  //                      integrand,
+  //                      epsrel,
+  //                      true_value,
+  //                      "gpucuhre",
+  //                      std::cout,
+  //                      _final) == true &&
+  //        epsrel >= epsrel_min) {
+  //   epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
+  // }
 }

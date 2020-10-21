@@ -54,7 +54,7 @@ time_and_call(std::string id,
           << epsabs << ",\t" << std::scientific << result.estimate << ",\t"
           << std::scientific << result.errorest << ",\t" << std::fixed
           << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << dt.count() << std::endl;
+          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
   return good;
 }
 
@@ -66,7 +66,7 @@ main()
   double true_value = 2.2751965817917756076e-10;
   GENZ_3_8D integrand;
   std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+             "converge, final, phase, total_time\n";
   int _final = 1;
   while (time_and_call("pdc_f1_latest",
                        integrand,
