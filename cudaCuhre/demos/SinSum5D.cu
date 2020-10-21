@@ -55,7 +55,7 @@ time_and_call(std::string id,
           << epsabs << ",\t" << std::fixed << result.estimate << ",\t"
           << std::fixed << result.errorest << ",\t" << std::fixed
           << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << dt.count() << std::endl;
+          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
 		  
   printf("%s, %.20f, %e, %e, %.20f, %.20f, %i, %i, %i, %.15f\n", id, 
 																 true_value,
