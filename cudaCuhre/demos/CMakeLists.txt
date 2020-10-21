@@ -6,6 +6,14 @@ set_property(TARGET cudaCuhre PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(cudaCuhre PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(cudaCuhre quadutil ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 
+add_executable(B8_15 B8_15.cu)
+target_compile_options(B8_15 PRIVATE "-arch=sm_70")
+set_target_properties(B8_15 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(B8_15 util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(B8_15 PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
 
 add_executable(B8_22 B8_22.cu)
 target_compile_options(B8_22 PRIVATE "-arch=sm_70")
@@ -34,14 +42,6 @@ target_include_directories(absCosSum5Dplus1 PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(B8_15 B8_15.cu)
-target_compile_options(B8_15 PRIVATE "-arch=sm_70")
-set_target_properties(B8_15 PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(B8_15 util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
-target_include_directories(B8_15 PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
 
 add_executable(Genz2_2DGPU Genz2_2D.cu)
 target_compile_options(Genz2_2DGPU PRIVATE "-arch=sm_70")
@@ -96,6 +96,41 @@ target_include_directories(fun6d_demo PRIVATE
 )
 target_link_libraries(fun6d_demo PRIVATE ${CUBA_LIBRARIES})
 set_property(TARGET fun6d_demo PROPERTY CUDA_ARCHITECTURES 70-real)
+
+add_executable(cuda_genz_1_8d genz_1_8d.cu)
+target_compile_options(cuda_genz_1_8d PRIVATE "-lineinfo")
+set_property(TARGET cuda_genz_1_8d PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(cuda_genz_1_8d PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(cuda_genz_1_8d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(cuda_genz_1_8d PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(absCosSum5D absCosSum5D.cu)
+target_compile_options(absCosSum5D PRIVATE "-lineinfo")
+set_property(TARGET absCosSum5D PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(absCosSum5D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(absCosSum5D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(cuda_genz_1abs_5d genz_1abs_5d.cu)
+set_property(TARGET cuda_genz_1abs_5d PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(cuda_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(cuda_genz_1abs_5d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(cuda_genz_1abs_5d PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(SinSum6gpu SinSum6D.cu)
+target_compile_options(SinSum6gpu PRIVATE "-arch=sm_70")
+set_target_properties(SinSum6gpu PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(SinSum6gpu util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(SinSum6gpu PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
 
 add_executable(B_22cpu B_22cpu.cc)
 target_include_directories(B_22cpu PRIVATE
@@ -181,32 +216,6 @@ target_include_directories(absCosSum5Dcpu PRIVATE
 )
 target_link_libraries(absCosSum5Dcpu PRIVATE ${CUBA_LIBRARIES})
 
-add_executable(cuda_genz_1_8d genz_1_8d.cu)
-target_compile_options(cuda_genz_1_8d PRIVATE "-lineinfo")
-set_property(TARGET cuda_genz_1_8d PROPERTY CUDA_ARCHITECTURES 70-real)
-set_target_properties(cuda_genz_1_8d PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(cuda_genz_1_8d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-target_include_directories(cuda_genz_1_8d PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
-
-add_executable(absCosSum5D absCosSum5D.cu)
-target_compile_options(absCosSum5D PRIVATE "-lineinfo")
-set_property(TARGET absCosSum5D PROPERTY CUDA_ARCHITECTURES 70-real)
-set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(absCosSum5D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-target_include_directories(absCosSum5D PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
-
-add_executable(cuda_genz_1abs_5d genz_1abs_5d.cu)
-set_property(TARGET cuda_genz_1abs_5d PROPERTY CUDA_ARCHITECTURES 70-real)
-set_target_properties(cuda_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(cuda_genz_1abs_5d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-target_include_directories(cuda_genz_1abs_5d PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
-
 add_executable(SinSum6Dcpu SinSum6D.cc)
 target_include_directories(SinSum6Dcpu PRIVATE
   ${CUBA_INCLUDE_DIR}
@@ -214,13 +223,6 @@ target_include_directories(SinSum6Dcpu PRIVATE
 )
 target_link_libraries(SinSum6Dcpu PRIVATE ${CUBA_LIBRARIES})
 
-add_executable(SinSum6gpu SinSum6D.cu)
-target_compile_options(SinSum6gpu PRIVATE "-arch=sm_70")
-set_target_properties(SinSum6gpu PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(SinSum6gpu util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-target_include_directories(SinSum6gpu PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
 
 add_executable(genz_1_8d genz_1_8d.cc)
 target_include_directories(genz_1_8d PRIVATE
