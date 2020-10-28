@@ -113,7 +113,7 @@ ComputeWeightSum(T *errors, size_t size){
               size_t numRegions,
               T epsrel,
               T epsabs,
-	      int iteration)
+			  int iteration)
   {
 
     if (threadIdx.x == 0 && blockIdx.x < numRegions) {
@@ -145,20 +145,19 @@ ComputeWeightSum(T *errors, size_t size){
         T c = 1 + 2 * diff / err;
         selfErr *= c;
       }
-
+	
       selfErr += diff;
       
-      if (selfErr / MaxErr(selfRes, epsrel, epsabs) > 1. /*&& selfRes!= 0.*/) {
+
+      
+	  if(selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || (selfRes == 0. && iteration>=5)){
+		newErrs[blockIdx.x] = selfErr;
+      }
+		else{
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
-      } else {
-	//if(selfErr/(epsrel*fabs(selfRes)) >= 1.)
-	//this also prints the "good to be regions" in the last iteration, which actually wont' be filtered out because GenerateActiveIntervals won't be callled then
-		//if(iteration <= 25)
-			//printf("Good Region, %e, %e, %e, %e, %i\n", selfRes, selfErr, selfErr / MaxErr(selfRes, epsrel, epsabs), selfErr/(epsrel*fabs(selfRes)), iteration);
-        newErrs[blockIdx.x] = selfErr;
-      } 
+		}	  
 	  
       activeRegions[blockIdx.x] = fail;
 	  
