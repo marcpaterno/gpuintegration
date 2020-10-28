@@ -2455,7 +2455,7 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-12;
   cubacpp::array<7> lows  = {20., 5.,  5., .15,  29., 0., 0.};
   cubacpp::array<7> highs = {30., 50., 50.,.75,  38., 1., 6.28318530718};
   cubacpp::integration_volume_for_t<F> vol(lows, highs);
@@ -2500,7 +2500,7 @@ time_and_call(std::string id,
 	//printf("time_and_call d_integrand Mor des cols:%lu\n", integrand.mor.sig_interp->_cols);
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-12;
 
   double lows[] =  {20., 5.,  5., .15,  29., 0., 0.};
   double highs[] = {30., 50., 50.,.75,  38., 1., 6.28318530718};
@@ -2617,42 +2617,40 @@ main()
   
   cubacores(0, 0);
 
-  unsigned long long constexpr mmaxeval = std::numeric_limits<unsigned long long>::max();
-  std::cout<<"mmaxeval:"<<mmaxeval<<"\n";
+ //unsigned long long constexpr mmaxeval = std::numeric_limits<unsigned long long>::max();
+  //std::cout<<"mmaxeval:"<<mmaxeval<<"\n";
 										    
-  unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
+  unsigned long long constexpr mmaxeval = 10000000000;
   double const epsrel_min = 1.0e-12;
   cubacpp::Cuhre cuhre;
   int verbose = 3;
   //int verbose = 0;
-  int _final  = 1;
+  int _final  = 4;
   cuhre.flags = verbose | 4;
-  //cuhre.flags = verbose | 0;
-  //cuhre.flags = 1;
-  cuhre.maxeval = maxeval;
-  double epsrel = 5.0e-3;
+  cuhre.maxeval = mmaxeval;
+  double epsrel = 1.0e-3;
   double true_value = 0.;
 	
-  // while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f1", 0)){
-  //   epsrel = epsrel/1.5;
-  //   }
+  //  while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f1", 0)){
+  //    epsrel = epsrel/1.5;
+  //    }
 
   // return 0;
   
   integral<GPU> d_integrand;
   constexpr int ndim = 7;
   d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
-  VegasGPU <integral<GPU>, ndim>(d_integrand);  
-   // while(time_and_call<integral<GPU>>("pdc_f1_latest",
-   // 				     d_integrand,
-   // 				     epsrel,
-   // 				     0.,
-   // 				     "gpucuhre",
-   // 				     std::cout,
-   // 				     _final)){
-   //   epsrel = epsrel/1.5;	
-   //   break;
-   // }
+  //VegasGPU <integral<GPU>, ndim>(d_integrand);  
+   while(time_and_call<integral<GPU>>("pdc_f1_latest",
+   				     d_integrand,
+   				     epsrel,
+   				     0.,
+   				     "gpucuhre",
+   				     std::cout,
+   				     _final)){
+     epsrel = epsrel/1.5;	
+     break;
+   }
 									 
   return 0;
 }

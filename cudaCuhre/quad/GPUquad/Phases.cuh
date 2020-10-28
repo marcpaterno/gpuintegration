@@ -112,7 +112,8 @@ ComputeWeightSum(T *errors, size_t size){
               int* activeRegions,
               size_t numRegions,
               T epsrel,
-              T epsabs)
+              T epsabs,
+	      int iteration)
   {
 
     if (threadIdx.x == 0 && blockIdx.x < numRegions) {
@@ -146,16 +147,18 @@ ComputeWeightSum(T *errors, size_t size){
       }
 
       selfErr += diff;
-
-      if ((selfErr / MaxErr(selfRes, epsrel, epsabs)) > 1.) {
+      
+      if (selfErr / MaxErr(selfRes, epsrel, epsabs) > 1. /*&& selfRes!= 0.*/) {
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
       } else {
-	//if(selfRes< 0.)
-	 // printf("Good Region %e +- %e r:%e\n", selfRes, selfErr, (selfErr / MaxErr(selfRes, epsrel, epsabs)));
+	//if(selfErr/(epsrel*fabs(selfRes)) >= 1.)
+	//this also prints the "good to be regions" in the last iteration, which actually wont' be filtered out because GenerateActiveIntervals won't be callled then
+	if(iteration <= 25)
+	  printf("Good Region, %e, %e, %e, %e, %i\n", selfRes, selfErr, selfErr / MaxErr(selfRes, epsrel, epsabs), selfErr/(epsrel*fabs(selfRes)), iteration);
         newErrs[blockIdx.x] = selfErr;
-      }
+      } 
 
       activeRegions[blockIdx.x] = fail;
       newErrs[blockIdx.x + numRegions] = selfErr;
@@ -503,7 +506,7 @@ ComputeWeightSum(T *errors, size_t size){
     }
     __syncthreads();
   }
-
+  
   template <typename T, int NDIM>
   __device__ void
   INSERT_GLOBAL_STORE2(Region<NDIM>* sRegionPool,
