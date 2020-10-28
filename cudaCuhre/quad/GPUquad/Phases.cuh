@@ -155,12 +155,17 @@ ComputeWeightSum(T *errors, size_t size){
       } else {
 	//if(selfErr/(epsrel*fabs(selfRes)) >= 1.)
 	//this also prints the "good to be regions" in the last iteration, which actually wont' be filtered out because GenerateActiveIntervals won't be callled then
-	if(iteration <= 25)
-	  printf("Good Region, %e, %e, %e, %e, %i\n", selfRes, selfErr, selfErr / MaxErr(selfRes, epsrel, epsabs), selfErr/(epsrel*fabs(selfRes)), iteration);
+		//if(iteration <= 25)
+			//printf("Good Region, %e, %e, %e, %e, %i\n", selfRes, selfErr, selfErr / MaxErr(selfRes, epsrel, epsabs), selfErr/(epsrel*fabs(selfRes)), iteration);
         newErrs[blockIdx.x] = selfErr;
       } 
-
+	  
       activeRegions[blockIdx.x] = fail;
+	  
+	  if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
+		  printf("issue 1\n");
+	  if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] / MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
+		  printf("issue 2\n");
       newErrs[blockIdx.x + numRegions] = selfErr;
     }
   }
@@ -262,7 +267,7 @@ ComputeWeightSum(T *errors, size_t size){
     }
 
     T ERR = 0, RESULT = 0;
-    int fail = 0;
+    int fail = 1;
 
     INIT_REGION_POOL<IntegT>(d_integrand,
                              dRegions,
@@ -285,9 +290,9 @@ ComputeWeightSum(T *errors, size_t size){
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
       dRegionsError[gridDim.x + blockIdx.x] = ERR;
 
-      if (ratio > 1) {
-        fail = 1;
-      }
+      //if (ratio > 1) {
+        //fail = 1;
+      //}
 
       activeRegions[blockIdx.x] = fail;
       subDividingDimension[blockIdx.x] = fourthDiffDim;

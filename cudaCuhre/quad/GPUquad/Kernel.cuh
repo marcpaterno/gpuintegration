@@ -617,8 +617,10 @@ namespace quad {
     Phase_I_PrintFile(Volume<T, NDIM>* vol, size_t size)
     {
       printf("ABout to print file\n");
-      std::stringstream outfile;
-      outfile.precision(20);
+     // std::stringstream outfile;
+	  std::ofstream myfile;
+	  myfile.open ("Phase_1_all_regions.csv");
+      //myfile.precision(20);
       double sum_est = 0.;
       double sum_errorest = 0.;
       double* curr_hRegionsIntegral = new double[size];
@@ -637,12 +639,12 @@ namespace quad {
                            cudaMemcpyDeviceToHost));
 
       // display(dRegionsIntegral, size);
-
+	myfile<<"estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
       for (int i = 0; i < size; i++) {
         //printf("last_phase1_regs, %e, %e, ", curr_hRegionsIntegral[i], curr_hRegionsError[i]);
         sum_est += curr_hRegionsIntegral[i];
 	sum_errorest += curr_hRegionsError[i];
-	outfile << curr_hRegionsIntegral[i] << "," << curr_hRegionsError << ",";
+	myfile << std::scientific << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
         for (int dim = 0; dim < NDIM; dim++) {
           double low =
             ScaleValue(curr_hRegions[dim * size + i], vol->lows[dim], vol->highs[dim]);
@@ -650,13 +652,15 @@ namespace quad {
             low +
             ScaleValue(curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
           //printf("%e, %e,", low, high);
-          outfile << low << "," << high << ",";
+          myfile << low << "," << high << ",";
         }
         //printf("\n");
-        outfile << "\n";
+        myfile << "\n";
       }
-      PrintToFile(outfile.str(), "Phase_1_regions.csv");
-      printf("Done with Phase_1_regions.csv status:%e +- %e\n", sum_est, sum_errorest);
+      //PrintToFile(outfile.str(), "Phase_1_regions.csv");
+      
+	  myfile.close();
+	  printf("Done with Phase_1_regions.csv status:%e +- %e\n", sum_est, sum_errorest);
     }
 
     // void Phase_IΙ_Print_File(double integral, double error, double epsrel,
@@ -789,8 +793,9 @@ namespace quad {
       K* tmp = (K*)malloc(sizeof(K) * size);
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
-	printf("display, %e\n", (T)tmp[i]);
+		printf("display, %e\n", (T)tmp[i]);
       }
+	  free(tmp);
     }
 	
     template <class K>
@@ -848,9 +853,29 @@ namespace quad {
 	  
       std::cout<<msg<<"\n";
       for (int i = 0; i < size; ++i)
-        printf("display, %e, %e\n", i, tmp1[i], tmp2[i]);
+        printf("display, %e, %e\n", i, (T)tmp1[i], (T)tmp2[i]);
     }
-
+	
+	template <class K>
+    void
+    display(K* array1, K* array2, int* condition, size_t size, std::string msg = std::string())
+    {
+      std::stringstream outfile;
+      K* tmp1 = new K[size]; //(K*)malloc(sizeof(K) * size);
+      K* tmp2 = new K[size]; //(K*)malloc(sizeof(K) * size);
+	  int* tmp3 = new int[size];
+	  
+      cudaMemcpy(tmp1, array1, sizeof(K) * size, cudaMemcpyDeviceToHost);
+      cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
+	  cudaMemcpy(tmp3, condition, sizeof(int) * size, cudaMemcpyDeviceToHost);
+	  
+      std::cout<<msg<<"\n";
+      for (int i = 0; i < size; ++i){
+		if(tmp3[i] == 0)
+			printf("display, %e, %e\n", i, (T)tmp1[i], (T)tmp2[i]);
+	  }
+    }
+	
     void
     GenerateInitialRegions()
     {
@@ -960,7 +985,7 @@ namespace quad {
         numActiveRegions++;
 
       printf("Bad Regions:%lu/%lu Good:%lu\n",numActiveRegions,  numRegions, numRegions- numActiveRegions);
-      printf("NumInActiveRegions: %lu -> %lu\n", numInActiveRegions, numRegions- numActiveRegions); 
+      printf("NumInActiveRegions: %lu -> %lu\n", numInActiveRegions, numInActiveRegions + numRegions- numActiveRegions); 
       numInActiveRegions += numRegions- numActiveRegions;
 
       if (outLevel >= 4)
@@ -1436,17 +1461,19 @@ namespace quad {
 
       nregions += numRegions;
       neval += numRegions * fEvalPerRegion;
-
+	   
       thrust::device_ptr<T> wrapped_ptr;
       //if(last_iteration == 1)
       //display<double>(dRegionsError + numRegions, numRegions);
-      
+	  if(iteration <= 25)
+		display(dRegionsIntegral, dRegionsError, activeRegions, numRegions);
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
       T rG = integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
       T errG = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-
+	  
+	  
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
       integral =
         integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
