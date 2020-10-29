@@ -2512,7 +2512,7 @@ time_and_call(std::string id,
   int const numdevices = 1;
   quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
 	
-  int outfileVerbosity = 0;
+  int outfileVerbosity = 1;
   constexpr int phase_I_type = 0; // alternative phase 1
 
   auto const t0 = std::chrono::high_resolution_clock::now();
@@ -2620,16 +2620,16 @@ main()
  //unsigned long long constexpr mmaxeval = std::numeric_limits<unsigned long long>::max();
   //std::cout<<"mmaxeval:"<<mmaxeval<<"\n";
 										    
-  unsigned long long constexpr mmaxeval = 10000000000;
-  double const epsrel_min = 1.0e-12;
-  cubacpp::Cuhre cuhre;
-  int verbose = 3;
+  //unsigned long long constexpr maxeval = 10000000000;
+  //double const epsrel_min = 1.0e-12;
+  //cubacpp::Cuhre cuhre;
+  //int verbose = 3;
   //int verbose = 0;
-  int _final  = 4;
-  cuhre.flags = verbose | 4;
-  cuhre.maxeval = mmaxeval;
+  int _final  = 1;
+  //cuhre.flags = verbose | 4;
+  //cuhre.maxeval = maxeval;
   double epsrel = 1.0e-3;
-  double true_value = 0.;
+  //double true_value = 0.;
 	
   //  while(time_and_call_alt<cubacpp::Cuhre, SigmaMiscentY1ScalarIntegrand>(cuhre, integrand, epsrel, true_value, "dc_f1", 0)){
   //    epsrel = epsrel/1.5;
@@ -2638,7 +2638,7 @@ main()
   // return 0;
   
   integral<GPU> d_integrand;
-  constexpr int ndim = 7;
+  //constexpr int ndim = 7;
   d_integrand.set_grid_point({zo_low_, zo_high_, radius_});
   //VegasGPU <integral<GPU>, ndim>(d_integrand);  
    while(time_and_call<integral<GPU>>("pdc_f1_latest",

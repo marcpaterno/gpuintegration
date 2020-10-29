@@ -691,7 +691,7 @@ namespace quad {
         sum_est += curr_hRegionsIntegral[i];
         sum_errorest += curr_hRegionsError[i];
 		
-		size_t parentID = 0;
+		int parentID = 0;
 		
 		if(size > 1)
 			parentID = i < size/2 ? parentIDs[i]: parentIDs[i - size/2];
@@ -731,6 +731,8 @@ namespace quad {
         //printf("\n");
 		phase1out<<"\n";
         //myfile << "\n";
+		if(i % 10000 == 0)
+			printf("Completed %i/%lu regions\n", i, size);
       }
 	  
 	  if(parentIDs != nullptr)
@@ -747,19 +749,19 @@ namespace quad {
 	  
 	  
 	  nextAvailRegionID += size;
-      printf("Done with Phase_1_regions.csv status:%e +- %e\n", sum_est, sum_errorest);
-	  
+      
 	  free(curr_hRegionsError);
 	  free(curr_hRegionsIntegral);
 	  free(h_activeRegions);
+	  
 	  if(free_bounds_needed){
-		printf("Freeing curr_hRegions\n");
+		
 		free(curr_hRegions);
 		free(curr_hRegionsLength);
 		curr_hRegions = nullptr;
 		curr_hRegionsLength = nullptr;
 	  }
-	  myfile.close();
+	  //myfile.close();
     }
 
     // void Phase_IΙ_Print_File(double integral, double error, double epsrel,
@@ -1087,10 +1089,11 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 
-      printf("Bad Regions:%lu/%lu Good:%lu\n",numActiveRegions,  numRegions, numRegions- numActiveRegions);
-      printf("NumInActiveRegions: %lu -> %lu\n", numInActiveRegions, numInActiveRegions + numRegions- numActiveRegions); 
-      numInActiveRegions += numRegions- numActiveRegions;
+      //printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions, numRegions- numActiveRegions);
 
+	  printf("Total number of accumulated inactive regions: %lu\n", numInActiveRegions + numRegions- numActiveRegions); 
+      numInActiveRegions += numRegions- numActiveRegions;
+	
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
@@ -1563,8 +1566,6 @@ namespace quad {
       neval += numRegions * fEvalPerRegion;
        
       thrust::device_ptr<T> wrapped_ptr;
-	  if(!last_iteration)	
-		Phase_I_PrintFile(vol, numRegions, activeRegions, iteration);
 	  
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
       T rG = integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);

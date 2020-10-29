@@ -161,10 +161,10 @@ ComputeWeightSum(T *errors, size_t size){
 	  
       activeRegions[blockIdx.x] = fail;
 	  
-	  if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
-		  printf("issue 1\n");
-	  if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] / MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
-		  printf("issue 2\n");
+	  //if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
+		//  printf("issue 1\n");
+	  //if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] / MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
+		//  printf("issue 2\n");
       newErrs[blockIdx.x + numRegions] = selfErr;
     }
   }
