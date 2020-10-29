@@ -269,6 +269,7 @@ namespace quad {
 
     Region<NDIM>* gRegionPool;
 	
+	std::stringstream phase1out;
     std::stringstream out1;
     std::stringstream out2;
     std::stringstream out3;
@@ -627,10 +628,15 @@ namespace quad {
     void
     Phase_I_PrintFile(Volume<T, NDIM>* vol, size_t size, int* activeRegions, int iteration = 0)
     {
-      printf("About to print to file for iteration:%i\n", iteration);
-      std::ofstream myfile;
+	  if(outLevel != 1)
+		return;
+		  
+      printf("Printing Phase I regions from all iterations\n");
+	  
+      //std::ofstream myfile;
+	  
 	  std::string filename = "phase1_it_" + std::to_string(iteration) + ".csv";
-      myfile.open (filename.c_str());
+      //myfile.open (filename.c_str());
 	  
       double sum_est = 0.;
       double sum_errorest = 0.;
@@ -639,9 +645,7 @@ namespace quad {
 	  size_t numActiveRegions = 0;
 	  int* h_activeRegions;
 	  h_activeRegions = (int*)malloc(sizeof(int) * size);
-	  
-	  bool issueFound = false;
-	  
+		
 	  double* curr_hRegionsIntegral = nullptr;
       double* curr_hRegionsError = nullptr;
       curr_hRegionsIntegral = (double*)malloc(sizeof(double) * size);
@@ -662,10 +666,8 @@ namespace quad {
                            cudaMemcpyDeviceToHost));
 	  
       CudaCheckError();
-	  //copy region bounds on each dimension, this is necessary if we are not at the end of phase 1, as until we reach this phase's end, curr_hRegions are not set
-	  //with the value of dRegions and dRegionsLength as the host doesn't need that data at all
+	
 	  if(curr_hRegions == nullptr && curr_hRegionsLength == nullptr){
-		    printf("Setting curr_hRegions\n");
 		    curr_hRegions = (double*)malloc(sizeof(double) * size * NDIM);
 			curr_hRegionsLength = (double*)malloc(sizeof(double) * size * NDIM);
 			free_bounds_needed = true;
@@ -678,12 +680,13 @@ namespace quad {
                            sizeof(double) * size * NDIM,
                            cudaMemcpyDeviceToHost));
 	   }
-	   else
-		   printf("curr_hRegions already set\n");
-	   
+
 	  CudaCheckError();
-      myfile<<"iteration, id, parentID, estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
+      //myfile<<"iteration, id, parentID, estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
       
+	  if(iteration == 0)
+		phase1out<<"iteration, id, parentID, estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
+	  
 	  for (int i = 0; i < size; i++) {
         sum_est += curr_hRegionsIntegral[i];
         sum_errorest += curr_hRegionsError[i];
@@ -695,8 +698,9 @@ namespace quad {
 		else
 			parentID = -1;
 		
-        myfile << std::scientific << iteration << "," << nextAvailRegionID + i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
-        //printf("%i, %i, %i, %e, %e, ", iteration, nextAvailRegionID + i, parentID, curr_hRegionsIntegral[i], curr_hRegionsError[i]);
+        //myfile << std::scientific << iteration << "," << nextAvailRegionID + i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
+        phase1out<< std::scientific << iteration << "," << nextAvailRegionID + i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
+		//printf("%i, %i, %i, %e, %e, ", iteration, nextAvailRegionID + i, parentID, curr_hRegionsIntegral[i], curr_hRegionsError[i]);
 		
 		if(h_activeRegions[i] == 1)
 			numActiveRegions++;
@@ -707,23 +711,28 @@ namespace quad {
           double high =
             low +
             ScaleValue(curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
+			
 		 if(high == 0.){
-			 printf("Region %i scaling on dim:%i size:%lu length:%f index:%lu by (%f, %f)\n", i, dim, size, dim * size + i, curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
-			 issueFound = true;
+			 printf("Problem Region %i shows zero length scaling on dim:%i size:%lu length:%f index:%lu by (%f, %f)\n", i, dim, size, dim * size + i, curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
 		 }
           //printf("%e, %e,", low, high);
-          myfile << low << "," << high << ",";
+          
+		  
+		  if(dim == NDIM-1){
+			  phase1out<< low << "," << high << "\n";
+			  //myfile << low << "," << high << "\n";
+		  }
+		  else{
+			phase1out<< low << "," << high << ",";
+			//myfile << low << "," << high << ",";
+		  }
         }
 		
         //printf("\n");
-        myfile << "\n";
+		phase1out<<"\n";
+        //myfile << "\n";
       }
 	  
-      if(issueFound){
-		printf("Displaying dRegionsLength for iteration:%i\n", iteration);
-		display(dRegionsLength, size*NDIM);
-	  }
-			
 	  if(parentIDs != nullptr)
 		delete[] parentIDs;
 	  parentIDs = new size_t[numActiveRegions];
@@ -1722,6 +1731,7 @@ namespace quad {
       CudaCheckError();
       printf("Finished Phase 1 fail status:%i numGoodRegions:%lu\n", fail, numInActiveRegions);
       
+	  PrintToFile(phase1out.str(), "Phase_1_regions.csv");
       if (fail == 0 || fail == 2) {
         // printf("Phase 1 needed %lu regions to converge\n", numRegions);
         integral = lastAvg;
