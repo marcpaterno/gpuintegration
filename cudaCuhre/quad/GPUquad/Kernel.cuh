@@ -8,10 +8,10 @@
 #include "Phases.cuh"
 #include "Rule.cuh"
 
-#include <omp.h>
 #include <cuda.h>
 #include <fstream>
 #include <iomanip>
+#include <omp.h>
 #include <sstream>
 #include <stdio.h>
 #include <string.h>
@@ -89,7 +89,7 @@ namespace quad {
 
     if (appendMode == 0)
       outfile << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-    "converge, final, total_time"
+                 "converge, final, total_time"
               << std::endl;
     outfile << std::setprecision(18);
     outfile << id << ",\t" << std::to_string(true_value) << ",\t" << epsrel
@@ -173,9 +173,12 @@ namespace quad {
       dRegionsParentIntegral[interval_index] =
         dRegionsIntegral[tid + numRegions];
       dRegionsParentError[interval_index] = dRegionsError[tid + numRegions];
-      
-      //if(dRegionsIntegral[tid + numRegions] == 0.)
-      //printf("active region %lu with zero val (%e, %e), ratio:%f\n", tid, dRegionsIntegral[tid + numRegions], dRegionsError[tid + numRegions], dRegionsError[tid + numRegions]/MaxErr(dRegionsIntegral[tid + numRegions], 1.e-3,  1.0e-20));
+
+      // if(dRegionsIntegral[tid + numRegions] == 0.)
+      // printf("active region %lu with zero val (%e, %e), ratio:%f\n", tid,
+      // dRegionsIntegral[tid + numRegions], dRegionsError[tid + numRegions],
+      // dRegionsError[tid + numRegions]/MaxErr(dRegionsIntegral[tid +
+      // numRegions], 1.e-3,  1.0e-20));
       dRegionsParentIntegral[interval_index + newNumRegions] =
         dRegionsIntegral[tid + numRegions];
       dRegionsParentError[interval_index + newNumRegions] =
@@ -244,42 +247,42 @@ namespace quad {
     return true;
   }
 
-
   template <typename T, int NDIM>
   class Kernel {
-    //these are also members of RegionList  
+    // these are also members of RegionList
     T* dRegionsError;
-    T* dRegionsIntegral;  
+    T* dRegionsIntegral;
     T* dRegions;
     T* dRegionsLength;
-    
+
     T* curr_hRegions;
     T* curr_hRegionsLength;
-    
+
     T** hRegions;
     T** hRegionsLength;
-    
+
     T* dParentsError;
     T* dParentsIntegral;
-    T** hParentsError; //used only for batching phase 1 execution 
+    T** hParentsError; // used only for batching phase 1 execution
     T** hParentsIntegral;
-    
-    T* highs;   
+
+    T* highs;
     T* lows;
 
     Region<NDIM>* gRegionPool;
-	
-	std::stringstream phase1out;
+
+    std::stringstream phase1out;
     std::stringstream out1;
     std::stringstream out2;
     std::stringstream out3;
     std::stringstream out4;
     std::stringstream out5;
-    
-    int Final; 
+
+    int Final;
     int phase_I_type;
-    int fail; // 0 for satisfying ratio, 1 for not satisfying ratio, 2 for running out of bad regions
-    int phase2_failedblocks; 
+    int fail; // 0 for satisfying ratio, 1 for not satisfying ratio, 2 for
+              // running out of bad regions
+    int phase2_failedblocks;
     T lastErr;
     T lastAvg;
     T* dlastErr;
@@ -291,11 +294,11 @@ namespace quad {
     int max_globalpool_size;
     size_t host_current_list_id;
     const size_t numHostPartitions = 4;
-    
-	size_t nextAvailRegionID;
-	size_t nextAvailParentID;
-	size_t* parentIDs;
-	
+
+    size_t nextAvailRegionID;
+    size_t nextAvailParentID;
+    size_t* parentIDs;
+
     HostMemory<T> Host;
     DeviceMemory<T> Device;
     Rule<T> rule;
@@ -303,27 +306,42 @@ namespace quad {
     int NUM_DEVICES;
     // Debug Msg
     char msg[256];
-    
-    std::ostream& log;
 
+    std::ostream& log;
 
   public:
     T weightsum, avgsum, guess, chisq, chisum, chisqsum;
 
-    T* Get_hRegions_head(){return hRegions[host_current_list_id];}
-    
-    T* Get_hRegionsLength_head(){return hRegionsLength[host_current_list_id];}
-    
-    T* Get_hParentsIntegral_head(){return hParentsIntegral[host_current_list_id];}
-    
-    T* Get_hParentsError_head(){return hParentsError[host_current_list_id];}
-    
+    T*
+    Get_hRegions_head()
+    {
+      return hRegions[host_current_list_id];
+    }
+
+    T*
+    Get_hRegionsLength_head()
+    {
+      return hRegionsLength[host_current_list_id];
+    }
+
+    T*
+    Get_hParentsIntegral_head()
+    {
+      return hParentsIntegral[host_current_list_id];
+    }
+
+    T*
+    Get_hParentsError_head()
+    {
+      return hParentsError[host_current_list_id];
+    }
+
     int
     GetPhase2_failedblocks()
     {
       return phase2_failedblocks;
     }
-    
+
     int
     GetPhase_I_type()
     {
@@ -379,7 +397,7 @@ namespace quad {
       int copy_size = std::min(currentSize, newSize);
       QuadDebug(Device.AllocateMemory((void**)&temp, sizeof(T) * newSize));
       QuadDebug(cudaMemcpy(
-               temp, array, sizeof(T) * copy_size, cudaMemcpyDeviceToDevice));
+        temp, array, sizeof(T) * copy_size, cudaMemcpyDeviceToDevice));
       QuadDebug(Device.ReleaseMemory(array));
       array = temp;
     }
@@ -440,20 +458,22 @@ namespace quad {
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
       host_current_list_id = 0;
-      
-      //arbitrary chose four iterations, if we want to create the biggest dRegions we possibly can, four times
+
+      // arbitrary chose four iterations, if we want to create the biggest
+      // dRegions we possibly can, four times
       hRegions = new double*[numHostPartitions];
       hRegionsLength = new double*[numHostPartitions];
-      hParentsError = new double*[numHostPartitions]; //used only for batching phase 1 execution 
-      hParentsIntegral = new double*[numHostPartitions];;
-      
-      
+      hParentsError = new double*[numHostPartitions]; // used only for batching
+                                                      // phase 1 execution
+      hParentsIntegral = new double*[numHostPartitions];
+      ;
+
       ConfigureMemoryUtilization();
 
       QuadDebug(Device.AllocateMemory((void**)&gRegionPool,
                                       sizeof(Region<NDIM>) *
-                      first_phase_maxregions * 2 *
-                      max_globalpool_size));
+                                        first_phase_maxregions * 2 *
+                                        max_globalpool_size));
 
       phase2_failedblocks = 0;
       lastErr = 0;
@@ -461,7 +481,7 @@ namespace quad {
       Final = 0;
       fail = 1;
       weightsum = 0, avgsum = 0, guess = 0, chisq = 0, chisum = 0,
-    chisqsum = 0; // only used when FINAL = 0 in Rcuhre
+      chisqsum = 0; // only used when FINAL = 0 in Rcuhre
       numRegions = 0;
       numFunctionEvaluations = 0;
       // NDIM = 0;
@@ -522,7 +542,7 @@ namespace quad {
     {
       T* newcurr_hRegionsAndLength = 0;
       newcurr_hRegionsAndLength = (T*)Host.AllocateMemory(
-                              &newcurr_hRegionsAndLength, 2 * sizeof(T) * size * NDIM);
+        &newcurr_hRegionsAndLength, 2 * sizeof(T) * size * NDIM);
       T *newcurr_hRegions = &newcurr_hRegionsAndLength[0],
         *newcurr_hRegionsLength = &newcurr_hRegionsAndLength[size * NDIM];
       // NOTE:Copy order is important
@@ -544,13 +564,13 @@ namespace quad {
     {
       // QuadDebug(cudaDeviceReset());
       // NDIM = dim;
-	  parentIDs = nullptr;
+      parentIDs = nullptr;
       numInActiveRegions = 0;
-	  nextAvailRegionID = 0;
-	  nextAvailParentID = 0;
-	  curr_hRegions = nullptr; 
-	  curr_hRegionsLength = nullptr;
-	  
+      nextAvailRegionID = 0;
+      nextAvailParentID = 0;
+      curr_hRegions = nullptr;
+      curr_hRegionsLength = nullptr;
+
       KEY = key;
       VERBOSE = verbose;
       NUM_DEVICES = numDevices;
@@ -624,33 +644,36 @@ namespace quad {
         free(tmp);
       }
     }
-	
+
     void
-    Phase_I_PrintFile(Volume<T, NDIM>* vol, size_t size, int* activeRegions, int iteration = 0)
+    Phase_I_PrintFile(Volume<T, NDIM>* vol,
+                      size_t size,
+                      int* activeRegions,
+                      int iteration = 0)
     {
-	  if(outLevel != 1)
-		return;
-		  
+      if (outLevel != 1)
+        return;
+
       printf("Printing Phase I regions from all iterations\n");
-	  
-      //std::ofstream myfile;
-	  
-	  std::string filename = "phase1_it_" + std::to_string(iteration) + ".csv";
-      //myfile.open (filename.c_str());
-	  
+
+      // std::ofstream myfile;
+
+      std::string filename = "phase1_it_" + std::to_string(iteration) + ".csv";
+      // myfile.open (filename.c_str());
+
       double sum_est = 0.;
       double sum_errorest = 0.;
-	  bool free_bounds_needed = false;
-	  
-	  size_t numActiveRegions = 0;
-	  int* h_activeRegions;
-	  h_activeRegions = (int*)malloc(sizeof(int) * size);
-		
-	  double* curr_hRegionsIntegral = nullptr;
+      bool free_bounds_needed = false;
+
+      size_t numActiveRegions = 0;
+      int* h_activeRegions;
+      h_activeRegions = (int*)malloc(sizeof(int) * size);
+
+      double* curr_hRegionsIntegral = nullptr;
       double* curr_hRegionsError = nullptr;
       curr_hRegionsIntegral = (double*)malloc(sizeof(double) * size);
       curr_hRegionsError = (double*)malloc(sizeof(double) * size);
-		
+
       QuadDebug(cudaMemcpy(curr_hRegionsIntegral,
                            dRegionsIntegral + size,
                            sizeof(double) * size,
@@ -659,109 +682,124 @@ namespace quad {
                            dRegionsError + size,
                            sizeof(double) * size,
                            cudaMemcpyDeviceToHost));
-						   
-	  QuadDebug(cudaMemcpy(h_activeRegions,
-                           activeRegions ,
+
+      QuadDebug(cudaMemcpy(h_activeRegions,
+                           activeRegions,
                            sizeof(int) * size,
                            cudaMemcpyDeviceToHost));
-	  
-      CudaCheckError();
-	
-	  if(curr_hRegions == nullptr && curr_hRegionsLength == nullptr){
-		    curr_hRegions = (double*)malloc(sizeof(double) * size * NDIM);
-			curr_hRegionsLength = (double*)malloc(sizeof(double) * size * NDIM);
-			free_bounds_needed = true;
-			QuadDebug(cudaMemcpy(curr_hRegions,
-                           dRegions,
-                           sizeof(double) * size * NDIM,
-                           cudaMemcpyDeviceToHost));
-			QuadDebug(cudaMemcpy(curr_hRegionsLength,
-                           dRegionsLength,
-                           sizeof(double) * size * NDIM,
-                           cudaMemcpyDeviceToHost));
-	   }
 
-	  CudaCheckError();
-      //myfile<<"iteration, id, parentID, estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
-      
-	  if(iteration == 0)
-		phase1out<<"iteration, id, parentID, estimate, errorest, dim0, dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6, dim6l\n";
-	  
-	  for (int i = 0; i < size; i++) {
+      CudaCheckError();
+
+      if (curr_hRegions == nullptr && curr_hRegionsLength == nullptr) {
+        curr_hRegions = (double*)malloc(sizeof(double) * size * NDIM);
+        curr_hRegionsLength = (double*)malloc(sizeof(double) * size * NDIM);
+        free_bounds_needed = true;
+        QuadDebug(cudaMemcpy(curr_hRegions,
+                             dRegions,
+                             sizeof(double) * size * NDIM,
+                             cudaMemcpyDeviceToHost));
+        QuadDebug(cudaMemcpy(curr_hRegionsLength,
+                             dRegionsLength,
+                             sizeof(double) * size * NDIM,
+                             cudaMemcpyDeviceToHost));
+      }
+
+      CudaCheckError();
+      // myfile<<"iteration, id, parentID, estimate, errorest, dim0, dim0l,
+      // dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6,
+      // dim6l\n";
+
+      if (iteration == 0)
+        phase1out << "iteration, id, parentID, estimate, errorest, dim0, "
+                     "dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, "
+                     "dim4l, dim5, dim5l, dim6, dim6l\n";
+
+      for (int i = 0; i < size; i++) {
         sum_est += curr_hRegionsIntegral[i];
         sum_errorest += curr_hRegionsError[i];
-		
-		int parentID = 0;
-		
-		if(size > 1)
-			parentID = i < size/2 ? parentIDs[i]: parentIDs[i - size/2];
-		else
-			parentID = -1;
-		
-        //myfile << std::scientific << iteration << "," << nextAvailRegionID + i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
-        phase1out<< std::scientific << iteration << "," << nextAvailRegionID + i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i] << ",";
-		//printf("%i, %i, %i, %e, %e, ", iteration, nextAvailRegionID + i, parentID, curr_hRegionsIntegral[i], curr_hRegionsError[i]);
-		
-		if(h_activeRegions[i] == 1)
-			numActiveRegions++;
-		
+
+        int parentID = 0;
+
+        if (size > 1)
+          parentID = i < size / 2 ? parentIDs[i] : parentIDs[i - size / 2];
+        else
+          parentID = -1;
+
+        // myfile << std::scientific << iteration << "," << nextAvailRegionID +
+        // i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," <<
+        // curr_hRegionsError[i] << ",";
+        phase1out << std::scientific << iteration << ","
+                  << nextAvailRegionID + i << "," << parentID << ","
+                  << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i]
+                  << ",";
+        // printf("%i, %i, %i, %e, %e, ", iteration, nextAvailRegionID + i,
+        // parentID, curr_hRegionsIntegral[i], curr_hRegionsError[i]);
+
+        if (h_activeRegions[i] == 1)
+          numActiveRegions++;
+
         for (int dim = 0; dim < NDIM; dim++) {
-          double low =
-            ScaleValue(curr_hRegions[dim * size + i], vol->lows[dim], vol->highs[dim]);
-          double high =
-            low +
-            ScaleValue(curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
-			
-		 if(high == 0.){
-			 printf("Problem Region %i shows zero length scaling on dim:%i size:%lu length:%f index:%lu by (%f, %f)\n", i, dim, size, dim * size + i, curr_hRegionsLength[dim * size + i], vol->lows[dim], vol->highs[dim]);
-		 }
-          //printf("%e, %e,", low, high);
-          
-		  
-		  if(dim == NDIM-1){
-			  phase1out<< low << "," << high << "\n";
-			  //myfile << low << "," << high << "\n";
-		  }
-		  else{
-			phase1out<< low << "," << high << ",";
-			//myfile << low << "," << high << ",";
-		  }
+          double low = ScaleValue(
+            curr_hRegions[dim * size + i], vol->lows[dim], vol->highs[dim]);
+          double high = low + ScaleValue(curr_hRegionsLength[dim * size + i],
+                                         vol->lows[dim],
+                                         vol->highs[dim]);
+
+          if (high == 0.) {
+            printf("Problem Region %i shows zero length scaling on dim:%i "
+                   "size:%lu length:%f index:%lu by (%f, %f)\n",
+                   i,
+                   dim,
+                   size,
+                   dim * size + i,
+                   curr_hRegionsLength[dim * size + i],
+                   vol->lows[dim],
+                   vol->highs[dim]);
+          }
+          // printf("%e, %e,", low, high);
+
+          if (dim == NDIM - 1) {
+            phase1out << low << "," << high << "\n";
+            // myfile << low << "," << high << "\n";
+          } else {
+            phase1out << low << "," << high << ",";
+            // myfile << low << "," << high << ",";
+          }
         }
-		
-        //printf("\n");
-		phase1out<<"\n";
-        //myfile << "\n";
-		if(i % 10000 == 0)
-			printf("Completed %i/%lu regions\n", i, size);
+
+        // printf("\n");
+        phase1out << "\n";
+        // myfile << "\n";
+        if (i % 10000 == 0)
+          printf("Completed %i/%lu regions\n", i, size);
       }
-	  
-	  if(parentIDs != nullptr)
-		delete[] parentIDs;
-	  parentIDs = new size_t[numActiveRegions];
-	  
-	  size_t nextActiveRegion = 0;
-	  for (int i = 0; i < size; i++){
-		if(h_activeRegions[i] == 1){
-			parentIDs[nextActiveRegion] = nextAvailRegionID + i;
-			nextActiveRegion++;
-		}
-	  }
-	  
-	  
-	  nextAvailRegionID += size;
-      
-	  free(curr_hRegionsError);
-	  free(curr_hRegionsIntegral);
-	  free(h_activeRegions);
-	  
-	  if(free_bounds_needed){
-		
-		free(curr_hRegions);
-		free(curr_hRegionsLength);
-		curr_hRegions = nullptr;
-		curr_hRegionsLength = nullptr;
-	  }
-	  //myfile.close();
+
+      if (parentIDs != nullptr)
+        delete[] parentIDs;
+      parentIDs = new size_t[numActiveRegions];
+
+      size_t nextActiveRegion = 0;
+      for (int i = 0; i < size; i++) {
+        if (h_activeRegions[i] == 1) {
+          parentIDs[nextActiveRegion] = nextAvailRegionID + i;
+          nextActiveRegion++;
+        }
+      }
+
+      nextAvailRegionID += size;
+
+      free(curr_hRegionsError);
+      free(curr_hRegionsIntegral);
+      free(h_activeRegions);
+
+      if (free_bounds_needed) {
+
+        free(curr_hRegions);
+        free(curr_hRegionsLength);
+        curr_hRegions = nullptr;
+        curr_hRegionsLength = nullptr;
+      }
+      // myfile.close();
     }
 
     // void Phase_IΙ_Print_File(double integral, double error, double epsrel,
@@ -831,29 +869,32 @@ namespace quad {
                               size * max_globalpool_size);
         } else {
           OutputPhase2Regions(
-                  cgRegionPool, hgRegionsPhase1, RegionsNumRegion, size, 0);
+            cgRegionPool, hgRegionsPhase1, RegionsNumRegion, size, 0);
         }
       }
     }
-    
+
     template <class K>
     void
-    displayDuplicate(K* array1, K* array2, size_t size, std::string msg = std::string())
+    displayDuplicate(K* array1,
+                     K* array2,
+                     size_t size,
+                     std::string msg = std::string())
     {
-      K* tmp1 = (K*)malloc(sizeof(K) * size*2);
-      K* tmp2 = (K*)malloc(sizeof(K) * size*2);
-      cudaMemcpy(tmp1, array1, sizeof(K) * size*2, cudaMemcpyDeviceToHost);
-      cudaMemcpy(tmp2, array2, sizeof(K) * size*2, cudaMemcpyDeviceToHost);
-      
-      std::cout<<msg<<"\n";
-      
-      for (int i = 0; i < size*2; ++i)
-    printf("%i, %.20f, %.20f\n", i, (T)tmp1[i], (T)tmp2[i]);
-          
+      K* tmp1 = (K*)malloc(sizeof(K) * size * 2);
+      K* tmp2 = (K*)malloc(sizeof(K) * size * 2);
+      cudaMemcpy(tmp1, array1, sizeof(K) * size * 2, cudaMemcpyDeviceToHost);
+      cudaMemcpy(tmp2, array2, sizeof(K) * size * 2, cudaMemcpyDeviceToHost);
+
+      std::cout << msg << "\n";
+
+      for (int i = 0; i < size * 2; ++i)
+        printf("%i, %.20f, %.20f\n", i, (T)tmp1[i], (T)tmp2[i]);
+
       free(tmp1);
       free(tmp2);
     }
-    
+
     template <class K>
     void
     displayIfNotZero(K* array1, K* array2, size_t size)
@@ -864,16 +905,19 @@ namespace quad {
       cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
         // std::cout << tmp[i] << std::endl;
-    if((T)tmp2[i] == 0. || (T)tmp1[i] == 0.){
-      printf("%i, %.20f, %.20f, r:%f\n", i, (T)tmp1[i], (T)tmp2[i], tmp2[i]/MaxErr(tmp1[i], 1e-3,  1.0e-20));
-    }
+        if ((T)tmp2[i] == 0. || (T)tmp1[i] == 0.) {
+          printf("%i, %.20f, %.20f, r:%f\n",
+                 i,
+                 (T)tmp1[i],
+                 (T)tmp2[i],
+                 tmp2[i] / MaxErr(tmp1[i], 1e-3, 1.0e-20));
+        }
       }
-      
+
       free(tmp1);
       free(tmp2);
-      
     }
-    
+
     template <class K>
     void
     displayIfNotZero(K* array, size_t size)
@@ -882,11 +926,11 @@ namespace quad {
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
         // std::cout << tmp[i] << std::endl;
-    if((T)tmp[i] == 0.)
-      printf("%i, %.20f ||\n", i, (T)tmp[i]);
+        if ((T)tmp[i] == 0.)
+          printf("%i, %.20f ||\n", i, (T)tmp[i]);
       }
     }
-    
+
     template <class K>
     void
     display(K* array, size_t size)
@@ -898,7 +942,7 @@ namespace quad {
       }
       free(tmp);
     }
-    
+
     template <class K>
     void
     display(K* array, size_t size, std::string filename, std::string header)
@@ -951,32 +995,36 @@ namespace quad {
 
       cudaMemcpy(tmp1, array1, sizeof(K) * size, cudaMemcpyDeviceToHost);
       cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
-      
-      std::cout<<msg<<"\n";
+
+      std::cout << msg << "\n";
       for (int i = 0; i < size; ++i)
         printf("display, %e, %e\n", i, (T)tmp1[i], (T)tmp2[i]);
     }
-    
+
     template <class K>
     void
-    display(K* array1, K* array2, int* condition, size_t size, std::string msg = std::string())
+    display(K* array1,
+            K* array2,
+            int* condition,
+            size_t size,
+            std::string msg = std::string())
     {
       std::stringstream outfile;
       K* tmp1 = new K[size]; //(K*)malloc(sizeof(K) * size);
       K* tmp2 = new K[size]; //(K*)malloc(sizeof(K) * size);
       int* tmp3 = new int[size];
-      
+
       cudaMemcpy(tmp1, array1, sizeof(K) * size, cudaMemcpyDeviceToHost);
       cudaMemcpy(tmp2, array2, sizeof(K) * size, cudaMemcpyDeviceToHost);
       cudaMemcpy(tmp3, condition, sizeof(int) * size, cudaMemcpyDeviceToHost);
-      
-      std::cout<<msg<<"\n";
-      for (int i = 0; i < size; ++i){
-        if(tmp3[i] == 0)
-            printf("display, %e, %e\n", i, (T)tmp1[i], (T)tmp2[i]);
+
+      std::cout << msg << "\n";
+      for (int i = 0; i < size; ++i) {
+        if (tmp3[i] == 0)
+          printf("display, %e, %e\n", i, (T)tmp1[i], (T)tmp2[i]);
       }
     }
-    
+
     void
     GenerateInitialRegions()
     {
@@ -998,7 +1046,7 @@ namespace quad {
         Device.AllocateMemory((void**)&dRegionsLength, sizeof(T) * NDIM));
 
       QuadDebug(cudaMemcpy(
-               dRegions, curr_hRegions, sizeof(T) * NDIM, cudaMemcpyHostToDevice));
+        dRegions, curr_hRegions, sizeof(T) * NDIM, cudaMemcpyHostToDevice));
       QuadDebug(cudaMemcpy(dRegionsLength,
                            curr_hRegionsLength,
                            sizeof(T) * NDIM,
@@ -1016,7 +1064,7 @@ namespace quad {
       size_t numOfDivisionPerRegionPerDimension = 1;
 
       size_t numBlocks = (size_t)ceil(
-                      pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
+        pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
       numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
 
       T* newRegions = 0;
@@ -1027,14 +1075,14 @@ namespace quad {
                                       sizeof(T) * numRegions * NDIM));
 
       generateInitialRegions<T><<<numBlocks, numThreads, NDIM * sizeof(T)>>>(
-                                         dRegions,
-                                         dRegionsLength,
-                                         1,
-                                         newRegions,
-                                         newRegionsLength,
-                                         numRegions,
-                                         numOfDivisionPerRegionPerDimension,
-                                         NDIM);
+        dRegions,
+        dRegionsLength,
+        1,
+        newRegions,
+        newRegionsLength,
+        numRegions,
+        numOfDivisionPerRegionPerDimension,
+        NDIM);
 
       QuadDebug(Device.ReleaseMemory((void*)dRegions));
       QuadDebug(Device.ReleaseMemory((void*)dRegionsLength));
@@ -1049,10 +1097,10 @@ namespace quad {
                            newRegionsLength,
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToDevice));
-	  free(curr_hRegions);
-	  free(curr_hRegionsLength);
-	  curr_hRegions = nullptr;
-	  curr_hRegionsLength = nullptr;
+      free(curr_hRegions);
+      free(curr_hRegionsLength);
+      curr_hRegions = nullptr;
+      curr_hRegionsLength = nullptr;
     }
 
     size_t
@@ -1063,7 +1111,7 @@ namespace quad {
                             T*& dParentsIntegral,
                             T*& dParentsError)
     {
-      
+
       int* scannedArray = 0; // de-allocated at the end of this function
       QuadDebug(
         Device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
@@ -1076,7 +1124,7 @@ namespace quad {
 
       int last_element;
       size_t numActiveRegions = 0;
-      
+
       QuadDebug(cudaMemcpy(&last_element,
                            activeRegions + numRegions - 1,
                            sizeof(int),
@@ -1089,40 +1137,43 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 
-      //printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions, numRegions- numActiveRegions);
+      // printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions,
+      // numRegions- numActiveRegions);
 
-	  printf("Total number of accumulated inactive regions: %lu\n", numInActiveRegions + numRegions- numActiveRegions); 
-      numInActiveRegions += numRegions- numActiveRegions;
-	
+      printf("Total number of accumulated inactive regions: %lu\n",
+             numInActiveRegions + numRegions - numActiveRegions);
+      numInActiveRegions += numRegions - numActiveRegions;
+
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
       if (numActiveRegions > 0) {
-        
+
         int numOfDivisionOnDimension = 2;
 
         int* newActiveRegionsBisectDim = 0;
         T *newActiveRegions = 0, *newActiveRegionsLength =
-      0; // de-allocated at the end of the function
-        
+                                   0; // de-allocated at the end of the function
+
         cudaMalloc((void**)&newActiveRegions,
                    sizeof(T) * numActiveRegions * NDIM);
         cudaMalloc((void**)&newActiveRegionsLength,
                    sizeof(T) * numActiveRegions * NDIM);
         cudaMalloc((void**)&newActiveRegionsBisectDim,
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
-    CudaCheckError();
-    //printf("dParents Expansion not-counting-duplication %lu -> %lu\n",  numRegions , numActiveRegions * 2);
+        CudaCheckError();
+        // printf("dParents Expansion not-counting-duplication %lu -> %lu\n",
+        // numRegions , numActiveRegions * 2);
         ExpandcuArray(dParentsIntegral, numRegions * 2, numActiveRegions * 4);
         ExpandcuArray(dParentsError, numRegions * 2, numActiveRegions * 4);
-    //printf("After expansion dParents size:%lu\n", numActiveRegions * 4);
-    CudaCheckError();
+        // printf("After expansion dParents size:%lu\n", numActiveRegions * 4);
+        CudaCheckError();
         size_t numThreads = BLOCK_SIZE;
         size_t numBlocks =
           numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
 
         cudaDeviceSynchronize();
-    //printf("Populating dParents with the results of dRegionsIntegral\n");
+        // printf("Populating dParents with the results of dRegionsIntegral\n");
         alignRegions<T, NDIM>
           <<<numBlocks, numThreads>>>(dRegions,
                                       dRegionsLength,
@@ -1139,31 +1190,33 @@ namespace quad {
                                       numRegions,
                                       numActiveRegions,
                                       numOfDivisionOnDimension);
-    //cudaDeviceSynchronize();
-    CudaCheckError();
+        // cudaDeviceSynchronize();
+        CudaCheckError();
         T *genRegions = 0, *genRegionsLength = 0;
         numBlocks = numActiveRegions / numThreads +
-      ((numActiveRegions % numThreads) ? 1 : 0);
-        
-    //printf("Will have %lu regions\n", numActiveRegions*numOfDivisionOnDimension);
-    /*printf("Memory before genRegions (active:%lu) allocation %lu/%lu (%f)-> %lu/%lu\n\n", numActiveRegions, free_physmem, total_physmem, (double)free_physmem/total_physmem,
-      free_physmem+ 
-      sizeof(T) * numActiveRegions * NDIM *numOfDivisionOnDimension +sizeof(T) * numActiveRegions * NDIM *numOfDivisionOnDimension,
-      total_physmem);*/
+                    ((numActiveRegions % numThreads) ? 1 : 0);
+
+        // printf("Will have %lu regions\n",
+        // numActiveRegions*numOfDivisionOnDimension);
+        /*printf("Memory before genRegions (active:%lu) allocation %lu/%lu
+          (%f)-> %lu/%lu\n\n", numActiveRegions, free_physmem, total_physmem,
+          (double)free_physmem/total_physmem, free_physmem+ sizeof(T) *
+          numActiveRegions * NDIM *numOfDivisionOnDimension +sizeof(T) *
+          numActiveRegions * NDIM *numOfDivisionOnDimension, total_physmem);*/
         // IDEA can use expandcuArray(
         QuadDebug(cudaMalloc((void**)&genRegions,
                              sizeof(T) * numActiveRegions * NDIM *
-                 numOfDivisionOnDimension));
+                               numOfDivisionOnDimension));
         QuadDebug(cudaMalloc((void**)&genRegionsLength,
                              sizeof(T) * numActiveRegions * NDIM *
-                 numOfDivisionOnDimension));
-    CudaCheckError();
-        
-    QuadDebug(Device.ReleaseMemory(dRegions));
+                               numOfDivisionOnDimension));
+        CudaCheckError();
+
+        QuadDebug(Device.ReleaseMemory(dRegions));
         QuadDebug(Device.ReleaseMemory(dRegionsLength));
         QuadDebug(Device.ReleaseMemory(scannedArray));
-        
-    divideIntervalsGPU<T, NDIM>
+
+        divideIntervalsGPU<T, NDIM>
           <<<numBlocks, numThreads>>>(genRegions,
                                       genRegionsLength,
                                       newActiveRegions,
@@ -1171,29 +1224,30 @@ namespace quad {
                                       newActiveRegionsBisectDim,
                                       numActiveRegions,
                                       numOfDivisionOnDimension);
-        
-    CudaCheckError();
+
+        CudaCheckError();
         QuadDebug(Device.ReleaseMemory(newActiveRegions));
         QuadDebug(Device.ReleaseMemory(newActiveRegionsLength));
         QuadDebug(Device.ReleaseMemory(newActiveRegionsBisectDim));
-    CudaCheckError();
+        CudaCheckError();
         numRegions = numActiveRegions * numOfDivisionOnDimension;
-        
+
         // taken care of by destructor alternatively
-        //QuadDebug(Device.ReleaseMemory(dRegions));
-        //QuadDebug(Device.ReleaseMemory(dRegionsLength));
-        //QuadDebug(Device.ReleaseMemory(scannedArray));
-        
+        // QuadDebug(Device.ReleaseMemory(dRegions));
+        // QuadDebug(Device.ReleaseMemory(dRegionsLength));
+        // QuadDebug(Device.ReleaseMemory(scannedArray));
+
         dRegions = genRegions;
         dRegionsLength = genRegionsLength;
         cudaDeviceSynchronize();
-    //printf("After all regions division, we have numRegions:%lu and %lu parents\n", numRegions, numRegions/2);
-    //displayDuplicate(dParentsIntegral, dParentsError, numRegions/2);
-    //printf("Done Checkign\n");
+        // printf("After all regions division, we have numRegions:%lu and %lu
+        // parents\n", numRegions, numRegions/2);
+        // displayDuplicate(dParentsIntegral, dParentsError, numRegions/2);
+        // printf("Done Checkign\n");
       } else {
         numRegions = 0;
       }
-      
+
       return numRegions;
     }
 
@@ -1209,266 +1263,339 @@ namespace quad {
       } else {
         Volume<T, NDIM> tempVol;
         cudaMemcpy(
-           lows, tempVol.lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+          lows, tempVol.lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
         cudaMemcpy(
-           highs, tempVol.highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+          highs, tempVol.highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
       }
     }
-    
+
     /*
-      simplify this, d_integrand, epsrel, epsabs, error, nregions, neval should be in a single struct, 
-      it's ok to  unroll when invoking a kernel to avoid over-utilizing unified memory
-      dParentsIntegral, dParentsError, are members of struct, so you don't need them as params
+      simplify this, d_integrand, epsrel, epsabs, error, nregions, neval should
+      be in a single struct, it's ok to  unroll when invoking a kernel to avoid
+      over-utilizing unified memory dParentsIntegral, dParentsError, are members
+      of struct, so you don't need them as params
     */
-    
-    void StoreRegionsInHost(size_t numRegions){
-      //bool initialPartitioningDone = !(h_numRegions == 0);
-      //if(InitialParitioningDone){ //instead of h_numRegions
-      size_t lastPartitionID = numHostPartitions-1;
-        
-      if(h_numRegions != 0){
-    //this means we just have to update, the current host partition, that has now just reached its size limit, after having already done the partition
-    printf("Writting back to host partition %i\n", host_current_list_id-1);
-    Host.ReleaseMemory(hRegions[host_current_list_id-1]);
-    Host.ReleaseMemory(hRegionsLength[host_current_list_id-1]);
-            
-    hRegions[lastPartitionID] = (T*)Host.AllocateMemory(&hRegions[lastPartitionID], sizeof(T) * numRegions * NDIM);
-    hRegionsLength[lastPartitionID] = (T*)Host.AllocateMemory(&hRegionsLength[lastPartitionID], sizeof(T) * numRegions * NDIM);
-            
-    QuadDebug(cudaMemcpy(hRegions[lastPartitionID], 
-                 dRegions,
-                 sizeof(T) * numRegions * NDIM,
-                 cudaMemcpyDeviceToHost));
-                                 
-    QuadDebug(cudaMemcpy(hRegionsLength[lastPartitionID], 
-                 dRegionsLength,
-                 sizeof(T) * numRegions * NDIM,
-                 cudaMemcpyDeviceToHost));
-    return;
+
+    void
+    StoreRegionsInHost(size_t numRegions)
+    {
+      // bool initialPartitioningDone = !(h_numRegions == 0);
+      // if(InitialParitioningDone){ //instead of h_numRegions
+      size_t lastPartitionID = numHostPartitions - 1;
+
+      if (h_numRegions != 0) {
+        // this means we just have to update, the current host partition, that
+        // has now just reached its size limit, after having already done the
+        // partition
+        printf("Writting back to host partition %i\n",
+               host_current_list_id - 1);
+        Host.ReleaseMemory(hRegions[host_current_list_id - 1]);
+        Host.ReleaseMemory(hRegionsLength[host_current_list_id - 1]);
+
+        hRegions[lastPartitionID] = (T*)Host.AllocateMemory(
+          &hRegions[lastPartitionID], sizeof(T) * numRegions * NDIM);
+        hRegionsLength[lastPartitionID] = (T*)Host.AllocateMemory(
+          &hRegionsLength[lastPartitionID], sizeof(T) * numRegions * NDIM);
+
+        QuadDebug(cudaMemcpy(hRegions[lastPartitionID],
+                             dRegions,
+                             sizeof(T) * numRegions * NDIM,
+                             cudaMemcpyDeviceToHost));
+
+        QuadDebug(cudaMemcpy(hRegionsLength[lastPartitionID],
+                             dRegionsLength,
+                             sizeof(T) * numRegions * NDIM,
+                             cudaMemcpyDeviceToHost));
+        return;
       }
-        
+
       h_numRegions = numRegions;
       printf("h_numRegions:%lu\n", h_numRegions);
-      //displayDuplicate(dParentsIntegral, dParentsError, h_numRegions);
-      size_t quarter_size = h_numRegions/numHostPartitions;
-      
-      //partition not done so we need to write everythign we have on host, and then split it        
-      //release, they dont' have anything meaningful at this point
-        
+      // displayDuplicate(dParentsIntegral, dParentsError, h_numRegions);
+      size_t quarter_size = h_numRegions / numHostPartitions;
+
+      // partition not done so we need to write everythign we have on host, and
+      // then split it release, they dont' have anything meaningful at this point
+
       Host.ReleaseMemory(curr_hRegions);
       Host.ReleaseMemory(curr_hRegionsLength);
-      //displayIfNotZero(dParentsIntegral, dParentsError, numRegions);
-      printf("dRegions[%lu] hRegions[%lu] numActiveIntervals:%lu\n", numRegions*NDIM, quarter_size * NDIM, numRegions);
-      printf("quarter_size:%lu numHostPartitions:%lu\n", quarter_size, numHostPartitions);
-        
-      //copy everything we have back on host in four distinct partitions
-        
-      for(int i=0; i< numHostPartitions - 1; i++){
-    hRegions[i]         = (T*)Host.AllocateMemory(&hRegions[i],         sizeof(T) * quarter_size * NDIM);
-    hRegionsLength[i]   = (T*)Host.AllocateMemory(&hRegionsLength[i],   sizeof(T) * quarter_size * NDIM);
-    hParentsIntegral[i] = (T*)Host.AllocateMemory(&hParentsIntegral[i], sizeof(T)* quarter_size*2);
-    hParentsError[i]    = (T*)Host.AllocateMemory(&hParentsError[i],    sizeof(T)* quarter_size*2);
-    //printf("Allocating %quarter_size for parents\n");
-      }
-            
-      hRegions[lastPartitionID] = (T*)Host.AllocateMemory(&hRegions[lastPartitionID], sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)) * NDIM);
-                                                                          
-      hRegionsLength[lastPartitionID] = (T*)Host.AllocateMemory(&hRegionsLength[lastPartitionID], sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)) * NDIM);
-                                                                          
-      hParentsIntegral[lastPartitionID] = (T*)Host.AllocateMemory(&hParentsIntegral[lastPartitionID], sizeof(T)*2*(quarter_size + (h_numRegions % numHostPartitions)));
-                                                                          
-      hParentsError[lastPartitionID] = (T*)Host.AllocateMemory(&hParentsError[lastPartitionID], sizeof(T)*2*(quarter_size + (h_numRegions % numHostPartitions)));
-      CudaCheckError();
-        
-      size_t startRegionIndex = 0;
-        
-      for(int i=0; i<numHostPartitions -1; i++){
-    for (int dim = 0; dim < NDIM; ++dim){
-                
-      /*printf("Copying regions starting from dRegions[%lu]-[%lu] placing them at %lu at address %p\n", dim * h_numRegions  + startRegionIndex, 
-        dim * h_numRegions  + startRegionIndex+quarter_size-1, dim * quarter_size, hRegionsLength[i] + dim * quarter_size);*/
-                
-      QuadDebug(cudaMemcpy(hRegions[i] + dim * quarter_size,
-                   dRegions + dim * h_numRegions  + startRegionIndex,
-                   sizeof(T) * quarter_size,
-                   cudaMemcpyDeviceToHost));
+      // displayIfNotZero(dParentsIntegral, dParentsError, numRegions);
+      printf("dRegions[%lu] hRegions[%lu] numActiveIntervals:%lu\n",
+             numRegions * NDIM,
+             quarter_size * NDIM,
+             numRegions);
+      printf("quarter_size:%lu numHostPartitions:%lu\n",
+             quarter_size,
+             numHostPartitions);
 
+      // copy everything we have back on host in four distinct partitions
+
+      for (int i = 0; i < numHostPartitions - 1; i++) {
+        hRegions[i] = (T*)Host.AllocateMemory(&hRegions[i],
+                                              sizeof(T) * quarter_size * NDIM);
+        hRegionsLength[i] = (T*)Host.AllocateMemory(
+          &hRegionsLength[i], sizeof(T) * quarter_size * NDIM);
+        hParentsIntegral[i] = (T*)Host.AllocateMemory(
+          &hParentsIntegral[i], sizeof(T) * quarter_size * 2);
+        hParentsError[i] = (T*)Host.AllocateMemory(
+          &hParentsError[i], sizeof(T) * quarter_size * 2);
+        // printf("Allocating %quarter_size for parents\n");
+      }
+
+      hRegions[lastPartitionID] = (T*)Host.AllocateMemory(
+        &hRegions[lastPartitionID],
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)) * NDIM);
+
+      hRegionsLength[lastPartitionID] = (T*)Host.AllocateMemory(
+        &hRegionsLength[lastPartitionID],
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)) * NDIM);
+
+      hParentsIntegral[lastPartitionID] = (T*)Host.AllocateMemory(
+        &hParentsIntegral[lastPartitionID],
+        sizeof(T) * 2 * (quarter_size + (h_numRegions % numHostPartitions)));
+
+      hParentsError[lastPartitionID] = (T*)Host.AllocateMemory(
+        &hParentsError[lastPartitionID],
+        sizeof(T) * 2 * (quarter_size + (h_numRegions % numHostPartitions)));
       CudaCheckError();
-      QuadDebug(cudaMemcpy(hRegionsLength[i] + dim * quarter_size,
-                   dRegionsLength + dim * h_numRegions  + startRegionIndex,
-                   sizeof(T) * quarter_size,
-                   cudaMemcpyDeviceToHost));
-      CudaCheckError();
-    }
-    
-    //displayIfNotZero(dParentsIntegral, numRegions);
-        //displayIfNotZero(dParentsIntegral, dParentsError, numRegions);
-    
-    printf("Copying parents from index %lu and %lu\n", startRegionIndex, startRegionIndex + numRegions);
-    //we have to copy in two passes, like the NDIM passes in dRegionsIntegral
-    QuadDebug(cudaMemcpy(hParentsIntegral[i],
-                 dParentsIntegral + startRegionIndex,
-                 sizeof(T) * quarter_size,
-                 cudaMemcpyDeviceToHost));
-    QuadDebug(cudaMemcpy(hParentsIntegral[i] + quarter_size,
-                 dParentsIntegral + numRegions + startRegionIndex,
-                 sizeof(T) * quarter_size,
-                 cudaMemcpyDeviceToHost));
-                                
-    QuadDebug(cudaMemcpy(hParentsError[i],
-                 dParentsError + startRegionIndex,
-                 sizeof(T) * quarter_size,
-                 cudaMemcpyDeviceToHost));
-                                
-    QuadDebug(cudaMemcpy(hParentsError[i] + quarter_size,
-                 dParentsError + startRegionIndex + numRegions,
-                 sizeof(T) * quarter_size,
-                 cudaMemcpyDeviceToHost));
-    startRegionIndex += quarter_size;
-    CudaCheckError();
-    //if(i==0)
-      //for(int ii=0; ii<quarter_size*2; ++ii)
-        //printf("Parent[%i]:%e, %e\n", ii, hParentsIntegral[ii], hParentsError[ii]);
-            
+
+      size_t startRegionIndex = 0;
+
+      for (int i = 0; i < numHostPartitions - 1; i++) {
+        for (int dim = 0; dim < NDIM; ++dim) {
+
+          /*printf("Copying regions starting from dRegions[%lu]-[%lu] placing
+            them at %lu at address %p\n", dim * h_numRegions  +
+            startRegionIndex, dim * h_numRegions  +
+            startRegionIndex+quarter_size-1, dim * quarter_size,
+            hRegionsLength[i] + dim * quarter_size);*/
+
+          QuadDebug(cudaMemcpy(hRegions[i] + dim * quarter_size,
+                               dRegions + dim * h_numRegions + startRegionIndex,
+                               sizeof(T) * quarter_size,
+                               cudaMemcpyDeviceToHost));
+
+          CudaCheckError();
+          QuadDebug(
+            cudaMemcpy(hRegionsLength[i] + dim * quarter_size,
+                       dRegionsLength + dim * h_numRegions + startRegionIndex,
+                       sizeof(T) * quarter_size,
+                       cudaMemcpyDeviceToHost));
+          CudaCheckError();
+        }
+
+        // displayIfNotZero(dParentsIntegral, numRegions);
+        // displayIfNotZero(dParentsIntegral, dParentsError, numRegions);
+
+        printf("Copying parents from index %lu and %lu\n",
+               startRegionIndex,
+               startRegionIndex + numRegions);
+        // we have to copy in two passes, like the NDIM passes in
+        // dRegionsIntegral
+        QuadDebug(cudaMemcpy(hParentsIntegral[i],
+                             dParentsIntegral + startRegionIndex,
+                             sizeof(T) * quarter_size,
+                             cudaMemcpyDeviceToHost));
+        QuadDebug(cudaMemcpy(hParentsIntegral[i] + quarter_size,
+                             dParentsIntegral + numRegions + startRegionIndex,
+                             sizeof(T) * quarter_size,
+                             cudaMemcpyDeviceToHost));
+
+        QuadDebug(cudaMemcpy(hParentsError[i],
+                             dParentsError + startRegionIndex,
+                             sizeof(T) * quarter_size,
+                             cudaMemcpyDeviceToHost));
+
+        QuadDebug(cudaMemcpy(hParentsError[i] + quarter_size,
+                             dParentsError + startRegionIndex + numRegions,
+                             sizeof(T) * quarter_size,
+                             cudaMemcpyDeviceToHost));
+        startRegionIndex += quarter_size;
+        CudaCheckError();
+        // if(i==0)
+        // for(int ii=0; ii<quarter_size*2; ++ii)
+        // printf("Parent[%i]:%e, %e\n", ii, hParentsIntegral[ii],
+        // hParentsError[ii]);
       }
       CudaCheckError();
-      printf("done with 1st set of device to host copies startRegionIndex:%lu last batch allocated %lu regions\n", 
-         startRegionIndex, (quarter_size + (h_numRegions % numHostPartitions)));
-        
+      printf("done with 1st set of device to host copies startRegionIndex:%lu "
+             "last batch allocated %lu regions\n",
+             startRegionIndex,
+             (quarter_size + (h_numRegions % numHostPartitions)));
+
       /*for(int j=0; j<quarter_size; j++){
-    if(hParentsIntegral[0][j] != hParentsIntegral[0][j + quarter_size] && hParentsError[0][j] != hParentsError[0][j + quarter_size])
-    printf("pB %i, %.20f, %.20f %.20f, %.20f\n", j, hParentsIntegral[0][j], hParentsError[0][j], hParentsIntegral[0][j+ quarter_size], hParentsError[0][j+ quarter_size]);
-    else if(hParentsIntegral[0][j] != hParentsIntegral[0][j + quarter_size])
-    printf("pI %i, %.20f, %.20f %.20f, %.20f\n", j, hParentsIntegral[0][j], hParentsError[0][j], hParentsIntegral[0][j+ quarter_size], hParentsError[0][j+ quarter_size]);
+    if(hParentsIntegral[0][j] != hParentsIntegral[0][j + quarter_size] &&
+    hParentsError[0][j] != hParentsError[0][j + quarter_size]) printf("pB %i,
+    %.20f, %.20f %.20f, %.20f\n", j, hParentsIntegral[0][j],
+    hParentsError[0][j], hParentsIntegral[0][j+ quarter_size],
+    hParentsError[0][j+ quarter_size]); else if(hParentsIntegral[0][j] !=
+    hParentsIntegral[0][j + quarter_size]) printf("pI %i, %.20f, %.20f %.20f,
+    %.20f\n", j, hParentsIntegral[0][j], hParentsError[0][j],
+    hParentsIntegral[0][j+ quarter_size], hParentsError[0][j+ quarter_size]);
     else if(hParentsError[0][j] != hParentsError[0][j + quarter_size])
-    printf("pE %i, %.20f, %.20f %.20f, %.20f\n", j, hParentsIntegral[0][j], hParentsError[0][j], hParentsIntegral[0][j+ quarter_size], hParentsError[0][j+ quarter_size]);
+    printf("pE %i, %.20f, %.20f %.20f, %.20f\n", j, hParentsIntegral[0][j],
+    hParentsError[0][j], hParentsIntegral[0][j+ quarter_size],
+    hParentsError[0][j+ quarter_size]);
     }*/
-        
-      for (int dim = 0; dim < NDIM; ++dim){ 
-    printf("Copying last dRegions partition to host dim:%i\n", dim);
-    QuadDebug(cudaMemcpy(hRegions[lastPartitionID] + dim * quarter_size,
-                 dRegions + dim * h_numRegions  + startRegionIndex,
-                 sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-                 cudaMemcpyDeviceToHost));
-        
-    QuadDebug(cudaMemcpy(hRegionsLength[lastPartitionID] + dim * quarter_size,
-                 dRegionsLength + dim * h_numRegions  + startRegionIndex,
-                 sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-                 cudaMemcpyDeviceToHost));
-    CudaCheckError();
-        
-                
+
+      for (int dim = 0; dim < NDIM; ++dim) {
+        printf("Copying last dRegions partition to host dim:%i\n", dim);
+        QuadDebug(cudaMemcpy(
+          hRegions[lastPartitionID] + dim * quarter_size,
+          dRegions + dim * h_numRegions + startRegionIndex,
+          sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+          cudaMemcpyDeviceToHost));
+
+        QuadDebug(cudaMemcpy(
+          hRegionsLength[lastPartitionID] + dim * quarter_size,
+          dRegionsLength + dim * h_numRegions + startRegionIndex,
+          sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+          cudaMemcpyDeviceToHost));
+        CudaCheckError();
       }
-        
-        
-      printf("ABout to copy parents to host startRegionIndex:%lu\n", startRegionIndex); 
-      QuadDebug(cudaMemcpy(hParentsIntegral[lastPartitionID],
-               dParentsIntegral + startRegionIndex,
-               sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-               cudaMemcpyDeviceToHost));
-      CudaCheckError();                  
-      QuadDebug(cudaMemcpy(hParentsIntegral[lastPartitionID] + (quarter_size + (h_numRegions % numHostPartitions)),
-               dParentsIntegral + numRegions + startRegionIndex,
-               sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-               cudaMemcpyDeviceToHost));
-      CudaCheckError();                 
+
+      printf("ABout to copy parents to host startRegionIndex:%lu\n",
+             startRegionIndex);
+      QuadDebug(cudaMemcpy(
+        hParentsIntegral[lastPartitionID],
+        dParentsIntegral + startRegionIndex,
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+        cudaMemcpyDeviceToHost));
+      CudaCheckError();
+      QuadDebug(cudaMemcpy(
+        hParentsIntegral[lastPartitionID] +
+          (quarter_size + (h_numRegions % numHostPartitions)),
+        dParentsIntegral + numRegions + startRegionIndex,
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+        cudaMemcpyDeviceToHost));
+      CudaCheckError();
       printf("copied hParentsIntegral\n");
-      QuadDebug(cudaMemcpy(hParentsError[lastPartitionID],
-               dParentsError + startRegionIndex,
-               sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-               cudaMemcpyDeviceToHost));
-      CudaCheckError();     
+      QuadDebug(cudaMemcpy(
+        hParentsError[lastPartitionID],
+        dParentsError + startRegionIndex,
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+        cudaMemcpyDeviceToHost));
+      CudaCheckError();
       printf("Copied half of hParentsError\n");
-      QuadDebug(cudaMemcpy(hParentsError[lastPartitionID] + (quarter_size + (h_numRegions % numHostPartitions)),
-               dParentsError + startRegionIndex + numRegions,
-               sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
-               cudaMemcpyDeviceToHost));
+      QuadDebug(cudaMemcpy(
+        hParentsError[lastPartitionID] +
+          (quarter_size + (h_numRegions % numHostPartitions)),
+        dParentsError + startRegionIndex + numRegions,
+        sizeof(T) * (quarter_size + (h_numRegions % numHostPartitions)),
+        cudaMemcpyDeviceToHost));
       CudaCheckError();
       printf("Copied the other half too\n");
-      printf("free mem before release %f (released %lu)\n", Device.GetFreeMemPercentage(), h_numRegions*NDIM);
+      printf("free mem before release %f (released %lu)\n",
+             Device.GetFreeMemPercentage(),
+             h_numRegions * NDIM);
       Device.ReleaseMemory(dRegions);
       Device.ReleaseMemory(dRegionsLength);
       Device.ReleaseMemory(dParentsIntegral);
       Device.ReleaseMemory(dParentsError);
       printf("free mem after release %f\n", Device.GetFreeMemPercentage());
       CudaCheckError();
-        
+
       // for(int ii=0; ii<quarter_size*2; ii++)
-      //    printf("%i, %e, %e\n", ii, hParentsIntegral[0][ii], hParentsError[0][ii]);
-        
-        
+      //    printf("%i, %e, %e\n", ii, hParentsIntegral[0][ii],
+      //    hParentsError[0][ii]);
     }
-    
-    void SetDeviceRegionsFromHost(){
-        
-      size_t quarter_size = h_numRegions/numHostPartitions;
-      printf("Updating device after partiting with %lu quarter_size for host partition id:%i\n", 
-         quarter_size, host_current_list_id);
-      //h_numRegions is set in StoreRegionsInHost function call which precedes this function call
-      //the extra part in the number of bytes to copy, is that the remainder size is 
-      //only added at last iteration without using if-statements or conditional logic
-        
-      //for(int j = 0; j<quarter_size*NDIM; j++)
-      //    if(Get_hRegionsLength_head()[j] == 0. || Get_hRegions_head()[j] == Get_hRegionsLength_head()[j])
-      //        printf("%i, %.20f, %.20f\n", j, Get_hRegions_head()[j], Get_hRegionsLength_head()[j]);
-            
-      int temp = 2;
-      for(int j = 0; j<quarter_size*NDIM; j++)
-    if(hRegionsLength[temp][j] == 0.)
-      printf("%i,, %.20f, %.20f\n", j, hRegions[temp][j], hRegionsLength[temp][j]);
-      printf("--------\n");
-        
-      auto numExtraRegionsPerPartition = [h_numRegions = this-> h_numRegions, 
-                      numHostPartitions = this-> numHostPartitions, 
-                      host_current_list_id = this->host_current_list_id]() -> size_t
+
+    void
+    SetDeviceRegionsFromHost()
     {
-      //every but the last partition will return 0
-      return ((h_numRegions % numHostPartitions)*(host_current_list_id+1)/numHostPartitions);
-    };
-        
-      CudaCheckError();
-      printf("About to allocate dRegions again quarter_size:%lu\n", (quarter_size + numExtraRegionsPerPartition()));
-      QuadDebug(Device.AllocateMemory((void**)&dRegions,
-                      sizeof(T) * (quarter_size + numExtraRegionsPerPartition())*NDIM));
-                          
-      QuadDebug(Device.AllocateMemory((void**)&dRegionsLength,
-                      sizeof(T) * (quarter_size + numExtraRegionsPerPartition())*NDIM));
+
+      size_t quarter_size = h_numRegions / numHostPartitions;
+      printf("Updating device after partiting with %lu quarter_size for host "
+             "partition id:%i\n",
+             quarter_size,
+             host_current_list_id);
+      // h_numRegions is set in StoreRegionsInHost function call which precedes
+      // this function call the extra part in the number of bytes to copy, is
+      // that the remainder size is only added at last iteration without using
+      // if-statements or conditional logic
+
+      // for(int j = 0; j<quarter_size*NDIM; j++)
+      //    if(Get_hRegionsLength_head()[j] == 0. || Get_hRegions_head()[j] ==
+      //    Get_hRegionsLength_head()[j])
+      //        printf("%i, %.20f, %.20f\n", j, Get_hRegions_head()[j],
+      //        Get_hRegionsLength_head()[j]);
+
+      int temp = 2;
+      for (int j = 0; j < quarter_size * NDIM; j++)
+        if (hRegionsLength[temp][j] == 0.)
+          printf("%i,, %.20f, %.20f\n",
+                 j,
+                 hRegions[temp][j],
+                 hRegionsLength[temp][j]);
+      printf("--------\n");
+
+      auto numExtraRegionsPerPartition =
+        [h_numRegions = this->h_numRegions,
+         numHostPartitions = this->numHostPartitions,
+         host_current_list_id = this->host_current_list_id]() -> size_t {
+        // every but the last partition will return 0
+        return ((h_numRegions % numHostPartitions) *
+                (host_current_list_id + 1) / numHostPartitions);
+      };
 
       CudaCheckError();
-      
-      printf("About to copy %lu for dRegions\n", (quarter_size + numExtraRegionsPerPartition())*NDIM);
-      printf("First and last val to be copied: %f, %f\n", Get_hRegions_head()[0], 
-         Get_hRegions_head()[(quarter_size + numExtraRegionsPerPartition())*NDIM-1]);
-      
-      QuadDebug(cudaMemcpy(dRegions, 
-               Get_hRegions_head(),
-               sizeof(T) * (quarter_size + numExtraRegionsPerPartition())*NDIM,
-               cudaMemcpyHostToDevice));CudaCheckError();
-      QuadDebug(cudaMemcpy(dRegionsLength, Get_hRegionsLength_head(),
-               sizeof(T) * (quarter_size + numExtraRegionsPerPartition())*NDIM,
-               cudaMemcpyHostToDevice));
-      
+      printf("About to allocate dRegions again quarter_size:%lu\n",
+             (quarter_size + numExtraRegionsPerPartition()));
+      QuadDebug(Device.AllocateMemory(
+        (void**)&dRegions,
+        sizeof(T) * (quarter_size + numExtraRegionsPerPartition()) * NDIM));
+
+      QuadDebug(Device.AllocateMemory(
+        (void**)&dRegionsLength,
+        sizeof(T) * (quarter_size + numExtraRegionsPerPartition()) * NDIM));
+
       CudaCheckError();
-        
-      //displayIfNotZero(dRegionsLength, (quarter_size + numExtraRegionsPerPartition())*NDIM);
-      printf("About to copy %lu parents\n", (quarter_size + numExtraRegionsPerPartition()));
-      QuadDebug(cudaMemcpy(dParentsIntegral, 
-               Get_hParentsIntegral_head(),
-               sizeof(T) * (quarter_size + numExtraRegionsPerPartition()),
-               cudaMemcpyHostToDevice));
+
+      printf("About to copy %lu for dRegions\n",
+             (quarter_size + numExtraRegionsPerPartition()) * NDIM);
+      printf("First and last val to be copied: %f, %f\n",
+             Get_hRegions_head()[0],
+             Get_hRegions_head()
+               [(quarter_size + numExtraRegionsPerPartition()) * NDIM - 1]);
+
+      QuadDebug(cudaMemcpy(
+        dRegions,
+        Get_hRegions_head(),
+        sizeof(T) * (quarter_size + numExtraRegionsPerPartition()) * NDIM,
+        cudaMemcpyHostToDevice));
+      CudaCheckError();
+      QuadDebug(cudaMemcpy(
+        dRegionsLength,
+        Get_hRegionsLength_head(),
+        sizeof(T) * (quarter_size + numExtraRegionsPerPartition()) * NDIM,
+        cudaMemcpyHostToDevice));
+
+      CudaCheckError();
+
+      // displayIfNotZero(dRegionsLength, (quarter_size +
+      // numExtraRegionsPerPartition())*NDIM);
+      printf("About to copy %lu parents\n",
+             (quarter_size + numExtraRegionsPerPartition()));
+      QuadDebug(
+        cudaMemcpy(dParentsIntegral,
+                   Get_hParentsIntegral_head(),
+                   sizeof(T) * (quarter_size + numExtraRegionsPerPartition()),
+                   cudaMemcpyHostToDevice));
       printf("Done with integral part of parents\n");
-      QuadDebug(cudaMemcpy(dParentsError, 
-               Get_hParentsError_head(),
-               sizeof(T) * (quarter_size + numExtraRegionsPerPartition()),
-               cudaMemcpyHostToDevice));    
+      QuadDebug(
+        cudaMemcpy(dParentsError,
+                   Get_hParentsError_head(),
+                   sizeof(T) * (quarter_size + numExtraRegionsPerPartition()),
+                   cudaMemcpyHostToDevice));
       numRegions = quarter_size + numExtraRegionsPerPartition();
       printf("copied parents and setting numRegions to %lu\n", numRegions);
-      host_current_list_id++; //next time dRegions is set it will be from next host partition       
-      //displayIfNotZero(dRegionsLength, numRegions*NDIM);
-      //displayIfNotZero(dParentsIntegral, numRegions*2);
-      //displayIfNotZero(dParentsIntegral, dParentsError, numRegions*2);
+      host_current_list_id++; // next time dRegions is set it will be from next
+                              // host partition
+      // displayIfNotZero(dRegionsLength, numRegions*NDIM);
+      // displayIfNotZero(dParentsIntegral, numRegions*2);
+      // displayIfNotZero(dParentsIntegral, dParentsError, numRegions*2);
     }
-    
+
     template <typename IntegT>
     void
     FirstPhaseIteration(IntegT* d_integrand,
@@ -1481,15 +1608,15 @@ namespace quad {
                         T*& dParentsIntegral,
                         T*& dParentsError,
                         int iteration,
-						Volume<T, NDIM>* vol,
+                        Volume<T, NDIM>* vol,
                         int last_iteration = 0)
     {
       size_t numThreads = BLOCK_SIZE;
       size_t numBlocks = numRegions;
-        
+
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
       T* newErrs = 0;
-	  
+
       QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
                                       sizeof(T) * numRegions * 2));
       QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
@@ -1501,7 +1628,7 @@ namespace quad {
         QuadDebug(Device.AllocateMemory((void**)&dParentsError,
                                         sizeof(T) * numRegions * 2));
       }
-		
+
       int *activeRegions = 0, *subDividingDimension = 0;
 
       QuadDebug(Device.AllocateMemory((void**)&activeRegions,
@@ -1510,28 +1637,29 @@ namespace quad {
                                       sizeof(int) * numRegions));
       QuadDebug(
         Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions * 2));
-      //printf("INTEGRATE_GPU_PHASE 1 kernel about to be called for %lu regions\n", numRegions);
+      // printf("INTEGRATE_GPU_PHASE 1 kernel about to be called for %lu
+      // regions\n", numRegions);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
-                                 d_integrand,
-                                 dRegions,
-                                 dRegionsLength,
-                                 numRegions,
-                                 dRegionsIntegral,
-                                 dRegionsError,
-                                 activeRegions,
-                                 subDividingDimension,
-                                 epsrel,
-                                 epsabs,
-                                 constMem,
-                                 rule.GET_FEVAL(),
-                                 rule.GET_NSETS(),
-                                 lows,
-                                 highs,
-                                 iteration);
+          d_integrand,
+          dRegions,
+          dRegionsLength,
+          numRegions,
+          dRegionsIntegral,
+          dRegionsError,
+          activeRegions,
+          subDividingDimension,
+          epsrel,
+          epsabs,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs,
+          iteration);
 
       cudaDeviceSynchronize();
-      
+
       if (numRegions != startRegions) {
         RefineError<T><<<numBlocks, numThreads>>>(dRegionsIntegral,
                                                   dRegionsError,
@@ -1542,14 +1670,14 @@ namespace quad {
                                                   numRegions,
                                                   epsrel,
                                                   epsabs,
-                          iteration);
+                                                  iteration);
 
         cudaDeviceSynchronize();
         QuadDebug(cudaMemcpy(dRegionsError,
                              newErrs,
                              sizeof(T) * numRegions * 2,
                              cudaMemcpyDeviceToDevice));
-        
+
         cudaDeviceSynchronize();
       }
 
@@ -1564,22 +1692,22 @@ namespace quad {
 
       nregions += numRegions;
       neval += numRegions * fEvalPerRegion;
-       
+
       thrust::device_ptr<T> wrapped_ptr;
-	  
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
       T rG = integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
       T errG = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      
+
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
       integral =
         integral + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-        
+
       if (Final == 0) {
         double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
         weightsum += w; // adapted by Ioannis
@@ -1596,10 +1724,17 @@ namespace quad {
         // printf("F1 rG:%f\t errG:%f\t global: %f +- %f numRegions:%lu\n",
         // lastAvg, lastErr,  numRegions, integral, error);
       }
-      
-	  printf("Computing integral from %lu regions %.20f +- %.20f \ngood regions:%.20f +- %.20f nregions:%lu iteration:%i\n",
-         numRegions, lastAvg, lastErr, integral, error, numInActiveRegions, iteration);
-    
+
+      printf("Computing integral from %lu regions %.20f +- %.20f \ngood "
+             "regions:%.20f +- %.20f nregions:%lu iteration:%i\n",
+             numRegions,
+             lastAvg,
+             lastErr,
+             integral,
+             error,
+             numInActiveRegions,
+             iteration);
+
       if (outLevel >= 1)
         out1 << lastAvg << "," << lastErr << "," << nregions << std::endl;
 
@@ -1611,7 +1746,7 @@ namespace quad {
         numRegions = 0;
         integral = lastAvg;
         error = lastErr;
-        
+
         QuadDebug(cudaFree(activeRegions));
         QuadDebug(cudaFree(subDividingDimension));
         QuadDebug(cudaFree(newErrs));
@@ -1620,28 +1755,33 @@ namespace quad {
         integral = temp_integral;
         error = temp_error;
       }
-        
-      double freeMem = Device.GetFreeMemPercentage(); 
+
+      double freeMem = Device.GetFreeMemPercentage();
       // if (numRegions <= first_phase_maxregions*8 && fail == 1) {
-      //if (numRegions <= first_phase_maxregions && fail == 1) {
-      //printf("Checking Division Possibility mem: (%f) iteration:%i\n", freeMem, iteration);  
-      if(iteration < 26 && fail == 1){
+      // if (numRegions <= first_phase_maxregions && fail == 1) {
+      // printf("Checking Division Possibility mem: (%f) iteration:%i\n",
+      // freeMem, iteration);
+      if (iteration < 26 && fail == 1) {
         // if (numRegions <= first_phase_maxregions && fail == 1) {
-        size_t numActiveIntervals = GenerateActiveIntervals(activeRegions,
-                                subDividingDimension,
-                                dRegionsIntegral,
-                                dRegionsError,
-                                dParentsIntegral,
-                                dParentsError);
-        Device.GetFreeMemPercentage();      
-        //printf("Checking Division Possibility after Division mem: (%f)\n", freeMem);   
-        if(freeMem <= .3 && fail == 1){
-            printf("Partitioning Host\n");
-            StoreRegionsInHost(numActiveIntervals); //this seems spaghetti, not clear that it's updating hRegions[i] with dRegions contents
-            SetDeviceRegionsFromHost(); //that's the size of the dParents array
+        size_t numActiveIntervals =
+          GenerateActiveIntervals(activeRegions,
+                                  subDividingDimension,
+                                  dRegionsIntegral,
+                                  dRegionsError,
+                                  dParentsIntegral,
+                                  dParentsError);
+        Device.GetFreeMemPercentage();
+        // printf("Checking Division Possibility after Division mem: (%f)\n",
+        // freeMem);
+        if (freeMem <= .3 && fail == 1) {
+          printf("Partitioning Host\n");
+          StoreRegionsInHost(
+            numActiveIntervals); // this seems spaghetti, not clear that it's
+                                 // updating hRegions[i] with dRegions contents
+          SetDeviceRegionsFromHost(); // that's the size of the dParents array
         }
       }
-      
+
       QuadDebug(cudaFree(activeRegions));
       QuadDebug(cudaFree(subDividingDimension));
       QuadDebug(cudaFree(newErrs));
@@ -1677,20 +1817,20 @@ namespace quad {
                                     dParentsIntegral,
                                     dParentsError,
                                     iteration,
-									vol,
+                                    vol,
                                     lastIteration);
 
         if (numRegions < 1) {
           fail = 2;
-      printf("Finished Phase 1 Very Successfully\n");
-          
+          printf("Finished Phase 1 Very Successfully\n");
+
           break;
-        } 
-    //else if (numRegions > first_phase_maxregions && fail == 1) {
-    // else if (numRegions > first_phase_maxregions*8 && fail == 1) {
-    else if(iteration == 25 && fail == 1){
+        }
+        // else if (numRegions > first_phase_maxregions && fail == 1) {
+        // else if (numRegions > first_phase_maxregions*8 && fail == 1) {
+        else if (iteration == 25 && fail == 1) {
           printf("At last iteration\n");
-      int last_iteration = 1;
+          int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
           FirstPhaseIteration<IntegT>(d_integrand,
@@ -1703,7 +1843,7 @@ namespace quad {
                                       dParentsIntegral,
                                       dParentsError,
                                       iteration + 1,
-									  vol,
+                                      vol,
                                       last_iteration);
           break;
         } else {
@@ -1711,15 +1851,15 @@ namespace quad {
           QuadDebug(cudaFree(dRegionsIntegral));
         }
       }
-      
-      //Host.ReleaseMemory(curr_hRegions);
-      //Host.ReleaseMemory(curr_hRegionsLength);
-      
+
+      // Host.ReleaseMemory(curr_hRegions);
+      // Host.ReleaseMemory(curr_hRegionsLength);
+
       // printf("Host will contain %lu regions\n", numRegions);
       curr_hRegions =
         (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * numRegions * NDIM);
-      curr_hRegionsLength =
-        (T*)Host.AllocateMemory(&curr_hRegionsLength, sizeof(T) * numRegions * NDIM);
+      curr_hRegionsLength = (T*)Host.AllocateMemory(
+        &curr_hRegionsLength, sizeof(T) * numRegions * NDIM);
 
       QuadDebug(cudaMemcpy(curr_hRegions,
                            dRegions,
@@ -1730,9 +1870,11 @@ namespace quad {
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToHost));
       CudaCheckError();
-      printf("Finished Phase 1 fail status:%i numGoodRegions:%lu\n", fail, numInActiveRegions);
-      
-	  PrintToFile(phase1out.str(), "Phase_1_regions.csv");
+      printf("Finished Phase 1 fail status:%i numGoodRegions:%lu\n",
+             fail,
+             numInActiveRegions);
+
+      PrintToFile(phase1out.str(), "Phase_1_regions.csv");
       if (fail == 0 || fail == 2) {
         // printf("Phase 1 needed %lu regions to converge\n", numRegions);
         integral = lastAvg;
@@ -1887,7 +2029,7 @@ namespace quad {
       PrintToFile(outfile.str(), filename);
       printf("Finished printing\n");
     }
-    
+
     template <typename IntegT>
     bool
     IntegrateFirstPhaseDCUHRE(IntegT* d_integrand,
@@ -1944,30 +2086,30 @@ namespace quad {
                         converged);
       BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
-                                 d_integrand,
-                                 regions_generated,
-                                 epsrel,
-                                 epsabs,
-                                 gpu_id,
-                                 constMem,
-                                 rule.GET_FEVAL(),
-                                 rule.GET_NSETS(),
-                                 lows,
-                                 highs,
-                                 Final,
-                                 gRegionPool,
-                                 nullptr,
-                                 nullptr,
-                                 0,
-                                 0,
-                                 0,
-                                 0,
-                                 dPh1res,
-                                 max_regions,
-                                 *currentBatch,
-                                 phase_I_type,
-                                 0,
-                                 snap);
+          d_integrand,
+          regions_generated,
+          epsrel,
+          epsabs,
+          gpu_id,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs,
+          Final,
+          gRegionPool,
+          nullptr,
+          nullptr,
+          0,
+          0,
+          0,
+          0,
+          dPh1res,
+          max_regions,
+          *currentBatch,
+          phase_I_type,
+          0,
+          snap);
 
       PrintOutfileHeaders();
       numRegions = max_regions;
@@ -2048,9 +2190,9 @@ namespace quad {
       // curr_hRegions_generated << "ratio:" << lastErr/MaxErr(lastAvg, epsrel,
       // epsabs) << std::endl;
       // printf("Phase 1 Result:%.20f +- %.20f regions:%i ratio:%f\n", lastAvg,
-      // lastErr, curr_hRegions_generated, lastErr/MaxErr(lastAvg, epsrel, epsabs));
+      // lastErr, curr_hRegions_generated, lastErr/MaxErr(lastAvg, epsrel,
+      // epsabs));
       nregions = curr_hRegions_generated;
-      
 
       cudaFree(phase1_value);
       cudaFree(phase1_err);
@@ -2109,7 +2251,7 @@ namespace quad {
              result.num_failed_blocks);
       return result;
     }
-    
+
     template <typename IntegT>
     PhaseII_output
     Execute_PhaseII_Batch(RegionList*& batch,
@@ -2129,33 +2271,33 @@ namespace quad {
       // printf("Lauching %lu phase 2 blocks\n", numBlocks);
       BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds), stream>>>(
-                                     d_integrand,
-                                     dRegionsNumRegion,
-                                     epsrel,
-                                     epsabs,
-                                     gpu_id,
-                                     constMem,
-                                     rule.GET_FEVAL(),
-                                     rule.GET_NSETS(),
-                                     lows,
-                                     highs,
-                                     Final,
-                                     gRegionPool,
-                                     nullptr,
-                                     nullptr,
-                                     lastAvg,
-                                     lastErr,
-                                     weightsum,
-                                     avgsum,
-                                     Phase_I_result,
-                                     max_regions,
-                                     *batch,
-                                     phase_I_type,
-                                     ph1_regions, // used for alternative phase 1
-                                     Snapshot<NDIM>(),
-                                     nullptr,
-                                     nullptr);
-      
+          d_integrand,
+          dRegionsNumRegion,
+          epsrel,
+          epsabs,
+          gpu_id,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs,
+          Final,
+          gRegionPool,
+          nullptr,
+          nullptr,
+          lastAvg,
+          lastErr,
+          weightsum,
+          avgsum,
+          Phase_I_result,
+          max_regions,
+          *batch,
+          phase_I_type,
+          ph1_regions, // used for alternative phase 1
+          Snapshot<NDIM>(),
+          nullptr,
+          nullptr);
+
       cudaDeviceSynchronize();
       CudaCheckError();
 
@@ -2169,14 +2311,14 @@ namespace quad {
 
     void
     Phase_I_format_region_copy(
-                   RegionList*& batch,
-                   double*& sourceRegions,       // should not be by reference, const instead
-                   double*& sourceRegionsLength, // should not be by reference, const instead
-                   double* RegionsIntegral,      // should not be by reference, const instead
-                   double* RegionsError,         // should not be by reference, const instead
-                   size_t total_num_regions,
-                   size_t startRegionIndex,
-                   size_t endRegionIndex)
+      RegionList*& batch,
+      double*& sourceRegions,       // should not be by reference, const instead
+      double*& sourceRegionsLength, // should not be by reference, const instead
+      double* RegionsIntegral,      // should not be by reference, const instead
+      double* RegionsError,         // should not be by reference, const instead
+      size_t total_num_regions,
+      size_t startRegionIndex,
+      size_t endRegionIndex)
     {
 
       // from a two based region array, copy a partion into batch
@@ -2189,28 +2331,28 @@ namespace quad {
       batch->dRegionsIntegral = RegionsIntegral;
       batch->dRegionsError = RegionsError;
       CudaCheckError();
-      
-      
+
       for (int dim = 0; dim < NDIM; ++dim) {
         // printf("Copying regions: from %lu to %lu\n", dim * total_num_regions
         // + startRegionIndex, dim * total_num_regions +
         // startRegionIndex+batch_size);
         QuadDebug(
           cudaMemcpy(batch->dRegions + dim * batch_size,
-                 sourceRegions + dim * total_num_regions + startRegionIndex,
-                 sizeof(T) * batch_size,
-                 cudaMemcpyDeviceToDevice));
+                     sourceRegions + dim * total_num_regions + startRegionIndex,
+                     sizeof(T) * batch_size,
+                     cudaMemcpyDeviceToDevice));
 
         QuadDebug(cudaMemcpy(
-                 batch->dRegionsLength + dim * batch_size,
-                 sourceRegionsLength + dim * total_num_regions + startRegionIndex,
-                 sizeof(T) * batch_size,
-                 cudaMemcpyDeviceToDevice)); // this is not HostToDevice right?
+          batch->dRegionsLength + dim * batch_size,
+          sourceRegionsLength + dim * total_num_regions + startRegionIndex,
+          sizeof(T) * batch_size,
+          cudaMemcpyDeviceToDevice)); // this is not HostToDevice right?
         CudaCheckError();
       }
     }
-    
-    // void PrintPhase_I_Format_Regions(T* hr, T*hRL, double epsrel, double epsabs){
+
+    // void PrintPhase_I_Format_Regions(T* hr, T*hRL, double epsrel, double
+    // epsabs){
     //   // T* hR = nullptr;
     //   // T* hRL = nullptr;
     //   T* hRI = nullptr;
@@ -2221,20 +2363,23 @@ namespace quad {
     //   //                    &hr, sizeof(T) * numRegions * NDIM);
     //   // hRL = (T*)Host.AllocateMemory(
     //   //                     &hrL, sizeof(T) * numRegions * NDIM);
-      
+
     //   hRI = (T*)Host.AllocateMemory(
     //                 &hRI, sizeof(T) * numRegions * NDIM);
     //   hRE = (T*)Host.AllocateMemory(
     //                  &hRE, sizeof(T) * numRegions * NDIM);
-       
-    //   // cudaMemcpy(hR,  dRegions, sizeof(T) * numRegions * NDIM, cudaMemcpyDeviceToHost);
-    //   // cudaMemcpy(hRL, dRegionsLength, sizeof(T) * numRegions * NDIM, cudaMemcpyDeviceToHost);
-      
-    //   cudaMemcpy(hRI,  dRegionsIntegral + numRegions, sizeof(T) * numRegions, cudaMemcpyDeviceToHost);
-    //   cudaMemcpy(hRE,  dRegionsError + numRegions, sizeof(T) * numRegions, cudaMemcpyDeviceToHost);
+
+    //   // cudaMemcpy(hR,  dRegions, sizeof(T) * numRegions * NDIM,
+    //   cudaMemcpyDeviceToHost);
+    //   // cudaMemcpy(hRL, dRegionsLength, sizeof(T) * numRegions * NDIM,
+    //   cudaMemcpyDeviceToHost);
+
+    //   cudaMemcpy(hRI,  dRegionsIntegral + numRegions, sizeof(T) * numRegions,
+    //   cudaMemcpyDeviceToHost); cudaMemcpy(hRE,  dRegionsError + numRegions,
+    //   sizeof(T) * numRegions, cudaMemcpyDeviceToHost);
 
     //   CudaCheckError();
-      
+
     //   for(int i=0; i< numRegions; ++i){
     //  for(int j = 0; j<NDIM; ++j){
     //    //printf("%f," hr[i + j*numRegions]);
@@ -2244,14 +2389,14 @@ namespace quad {
     //    //printf("%f," hrL[i + j*numRegions]);
     //    tempOut<<hRL[i + j*numRegions]<<",";
     //  }
-    //  tempOut<<hRI[i]<<","<<hRE[i]<< "," << hRE[i]/MaxErr(hRI[i], epsrel, epsabs) << "\n";
-    
+    //  tempOut<<hRI[i]<<","<<hRE[i]<< "," << hRE[i]/MaxErr(hRI[i], epsrel,
+    //  epsabs) << "\n";
+
     //   }
     //   printf("About to call PrintToFile\n");
     //   PrintToFile(tempOut.str(), "Phase1Format.csv");
     // }
 
-    
     template <typename IntegT>
     PhaseII_output
     Execute_PhaseII_Batches(double* Regions,
@@ -2268,20 +2413,18 @@ namespace quad {
     {
 
       PhaseII_output final_result;
-      
+
       size_t max_num_blocks = FIRST_PHASE_MAXREGIONS * 2;
       RegionList* currentBatch =
         new RegionList(NDIM, size); // why have the entire
       currentBatch->Set(
-            dRegionsIntegral,
-            dRegionsError); // at first we point to the entire thing, shallow copy
+        dRegionsIntegral,
+        dRegionsError); // at first we point to the entire thing, shallow copy
       size_t start = 0;
-      //size_t end = max_num_blocks;
+      // size_t end = max_num_blocks;
       int iters = size / max_num_blocks;
       printf("Will require %i phase II iterations\n", iters);
-      
-      
-      
+
       for (int it = 0; it < iters; it++) {
         size_t leftIndex = start + it * max_num_blocks;
         size_t rightIndex = leftIndex + max_num_blocks - 1;
@@ -2289,14 +2432,14 @@ namespace quad {
         // printf("Assigning dRegionsIntegral[%lu] to batch %i\n", numRegions +
         // leftIndex, it);
         Phase_I_format_region_copy(
-                   currentBatch,
-                   Regions,
-                   RegionsLength,
-                   dRegionsIntegral + numRegions + leftIndex,
-                   dRegionsError + numRegions + leftIndex,
-                   size,
-                   leftIndex,
-                   rightIndex); // extract the coordinate info, deep copy
+          currentBatch,
+          Regions,
+          RegionsLength,
+          dRegionsIntegral + numRegions + leftIndex,
+          dRegionsError + numRegions + leftIndex,
+          size,
+          leftIndex,
+          rightIndex); // extract the coordinate info, deep copy
         CudaCheckError();
         final_result += Execute_PhaseII_Batch(currentBatch,
                                               dRegionsNumRegion,
@@ -2368,10 +2511,11 @@ namespace quad {
                              sizeof(T) * numRegionsThread,
                              cudaMemcpyHostToDevice));
 
-        QuadDebug(cudaMemcpy(dRegionsLengthThread + dim * numRegionsThread,
-                             curr_hRegionsLength + dim * numRegions + startIndex,
-                             sizeof(T) * numRegionsThread,
-                             cudaMemcpyHostToDevice));
+        QuadDebug(
+          cudaMemcpy(dRegionsLengthThread + dim * numRegionsThread,
+                     curr_hRegionsLength + dim * numRegions + startIndex,
+                     sizeof(T) * numRegionsThread,
+                     cudaMemcpyHostToDevice));
       }
     }
 
@@ -2435,16 +2579,17 @@ namespace quad {
           int* dRegionsNumRegion = 0;
 
           QuadDebug(Device.AllocateUnifiedMemory(
-                         (void**)&dRegionsNumRegion, sizeof(int) * numRegionsThread));
+            (void**)&dRegionsNumRegion, sizeof(int) * numRegionsThread));
 
           if (phase_I_type == 0) {
             // dRegionsThread & dRegionsLengthThread store all regions and get
-            // contents (partially or fully) from curr_hRegions and curr_hRegionsLength
+            // contents (partially or fully) from curr_hRegions and
+            // curr_hRegionsLength
             QuadDebug(Device.AllocateUnifiedMemory(
-                           (void**)&dRegionsThread, sizeof(T) * numRegionsThread * NDIM));
+              (void**)&dRegionsThread, sizeof(T) * numRegionsThread * NDIM));
             QuadDebug(Device.AllocateUnifiedMemory(
-                           (void**)&dRegionsLengthThread,
-                           sizeof(T) * numRegionsThread * NDIM));
+              (void**)&dRegionsLengthThread,
+              sizeof(T) * numRegionsThread * NDIM));
 
             // this function creates a batch out of all regins, ready to be
             // passed as an object to Phase 2 Kernel
@@ -2473,15 +2618,15 @@ namespace quad {
           QuadDebug(
             Device.AllocateMemory((void**)&Phase_I_result, sizeof(double) * 2));
           QuadDebug(cudaMemcpy(
-                   Phase_I_result, &lastAvg, sizeof(T), cudaMemcpyHostToDevice));
+            Phase_I_result, &lastAvg, sizeof(T), cudaMemcpyHostToDevice));
           QuadDebug(cudaMemcpy(
-                   Phase_I_result + 1, &lastErr, sizeof(T), cudaMemcpyHostToDevice));
+            Phase_I_result + 1, &lastErr, sizeof(T), cudaMemcpyHostToDevice));
 
           int start_regions = 32734;
           Region<NDIM>* ph1_regions = 0;
           if (phase_I_type == 1) {
             QuadDebug(Device.AllocateMemory(
-                        (void**)&ph1_regions, sizeof(Region<NDIM>) * start_regions));
+              (void**)&ph1_regions, sizeof(Region<NDIM>) * start_regions));
             cudaMemcpy(ph1_regions,
                        gRegionPool,
                        sizeof(Region<NDIM>) * start_regions,
@@ -2526,7 +2671,6 @@ namespace quad {
             PrintToFile(tempOut.str(), "phase1.csv");
           }
 
-
           printf("Phase 1 temp results: %.17f +- %.17f ratio:%f nregions:%lu\n",
                  lastAvg,
                  lastErr,
@@ -2538,8 +2682,8 @@ namespace quad {
                  numInActiveRegions);
           printf("-------\n");
 
-          //int max_regions = max_globalpool_size;
-          //size_t numThreads = BLOCK_SIZE;
+          // int max_regions = max_globalpool_size;
+          // size_t numThreads = BLOCK_SIZE;
           size_t numBlocks = numRegionsThread;
 
           CudaCheckError();

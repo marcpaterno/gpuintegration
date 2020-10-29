@@ -113,7 +113,7 @@ ComputeWeightSum(T *errors, size_t size){
               size_t numRegions,
               T epsrel,
               T epsabs,
-			  int iteration)
+              int iteration)
   {
 
     if (threadIdx.x == 0 && blockIdx.x < numRegions) {
@@ -133,9 +133,10 @@ ComputeWeightSum(T *errors, size_t size){
 
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-		
+
       T parRes = dParentsIntegral[blockIdx.x];
-	  //printf("[%i] self estimate:%.20f, parent estimate:%.20f\n", blockIdx.x, selfRes, parRes);
+      // printf("[%i] self estimate:%.20f, parent estimate:%.20f\n", blockIdx.x,
+      // selfRes, parRes);
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
@@ -145,26 +146,25 @@ ComputeWeightSum(T *errors, size_t size){
         T c = 1 + 2 * diff / err;
         selfErr *= c;
       }
-	
-      selfErr += diff;
-      
 
-      
-	  if(selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || (selfRes == 0. && iteration>=5)){
-		newErrs[blockIdx.x] = selfErr;
-      }
-		else{
+      selfErr += diff;
+
+      if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. ||
+          (selfRes == 0. && iteration >= 5)) {
+        newErrs[blockIdx.x] = selfErr;
+      } else {
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
-		}	  
-	  
+      }
+
       activeRegions[blockIdx.x] = fail;
-	  
-	  //if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
-		//  printf("issue 1\n");
-	  //if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] / MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
-		//  printf("issue 2\n");
+
+      // if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
+      //  printf("issue 1\n");
+      // if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] /
+      // MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
+      //  printf("issue 2\n");
       newErrs[blockIdx.x + numRegions] = selfErr;
     }
   }
@@ -289,8 +289,8 @@ ComputeWeightSum(T *errors, size_t size){
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
       dRegionsError[gridDim.x + blockIdx.x] = ERR;
 
-      //if (ratio > 1) {
-        //fail = 1;
+      // if (ratio > 1) {
+      // fail = 1;
       //}
 
       activeRegions[blockIdx.x] = fail;
@@ -510,7 +510,7 @@ ComputeWeightSum(T *errors, size_t size){
     }
     __syncthreads();
   }
-  
+
   template <typename T, int NDIM>
   __device__ void
   INSERT_GLOBAL_STORE2(Region<NDIM>* sRegionPool,
