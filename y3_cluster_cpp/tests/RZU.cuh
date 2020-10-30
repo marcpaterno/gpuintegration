@@ -376,7 +376,7 @@ int VegasGPU (IntegT integrand) {
 
   double tsid, dim_integ;
   double rel_err = 0.0;
-  float exp_rel_err;
+ // float exp_rel_err;
   double wgt;
   double uwidth;
   int nblocks;
@@ -385,7 +385,7 @@ int VegasGPU (IntegT integrand) {
   int N, N1;
   //printf("Enter the expected relative error:\n");
   //scanf("%e", &exp_rel_err);
-  exp_rel_err = 1e-3;
+  //exp_rel_err = 1e-3;
   //printf("the expected relative error %e\n", exp_rel_err);
   //printf("Enter the number of dimensions:\n");
   //scanf("%d", &ndim);
