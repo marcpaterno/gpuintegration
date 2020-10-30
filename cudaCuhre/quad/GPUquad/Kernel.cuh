@@ -651,6 +651,7 @@ namespace quad {
                       int* activeRegions,
                       int iteration = 0)
     {
+	  printf("outlevel:%i\n", outLevel);
       if (outLevel != 1)
         return;
 
@@ -1707,7 +1708,12 @@ namespace quad {
 
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-
+		
+	  Phase_I_PrintFile(vol,
+                      numRegions,
+                      activeRegions,
+                      iteration);	
+	  
       if (Final == 0) {
         double w = numRegions * 1 / fmax(errG * errG, ldexp(1., -104));
         weightsum += w; // adapted by Ioannis
