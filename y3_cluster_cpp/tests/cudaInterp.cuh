@@ -446,7 +446,6 @@ namespace quad {
   };
 }
 
-
 struct GPU {
   template<size_t order>
   using polynomial = quad::polynomial<order>;
