@@ -46,29 +46,9 @@ public:
 int
 main()
 {
-
-  double const lo = 0x1.9p+4;
-  double const lc = 0x1.b8p+4;
-  double const lt = 0x1.b8p+4;
-  double const zt = 0x1.cccccccccccccp-2;
-  double const lnM = 0x1.0cp+5;
-  double const rmis = 0x1p+0;
-  double const theta = 0x1.921fb54442eeap+1;
-	
   double const radius_ = 0x1p+0;
   double const zo_low_ = 0x1.999999999999ap-3;
   double const zo_high_ = 0x1.6666666666666p-2;
-	       
-  unsigned long long constexpr mmaxeval = std::numeric_limits<unsigned long long>::max();
-  std::cout<<"mmaxeval:"<<mmaxeval<<"\n";
-										    
-  unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
-  double const epsrel_min = 1.0e-12;
-  
-  int verbose = 0;
-  int _final  = 1;
-  double epsrel = 5.0e-3;
-  double true_value = 0.;
 	
   integral<GPU> d_integrand;
   constexpr int ndim = 7;
