@@ -32,9 +32,9 @@
 #include "cuba.h"
 #include "cubacpp/cuhre.hh"
 //#include "vegas.h"
-#include "RZU.cuh"
+//#include "RZU.cuh"
 
-#include "sig_miscent.cuh"
+#include "cudaCuhre/integrands/sig_miscent.cuh" 
 
 #include <limits>
 
