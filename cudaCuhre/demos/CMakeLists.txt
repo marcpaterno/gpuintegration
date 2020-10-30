@@ -131,7 +131,32 @@ target_include_directories(SinSum6gpu PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
-
+add_executable(sigMiscentGPU sigMiscent.cu)
+target_compile_features(sigMiscentGPU PUBLIC cxx_std_17)
+target_compile_options(sigMiscentGPU PRIVATE "-arch=sm_70" "-lineinfo" "--expt-relaxed-constexpr")
+set_target_properties(sigMiscentGPU PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES  70-real)
+target_link_libraries(sigMiscentGPU PRIVATE testmain ${CUBA_LIBRARIES} ${GSL_LIBRARIES} ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
+target_include_directories(sigMiscentGPU PRIVATE  ${CMAKE_SOURCE_DIR}
+												${CMAKE_SOURCE_DIR}/externals
+												${EXTERNALS_DIR}
+												${CUBA_INCLUDE_DIR}
+												${GSL_INCLUDE_DIR}
+												${CUBACPP_DIR}
+												"/opt/openmpi-wahab/include")
+												
+add_executable(sigMiscentCPU sigMiscent.cc)
+target_link_libraries(sigMiscentCPU PRIVATE ${CUBA_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
+target_include_directories(sigMiscentCPU
+                           PRIVATE ${CMAKE_SOURCE_DIR}
+                                   ${CMAKE_SOURCE_DIR}/externals
+                                   ${EXTERNALS_DIR}
+                                   ${CUBA_INCLUDE_DIR}
+                                   ${CUBACPP_DIR}
+                                   ${GSL_INCLUDE_DIR}
+                                   ${EIGEN3_INCLUDE_DIR}
+								   ${TOPDIR})
+											
+												
 add_executable(B_22cpu B_22cpu.cc)
 target_include_directories(B_22cpu PRIVATE
   ${CUBA_INCLUDE_DIR}
