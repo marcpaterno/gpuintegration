@@ -742,21 +742,10 @@ namespace quad {
         for (int dim = 0; dim < NDIM; dim++) {
           double low = ScaleValue(
             curr_hRegions[dim * size + i], vol->lows[dim], vol->highs[dim]);
-          double high = low + ScaleValue(curr_hRegionsLength[dim * size + i],
+          double high = ScaleValue(curr_hRegions[dim * size + i] + curr_hRegionsLength[dim * size + i],
                                          vol->lows[dim],
                                          vol->highs[dim]);
 
-          if (high == 0.) {
-            printf("Problem Region %i shows zero length scaling on dim:%i "
-                   "size:%lu length:%f index:%lu by (%f, %f)\n",
-                   i,
-                   dim,
-                   size,
-                   dim * size + i,
-                   curr_hRegionsLength[dim * size + i],
-                   vol->lows[dim],
-                   vol->highs[dim]);
-          }
           // printf("%e, %e,", low, high);
 
           if (dim == NDIM - 1) {
@@ -2764,3 +2753,4 @@ namespace quad {
 
 }
 #endif
+                                                                                                                                                                                                                                                                                 
