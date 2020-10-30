@@ -28,5 +28,6 @@ find_package(OpenMP REQUIRED)
 
 add_subdirectory(cubacpp)
 add_subdirectory(cudaCuhre)
+add_subdirectory(vegas)
 add_subdirectory(y3_cluster_cpp)
 
