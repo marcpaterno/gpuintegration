@@ -714,7 +714,7 @@ namespace quad {
         phase1out << "iteration, id, parentID, estimate, errorest, ratio, active, percEst, percErrorest, percEstlow, percErrorestlow, estThres, errorestThres, dim0, "
                      "dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, "
                      "dim4l, dim5, dim5l, dim6, dim6l\n";
-	  printf("here %e, %e thresholds:%e, %e\n", estimate, errorest,  estimate/(double)size, errorest/(double)size);
+	  //printf("here %e, %e thresholds:%e, %e\n", estimate, errorest,  estimate/(double)size, errorest/(double)size);
       for (int i = 0; i < size; i++) {
         sum_est += curr_hRegionsIntegral[i];
         sum_errorest += curr_hRegionsError[i];
@@ -1734,7 +1734,8 @@ namespace quad {
       if (outLevel >= 1)
         out1 << lastAvg << "," << lastErr << "," << nregions << std::endl;
 
-      if ((lastErr <= MaxErr(lastAvg, epsrel, epsabs)) && GLOBAL_ERROR) {
+      if (iteration!=0 && (lastErr <= MaxErr(lastAvg, epsrel, epsabs)) && GLOBAL_ERROR) { 
+		 printf("terminating because lasterr < MaxErr\n");
         if (outLevel >= 1)
           PrintToFile(out1.str(), "Level_1.csv");
 
@@ -1816,7 +1817,7 @@ namespace quad {
                                     vol,
                                     lastIteration);
 
-        if (numRegions < 1) {
+        if (numRegions < 1 && iteration!=0) {
           fail = 2;
           printf("Finished Phase 1 Very Successfully\n");
 
