@@ -295,8 +295,8 @@ namespace quad {
     size_t host_current_list_id;
     const size_t numHostPartitions = 4;
 
-    size_t nextAvailRegionID;
-    size_t nextAvailParentID;
+    int nextAvailRegionID;
+    int nextAvailParentID;
     size_t* parentIDs;
 
     HostMemory<T> Host;
@@ -649,6 +649,10 @@ namespace quad {
     Phase_I_PrintFile(Volume<T, NDIM>* vol,
                       size_t size,
                       int* activeRegions,
+					  double estimate,
+					  double errorest,
+					  double estimate_low_bound,
+					  double errorest_low_bound,
                       int iteration = 0)
     {
 	  printf("outlevel:%i\n", outLevel);
@@ -706,15 +710,11 @@ namespace quad {
       }
 
       CudaCheckError();
-      // myfile<<"iteration, id, parentID, estimate, errorest, dim0, dim0l,
-      // dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, dim4l, dim5, dim5l, dim6,
-      // dim6l\n";
-
       if (iteration == 0)
-        phase1out << "iteration, id, parentID, estimate, errorest, dim0, "
+        phase1out << "iteration, id, parentID, estimate, errorest, ratio, active, percEst, percErrorest, percEstlow, percErrorestlow, estThres, errorestThres, dim0, "
                      "dim0l, dim1, dim1l, dim2, dim2l, dim3, dim3l, dim4, "
                      "dim4l, dim5, dim5l, dim6, dim6l\n";
-
+	  printf("here %e, %e thresholds:%e, %e\n", estimate, errorest,  estimate/(double)size, errorest/(double)size);
       for (int i = 0; i < size; i++) {
         sum_est += curr_hRegionsIntegral[i];
         sum_errorest += curr_hRegionsError[i];
@@ -725,17 +725,17 @@ namespace quad {
           parentID = i < size / 2 ? parentIDs[i] : parentIDs[i - size / 2];
         else
           parentID = -1;
-
-        // myfile << std::scientific << iteration << "," << nextAvailRegionID +
-        // i << "," << parentID << "," << curr_hRegionsIntegral[i] << "," <<
-        // curr_hRegionsError[i] << ",";
+	
         phase1out << std::scientific << iteration << ","
                   << nextAvailRegionID + i << "," << parentID << ","
                   << curr_hRegionsIntegral[i] << "," << curr_hRegionsError[i]
-                  << ",";
-        // printf("%i, %i, %i, %e, %e, ", iteration, nextAvailRegionID + i,
-        // parentID, curr_hRegionsIntegral[i], curr_hRegionsError[i]);
+                  << "," << curr_hRegionsError[i]/MaxErr(curr_hRegionsIntegral[i], 1e-3, 1e-12) << "," << h_activeRegions[i]<< ","
+				  << abs(curr_hRegionsIntegral[i]/estimate) << "," << abs(curr_hRegionsError[i]/errorest)  << "," 
+				  << abs(curr_hRegionsIntegral[i]/estimate_low_bound) << "," << abs(curr_hRegionsError[i]/errorest_low_bound) << "," 
+				  << abs(estimate/(double)size) << "," << abs(errorest/(double)size) << ",";
+        
 
+		
         if (h_activeRegions[i] == 1)
           numActiveRegions++;
 
@@ -746,20 +746,16 @@ namespace quad {
                                          vol->lows[dim],
                                          vol->highs[dim]);
 
-          // printf("%e, %e,", low, high);
+         
 
           if (dim == NDIM - 1) {
             phase1out << low << "," << high << "\n";
-            // myfile << low << "," << high << "\n";
           } else {
             phase1out << low << "," << high << ",";
-            // myfile << low << "," << high << ",";
           }
         }
 
-        // printf("\n");
         phase1out << "\n";
-        // myfile << "\n";
         if (i % 10000 == 0)
           printf("Completed %i/%lu regions\n", i, size);
       }
@@ -1127,8 +1123,8 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 
-      // printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions,
-      // numRegions- numActiveRegions);
+      printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions,
+       numRegions- numActiveRegions);
 
       printf("Total number of accumulated inactive regions: %lu\n",
              numInActiveRegions + numRegions - numActiveRegions);
@@ -1698,9 +1694,14 @@ namespace quad {
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       error = error + thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
 		
-	  Phase_I_PrintFile(vol,
+	  if(last_iteration != 1)	
+		Phase_I_PrintFile(vol,
                       numRegions,
                       activeRegions,
+					  rG,
+					  errG,
+					  integral,
+					  error,
                       iteration);	
 	  
       if (Final == 0) {
