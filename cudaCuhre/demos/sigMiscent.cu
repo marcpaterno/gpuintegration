@@ -21,9 +21,23 @@ time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-12;
 
-  double lows[] = {20., 5., 5., .15, 29., 0., 0.};
-  double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718};
-
+  //double lows[] = {20., 5., 5., .15, 29., 0., 0.};	//original bounds
+  //double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718};
+  
+  //double lows[] = {20., 5., 5., .45, 29., 0., 0.}; //zero estimate region, 1.833749e+06	 errorest
+  //double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718}; //zero estimate, zero errorest when integrated alone
+  
+  
+  //double highs[] = {25., 50.0000,	50.000,	0.75, 38.00000, 1.0, 6.283185}; //zero estimate, zero errorest in regular integration
+  //double lows[]  = {20., 5.0000,     5.000, 0.45, 29.00000, 0.0, 0.000000};//zero estimate, zero errorest when integrated alone
+  
+  													
+  //double lows[] = {20., 5.0000, 27.500, 0.15, 29.00000,0.0, 0.000000};    // -5.222485e-27	+- 8.469194e-27	ratio: 8.469194e-15 in regular integration
+  //double highs[] = {30., 50.0000, 38.750, 0.45, 30.12500, 1.0, 6.283185}; // -5.222484892079153e-27, 6.219388358870629e-27,  nreginos: 1
+  
+  //this is the grandfather region of the above region 
+  double lows[] = {20.,  5.,  27.5, .15, 29.,   0., 0.};
+  double highs[] = {30., 50., 50.,  .45, 31.25, 1., 6.283185}; //9.731214127453926e-07,  7.667127834366120e-09,  74278, no convergence
   constexpr int ndim = 7;
   quad::Volume<double, ndim> vol(lows, highs);
   int const key = 0;
@@ -77,6 +91,7 @@ main()
                                       "gpucuhre",
                                       std::cout,
                                       _final)) {
+	break;
     epsrel = epsrel / 1.5;
   }
 
