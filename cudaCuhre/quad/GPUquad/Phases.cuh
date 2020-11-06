@@ -102,6 +102,7 @@ ComputeWeightSum(T *errors, size_t size){
     }
   }
 
+
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -111,17 +112,19 @@ ComputeWeightSum(T *errors, size_t size){
               T* newErrs,
               int* activeRegions,
               size_t numRegions,
+			  double last_it_estimate,
+			  double last_it_errorest,
+			  size_t nregions,
               T epsrel,
               T epsabs,
               int iteration)
   {
-
     if (threadIdx.x == 0 && blockIdx.x < numRegions) {
       int fail = 0;
 
       T selfErr = dRegionsError[blockIdx.x + numRegions];
       T selfRes = dRegionsIntegral[blockIdx.x + numRegions];
-
+		
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
@@ -133,10 +136,9 @@ ComputeWeightSum(T *errors, size_t size){
 
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-
+	
       T parRes = dParentsIntegral[blockIdx.x];
-      // printf("[%i] self estimate:%.20f, parent estimate:%.20f\n", blockIdx.x,
-      // selfRes, parRes);
+	
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
@@ -146,18 +148,34 @@ ComputeWeightSum(T *errors, size_t size){
         T c = 1 + 2 * diff / err;
         selfErr *= c;
       }
-
-      selfErr += diff;
-
-      if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. ||
-          (selfRes == 0. && iteration >= 5)) {
+	  
+	  selfErr += diff;
+	  
+	  auto isPolished = [last_it_estimate, last_it_errorest, nregions, iteration](double selfRes, double selfErr)
+	  {
+		bool requirement = iteration >= 25 && selfErr*nregions <= last_it_errorest && selfRes < last_it_estimate/nregions;
+		return requirement;
+	  };
+	  
+	  //mark region as inactive if (selfErr*numRegions+goodErr)/(selfRes*numRegions*epsrel)<1 this is wrong but idea is that if a region's error was the same for all others, would we be ok?
+      if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || isPolished(selfRes, selfErr) == true) {
+	  //if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
         newErrs[blockIdx.x] = selfErr;
+		
+		//if((fabs(selfRes) < last_it_estimate/numRegions && iteration>= 15) && selfErr / MaxErr(selfRes, epsrel, epsabs) > 1.)
+			//printf("new filter %e +- %e threshold:%e prop:%e\n", selfRes, selfErr, last_it_estimate/numRegions, fabs(selfRes));
       } else {
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
       }
-
+	  
+	    if((iteration == 22 || iteration == 23 )&& blockIdx.x < 100){
+			//id, estimate, errorest, sibestimate, siberrorest, parestimate, parerrorest, fail
+			printf("ref %i, %i %e, %e, %e, %e, %e, %e, %i numRegions:%lu\n", 
+				iteration, blockIdx.x, selfRes, selfErr, siblRes, siblErr, parRes, dParentsError[blockIdx.x], fail, numRegions);
+		}
+	 
       activeRegions[blockIdx.x] = fail;
 
       // if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
