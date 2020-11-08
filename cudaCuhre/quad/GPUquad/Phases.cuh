@@ -157,6 +157,9 @@ ComputeWeightSum(T *errors, size_t size){
 		return requirement;
 	  };
 	  
+	  if(blockIdx.x == 0 && iteration >= 22)
+		printf("iteration %i last_it_estimate:%e, last_it_errorest:%e\n", iteration, last_it_estimate, last_it_errorest);
+	  
 	  //mark region as inactive if (selfErr*numRegions+goodErr)/(selfRes*numRegions*epsrel)<1 this is wrong but idea is that if a region's error was the same for all others, would we be ok?
       if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || isPolished(selfRes, selfErr) == true) {
 	  //if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
@@ -170,10 +173,11 @@ ComputeWeightSum(T *errors, size_t size){
         dRegionsIntegral[blockIdx.x] = 0;
       }
 	  
-	    if((iteration == 22 || iteration == 23 )&& blockIdx.x < 100){
+	    //if((iteration == 22 || iteration == 23 )&& blockIdx.x < 100)
+		{
 			//id, estimate, errorest, sibestimate, siberrorest, parestimate, parerrorest, fail
-			printf("ref %i, %i %e, %e, %e, %e, %e, %e, %i numRegions:%lu\n", 
-				iteration, blockIdx.x, selfRes, selfErr, siblRes, siblErr, parRes, dParentsError[blockIdx.x], fail, numRegions);
+			//printf("ref %i, %i %e, %e, %e, %e, %e, %e, %i numRegions:%lu\n", 
+				//iteration, blockIdx.x, selfRes, selfErr, siblRes, siblErr, parRes, dParentsError[blockIdx.x], fail, numRegions);
 		}
 	 
       activeRegions[blockIdx.x] = fail;
