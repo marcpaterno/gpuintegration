@@ -35,6 +35,13 @@ namespace quad {
 		return (double)free_physmem/total_physmem;
 	}
 	
+	size_t GetAmountFreeMem()
+	{
+		size_t free_physmem, total_physmem;
+		QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+		return free_physmem;
+	}
+	
     cudaError_t
     AllocateMemory(void** d_ptr, size_t n)
     {
