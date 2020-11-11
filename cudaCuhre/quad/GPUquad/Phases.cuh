@@ -136,7 +136,7 @@ ComputeWeightSum(T *errors, size_t size){
 
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-	
+		
       T parRes = dParentsIntegral[blockIdx.x];
 	
       T diff = siblRes + selfRes - parRes;
@@ -153,33 +153,23 @@ ComputeWeightSum(T *errors, size_t size){
 	  
 	  auto isPolished = [last_it_estimate, last_it_errorest, nregions, iteration](double selfRes, double selfErr)
 	  {
-		bool requirement = iteration >= 25 && selfErr*nregions <= last_it_errorest && selfRes < last_it_estimate/nregions;
+		bool requirement = iteration >= 25 && selfErr*nregions <= last_it_errorest && fabs(selfRes) < last_it_estimate/nregions;
+		//idea
+		//bool requirement = iteration >= 25 && ((selfErr*nregions)/MaxErr(last_it_estimate, epsrel, epsabs))<=1 && fabs(selfRes) < last_it_estimate/nregions;
 		return requirement;
 	  };
 	  
-	  if(blockIdx.x == 0 && iteration >= 22)
-		printf("iteration %i last_it_estimate:%e, last_it_errorest:%e\n", iteration, last_it_estimate, last_it_errorest);
-	  
 	  //mark region as inactive if (selfErr*numRegions+goodErr)/(selfRes*numRegions*epsrel)<1 this is wrong but idea is that if a region's error was the same for all others, would we be ok?
-      if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || isPolished(selfRes, selfErr) == true) {
+     
+	 if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || isPolished(selfRes, selfErr) == true) {
 	  //if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
         newErrs[blockIdx.x] = selfErr;
-		
-		//if((fabs(selfRes) < last_it_estimate/numRegions && iteration>= 15) && selfErr / MaxErr(selfRes, epsrel, epsabs) > 1.)
-			//printf("new filter %e +- %e threshold:%e prop:%e\n", selfRes, selfErr, last_it_estimate/numRegions, fabs(selfRes));
       } else {
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
       }
 	  
-	    //if((iteration == 22 || iteration == 23 )&& blockIdx.x < 100)
-		{
-			//id, estimate, errorest, sibestimate, siberrorest, parestimate, parerrorest, fail
-			//printf("ref %i, %i %e, %e, %e, %e, %e, %e, %i numRegions:%lu\n", 
-				//iteration, blockIdx.x, selfRes, selfErr, siblRes, siblErr, parRes, dParentsError[blockIdx.x], fail, numRegions);
-		}
-	 
       activeRegions[blockIdx.x] = fail;
 
       // if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
@@ -203,7 +193,8 @@ ComputeWeightSum(T *errors, size_t size){
                    Region<NDIM> sRegionPool[],
                    T* lows,
                    T* highs,
-                   int iteration)
+				   int iteration,
+                   int depth)
   {
     size_t index = blockIdx.x;
 
@@ -226,7 +217,10 @@ ComputeWeightSum(T *errors, size_t size){
 
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
-
+		
+		//if(blockIdx.x == 0 && iteration == 24)
+		//	printf("div:%i\n", depth);
+		
         if (sRegionPool[threadIdx.x].bounds[dim].lower ==
             sRegionPool[threadIdx.x].bounds[dim].upper)
           printf("error [%i](%i) bounds[%i]: %.15f - %.15f\n",
@@ -246,8 +240,8 @@ ComputeWeightSum(T *errors, size_t size){
         // sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions +
         // index];
         // sRegionPool[threadIdx.x].div = 0;
-        sRegionPool[threadIdx.x].div =
-          iteration; // carry info over or compute it?
+        sRegionPool[threadIdx.x].div = /* "=iteration" that's the problem*/
+          depth; // carry info over or compute it?
       }
     }
 
@@ -274,7 +268,8 @@ ComputeWeightSum(T *errors, size_t size){
                        int NSETS,
                        T* lows,
                        T* highs,
-                       int iteration)
+					   int iteration,
+                       int depth)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
     __shared__ T shighs[NDIM];
@@ -300,7 +295,8 @@ ComputeWeightSum(T *errors, size_t size){
                              sRegionPool,
                              slows,
                              shighs,
-                             iteration);
+							 iteration,
+                             depth);
 
     if (threadIdx.x == 0) {
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -309,8 +305,18 @@ ComputeWeightSum(T *errors, size_t size){
       T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
       int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
-      dRegionsError[gridDim.x + blockIdx.x] = ERR;
-
+	  dRegionsError[gridDim.x + blockIdx.x] = ERR;
+	
+	  /*if(iteration == 23 && blockIdx.x == 0)
+		  printf("bounds and length numRegions:%lu %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", numRegions, 
+																			dRegions[0*numRegions + blockIdx.x], dRegionsLength[0*numRegions + blockIdx.x],
+																			dRegions[1*numRegions + blockIdx.x], dRegionsLength[1*numRegions + blockIdx.x],
+																			dRegions[2*numRegions + blockIdx.x], dRegionsLength[2*numRegions + blockIdx.x],
+																			dRegions[3*numRegions + blockIdx.x], dRegionsLength[3*numRegions + blockIdx.x],
+																			dRegions[4*numRegions + blockIdx.x], dRegionsLength[4*numRegions + blockIdx.x],
+																			dRegions[5*numRegions + blockIdx.x], dRegionsLength[5*numRegions + blockIdx.x],
+																			dRegions[6*numRegions + blockIdx.x], dRegionsLength[6*numRegions + blockIdx.x],
+																			dRegions[7*numRegions + blockIdx.x], dRegionsLength[7*numRegions + blockIdx.x]);*/
       // if (ratio > 1) {
       // fail = 1;
       //}
@@ -319,8 +325,8 @@ ComputeWeightSum(T *errors, size_t size){
       subDividingDimension[blockIdx.x] = fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-
-      if (ratio > 1 && numRegions == 1) {
+	  
+      if (/*ratio > 1 && */numRegions == 1) {//do we need to zero it out already?
         dRegionsIntegral[blockIdx.x] = 0;
         dRegionsError[blockIdx.x] = 0;
       }
