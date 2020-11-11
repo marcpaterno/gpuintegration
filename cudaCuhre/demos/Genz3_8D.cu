@@ -61,7 +61,7 @@ time_and_call(std::string id,
 int
 main()
 {
-  double epsrel = 1.0e-3; // starting error tolerance.
+  double epsrel = 3.2e-7; // starting error tolerance.
   double const epsrel_min = 1.0e-12;
   double true_value = 2.2751965817917756076e-10;
   GENZ_3_8D integrand;
@@ -77,9 +77,10 @@ main()
                        _final) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
+
   }
 
-  _final = 0;
+ /* _final = 0;
   epsrel = 1.0e-3;
 
   while (time_and_call("pdc_f0_latest",
@@ -91,5 +92,5 @@ main()
                        _final) == true &&
          epsrel >= epsrel_min) {
     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  }*/
 }
