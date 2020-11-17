@@ -295,7 +295,7 @@ namespace quad {
     int phase2_failedblocks;
     T lastErr;
     T lastAvg;
-	
+	T secondTolastAvg;
 	double queued_reg_estimate;
 	double queued_reg_errorest;
 	
@@ -1236,8 +1236,8 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 
-      printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions,
-       numRegions- numActiveRegions);
+      /*printf("Bad Regions:%lu/%lu Good:%lu\n", numActiveRegions,  numRegions,
+       numRegions- numActiveRegions);*/
       numInActiveRegions += numRegions - numActiveRegions;
 
       if (outLevel >= 4)
@@ -1478,15 +1478,16 @@ namespace quad {
       double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
 	  estimate_change = abs(leaves_estimate - lastAvg);
 	  
-	  auto EstimateTrustWorthy = [lastAvg = this->lastAvg, leaves_estimate, epsrel]()
+	  auto EstimateTrustWorthy = [lastAvg = this->lastAvg, secondTolastAvg = this-> secondTolastAvg, leaves_estimate, epsrel]()
 	  {
+		  std::string second_to_last = std::to_string(secondTolastAvg);
 		  std::string last = std::to_string(lastAvg);
 		  std::string current = std::to_string(leaves_estimate);
-		  int requiredDigits = floor(log10(1/epsrel));
+		  int requiredDigits = ceil(log10(1/epsrel));
 		  double verdict = true;
 		  
-		  for(int i=0; i<requiredDigits; ++i){
-			verdict =   current[i] == last[i] ? true : false; 
+		  for(int i=0; i < requiredDigits; ++i){
+			verdict =   current[i] == last[i] &&  last[i] == second_to_last[i] ? true : false; 
 		  }
 		  return verdict;
 	  };
@@ -1509,10 +1510,10 @@ namespace quad {
       neval += numRegions * fEvalPerRegion;
 	
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
-	  printf("errorest:%e\n queued_reg_errorest:%e\n finished:%e\n", 
+	  /*printf("errorest:%e\n queued_reg_errorest:%e\n finished:%e\n", 
 		thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions), 
 		partitionManager.queued_reg_errorest, 
-		error);
+		error);*/
 	  
 	  double iter_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
       double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
@@ -1555,11 +1556,12 @@ namespace quad {
         lastAvg = sigsq * avgsum;
         lastErr = sqrt(sigsq);
       } else {
+		secondTolastAvg = lastAvg;
         lastAvg = leaves_estimate;
         lastErr = leaves_errorest;
       }
 	//garbage, regions_in_iter, estimate, errorest, 
-	printf("Computing_integral, %i, %e, %e, %lu, %e, %e, %f\n", iteration, leaves_estimate, leaves_errorest, numRegions, integral, error, lastErr/MaxErr(lastAvg, epsrel, epsabs));
+	//printf("Computing_integral, %i, %e, %e, %lu, %e, %e, %f\n", iteration, leaves_estimate, leaves_errorest, numRegions, integral, error, lastErr/MaxErr(lastAvg, epsrel, epsabs));
       /*printf("Computing_integral, %lu, %.20f +- %.20f \ngood "
              "regions:%.20f +- %.20f nregions:%lu iteration:%i\n",
              numRegions,
