@@ -102,7 +102,6 @@ ComputeWeightSum(T *errors, size_t size){
     }
   }
 
-
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -111,27 +110,34 @@ ComputeWeightSum(T *errors, size_t size){
               T* dParentsError,
               T* newErrs,
               int* activeRegions,
-              size_t numRegions,
+              size_t currIterRegions,
+			  double finished_estimate,
+			  double finished_errorest,
+			  double queued_estimate,
+			  double queued_errorest,
 			  double last_it_estimate,
 			  double last_it_errorest,
 			  size_t nregions,
+			  size_t numFinishedRegions,
               T epsrel,
               T epsabs,
-              int iteration)
+              int iteration,
+			  bool estConverged)
   {
-    if (threadIdx.x == 0 && blockIdx.x < numRegions) {
+	//can we do anythign with the rest of the threads? maybe launch more blocks instead and a  single thread per block?
+    if (threadIdx.x == 0 && blockIdx.x < currIterRegions) {
       int fail = 0;
 
-      T selfErr = dRegionsError[blockIdx.x + numRegions];
-      T selfRes = dRegionsIntegral[blockIdx.x + numRegions];
+      T selfErr = dRegionsError[blockIdx.x + currIterRegions];
+      T selfRes = dRegionsIntegral[blockIdx.x + currIterRegions];
 		
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
 
-      int siblingIndex = (numRegions / 2) + blockIdx.x;
-      if (siblingIndex < numRegions) {
-        siblingIndex += numRegions;
+      int siblingIndex = (currIterRegions / 2) + blockIdx.x;
+      if (siblingIndex < currIterRegions) {
+        siblingIndex += currIterRegions;
       }
 
       T siblErr = dRegionsError[siblingIndex];
@@ -151,17 +157,63 @@ ComputeWeightSum(T *errors, size_t size){
 	  
 	  selfErr += diff;
 	  
-	  auto isPolished = [last_it_estimate, last_it_errorest, nregions, iteration](double selfRes, double selfErr)
+	  /*
+	  auto isPolishedGood = [last_it_estimate, last_it_errorest, numFinishedRegions, currIterRegions, iteration, finished_errorest, finished_estimate, epsrel, epsabs](double selfRes, double selfErr)
 	  {
-		bool requirement = iteration >= 25 && selfErr*nregions <= last_it_errorest && fabs(selfRes) < last_it_estimate/nregions;
-		//idea
-		//bool requirement = iteration >= 25 && ((selfErr*nregions)/MaxErr(last_it_estimate, epsrel, epsabs))<=1 && fabs(selfRes) < last_it_estimate/nregions;
+		bool requirement = iteration >= 15 && selfErr*(numFinishedRegions*currIterRegions) <= finished_errorest && fabs(selfRes) < finished_estimate/(numFinishedRegions*currIterRegions);
 		return requirement;
+	  };
+	  
+	  auto isPolishedLastIt = [last_it_estimate, last_it_errorest, numFinishedRegions, currIterRegions, iteration, finished_errorest, finished_estimate, epsrel, epsabs](double selfRes, double selfErr)
+	  {
+		bool minIterReached = iteration >= 25;
+		
+		bool requirement = selfErr*(numFinishedRegions+currIterRegions) <= finished_errorest && fabs(selfRes) < finished_estimate/(numFinishedRegions+currIterRegions);
+		return minIterReached && requirement;
+	  };
+	  */
+	  auto isPolished = [last_it_estimate, 
+						 last_it_errorest, 
+						 nregions, 
+						 numFinishedRegions, 
+						 currIterRegions, 
+						 iteration, 
+						 finished_estimate, 
+						 finished_errorest, 
+						 queued_estimate,
+						 queued_errorest,
+						 epsrel, 
+						 epsabs,
+						 estConverged](double selfRes, double selfErr)
+	  {
+		//bool minIterReached = iteration >= 20; 	
+		bool minIterReached = estConverged;
+		double GlobalErrTarget = last_it_estimate*epsrel;
+		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_estimate;
+		bool worstCaseScenarioGood =  selfErr*currIterRegions < .50*remainGlobalErrRoom;
+		bool selfErrTarget = selfRes*epsrel;
+		bool verdict = worstCaseScenarioGood && minIterReached;
+		
+		//------------------------------------------------------------
+		double prev_w =  (nregions + currIterRegions/2)/ fmax(last_it_errorest * last_it_errorest, ldexp(1., -104));
+		double w = 1 / fmax(selfErr * selfErr, ldexp(1., -104));
+        double weightsum = w + prev_w;
+        double avgsum = w * selfRes + prev_w*last_it_estimate;
+        double sigsq = 1 / weightsum;
+        double lastAvg = sigsq * avgsum;
+        double lastErr = sqrt(sigsq);
+		
+		bool weightCriteria = /*selfErr/MaxErr(selfRes, epsrel, epsabs) <= 3. &&*/ selfRes == 0 && worstCaseScenarioGood;
+		//------------------------------------------------------------
+		
+		//if(verdict == true && selfErr/MaxErr(selfRes, epsrel, epsabs)>= 1.)
+		//	printf("it:%i, %i, %i worseCase:%e, remaining:%e, %f\n", iteration,blockIdx.x, threadIdx.x, selfErr*currIterRegions, remainGlobalErrRoom, selfErr/MaxErr(selfRes, epsrel, epsabs));
+		return verdict;
 	  };
 	  
 	  //mark region as inactive if (selfErr*numRegions+goodErr)/(selfRes*numRegions*epsrel)<1 this is wrong but idea is that if a region's error was the same for all others, would we be ok?
      
-	 if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1. || isPolished(selfRes, selfErr) == true) {
+	 if (isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
 	  //if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
         newErrs[blockIdx.x] = selfErr;
       } else {
@@ -171,13 +223,7 @@ ComputeWeightSum(T *errors, size_t size){
       }
 	  
       activeRegions[blockIdx.x] = fail;
-
-      // if(activeRegions[blockIdx.x] == 1 &&  dRegionsIntegral[blockIdx.x]!=0.)
-      //  printf("issue 1\n");
-      // if(activeRegions[blockIdx.x] == 0 &&  dRegionsError[blockIdx.x] /
-      // MaxErr(dRegionsIntegral[blockIdx.x], epsrel, epsabs) > 1.)
-      //  printf("issue 2\n");
-      newErrs[blockIdx.x + numRegions] = selfErr;
+      newErrs[blockIdx.x + currIterRegions] = selfErr;
     }
   }
 

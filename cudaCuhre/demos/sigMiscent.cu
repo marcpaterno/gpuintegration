@@ -21,8 +21,8 @@ time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-12;
 
-  //double lows[] = {20., 5., 5., .15, 29., 0., 0.};	//original bounds
-  //double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718};
+  double lows[] = {20., 5., 5., .15, 29., 0., 0.};	//original bounds
+  double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718};
   
   //double lows[] = {20., 5., 5., .45, 29., 0., 0.}; //zero estimate region, 1.833749e+06	 errorest
   //double highs[] = {30., 50., 50., .75, 38., 1., 6.28318530718}; //zero estimate, zero errorest when integrated alone
@@ -36,8 +36,8 @@ time_and_call(std::string id,
   //double highs[] = {30., 50.0000, 38.750, 0.45, 30.12500, 1.0, 6.283185}; // -5.222484892079153e-27, 6.219388358870629e-27,  nreginos: 1
   
   //this is the grandfather region of the above region 
-  double lows[] = {20.,  5.,  27.5, .15, 29.,   0., 0.};
-  double highs[] = {30., 50., 50.,  .45, 31.25, 1., 6.283185}; //9.731214127453926e-07,  7.667127834366120e-09,  74278, no convergence
+  //double lows[] = {20.,  5.,  27.5, .15, 29.,   0., 0.};
+  //double highs[] = {30., 50., 50.,  .45, 31.25, 1., 6.283185}; //9.731214127453926e-07,  7.667127834366120e-09,  74278, no convergence
   constexpr int ndim = 7;
   quad::Volume<double, ndim> vol(lows, highs);
   int const key = 0;
