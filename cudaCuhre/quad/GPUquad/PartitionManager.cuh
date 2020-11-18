@@ -1,6 +1,6 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_PARTITIONMANAGER_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_PARTITIONMANAGER_CUH
-	
+#include <stdlib.h> 
 #include <algorithm>
 #include "../util/cudaMemoryUtil.h"
 #include <cuda.h>
@@ -127,7 +127,7 @@ class PartitionManager{
 		std::vector<double> partionContributionsIntegral;
 		std::vector<double> partionContributionsError;
 		size_t numPartitions;    
-	
+		const size_t numSplits = 4;
 	void Init(HostMemory<double>* host, DeviceMemory<double>* device)
 	{
 		Host = host;
@@ -135,17 +135,6 @@ class PartitionManager{
 		numPartitions = 0;
 		queued_reg_estimate = 0.;
 		queued_reg_errorest = 0.;
-	}
-	
-	void ExpandNumPartitions(size_t numToExpandBy)
-	{
-		//size_t* temppartitionSizes 				 = new size_t[numPartitions + numToExpandBy];
-		//double* tempPartionContributionsIntegral = new double[numPartitions + numToExpandBy];
-		//double* tempPartionContributionsError  	 = new double[numPartitions + numToExpandBy];
-		
-		//std::copy(partitionSizes, partitionSizes + numPartitions, temppartitionSizes);
-		//std::copy(partionContributionsIntegral, partionContributionsIntegral + numPartitions, tempPartionContributionsIntegral);
-		//std::copy(partionContributionsError, partionContributionsError + numPartitions, tempPartionContributionsError);
 	}
 	
 	size_t partitionRunSum(size_t id) 
@@ -163,51 +152,65 @@ class PartitionManager{
 		//i don't like i+numPartitions indexing
 		thrust::device_ptr<double> wrapped_ptr;
 		wrapped_ptr = thrust::device_pointer_cast(dParentsIntegral);
-		
-		for(int i=0; i<4; i++){
+		double fourthPartitionsContribution = 0.;
+        
+		for(int i=0; i<numSplits; i++){
 			size_t partionNumParents = partitionSizes[i + numPartitions]/2;
 			size_t parentsProcessed = partitionRunSum(i)/2;
 			//printf("Setting partition %i parents from %lu to %lu\n",  i, parentsProcessed, parentsProcessed + partionNumParents);
-			partionContributionsIntegral.push_back(thrust::reduce(wrapped_ptr + parentsProcessed, wrapped_ptr + parentsProcessed + partionNumParents));
+            double parentsEstimate = thrust::reduce(wrapped_ptr + parentsProcessed, wrapped_ptr + parentsProcessed + partionNumParents);
+            fourthPartitionsContribution += parentsEstimate;
+			partionContributionsIntegral.push_back(parentsEstimate);
 			
 		}
-		
+		printf("Saved Four Partitions with cummulative estimate of %.20f\n", fourthPartitionsContribution);
 		wrapped_ptr = thrust::device_pointer_cast(dParentsError);
 		
-		for(int i=0; i<4; i++){
+		for(int i=0; i<numSplits; i++){
 			size_t partionNumParents = partitionSizes[i+ numPartitions]/2;
 			size_t parentsProcessed = partitionRunSum(i)/2;
 			partionContributionsError.push_back(thrust::reduce(wrapped_ptr + parentsProcessed, wrapped_ptr + parentsProcessed + partionNumParents));
 		}
 
-		/*for(int i=0; i<numPartitions + 4; i++)
+		/*for(int i=0; i<numPartitions + numSplits; i++)
 		{
-			printf("Contributions %i/%lu %e +- %e size:%lu\n", i, numPartitions, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
+			printf("Contributions %i/%lu %e +- %e size:%lu %f\n", i, numPartitions, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i], partionContributionsError[i]/MaxErr(partionContributionsIntegral[i], 1.024000e-10, 1.0e-40));
 		}*/
 	}
 
-	void GetEvenQuarterSize(size_t num, size_t& quarterSize, size_t& remainder)
+	void GetEvenSplitSize(size_t numToSplit, size_t& quarterSize, size_t& remainder)
 	{
-		//printf("GetEvenQuarterSize with num:%lu\n", num);
+        assert(numToSplit % 2 == 0);
+        size_t origNum = numToSplit;
+        
 		remainder = 0;
 		auto isOdd = [](size_t num)->bool
 		{
 			return num % 2;
 		};
 		
-		while(isOdd(num/4)){
+        auto NonZeroRemainder = [](size_t numerator, size_t divisor)->bool
+        {
+            return numerator % divisor != 0;
+        };
+        
+		while(isOdd(origNum/numSplits) || NonZeroRemainder(origNum, numSplits)){
 			remainder += 2;
-			num -= 2;
+			origNum -= 2;
 		}
-		quarterSize = num/4;
-		//printf("returning quarter:%lu , remainder:%lu\n", quarterSize, remainder);
+		quarterSize = origNum/numSplits;
+        
+        if(3*quarterSize + quarterSize+remainder != numToSplit)
+        {
+            printf ("Error creating four non-odd partitions for partition size:%lu", numToSplit);
+            exit (EXIT_FAILURE);
+        }
 	};	
 
 	void SetpartitionSizess(size_t size)
 	{	
 		//printf("Inside set partition size numPartitions:%lu size:%lu\n", numPartitions, size);
-		const size_t numNewPartitions = 4;
-		assert(numNewPartitions == 4);
+		const size_t numNewPartitions = numSplits;
 		assert(!(size % 2));
 		//this sets four partitions, each of which must be of even size
 		//the paritions dont' need to be equal to each other 
@@ -219,7 +222,7 @@ class PartitionManager{
 					
 		size_t extra = size % numNewPartitions; //extra=2
 		size_t floor_quarter_size =  size/numNewPartitions; //quarter_size: 4474069
-		GetEvenQuarterSize(size, floor_quarter_size, extra);
+		GetEvenSplitSize(size, floor_quarter_size, extra);
 		
 		for(int i=0; i<numNewPartitions; i++)
 			partitionSizes.push_back(floor_quarter_size);
@@ -255,13 +258,10 @@ class PartitionManager{
 			}
 			partitionSizes[numPartitions + numNewPartitions-1] +=  2;
 		}
-			
 		*/
 		for(int i=0; i<numPartitions + numNewPartitions; i++){
 			assert(partitionSizes[i] % 2 == 0);
-			//printf("partion %i size:%lu\n", i, partitionSizes[i]);
 		}
-		////printf("Done with settign partition sizes\n");
 	}
 	
 	void DeepCopyDeviceToHost(Partition<NDIM>& destPartition, Partition<NDIM> sourcePartition, size_t sourceRegionsFirstIndex)
@@ -371,20 +371,17 @@ class PartitionManager{
 	void LoadNextActivePartition(Partition<NDIM>& wrapper)
 	{
 		StoreRegionsInHost(wrapper);	//1. save current progress in the form of four partitions
-		CudaCheckError();printf("Stored regions in host\n");
+		CudaCheckError();
+		//printf("Stored regions in host\n");
 		size_t maxErrID = 0;			//2. Find the partition with the largest error-estimate
 		
 		for(size_t i=1; i<numPartitions; i++){
-			if(partionContributionsError[maxErrID] <  partionContributionsError[i]){
+			if(partionContributionsError[maxErrID]/partitionSizes[maxErrID] <  partionContributionsError[i]/partitionSizes[i]){
 				maxErrID = i;
 			}
 		}
 		
-		for(size_t i=0; i<numPartitions; i++){
-			//printf("partition %lu size:%lu\n", i, partitionSizes[i]);
-		}
-		//maxErrID = 3;
-		printf("Loading partition with %e +- %e errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
+		printf("Loading partition with %.20f +- %.20f errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
 		Partition<NDIM> priorityP = partitions[maxErrID];	//3. get a pointer to that host partition
 		//printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth, maxErrID);
 		//4. erase it from partition manager
@@ -409,10 +406,14 @@ class PartitionManager{
 		queued_reg_estimate = 0;
 		queued_reg_errorest = 0;
 		
+		printf("Partitions after poping worst one\n");
 		for(int i=0; i<numPartitions; i++){
 			queued_reg_estimate += partionContributionsIntegral[i]; 
 			queued_reg_errorest += partionContributionsError[i];
+			printf("partition %i %.20f +- %.20f, %lu\n", i, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
 		}
+		
+		printf("Partition.queued_est:%.20f +- %.20f\n", queued_reg_estimate, queued_reg_errorest);
 	}
 
 };
