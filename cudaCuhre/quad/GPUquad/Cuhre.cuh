@@ -738,24 +738,25 @@ namespace quad {
 
       convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
       res.lastPhase = 1;
-
-      if (convergence) {
+      cudaFree(d_integrand);
+      return res;
+      /* if (convergence) {
         cudaFree(d_integrand);
         return res;
       }
 
-      res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
+     res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
                                                              res.estimate,
                                                              res.errorest,
                                                              res.nregions,
-                                                             res.neval/*,
-                                                             nullptr*/);
+                                                             res.neval,
+                                                             nullptr);
       res.lastPhase = 2;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 
-      cudaFree(d_integrand);
+      cudaFree(d_integrand);*/
       return res;
     }
   };
