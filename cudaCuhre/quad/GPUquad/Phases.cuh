@@ -11,42 +11,6 @@
 #include <stdio.h>
 namespace quad {
 
-  /*__device__ __host__
-  double
-  Sq(double x){return x*x;}*/
-
-  /* struct weightsum_functor {
-       __device__ __host__
-       double
-       operator()(double err){return  1/fmax(Sq(err), ldexp(1., -104));}
-   };
-
- template<typename T>
- double
- ComputeWeightSum(T *errors, size_t size){
-        thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
-        thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor());
-        double weightsum = thrust::reduce(d_ptr, d_ptr + size);
-        double sigsq = 1/weightsum;
- }	*/
-
-  /*template<typename T>
-  void ApplyFinal0(T &avg, T &err, T &weightsum, T &avgsum, T &chisum,  T
-&chisqsum, T &chisq, const T guess){ double w = 0, sigsq = 0; weightsum += w =
-1/Max(sqrt(err), ldexp(1., -104)); sigsq = 1/weightsum; avgsum += w*avg; avg =
-sigsq*avgsum; chisum += w *= avg - guess; chisqsum += w*avg; chisq = chisqsum -
-avg*chisum;
-}*/
-
-  /*template<typename T>
-double
-ComputeWeightSum(T *errors, size_t size){
-   thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(errors);
-   thrust::transform(d_ptr, d_ptr + size, d_ptr,  weightsum_functor());
-   double weightsum = thrust::reduce(d_ptr, d_ptr + size);
-   double sigsq = 1/weightsum;
-}*/
-
   __device__ void
   cuprintf(const char* fmt, ...)
   {
@@ -111,14 +75,14 @@ ComputeWeightSum(T *errors, size_t size){
               T* newErrs,
               int* activeRegions,
               size_t currIterRegions,
-			  double finished_estimate,
+			  //double finished_estimate,
 			  double finished_errorest,
-			  double queued_estimate,
+			  //double queued_estimate,
 			  double queued_errorest,
 			  double last_it_estimate,
-			  double last_it_errorest,
-			  size_t nregions,
-			  size_t numFinishedRegions,
+			  //double last_it_errorest,
+			  //size_t nregions,
+			  //size_t numFinishedRegions,
               T epsrel,
               T epsabs,
               int iteration,
@@ -157,64 +121,24 @@ ComputeWeightSum(T *errors, size_t size){
 	  
 	  selfErr += diff;
 	  
-	  /*
-	  auto isPolishedGood = [last_it_estimate, last_it_errorest, numFinishedRegions, currIterRegions, iteration, finished_errorest, finished_estimate, epsrel, epsabs](double selfRes, double selfErr)
-	  {
-		bool requirement = iteration >= 15 && selfErr*(numFinishedRegions*currIterRegions) <= finished_errorest && fabs(selfRes) < finished_estimate/(numFinishedRegions*currIterRegions);
-		return requirement;
-	  };
-	  
-	  auto isPolishedLastIt = [last_it_estimate, last_it_errorest, numFinishedRegions, currIterRegions, iteration, finished_errorest, finished_estimate, epsrel, epsabs](double selfRes, double selfErr)
-	  {
-		bool minIterReached = iteration >= 25;
-		
-		bool requirement = selfErr*(numFinishedRegions+currIterRegions) <= finished_errorest && fabs(selfRes) < finished_estimate/(numFinishedRegions+currIterRegions);
-		return minIterReached && requirement;
-	  };
-	  */
 	  auto isPolished = [last_it_estimate, 
-						 last_it_errorest, 
-						 nregions, 
-						 numFinishedRegions, 
 						 currIterRegions, 
-						 iteration, 
-						 finished_estimate, 
 						 finished_errorest, 
-						 queued_estimate,
 						 queued_errorest,
 						 epsrel, 
 						 epsabs,
 						 estConverged](double selfRes, double selfErr)
 	  {
-		//bool minIterReached = iteration >= 20; 	
 		bool minIterReached = estConverged;
-		double GlobalErrTarget = last_it_estimate*epsrel;
-		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_estimate;
+		double GlobalErrTarget = fabs(last_it_estimate)*epsrel;
+		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest; 
 		bool worstCaseScenarioGood =  selfErr*currIterRegions < .50*remainGlobalErrRoom;
-		bool selfErrTarget = selfRes*epsrel;
+		bool selfErrTarget = fabs(selfRes)*epsrel;
 		bool verdict = worstCaseScenarioGood && minIterReached;
-		
-		//------------------------------------------------------------
-		double prev_w =  (nregions + currIterRegions/2)/ fmax(last_it_errorest * last_it_errorest, ldexp(1., -104));
-		double w = 1 / fmax(selfErr * selfErr, ldexp(1., -104));
-        double weightsum = w + prev_w;
-        double avgsum = w * selfRes + prev_w*last_it_estimate;
-        double sigsq = 1 / weightsum;
-        double lastAvg = sigsq * avgsum;
-        double lastErr = sqrt(sigsq);
-		
-		bool weightCriteria = /*selfErr/MaxErr(selfRes, epsrel, epsabs) <= 3. &&*/ selfRes == 0 && worstCaseScenarioGood;
-		//------------------------------------------------------------
-		
-		//if(verdict == true && selfErr/MaxErr(selfRes, epsrel, epsabs)>= 1.)
-		//	printf("it:%i, %i, %i worseCase:%e, remaining:%e, %f\n", iteration,blockIdx.x, threadIdx.x, selfErr*currIterRegions, remainGlobalErrRoom, selfErr/MaxErr(selfRes, epsrel, epsabs));
 		return verdict;
 	  };
-	  
-	  //mark region as inactive if (selfErr*numRegions+goodErr)/(selfRes*numRegions*epsrel)<1 this is wrong but idea is that if a region's error was the same for all others, would we be ok?
-     
+	       
 	 if (isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
-	  //if (selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
         newErrs[blockIdx.x] = selfErr;
       } else {
         fail = 1;
@@ -246,16 +170,6 @@ ComputeWeightSum(T *errors, size_t size){
 
     if (threadIdx.x == 0) {
       for (int dim = 0; dim < NDIM; ++dim) {
-        /*T lower = dRegions[dim * numRegions + index];
-
-        RegionPool[threadIdx.x].bounds[dim].lower = 0;
-        sRegionPool[threadIdx.x].bounds[dim].upper = 1;
-
-        sBound[dim].unScaledLower = lower;
-        sBound[dim].unScaledUpper =
-          lower + dRegionsLength[dim * numRegions + index];
-        sRegionPool[threadIdx.x].div = 0;*/
-
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[threadIdx.x].bounds[dim].lower = lower;
         sRegionPool[threadIdx.x].bounds[dim].upper =
@@ -264,14 +178,10 @@ ComputeWeightSum(T *errors, size_t size){
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
 		
-		//if(blockIdx.x == 0 && iteration == 24)
-		//	printf("div:%i\n", depth);
-		
         if (sRegionPool[threadIdx.x].bounds[dim].lower ==
-            sRegionPool[threadIdx.x].bounds[dim].upper)
-          printf("error [%i](%i) bounds[%i]: %.15f - %.15f\n",
+            sRegionPool[threadIdx.x].bounds[dim].upper /*|| (iteration == 23 && blockIdx.x == 0)*/)
+          printf("sRegionPool [%i] bounds[%i]: %.15f - %.15f\n",
                  blockIdx.x,
-                 threadIdx.x,
                  dim,
                  sRegionPool[threadIdx.x].bounds[dim].lower,
                  sRegionPool[threadIdx.x].bounds[dim].upper);
@@ -282,11 +192,7 @@ ComputeWeightSum(T *errors, size_t size){
                  dim,
                  sBound[dim].unScaledLower,
                  sBound[dim].unScaledUpper);
-        // sBound[dim].unScaledLower = lower;
-        // sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions +
-        // index];
-        // sRegionPool[threadIdx.x].div = 0;
-        sRegionPool[threadIdx.x].div = /* "=iteration" that's the problem*/
+        sRegionPool[threadIdx.x].div = 
           depth; // carry info over or compute it?
       }
     }
