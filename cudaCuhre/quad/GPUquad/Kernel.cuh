@@ -296,8 +296,6 @@ namespace quad {
     T lastErr;
     T lastAvg;
 	T secondTolastAvg;
-	double queued_reg_estimate;
-	double queued_reg_errorest;
 	
 	double errorest_change;
 	double estimate_change;
@@ -434,14 +432,14 @@ namespace quad {
     max_globalpool_size); max_globalpool_size += SM_REGION_POOL_SIZE;
     }*/
 
-      while (PredictSize(2 * first_phase_maxregions,
+      /*while (PredictSize(2 * first_phase_maxregions,
                          max_globalpool_size,
                          free_physmem,
                          total_physmem) < total_physmem) {
         printf("first_phase_maxregions:%i can be increased\n",
                first_phase_maxregions);
         first_phase_maxregions += first_phase_maxregions;
-      }
+      }*/
 
       /*
     std::cout<<max_globalpool_size<<","<<first_phase_maxregions<<std::endl;
@@ -789,55 +787,58 @@ namespace quad {
 		finishedOutfile << "iteration, leaves_estimate, leaves_errorest, iter_nregions, iter_estimate, iter_errorest,  iter_finished_estimate, iter_finished_errorest, iter_finished_nregions, queued_estimate, queued_errorest\n";
 	  }
 	  
-      for (int i = 0; i < iter_nregions; i++) {
-        sum_est += curr_hRegionsIntegral[i];
-        sum_errorest += curr_hRegionsError[i];
+      for (int regnIndex = 0; regnIndex < iter_nregions; regnIndex++) {
+        sum_est += curr_hRegionsIntegral[regnIndex];
+        sum_errorest += curr_hRegionsError[regnIndex];
 		
         int parentID = 0;
 
         if (iter_nregions > 1)
-          parentID = i < iter_nregions / 2 ? parentIDs[i] : parentIDs[i - iter_nregions / 2];
+          parentID = regnIndex < iter_nregions / 2 ? parentIDs[regnIndex] : parentIDs[regnIndex - iter_nregions / 2];
         else
           parentID = -1;
 	  
-		/*if(iteration <= 25 && iteration >= 20)*/
+		/*if(iteration == 23)*/
 		{
 			phase1out 	<< std::setprecision (17)<< std::scientific 
 			        << iteration << ","
-					<< nextAvailRegionID + i << "," 
+					<< nextAvailRegionID + regnIndex << "," 
 					<< parentID << ","
-					<< curr_hRegionsIntegral[i] << "," 
-					<< curr_hRegionsError[i]<< "," 
-					<< curr_ParentsIntegral[i] << "," 
-					<< curr_ParentsError[i]<< "," 
-					<< h_activeRegions[i]<< ",";
+					<< curr_hRegionsIntegral[regnIndex] << "," 
+					<< curr_hRegionsError[regnIndex]<< "," 
+					<< curr_ParentsIntegral[regnIndex] << "," 
+					<< curr_ParentsError[regnIndex]<< "," 
+					<< h_activeRegions[regnIndex]<< ",";
 		}
 	
-        if (h_activeRegions[i] == 1)
+        if (h_activeRegions[regnIndex] == 1)
           numActiveRegions++;
 
         for (int dim = 0; dim < NDIM; dim++) {
           double low = ScaleValue(
-            curr_hRegions[dim * iter_nregions + i], vol->lows[dim], vol->highs[dim]);
-          double high = ScaleValue(curr_hRegions[dim * iter_nregions + i] + curr_hRegionsLength[dim * iter_nregions + i],
+            curr_hRegions[dim * iter_nregions + regnIndex], vol->lows[dim], vol->highs[dim]);
+			
+		  //could this be wrong? doesn't seem so
+          double high = ScaleValue(curr_hRegions[dim * iter_nregions + regnIndex] + curr_hRegionsLength[dim * iter_nregions + regnIndex],
                                          vol->lows[dim],
                                          vol->highs[dim]);
-
-            if(high == low)
-				printf("high=low it%i region%i\n", iteration, i);
-			if (dim == NDIM - 1 /*&& iteration <= 25 && iteration >= 20*/) {
+			//if(iteration == 23 && regnIndex == 0)
+			//	printf("low,high = %f, %f\n", low, high);
+			
+            //if(high == low)
+				//printf("high=low it%i region%i\n", iteration, regnIndex);
+			if (dim == NDIM - 1 /*&& iteration == 23*/) {
 				phase1out << std::setprecision (17)<< std::scientific  << low << "," << high << "\n";
-			  } else /*if(iteration <= 25 && iteration >= 20)*/
+			  } else /*if(iteration == 23)*/
 			  {
 				phase1out  << std::setprecision (17)<< std::scientific << low << "," << high << ",";
 			  }
-			
         }
-			/*if(iteration <= 25 && iteration >= 20)*/
+			//if(iteration == 23)
 				phase1out << "\n";
       }
 	
-	  finishedOutfile	<< std::scientific 			
+	  finishedOutfile	<< std::setprecision (17)<< std::scientific 	
 						<<	iteration	    		 <<	","
 						<<  leaves_estimate			 <<  ","
 						<< 	leaves_errorest			 <<  ","
@@ -850,7 +851,8 @@ namespace quad {
 						<<  queued_estimate			 << ","
 						<<  queued_errorest 		 << "\n";
 						
-	 std::cout<< "Printing,\t" 
+	 /*std::cout<< "Printing,\t" 
+						<< std::setprecision (17)<< std::scientific 
 						<<	iteration	    		 <<	","
 						<<  leaves_estimate			 <<  ","
 						<< 	leaves_errorest			 <<  ","
@@ -861,7 +863,8 @@ namespace quad {
 					    <<  iter_finished_errorest 	 << ","
 						<<  dnumInActiveRegions      << ","
 						<<  queued_estimate			 << ","
-						<<  queued_errorest 		 << "\n";
+						<<  queued_errorest 		 << "\n";*/
+						
       if (parentIDs != nullptr)
         delete[] parentIDs;
       parentIDs = new size_t[numActiveRegions];
@@ -1359,7 +1362,14 @@ namespace quad {
       }
     }
 	
-	void hRefineError(int *activeRegions, double integral, double error, size_t nregions, double epsrel, double epsabs, int iteration, bool estimateHasConverged)
+	void hRefineError(int *activeRegions, 
+                      //double integral, 
+                      double error, 
+                      size_t nregions, 
+                      double epsrel, 
+                      double epsabs, 
+                      int iteration, 
+                      bool estimateHasConverged)
 	{
 		//can't use dRegionsError to store newErrs, because sibling errors are accessed
 		
@@ -1378,14 +1388,14 @@ namespace quad {
                                                   newErrs,
                                                   activeRegions,
                                                   numRegions,
-												  integral,
+												  //integral,
 												  error,
-												  queued_reg_estimate,
-												  queued_reg_errorest,
+												  //queued_reg_estimate,
+												  partitionManager.queued_reg_errorest,
 												  lastAvg,
-												  lastErr,
-												  nregions,
-												  numInActiveRegions,
+												  //lastErr,
+												  //nregions,
+												  //numInActiveRegions,
                                                   epsrel,
                                                   epsabs,
                                                   iteration,
@@ -1468,21 +1478,25 @@ namespace quad {
 	  thrust::device_ptr<T> wrapped_ptr;
 		
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
-	  /*printf("Iteration %i \nestimate:%e \nqueued_reg_estimate:%e \naccumulated:%e\n", 
-		iteration, 
-		thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions), 
-		partitionManager.queued_reg_estimate,
-		integral);*/
 	  
 	  double iter_estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
       double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
 	  estimate_change = abs(leaves_estimate - lastAvg);
 	  
-	  auto EstimateTrustWorthy = [lastAvg = this->lastAvg, secondTolastAvg = this-> secondTolastAvg, leaves_estimate, epsrel]()
+	  
+	  /*printf("Iteration %i \n iter_estimate(good+bad):%.20f \n queued_reg_estimate:%.20f \n accumulated up until prev iter:%.20f\n", 
+		iteration, 
+		iter_estimate, 
+		partitionManager.queued_reg_estimate,
+		integral);*/
+	  //printf("Computing :%e\n", leaves_estimate);
+	  wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
+	 
+	  auto EstimateTrustWorthy = [lastAvg = abs(this->lastAvg), secondTolastAvg = abs(this->secondTolastAvg), leaves_estimate, epsrel]()
 	  {
 		  std::string second_to_last = std::to_string(secondTolastAvg);
 		  std::string last = std::to_string(lastAvg);
-		  std::string current = std::to_string(leaves_estimate);
+		  std::string current = std::to_string(abs(leaves_estimate));
 		  int requiredDigits = ceil(log10(1/epsrel));
 		  double verdict = true;
 		  
@@ -1493,9 +1507,11 @@ namespace quad {
 	  };
 	  
 	  bool estimateHasConverged = EstimateTrustWorthy();
-	  if(estimateHasConverged)
-		  printf("ITERATION %i GOOD ESTIMATE\n", iteration);
-	  hRefineError(activeRegions, integral, error, nregions, epsrel, epsabs, iteration, estimateHasConverged);
+	  //if(estimateHasConverged)
+		//  printf("ITERATION %i GOOD ESTIMATE\n", iteration);
+	  //hRefineError(activeRegions, integral, error, nregions, epsrel, epsabs, iteration, estimateHasConverged);
+	  hRefineError(activeRegions, leaves_estimate/*, leaves_errorest*/, nregions, epsrel, epsabs, iteration, estimateHasConverged);
+	  
 	  
       T temp_integral = 0;
       T temp_error = 0;
@@ -1509,24 +1525,23 @@ namespace quad {
       nregions += numRegions;
       neval += numRegions * fEvalPerRegion;
 	
-      wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
-	  /*printf("errorest:%e\n queued_reg_errorest:%e\n finished:%e\n", 
-		thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions), 
-		partitionManager.queued_reg_errorest, 
+
+     double iter_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+     double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
+     errorest_change = abs(leaves_errorest - lastErr);
+	 /*printf(" iter_errorest(good+bad):%.20f \n queued_errorest:%.20f \n accumulated up until prev iter:%.20f\n", 
+		iter_errorest, 
+		partitionManager.queued_reg_errorest,
 		error);*/
-	  
-	  double iter_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
-      errorest_change = abs(leaves_errorest - lastErr);
-     
-	  wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
-	  double iter_finished_estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      integral =
-        integral + iter_finished_estimate;
-      
-	  wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
-	  double iter_finished_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      error = error + iter_finished_errorest;
+            
+	 wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
+	 double iter_finished_estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+     integral =
+       integral + iter_finished_estimate;
+     //printf(" iter_finished_estimate:%.20f\n", iter_finished_estimate);
+	 wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
+	 double iter_finished_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+     error = error + iter_finished_errorest;
 	  
 	  if(last_iteration != 1)	
 		Phase_I_PrintFile(vol,
@@ -1544,7 +1559,7 @@ namespace quad {
 					  epsabs,
                       iteration);	
 	  
-	  //if(iteration == 25)
+	  //if(iteration == 23)
 		//PrintToFile(phase1out.str(), "Phase_1_regions.csv");
 		
 	  
@@ -1561,7 +1576,16 @@ namespace quad {
         lastErr = leaves_errorest;
       }
 	//garbage, regions_in_iter, estimate, errorest, 
-	//printf("Computing_integral, %i, %e, %e, %lu, %e, %e, %f\n", iteration, leaves_estimate, leaves_errorest, numRegions, integral, error, lastErr/MaxErr(lastAvg, epsrel, epsabs));
+	/*printf("Computing_integral, %i, %.20f, %.20f, %lu, %.20f, %.20f, r:%f (%f, %f)\n", 
+		iteration, 
+		leaves_estimate, 
+		leaves_errorest, 
+		numRegions, 
+		integral, 
+		error, 
+		lastErr/MaxErr(lastAvg, epsrel, epsabs),
+		integral/leaves_estimate, error/leaves_errorest);*/
+		
       /*printf("Computing_integral, %lu, %.20f +- %.20f \ngood "
              "regions:%.20f +- %.20f nregions:%lu iteration:%i\n",
              numRegions,
@@ -1649,7 +1673,7 @@ namespace quad {
 		  depthBeingProcessed = currentPartition.depth;
         }
       }
-	
+	//printf("-------------------\n");
       QuadDebug(cudaFree(activeRegions));
       QuadDebug(cudaFree(subDividingDimension));
     }
@@ -1744,6 +1768,13 @@ namespace quad {
 		PrintToFile(phase1out.str(), "Phase_1_regions.csv");
 		PrintToFile(finishedOutfile.str(), "Per_iteration.csv");
 	  }
+	  
+	  //---------------
+		integral = lastAvg;
+        error = lastErr;
+		QuadDebug(cudaFree(dRegionsError));
+        QuadDebug(cudaFree(dRegionsIntegral));
+	  //---------------
 	  
 	  if(lastErr/MaxErr(lastAvg, epsrel, epsabs)<= 1)
 		  return true;
