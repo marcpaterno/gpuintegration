@@ -74,7 +74,7 @@ int
 main()
 {
   double epsrel = 1.0e-3; // starting error tolerance.
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1495369.283757217694;
   BoxIntegral8_22 integrand;
   std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
@@ -88,6 +88,7 @@ main()
                        std::cout,
                        _final) == true &&
          epsrel >= epsrel_min) {
+	break;
     epsrel /= 5.0;
   }
 

@@ -60,7 +60,7 @@ int main()
 {
   cubacores(0, 0); // turn off the forking use in CUBA's CUHRE.
   unsigned long long constexpr maxeval = 1000 * 1000 * 1000;
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.024e-10;
   cubacpp::Cuhre cuhre;
   cuhre.maxeval = maxeval;
 

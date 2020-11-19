@@ -23,7 +23,7 @@ time_and_call(std::string id,
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
 
   double lows[] =  {0., 0., 0., 0., 0.};
   double highs[] = {1., 1., 1., 1., 1.};
@@ -61,14 +61,14 @@ time_and_call(std::string id,
 int
 main()
 {
-  double epsrel = 1.0e-3; // starting error tolerance.
-  double const epsrel_min = 1.0e-12;
+  double epsrel = 1.0e-3;
+  double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1.79132603674879e-06;
   GENZ_4_5D integrand;
   std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
              "converge, final, total_time\n";
   int _final = 1;
-  while (time_and_call("pdc_f1_latest",
+  while (time_and_call("Genz4_5D",
                        integrand,
                        epsrel,
                        true_value,
@@ -79,7 +79,7 @@ main()
     epsrel /= 5.0;
   }
 
-  _final = 0;
+  /*_final = 0;
   epsrel = 1.0e-3;
 
   while (time_and_call("pdc_f0_latest",
@@ -91,5 +91,5 @@ main()
                        _final) == true &&
          epsrel >= epsrel_min) {
     epsrel = epsrel >= 1e-6 ? epsrel / 5.0 : epsrel / 2.0;
-  }
+  }*/
 }

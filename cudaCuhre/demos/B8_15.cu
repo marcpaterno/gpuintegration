@@ -60,7 +60,7 @@ main()
   double epsrel = 1.0e-3; // starting error tolerance.
   int _final = 0;
   double true_value = 8879.851175413485;
-  double const epsrel_min = 1.0e-12;
+  double const epsrel_min = 1.0240000000000002e-10;
   std::stringstream outfile;
   BoxIntegral8_15 integrand;
   // outfile<<"id, estimate, epsrel, epsabs, estimate, errorest, regions,
@@ -68,7 +68,7 @@ main()
   constexpr int alternative_phase1 = 0;
   // printf("Testing final = 1 with alternative phase I\n");
   _final = 1;
-  while (time_and_call("pdc_f1_latest",
+  while (time_and_call("B8_15",
                        integrand,
                        epsrel,
                        true_value,

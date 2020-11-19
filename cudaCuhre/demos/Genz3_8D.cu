@@ -61,8 +61,8 @@ time_and_call(std::string id,
 int
 main()
 {
-  double epsrel = 3.2e-7; // starting error tolerance.
-  double const epsrel_min = 1.0e-12;
+  double epsrel = 1.0e-3;  // starting error tolerance.
+  double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 2.2751965817917756076e-10;
   GENZ_3_8D integrand;
   std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "

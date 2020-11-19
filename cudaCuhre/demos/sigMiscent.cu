@@ -45,7 +45,7 @@ time_and_call(std::string id,
   int const numdevices = 1;
   quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
 
-  int outfileVerbosity = 1;
+  int outfileVerbosity = 0;
   constexpr int phase_I_type = 0; // alternative phase 1
 
   auto const t0 = std::chrono::high_resolution_clock::now();
