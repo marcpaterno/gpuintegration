@@ -88,7 +88,6 @@ main()
                        std::cout,
                        _final) == true &&
          epsrel >= epsrel_min) {
-	break;
     epsrel /= 5.0;
   }
 
