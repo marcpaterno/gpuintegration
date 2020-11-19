@@ -1779,7 +1779,6 @@ namespace quad {
 	  if(lastErr/MaxErr(lastAvg, epsrel, epsabs)<= 1)
 		  return true;
 	  else{
-		  printf("FAILED\n");
 		  return false;
 	  }
       if (fail == 0 || fail == 2) {

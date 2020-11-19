@@ -163,7 +163,7 @@ class PartitionManager{
 			partionContributionsIntegral.push_back(parentsEstimate);
 			
 		}
-		printf("Saved Four Partitions with cummulative estimate of %.20f\n", fourthPartitionsContribution);
+		//printf("Saved Four Partitions with cummulative estimate of %.20f\n", fourthPartitionsContribution);
 		wrapped_ptr = thrust::device_pointer_cast(dParentsError);
 		
 		for(int i=0; i<numSplits; i++){
@@ -381,7 +381,7 @@ class PartitionManager{
 			}
 		}
 		
-		printf("Loading partition with %.20f +- %.20f errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
+		//printf("Loading partition with %.20f +- %.20f errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
 		Partition<NDIM> priorityP = partitions[maxErrID];	//3. get a pointer to that host partition
 		//printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth, maxErrID);
 		//4. erase it from partition manager
@@ -406,14 +406,14 @@ class PartitionManager{
 		queued_reg_estimate = 0;
 		queued_reg_errorest = 0;
 		
-		printf("Partitions after poping worst one\n");
+		//printf("Partitions after poping worst one\n");
 		for(int i=0; i<numPartitions; i++){
 			queued_reg_estimate += partionContributionsIntegral[i]; 
 			queued_reg_errorest += partionContributionsError[i];
-			printf("partition %i %.20f +- %.20f, %lu\n", i, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
+			//printf("partition %i %.20f +- %.20f, %lu\n", i, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
 		}
 		
-		printf("Partition.queued_est:%.20f +- %.20f\n", queued_reg_estimate, queued_reg_errorest);
+		//printf("Partition.queued_est:%.20f +- %.20f\n", queued_reg_estimate, queued_reg_errorest);
 	}
 
 };
