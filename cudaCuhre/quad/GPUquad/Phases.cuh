@@ -130,15 +130,20 @@ namespace quad {
 						 estConverged](double selfRes, double selfErr)
 	  {
 		bool minIterReached = estConverged;
+       // bool minIterReached = true;
 		double GlobalErrTarget = fabs(last_it_estimate)*epsrel;
 		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest; 
-		bool worstCaseScenarioGood =  selfErr*currIterRegions < .50*remainGlobalErrRoom;
+		//bool worstCaseScenarioGood =  selfErr*currIterRegions < .25*remainGlobalErrRoom;
+        bool worstCaseScenarioGood =  selfRes < last_it_estimate*epsrel;
 		bool selfErrTarget = fabs(selfRes)*epsrel;
 		bool verdict = worstCaseScenarioGood && minIterReached;
+        //if(verdict == true && (selfErr / (fabs(selfRes)*epsrel)) > 1.)
+        //    printf("%e +- %e remainGlobalErrRoom:%e GlobalErrTarget:%e queued_errorest:%e finished_errorest:%e\n", selfRes, selfErr, remainGlobalErrRoom, GlobalErrTarget, queued_errorest, finished_errorest);
 		return verdict;
 	  };
 	       
-	 if (isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, epsabs) < 1.) {
+	 if (/*isPolished(selfRes, selfErr) == true ||*/ selfErr / (fabs(selfRes)*epsrel) < 1.) {
+           // printf("%e +- %e r:%f\n", selfErr, selfRes, (selfErr / (fabs(selfRes)*epsrel)));
         newErrs[blockIdx.x] = selfErr;
       } else {
         fail = 1;

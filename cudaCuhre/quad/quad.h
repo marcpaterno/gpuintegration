@@ -63,12 +63,14 @@ struct cuhreResult {
     //activeRegions = 0.;
     phase2_failedblocks = 0.;
 	lastPhase = 0;
+    nFinishedRegions = 0;
   };
 
   double estimate;
   double errorest;
   size_t neval;
   size_t nregions;
+  size_t nFinishedRegions;
   int status;
   int lastPhase;
   //size_t activeRegions;    // is not currently being set

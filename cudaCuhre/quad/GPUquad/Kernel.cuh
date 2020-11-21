@@ -769,8 +769,8 @@ namespace quad {
       CudaCheckError();
 	  
       if (iteration == 0){
-		phase1out << "iteration, id, parentID, estimate, errorest, parEst, parErr, active,";
-		for(int i=0; i<NDIM; i++){
+		phase1out << "iteration, id, parentID, estimate, errorest, parEst, parErr, active\n";
+		/*for(int i=0; i<NDIM; i++){
 			std::string dim = std::to_string(i);
 			phase1out << "dim" + dim + "low, dim" + dim + "high";
 			if(i == NDIM-1)
@@ -778,7 +778,7 @@ namespace quad {
 			else
 				phase1out << ",";
 			
-		}
+		}*/
 			
 		/*dim0low, "
                      "dim0high, dim1low, dim1high, dim2low, dim2high, dim3low, dim3high, dim4low, "
@@ -798,7 +798,7 @@ namespace quad {
         else
           parentID = -1;
 	  
-		/*if(iteration == 23)*/
+		//if(iteration >=60)
 		{
 			phase1out 	<< std::setprecision (17)<< std::scientific 
 			        << iteration << ","
@@ -808,7 +808,7 @@ namespace quad {
 					<< curr_hRegionsError[regnIndex]<< "," 
 					<< curr_ParentsIntegral[regnIndex] << "," 
 					<< curr_ParentsError[regnIndex]<< "," 
-					<< h_activeRegions[regnIndex]<< ",";
+					<< h_activeRegions[regnIndex];
 		}
 	
         if (h_activeRegions[regnIndex] == 1)
@@ -827,14 +827,14 @@ namespace quad {
 			
             //if(high == low)
 				//printf("high=low it%i region%i\n", iteration, regnIndex);
-			if (dim == NDIM - 1 /*&& iteration == 23*/) {
-				phase1out << std::setprecision (17)<< std::scientific  << low << "," << high << "\n";
-			  } else /*if(iteration == 23)*/
+			if (dim == NDIM - 1 /*&& iteration >=60*/) {
+				//phase1out << std::setprecision (17)<< std::scientific  << low << "," << high << "\n";
+			  } else /*if(iteration >=60)*/
 			  {
-				phase1out  << std::setprecision (17)<< std::scientific << low << "," << high << ",";
+				//phase1out  << std::setprecision (17)<< std::scientific << low << "," << high << ",";
 			  }
         }
-			//if(iteration == 23)
+			//if(iteration >=60)
 				phase1out << "\n";
       }
 	
@@ -1127,6 +1127,42 @@ namespace quad {
       }
     }
 
+    size_t GetGPUMemNeededForNextIteration()
+    {  
+        //numRegions implies the number of regions processed in next iteration
+        //so it's supposed to be called only after GenerateIntervals has been called
+        size_t nextIter_dParentsIntegral_size = numRegions*2;
+        size_t nextIter_dParentsError_size = numRegions*2;
+        size_t nextIter_dRegions_size = numRegions*NDIM;
+        size_t nextIter_dRegionsLength_size = numRegions*NDIM;
+        size_t nextIter_dRegionsIntegral_size = numRegions*2;   //is this really times two?
+        size_t nextIter_dRegionsError_size = numRegions*2;
+        size_t nextIter_newActiveRegions_size = numRegions*NDIM;
+        size_t nextIter_newActiveRegionsLength_size = numRegions*NDIM;
+        
+        size_t nextIter_newActiveRegionsBisectDim_size = numRegions;
+        size_t nextIter_activeRegions_size = numRegions;
+        size_t nextIter_subdividingDimension_size = numRegions;
+        size_t nextIter_scannedArray_size = numRegions;
+
+        size_t Doubles_Size = sizeof(double)*(nextIter_dParentsIntegral_size+
+           nextIter_dParentsError_size+
+           nextIter_dRegionsError_size+
+           nextIter_dRegionsIntegral_size+
+           nextIter_dRegionsError_size+
+           nextIter_dRegions_size+
+           nextIter_dRegionsLength_size+
+           nextIter_newActiveRegions_size+
+           nextIter_newActiveRegionsLength_size);
+           
+        size_t Ints_Size = sizeof(int)*(nextIter_activeRegions_size+ 
+            nextIter_subdividingDimension_size+
+            nextIter_scannedArray_size+
+            nextIter_newActiveRegionsBisectDim_size);
+            
+        return Ints_Size + Doubles_Size;
+    }
+
     void
     GenerateInitialRegions()
     {
@@ -1261,16 +1297,7 @@ namespace quad {
         cudaMalloc((void**)&newActiveRegionsBisectDim,
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
-					
-		//size_t freeMem = Device.GetAmountFreeMem();
-		//size_t neededSpace = sizeof(double)*(numRegions * 2)*2;
-		//printf("just before expansion freeMem:%lu needed space:%lu\n", freeMem, neededSpace);
-		
-		/*if(neededSpace > freeMem)
-			printf("Not enough\n");
-		else
-			printf("Enough\n");*/
-		
+				
         ExpandcuArray(dParentsIntegral, numRegions , numActiveRegions * 2);
 		CudaCheckError();
         ExpandcuArray(dParentsError, numRegions, numActiveRegions * 2);
@@ -1341,7 +1368,7 @@ namespace quad {
         numRegions = 0;
       }
 
-      return numRegions;
+      return numInActiveRegions;
     }
 
     void
@@ -1419,6 +1446,7 @@ namespace quad {
                         T& integral,
                         T& error,
                         size_t& nregions,
+                        size_t& nFinishedRegions,
                         size_t& neval,
                         T*& dParentsIntegral,
                         T*& dParentsError,
@@ -1474,24 +1502,14 @@ namespace quad {
       cudaDeviceSynchronize();
 	  CudaCheckError();
 	  
-	  
+	  neval += numRegions * fEvalPerRegion;
 	  thrust::device_ptr<T> wrapped_ptr;
-		
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
 	  
 	  double iter_estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
       double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
 	  estimate_change = abs(leaves_estimate - lastAvg);
 	  
-	  
-	  /*printf("Iteration %i \n iter_estimate(good+bad):%.20f \n queued_reg_estimate:%.20f \n accumulated up until prev iter:%.20f\n", 
-		iteration, 
-		iter_estimate, 
-		partitionManager.queued_reg_estimate,
-		integral);*/
-	  //printf("Computing :%e\n", leaves_estimate);
-	  wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
-	 
 	  auto EstimateTrustWorthy = [lastAvg = abs(this->lastAvg), secondTolastAvg = abs(this->secondTolastAvg), leaves_estimate, epsrel]()
 	  {
 		  std::string second_to_last = std::to_string(secondTolastAvg);
@@ -1507,11 +1525,8 @@ namespace quad {
 	  };
 	  
 	  bool estimateHasConverged = EstimateTrustWorthy();
-	  //if(estimateHasConverged)
-		//  printf("ITERATION %i GOOD ESTIMATE\n", iteration);
-	  //hRefineError(activeRegions, integral, error, nregions, epsrel, epsabs, iteration, estimateHasConverged);
-	  hRefineError(activeRegions, leaves_estimate/*, leaves_errorest*/, nregions, epsrel, epsabs, iteration, estimateHasConverged);
-	  
+     
+	  hRefineError(activeRegions, error, nregions, epsrel, epsabs, iteration, estimateHasConverged);
 	  
       T temp_integral = 0;
       T temp_error = 0;
@@ -1521,28 +1536,23 @@ namespace quad {
         temp_integral = integral;
         temp_error = error;
       }
-
-      nregions += numRegions;
-      neval += numRegions * fEvalPerRegion;
-	
-
+    
+     wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
      double iter_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
      double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
      errorest_change = abs(leaves_errorest - lastErr);
-	 /*printf(" iter_errorest(good+bad):%.20f \n queued_errorest:%.20f \n accumulated up until prev iter:%.20f\n", 
-		iter_errorest, 
-		partitionManager.queued_reg_errorest,
-		error);*/
-            
+       
+    
 	 wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
 	 double iter_finished_estimate = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
      integral =
        integral + iter_finished_estimate;
-     //printf(" iter_finished_estimate:%.20f\n", iter_finished_estimate);
+    
 	 wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
 	 double iter_finished_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
      error = error + iter_finished_errorest;
 	  
+      //printf("it:%i, %e, %e, %e, %e\n", iteration, iter_errorest, partitionManager.queued_reg_errorest, error, leaves_errorest);
 	  if(last_iteration != 1)	
 		Phase_I_PrintFile(vol,
                       numRegions,
@@ -1559,10 +1569,9 @@ namespace quad {
 					  epsabs,
                       iteration);	
 	  
-	  //if(iteration == 23)
+	  //if(iteration == 61)
 		//PrintToFile(phase1out.str(), "Phase_1_regions.csv");
-		
-	  
+	
       if (Final == 0) {
         double w = numRegions * 1 / fmax(leaves_errorest * leaves_errorest, ldexp(1., -104));
         weightsum += w; // adapted by Ioannis
@@ -1575,41 +1584,17 @@ namespace quad {
         lastAvg = leaves_estimate;
         lastErr = leaves_errorest;
       }
-	//garbage, regions_in_iter, estimate, errorest, 
-	/*printf("Computing_integral, %i, %.20f, %.20f, %lu, %.20f, %.20f, r:%f (%f, %f)\n", 
-		iteration, 
-		leaves_estimate, 
-		leaves_errorest, 
-		numRegions, 
-		integral, 
-		error, 
-		lastErr/MaxErr(lastAvg, epsrel, epsabs),
-		integral/leaves_estimate, error/leaves_errorest);*/
-		
-      /*printf("Computing_integral, %lu, %.20f +- %.20f \ngood "
-             "regions:%.20f +- %.20f nregions:%lu iteration:%i\n",
-             numRegions,
-             lastAvg,
-             lastErr,
-             integral,
-             error,
-             numInActiveRegions,
-             iteration);*/
-
-      if (outLevel >= 1)
-        out1 << lastAvg << "," << lastErr << "," << nregions << std::endl;
-	  
+   
       if (iteration!=0 && (lastErr <= MaxErr(lastAvg, epsrel, epsabs)) && GLOBAL_ERROR) { 
-        if (outLevel >= 1)
-          PrintToFile(out1.str(), "Level_1.csv");
-
         fail = 0;
         numRegions = 0;
         integral = lastAvg;
         error = lastErr;
-
+        printf("Converged naturally ratio:%f\n", lastErr/MaxErr(lastAvg, epsrel, epsabs));
         QuadDebug(cudaFree(activeRegions));
         QuadDebug(cudaFree(subDividingDimension));
+        //nFinishedRegions = nregions;
+        nregions += numRegions;
         return;
       } else if (last_iteration == 1) {
         integral = temp_integral;
@@ -1625,7 +1610,7 @@ namespace quad {
        //  freeMem, numRegions);
       if (iteration < 200 && fail == 1) {
       //  if (numRegions <= first_phase_maxregions && fail == 1) {
-        size_t numActiveIntervals =
+        size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
                                   subDividingDimension,
                                   dRegionsIntegral,
@@ -1633,33 +1618,12 @@ namespace quad {
                                   dParentsIntegral,
                                   dParentsError);
 		depthBeingProcessed++;
-        //freeMem = Device.GetFreeMemPercentage();
-		size_t freeMem = Device.GetAmountFreeMem();
-		
-		
-		
-		//need space for
-		//dParents, dParentsError sizeof(double)*numRegions each, 
-		//dRegionsLength, dRegions, sizeof(double)*numRegions*NDIM each
-		//activeRegions, subdividingDimension sizeof(int)*numRegions
-		//dRegionsIntegral, dRegionsError, sizeof(double)*numRegions*2 each,
-		//scannedArray sizeof(int)*numRegions
-		//newActiveRegions, newActiveRegionsLength, sizeof(T) * numActiveRegions * NDIM);
-       //newActiveRegionsBisectDim, sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
-	   // ExpandcuArray(dParentsIntegral, numRegions , numRegions * 2);
-       // ExpandcuArray(dParentsError, numRegions, numActiveRegions * 2);
-		size_t neededSpace = sizeof(double)*(numRegions * 2);  
-		neededSpace += sizeof(double)*numRegions*NDIM*2;
-		neededSpace += sizeof(int)*numRegions*2;
-		neededSpace += sizeof(double)*numRegions*2*2;
-		neededSpace += sizeof(int)*numRegions;
-		neededSpace += sizeof(double)*numRegions*NDIM*2;
-		neededSpace += sizeof(int)*numRegions;
-		neededSpace += sizeof(double)*numRegions*2;
-        //printf("Checking Division after splitting after Division mem: (%f) and %lu regions\n",
-        // freeMem, numRegions);
-		
-        if (neededSpace >= freeMem && fail == 1) {
+        nregions += numInActiveIntervals;
+        nFinishedRegions += numInActiveIntervals;
+       
+        bool NotEnoughMem = GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem();
+        bool NoRegionsButPartitionsLeft = (numRegions == 0 && !partitionManager.Empty());
+        if ((NotEnoughMem || NoRegionsButPartitionsLeft) && fail == 1) {
 		  Partition<NDIM> currentPartition;
 		  currentPartition.ShallowCopy(dRegions, dRegionsLength, dParentsIntegral, dParentsError, numRegions, depthBeingProcessed);
 		  partitionManager.LoadNextActivePartition(currentPartition); //storeAndGetNextPartition
@@ -1686,6 +1650,7 @@ namespace quad {
                         T& integral,
                         T& error,
                         size_t& nregions,
+                        size_t& nFinishedRegions,
                         size_t& neval,
                         Volume<T, NDIM>* vol = nullptr)
     {
@@ -1704,6 +1669,7 @@ namespace quad {
                                     integral,
                                     error,
                                     nregions,
+                                    nFinishedRegions,
                                     neval,
                                     dParentsIntegral,
                                     dParentsError,
@@ -1711,9 +1677,9 @@ namespace quad {
                                     vol,
                                     lastIteration);
 
-        if (numRegions < 1 && iteration!=0) {
+        if ((numRegions < 1 || fail == 0) && iteration!=0) {
           fail = 2;
-          //printf("Finished Phase 1 Very Successfully\n");
+          //printf("Finished Phase 1 Very Successfully numRegions:%lu\n", numRegions);
 
           break;
         }
@@ -1730,6 +1696,7 @@ namespace quad {
                                       integral,
                                       error,
                                       nregions,
+                                      nFinishedRegions,
                                       neval,
                                       dParentsIntegral,
                                       dParentsError,
@@ -1776,11 +1743,18 @@ namespace quad {
         QuadDebug(cudaFree(dRegionsIntegral));
 	  //---------------
 	  
-	  if(lastErr/MaxErr(lastAvg, epsrel, epsabs)<= 1)
+	  /*if(lastErr/MaxErr(lastAvg, epsrel, epsabs)<= 1)
 		  return true;
 	  else{
 		  return false;
-	  }
+	  }*/
+      
+      //res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
+      //printf("Doing final check ratio:%f:\n", lastErr/MaxErr(lastAvg, epsrel, epsabs));
+      bool convergence = false;
+      convergence = lastErr <= MaxErr(lastAvg, epsrel, epsabs);
+      return !convergence;
+      
       if (fail == 0 || fail == 2) {
         // printf("Phase 1 needed %lu regions to converge\n", numRegions);
         integral = lastAvg;

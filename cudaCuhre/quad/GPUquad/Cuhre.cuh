@@ -413,9 +413,9 @@ namespace quad {
 #if TIMING_DEBUG == 1
       timer::start_timer(&timer_one);
 #endif
-
+      size_t numFinishedRegions;
       thkernel->IntegrateFirstPhase(
-        d_integrand, epsrel, epsabs, integral, error, nregions, neval, dvol);
+        d_integrand, epsrel, epsabs, integral, error, nregions, numFinishedRegions, neval, dvol);
 
 #if TIMING_DEBUG == 1
       firstPhaseTime = timer::stop_timer_returntime(&timer_one, "First Phase");
@@ -633,7 +633,7 @@ namespace quad {
       assert(phase1type == 0 || phase1type == 1);
 
       /*
-            //This is to replace if stetement below
+     //This is to replace if stetement below
             switch(phase1type){
                     case 0:
                             return
@@ -672,6 +672,7 @@ namespace quad {
                                          res.estimate,
                                          res.errorest,
                                          res.nregions,
+                                         res.nFinishedRegions,
                                          res.neval,
                                          volume);
     }
@@ -716,7 +717,7 @@ namespace quad {
       IntegT* d_integrand = Make_GPU_Integrand(&integrand);
 
       */
-
+        
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);
         MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -732,11 +733,11 @@ namespace quad {
         return res;
       }
 
-      bool convergence = false;
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
 
-      convergence = ExecutePhaseI(d_integrand, res, volume, phase1type);
+      res.status  = ExecutePhaseI(d_integrand, res, volume, phase1type);
+      //printf("return status:%i\n", res.status);
       res.lastPhase = 1;
       cudaFree(d_integrand);
       return res;
@@ -756,8 +757,8 @@ namespace quad {
       res.lastPhase = 2;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 
-      cudaFree(d_integrand);*/
-      return res;
+      cudaFree(d_integrand);
+      return res;*/
     }
   };
 }

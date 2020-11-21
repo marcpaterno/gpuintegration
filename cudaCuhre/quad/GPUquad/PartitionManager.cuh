@@ -43,7 +43,6 @@ class Partition{
 		parentsError = nullptr;
 	}
 	
-	
 	void Deallocate()
 	{
 		free(regions);
@@ -128,6 +127,12 @@ class PartitionManager{
 		std::vector<double> partionContributionsError;
 		size_t numPartitions;    
 		const size_t numSplits = 4;
+    
+    bool Empty()
+    {
+        return numPartitions == 0; 
+    }
+    
 	void Init(HostMemory<double>* host, DeviceMemory<double>* device)
 	{
 		Host = host;
@@ -328,7 +333,10 @@ class PartitionManager{
     StoreRegionsInHost(Partition<NDIM>& sourcePartition)
     {
 	  //printf("storing %lu regions in host with %lu current partitions \n", sourcePartition.numRegions, numPartitions);
-	  int numNewPartitions = 4; //always expand by four partitions, we can change this later
+	  if(sourcePartition.numRegions == 0)
+          return;
+      
+      int numNewPartitions = 4; //always expand by four partitions, we can change this later
 	  SetpartitionSizess(sourcePartition.numRegions);
 	  SetPartitionContributions(sourcePartition.parentsIntegral, sourcePartition.parentsError);
 
@@ -376,12 +384,12 @@ class PartitionManager{
 		size_t maxErrID = 0;			//2. Find the partition with the largest error-estimate
 		
 		for(size_t i=1; i<numPartitions; i++){
-			if(partionContributionsError[maxErrID]/partitionSizes[maxErrID] <  partionContributionsError[i]/partitionSizes[i]){
+			if(partionContributionsError[maxErrID]/*/partitionSizes[maxErrID]*/ <  partionContributionsError[i]/*/partitionSizes[i]*/){
 				maxErrID = i;
 			}
 		}
 		
-		//printf("Loading partition with %.20f +- %.20f errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
+		//printf("Loading partition with %e +- %e errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
 		Partition<NDIM> priorityP = partitions[maxErrID];	//3. get a pointer to that host partition
 		//printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth, maxErrID);
 		//4. erase it from partition manager
@@ -410,7 +418,7 @@ class PartitionManager{
 		for(int i=0; i<numPartitions; i++){
 			queued_reg_estimate += partionContributionsIntegral[i]; 
 			queued_reg_errorest += partionContributionsError[i];
-			//printf("partition %i %.20f +- %.20f, %lu\n", i, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
+			//printf("partition %i %e +- %e, %lu\n", i, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i]);
 		}
 		
 		//printf("Partition.queued_est:%.20f +- %.20f\n", queued_reg_estimate, queued_reg_errorest);
