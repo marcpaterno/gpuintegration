@@ -128,9 +128,25 @@ class PartitionManager{
 		size_t numPartitions;    
 		const size_t numSplits = 4;
     
+    size_t GetNRegions()
+    {
+        size_t sum = 0;
+        for(int i=0; i<numPartitions; ++i){
+            sum += partitionSizes[i];
+        }
+        return sum;
+    }
+    
     bool Empty()
     {
         return numPartitions == 0; 
+    }
+    
+    size_t NumRegionsStored(){
+        size_t size = 0;
+        for(int i=0; i<numPartitions; i++)
+            size += partitionSizes[i];
+        return size;
     }
     
 	void Init(HostMemory<double>* host, DeviceMemory<double>* device)
@@ -176,10 +192,10 @@ class PartitionManager{
 			size_t parentsProcessed = partitionRunSum(i)/2;
 			partionContributionsError.push_back(thrust::reduce(wrapped_ptr + parentsProcessed, wrapped_ptr + parentsProcessed + partionNumParents));
 		}
-
+        
 		/*for(int i=0; i<numPartitions + numSplits; i++)
 		{
-			printf("Contributions %i/%lu %e +- %e size:%lu %f\n", i, numPartitions, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i], partionContributionsError[i]/MaxErr(partionContributionsIntegral[i], 1.024000e-10, 1.0e-40));
+			printf("Contributions %i/%lu %.17e +- %e size:%lu %f\n", i, numPartitions+ numSplits, partionContributionsIntegral[i], partionContributionsError[i], partitionSizes[i], partionContributionsError[i]/MaxErr(partionContributionsIntegral[i], 1.024000e-10, 1.0e-40));
 		}*/
 	}
 
@@ -266,6 +282,9 @@ class PartitionManager{
 		*/
 		for(int i=0; i<numPartitions + numNewPartitions; i++){
 			assert(partitionSizes[i] % 2 == 0);
+            if(partitionSizes[i] % 2 != 0)
+                printf("error, uneven partition size\n");
+            printf("p%i:%lu\n",i,  partitionSizes[i]);
 		}
 	}
 	
@@ -333,9 +352,12 @@ class PartitionManager{
     StoreRegionsInHost(Partition<NDIM>& sourcePartition)
     {
 	  //printf("storing %lu regions in host with %lu current partitions \n", sourcePartition.numRegions, numPartitions);
-	  if(sourcePartition.numRegions == 0)
+	  if(sourcePartition.numRegions == 0){
+          printf("Zero regions won't save anything\n");
           return;
+      }
       
+      printf("Saving %lu regions into four partitions\n", sourcePartition.numRegions);
       int numNewPartitions = 4; //always expand by four partitions, we can change this later
 	  SetpartitionSizess(sourcePartition.numRegions);
 	  SetPartitionContributions(sourcePartition.parentsIntegral, sourcePartition.parentsError);
@@ -389,7 +411,7 @@ class PartitionManager{
 			}
 		}
 		
-		//printf("Loading partition with %e +- %e errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
+		printf("Loading partition with %e +- %e errorest\n",partionContributionsIntegral[maxErrID] , partionContributionsError[maxErrID]);
 		Partition<NDIM> priorityP = partitions[maxErrID];	//3. get a pointer to that host partition
 		//printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth, maxErrID);
 		//4. erase it from partition manager

@@ -75,14 +75,12 @@ namespace quad {
               T* newErrs,
               int* activeRegions,
               size_t currIterRegions,
-			  //double finished_estimate,
+              size_t total_nregions,
+              double iterEstimate,
+			  double leaves_estimate,
+              double finished_estimate,
 			  double finished_errorest,
-			  //double queued_estimate,
 			  double queued_errorest,
-			  double last_it_estimate,
-			  //double last_it_errorest,
-			  //size_t nregions,
-			  //size_t numFinishedRegions,
               T epsrel,
               T epsabs,
               int iteration,
@@ -121,29 +119,47 @@ namespace quad {
 	  
 	  selfErr += diff;
 	  
-	  auto isPolished = [last_it_estimate, 
-						 currIterRegions, 
+      //if(selfRes > parRes)
+      //   printf("it:%i reg:%i par:%.17e self:%.17e sib:%.17e\n", iteration, blockIdx.x, parRes, selfRes, siblRes);
+      
+	  auto isPolished = [iteration, currIterRegions, 
+                         leaves_estimate,
 						 finished_errorest, 
 						 queued_errorest,
 						 epsrel, 
 						 epsabs,
-						 estConverged](double selfRes, double selfErr)
+						 estConverged,
+                         total_nregions,
+                         iterEstimate](double selfRes, double selfErr)
 	  {
-		bool minIterReached = estConverged;
-       // bool minIterReached = true;
-		double GlobalErrTarget = fabs(last_it_estimate)*epsrel;
+		double GlobalErrTarget = fabs(leaves_estimate)*epsrel;
 		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest; 
-		//bool worstCaseScenarioGood =  selfErr*currIterRegions < .25*remainGlobalErrRoom;
-        bool worstCaseScenarioGood =  selfRes < last_it_estimate*epsrel;
 		bool selfErrTarget = fabs(selfRes)*epsrel;
-		bool verdict = worstCaseScenarioGood && minIterReached;
-        //if(verdict == true && (selfErr / (fabs(selfRes)*epsrel)) > 1.)
-        //    printf("%e +- %e remainGlobalErrRoom:%e GlobalErrTarget:%e queued_errorest:%e finished_errorest:%e\n", selfRes, selfErr, remainGlobalErrRoom, GlobalErrTarget, queued_errorest, finished_errorest);
+        
+        bool minIterReached = estConverged;
+        //does this do anythign?
+        //bool worstCaseScenarioGood =  selfErr*currIterRegions < .25*remainGlobalErrRoom;  //Best for sigMiscent, why?
+        //bool worstCaseScenarioGood = selfRes < (leaves_estimate*epsrel)/total_nregions; 
+        bool worstCaseScenarioGood = selfRes < (leaves_estimate*epsrel*iteration)/total_nregions /*&& selfErr*currIterRegions/2. < remainGlobalErrRoom*/; 
+        
+       // if(selfRes < (leaves_estimate*epsrel)/total_nregions && selfErr*currIterRegions > remainGlobalErrRoom && minIterReached)
+            //printf("%e +- %e room:%e\n", selfRes, selfErr, remainGlobalErrRoom);
+        
+		bool verdict = (worstCaseScenarioGood && minIterReached) || (selfRes == 0. && selfErr <= epsabs);
 		return verdict;
 	  };
-	       
-	 if (/*isPolished(selfRes, selfErr) == true ||*/ selfErr / (fabs(selfRes)*epsrel) < 1.) {
-           // printf("%e +- %e r:%f\n", selfErr, selfRes, (selfErr / (fabs(selfRes)*epsrel)));
+	 
+     /*if(iteration == 6)
+        printf("Computing %i, %i, %e, %e, %f, %e, %i, %lu, %i\n", iteration, 
+                                                                blockIdx.x, 
+                                                                selfRes, 
+                                                                selfErr, 
+                                                                selfErr / (fabs(selfRes)*epsrel), 
+                                                                fabs(leaves_estimate)*epsrel- finished_errorest - queued_errorest, 
+                                                                isPolished(selfRes, selfErr) == true || selfErr / (fabs(selfRes)*epsrel) < 1., 
+                                                                currIterRegions,estConverged); */
+    
+	 if (isPolished(selfRes, selfErr) == true || selfErr / (fabs(selfRes)*epsrel) < 1.) {
         newErrs[blockIdx.x] = selfErr;
       } else {
         fail = 1;
