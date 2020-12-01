@@ -77,22 +77,23 @@ namespace quad {
               size_t currIterRegions,
               size_t total_nregions,
               double iterEstimate,
-			  double leaves_estimate,
+              double leaves_estimate,
               double finished_estimate,
-			  double finished_errorest,
-			  double queued_errorest,
+              double finished_errorest,
+              double queued_errorest,
               T epsrel,
               T epsabs,
               int iteration,
-			  bool estConverged)
+              bool estConverged)
   {
-	//can we do anythign with the rest of the threads? maybe launch more blocks instead and a  single thread per block?
+    // can we do anythign with the rest of the threads? maybe launch more blocks
+    // instead and a  single thread per block?
     if (threadIdx.x == 0 && blockIdx.x < currIterRegions) {
       int fail = 0;
 
       T selfErr = dRegionsError[blockIdx.x + currIterRegions];
       T selfRes = dRegionsIntegral[blockIdx.x + currIterRegions];
-		
+
       // that's how indices to the right to find the sibling
       // but we want the sibling to be found at the second half of the array
       // only, to avoid race conditions
@@ -104,9 +105,9 @@ namespace quad {
 
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-		
+
       T parRes = dParentsIntegral[blockIdx.x];
-	
+
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
@@ -116,57 +117,68 @@ namespace quad {
         T c = 1 + 2 * diff / err;
         selfErr *= c;
       }
-	  
-	  selfErr += diff;
-	  
-      //if(selfRes > parRes)
-      //   printf("it:%i reg:%i par:%.17e self:%.17e sib:%.17e\n", iteration, blockIdx.x, parRes, selfRes, siblRes);
-      
-	  auto isPolished = [iteration, currIterRegions, 
+
+      selfErr += diff;
+
+      // if(selfRes > parRes)
+      //   printf("it:%i reg:%i par:%.17e self:%.17e sib:%.17e\n", iteration,
+      //   blockIdx.x, parRes, selfRes, siblRes);
+
+      auto isPolished = [iteration,
+                         currIterRegions,
                          leaves_estimate,
-						 finished_errorest, 
-						 queued_errorest,
-						 epsrel, 
-						 epsabs,
-						 estConverged,
+                         finished_errorest,
+                         queued_errorest,
+                         epsrel,
+                         epsabs,
+                         estConverged,
                          total_nregions,
-                         iterEstimate](double selfRes, double selfErr)
-	  {
-		double GlobalErrTarget = fabs(leaves_estimate)*epsrel;
-		double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest; 
-		bool selfErrTarget = fabs(selfRes)*epsrel;
-        
+                         iterEstimate](double selfRes, double selfErr) {
+        double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
+        double remainGlobalErrRoom =
+          GlobalErrTarget - finished_errorest - queued_errorest;
+        bool selfErrTarget = fabs(selfRes) * epsrel;
+
         bool minIterReached = estConverged;
-        //does this do anythign?
-        //bool worstCaseScenarioGood =  selfErr*currIterRegions < .25*remainGlobalErrRoom;  //Best for sigMiscent, why?
-        //bool worstCaseScenarioGood = selfRes < (leaves_estimate*epsrel)/total_nregions; 
-        bool worstCaseScenarioGood = selfRes < (leaves_estimate*epsrel*iteration)/total_nregions /*&& selfErr*currIterRegions/2. < remainGlobalErrRoom*/; 
-        
-       // if(selfRes < (leaves_estimate*epsrel)/total_nregions && selfErr*currIterRegions > remainGlobalErrRoom && minIterReached)
-            //printf("%e +- %e room:%e\n", selfRes, selfErr, remainGlobalErrRoom);
-        
-		bool verdict = (worstCaseScenarioGood && minIterReached) || (selfRes == 0. && selfErr <= epsabs);
-		return verdict;
-	  };
-	 
-     /*if(iteration == 6)
-        printf("Computing %i, %i, %e, %e, %f, %e, %i, %lu, %i\n", iteration, 
-                                                                blockIdx.x, 
-                                                                selfRes, 
-                                                                selfErr, 
-                                                                selfErr / (fabs(selfRes)*epsrel), 
-                                                                fabs(leaves_estimate)*epsrel- finished_errorest - queued_errorest, 
-                                                                isPolished(selfRes, selfErr) == true || selfErr / (fabs(selfRes)*epsrel) < 1., 
-                                                                currIterRegions,estConverged); */
-    
-	 if (isPolished(selfRes, selfErr) == true || selfErr / (fabs(selfRes)*epsrel) < 1.) {
+        // does this do anythign?
+        // bool worstCaseScenarioGood =  selfErr*currIterRegions <
+        // .25*remainGlobalErrRoom;  //Best for sigMiscent, why? bool
+        // worstCaseScenarioGood = selfRes <
+        // (leaves_estimate*epsrel)/total_nregions;
+        bool worstCaseScenarioGood =
+          selfRes < (leaves_estimate * epsrel * iteration) /
+                      total_nregions /*&& selfErr*currIterRegions/2. <
+                                        remainGlobalErrRoom*/
+          ;
+
+        // if(selfRes < (leaves_estimate*epsrel)/total_nregions &&
+        // selfErr*currIterRegions > remainGlobalErrRoom && minIterReached)
+        // printf("%e +- %e room:%e\n", selfRes, selfErr, remainGlobalErrRoom);
+
+        bool verdict = (worstCaseScenarioGood && minIterReached) ||
+                       (selfRes == 0. && selfErr <= epsabs);
+        return verdict;
+      };
+
+      /*if(iteration == 6)
+         printf("Computing %i, %i, %e, %e, %f, %e, %i, %lu, %i\n", iteration,
+                                                                 blockIdx.x,
+                                                                 selfRes,
+                                                                 selfErr,
+                                                                 selfErr /
+         (fabs(selfRes)*epsrel), fabs(leaves_estimate)*epsrel- finished_errorest
+         - queued_errorest, isPolished(selfRes, selfErr) == true || selfErr /
+         (fabs(selfRes)*epsrel) < 1., currIterRegions,estConverged); */
+
+      if (isPolished(selfRes, selfErr) == true ||
+          selfErr / (fabs(selfRes) * epsrel) < 1.) {
         newErrs[blockIdx.x] = selfErr;
       } else {
         fail = 1;
         newErrs[blockIdx.x] = 0;
         dRegionsIntegral[blockIdx.x] = 0;
       }
-	  
+
       activeRegions[blockIdx.x] = fail;
       newErrs[blockIdx.x + currIterRegions] = selfErr;
     }
@@ -184,7 +196,7 @@ namespace quad {
                    Region<NDIM> sRegionPool[],
                    T* lows,
                    T* highs,
-				   int iteration,
+                   int iteration,
                    int depth)
   {
     size_t index = blockIdx.x;
@@ -198,9 +210,11 @@ namespace quad {
 
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
-		
+
         if (sRegionPool[threadIdx.x].bounds[dim].lower ==
-            sRegionPool[threadIdx.x].bounds[dim].upper /*|| (iteration == 23 && blockIdx.x == 0)*/)
+            sRegionPool[threadIdx.x]
+              .bounds[dim]
+              .upper /*|| (iteration == 23 && blockIdx.x == 0)*/)
           printf("sRegionPool [%i] bounds[%i]: %.15f - %.15f\n",
                  blockIdx.x,
                  dim,
@@ -213,8 +227,7 @@ namespace quad {
                  dim,
                  sBound[dim].unScaledLower,
                  sBound[dim].unScaledUpper);
-        sRegionPool[threadIdx.x].div = 
-          depth; // carry info over or compute it?
+        sRegionPool[threadIdx.x].div = depth; // carry info over or compute it?
       }
     }
 
@@ -241,7 +254,7 @@ namespace quad {
                        int NSETS,
                        T* lows,
                        T* highs,
-					   int iteration,
+                       int iteration,
                        int depth)
   {
     __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
@@ -268,7 +281,7 @@ namespace quad {
                              sRegionPool,
                              slows,
                              shighs,
-							 iteration,
+                             iteration,
                              depth);
 
     if (threadIdx.x == 0) {
@@ -278,18 +291,19 @@ namespace quad {
       T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
       int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
-	  dRegionsError[gridDim.x + blockIdx.x] = ERR;
-	
-	  /*if(iteration == 23 && blockIdx.x == 0)
-		  printf("bounds and length numRegions:%lu %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", numRegions, 
-																			dRegions[0*numRegions + blockIdx.x], dRegionsLength[0*numRegions + blockIdx.x],
-																			dRegions[1*numRegions + blockIdx.x], dRegionsLength[1*numRegions + blockIdx.x],
-																			dRegions[2*numRegions + blockIdx.x], dRegionsLength[2*numRegions + blockIdx.x],
-																			dRegions[3*numRegions + blockIdx.x], dRegionsLength[3*numRegions + blockIdx.x],
-																			dRegions[4*numRegions + blockIdx.x], dRegionsLength[4*numRegions + blockIdx.x],
-																			dRegions[5*numRegions + blockIdx.x], dRegionsLength[5*numRegions + blockIdx.x],
-																			dRegions[6*numRegions + blockIdx.x], dRegionsLength[6*numRegions + blockIdx.x],
-																			dRegions[7*numRegions + blockIdx.x], dRegionsLength[7*numRegions + blockIdx.x]);*/
+      dRegionsError[gridDim.x + blockIdx.x] = ERR;
+
+      /*if(iteration == 23 && blockIdx.x == 0)
+              printf("bounds and length numRegions:%lu %f, %f, %f, %f, %f, %f,
+         %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", numRegions,
+                                                                                                                                                    dRegions[0*numRegions + blockIdx.x], dRegionsLength[0*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[1*numRegions + blockIdx.x], dRegionsLength[1*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[2*numRegions + blockIdx.x], dRegionsLength[2*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[3*numRegions + blockIdx.x], dRegionsLength[3*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[4*numRegions + blockIdx.x], dRegionsLength[4*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[5*numRegions + blockIdx.x], dRegionsLength[5*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[6*numRegions + blockIdx.x], dRegionsLength[6*numRegions + blockIdx.x],
+                                                                                                                                                    dRegions[7*numRegions + blockIdx.x], dRegionsLength[7*numRegions + blockIdx.x]);*/
       // if (ratio > 1) {
       // fail = 1;
       //}
@@ -298,8 +312,9 @@ namespace quad {
       subDividingDimension[blockIdx.x] = fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-	  
-      if (/*ratio > 1 && */numRegions == 1) {//do we need to zero it out already?
+
+      if (/*ratio > 1 && */ numRegions ==
+          1) { // do we need to zero it out already?
         dRegionsIntegral[blockIdx.x] = 0;
         dRegionsError[blockIdx.x] = 0;
       }
