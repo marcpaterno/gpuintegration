@@ -60,14 +60,12 @@ time_and_call(std::string id,
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
-  outfile.precision(15);
+ outfile.precision(17);
   outfile << std::fixed << id << ",\t" << std::scientific << true_value << ",\t"
-          << std::scientific << epsrel << ",\t\t\t" << std::scientific << epsabs
-          << ",\t" << std::scientific << result.estimate << ",\t"
-          << std::scientific << result.errorest << ",\t" << std::fixed
-          << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << dt.count() << std::endl;
-
+          << epsrel << ",\t" << epsabs << ",\t" << result.estimate << ",\t"
+          << result.errorest << ",\t" << result.nregions << ",\t" << result.nFinishedRegions 
+          << ",\t" << result.status << ",\t" << _final << ",\t" 
+          << result.lastPhase << ",\t" << dt.count() << std::endl;
   return good;
 }
 
@@ -91,7 +89,6 @@ main()
                                       "gpucuhre",
                                       std::cout,
                                       _final)) {
-	break;
     epsrel = epsrel / 1.5;
   }
 

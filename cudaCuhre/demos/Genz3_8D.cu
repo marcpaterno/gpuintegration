@@ -23,7 +23,7 @@ time_and_call(std::string id,
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
 
   double lows[] = {0., 0., 0., 0., 0., 0., 0., 0.};
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
@@ -35,7 +35,7 @@ time_and_call(std::string id,
   int const numdevices = 1;
   quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numdevices);
 
-  int outfileVerbosity = 0;
+  int outfileVerbosity = 1;
   constexpr int phase_I_type = 0; // alternative phase 1
 
   auto const t0 = std::chrono::high_resolution_clock::now();
@@ -48,27 +48,27 @@ time_and_call(std::string id,
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
-  outfile.precision(15);
+  
+  outfile.precision(17);
   outfile << std::fixed << id << ",\t" << std::scientific << true_value << ",\t"
-          << std::scientific << epsrel << ",\t\t\t" << std::scientific
-          << epsabs << ",\t" << std::scientific << result.estimate << ",\t"
-          << std::scientific << result.errorest << ",\t" << std::fixed
-          << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
+          << epsrel << ",\t" << epsabs << ",\t" << result.estimate << ",\t"
+          << result.errorest << ",\t" << result.nregions << ",\t" << result.nFinishedRegions 
+          << ",\t" << result.status << ",\t" << _final << ",\t" 
+          << result.lastPhase << ",\t" << dt.count() << std::endl;
   return good;
 }
 
 int
 main()
 {
-  double epsrel = 1.0e-3;  // starting error tolerance.
-  double const epsrel_min = 1.0240000000000002e-10;
+  double epsrel = 1.e-3;
+  double const epsrel_min = 1.0240000000000002e-12;
   double true_value = 2.2751965817917756076e-10;
   GENZ_3_8D integrand;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
+  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, fregions,"
              "converge, final, phase, total_time\n";
   int _final = 1;
-  while (time_and_call("pdc_f1_latest",
+  while (time_and_call("Genz3_8D",
                        integrand,
                        epsrel,
                        true_value,
@@ -77,7 +77,6 @@ main()
                        _final) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
-
   }
 
  /* _final = 0;

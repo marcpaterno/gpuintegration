@@ -50,12 +50,12 @@ time_and_call(std::string id,
     good = true;
   }
 
-  outfile << std::fixed << id << ",\t" << std::fixed << true_value << ",\t"
-          << std::scientific << epsrel << ",\t\t\t" << std::scientific
-          << epsabs << ",\t" << std::fixed << result.estimate << ",\t"
-          << std::fixed << result.errorest << ",\t" << std::fixed
-          << result.nregions << ",\t" << std::fixed << result.status << ",\t"
-          << _final << ",\t" << result.lastPhase << ",\t" << dt.count() << std::endl;
+  outfile.precision(17);
+  outfile << std::fixed << id << ",\t" << std::scientific << true_value << ",\t"
+          << epsrel << ",\t" << epsabs << ",\t" << result.estimate << ",\t"
+          << result.errorest << ",\t" << result.nregions << ",\t" << result.nFinishedRegions 
+          << ",\t" << result.status << ",\t" << _final << ",\t" 
+          << result.lastPhase << ",\t" << dt.count() << std::endl;
 	
   /*printf("%s, %.20f, %e, %e, %.20f, %.20f, %lu, %i, %i, %.15f\n", id.c_str(), 
 																 true_value,
@@ -77,8 +77,8 @@ main()
   double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1495369.283757217694;
   BoxIntegral8_22 integrand;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, fregions,"
+             "converge, final, phase, total_time\n";
   int _final = 1;
   while (time_and_call("pdc_f1_latest",
                        integrand,
