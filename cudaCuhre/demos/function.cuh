@@ -180,6 +180,35 @@ public:
   }
 };
 
+class GENZ_1_8d {
+
+public:
+  double normalization;
+  double integral;
+  __device__ __host__
+  GENZ_1_8d()
+  {
+    integral = (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) *
+               sin(3.) * sin(7. / 2.) * sin(4.) *
+               (sin(37. / 2.) - sin(35. / 2.));
+    normalization = 1. / integral;
+  }
+
+  __device__ __host__ double
+  operator()(double s,
+             double t,
+             double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z)
+  {
+    return normalization * cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x +
+                               7. * y + 8. * z);
+  }
+};
+
 class FUNC2 {
 public:
   __device__ __host__ double
@@ -378,6 +407,8 @@ public:
     return exp(-1 * alpha);
   }
 };
+
+
 
 //Genz_1 is not positive semi-definite
 //Genz_2 only known on 1D
