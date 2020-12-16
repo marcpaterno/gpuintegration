@@ -11,6 +11,18 @@ target_include_directories(sigma_miscent_y1_scalarintegrand_test
 								   ${TOPDIR})
 add_test(sigma_miscent_y1_scalarintegrand_test sigma_miscent_y1_scalarintegrand_test)
 
+add_executable(scalarIntegrandSigma scalarIntegrandSigma.cc)
+target_link_libraries(scalarIntegrandSigma PRIVATE testmain ${CUBA_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
+target_include_directories(scalarIntegrandSigma
+                           PRIVATE ${CMAKE_SOURCE_DIR}
+                                   ${CMAKE_SOURCE_DIR}/externals
+                                   ${EXTERNALS_DIR}
+                                   ${CUBA_INCLUDE_DIR}
+                                   ${CUBACPP_DIR}
+                                   ${GSL_INCLUDE_DIR}
+                                   ${EIGEN3_INCLUDE_DIR}
+								   ${TOPDIR})
+
 add_executable(cudasInterp cudasInterp.cu)
 target_compile_features(cudasInterp PUBLIC cxx_std_17)
 target_compile_options(cudasInterp PRIVATE "-arch=sm_70" "-lineinfo" "--expt-relaxed-constexpr")
