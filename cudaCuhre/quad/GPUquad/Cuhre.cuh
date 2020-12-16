@@ -695,7 +695,8 @@ namespace quad {
               Volume<T, NDIM>* volume = nullptr,
               int verbosity = 0,
               int Final = 0,
-              const int phase1type = 0)
+              int heuristicID = 0,
+              int phase1type = 0)
     {
       cuhreResult res;
 
@@ -704,6 +705,7 @@ namespace quad {
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
+      kernel->SetHeuristicID(heuristicID);
 
       int numprocs = 0;
       IntegT* d_integrand;

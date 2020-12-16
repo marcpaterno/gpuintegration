@@ -65,7 +65,7 @@ namespace quad {
       __syncthreads();
     }
   }
-
+   
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -84,12 +84,14 @@ namespace quad {
               T epsrel,
               T epsabs,
               int iteration,
-              bool estConverged)
+              bool estConverged,
+              double lastErr,
+              int heuristicID)
   {
     // can we do anythign with the rest of the threads? maybe launch more blocks
     // instead and a  single thread per block?
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    //if (threadIdx.x == 0 && blockIdx.x < currIterRegions) {
+    
     if(tid<currIterRegions){ 
       int fail = 0;
 
@@ -109,7 +111,7 @@ namespace quad {
       T siblRes = dRegionsIntegral[siblingIndex];
 
       T parRes = dParentsIntegral[tid];
-
+      T parErr = dParentsError[tid];
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
@@ -132,27 +134,85 @@ namespace quad {
                          epsabs,
                          estConverged,
                          total_nregions,
-                         iterEstimate](double selfRes, double selfErr) {
+                         iterEstimate,
+                         parErr,
+                         parRes,
+                         lastErr,
+                         heuristicID](double selfRes, double selfErr) {
         double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
         double remainGlobalErrRoom =
           GlobalErrTarget - finished_errorest - queued_errorest;
         bool selfErrTarget = fabs(selfRes) * epsrel;
-
+        
         bool minIterReached = estConverged;
+        bool worstCaseScenarioGood;
+        
+        switch(heuristicID){
+            case 0:
+                worstCaseScenarioGood = false;
+                break;
+            case 1:
+                worstCaseScenarioGood =
+                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions && 
+                         selfErr*currIterRegions < GlobalErrTarget;
+                break;
+            case 2:
+                worstCaseScenarioGood =
+                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
+                         selfErr*currIterRegions < GlobalErrTarget;
+                break;
+            case 3:
+                worstCaseScenarioGood =
+                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
+                         selfErr*currIterRegions < remainGlobalErrRoom;
+                break;
+            case 4:
+                worstCaseScenarioGood = 
+                (selfErr > selfRes && 
+                selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && 
+                selfErr < remainGlobalErrRoom/currIterRegions) 
+                || 
+                 (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && 
+                 selfErr*currIterRegions < GlobalErrTarget);
+                break;
+            case 5:
+                bool worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
+                || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && parErr*currIterRegions + finished_errorest + queued_errorest < lastErr);
+        }
+        
         
         /*bool worstCaseScenarioGood =
           selfRes < (leaves_estimate * epsrel*iteration) /
-                      (total_nregions); */
-        bool worstCaseScenarioGood =
-          selfRes < (leaves_estimate * epsrel*iteration)/(total_nregions) && 
-                         selfErr*currIterRegions < GlobalErrTarget;
+                      (total_nregions);*/
                       
+        //current heuristic 2.0              
+        /*bool worstCaseScenarioGood =
+          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
+                         selfErr*currIterRegions < GlobalErrTarget;*/
         
+        //current heuristic 3.0              
+        /*bool worstCaseScenarioGood =
+          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
+                         selfErr*currIterRegions < remainGlobalErrRoom;*/
+        
+         //current heuristic 4.0
+        /*if(heuristicID == 4)
+         worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
+        || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && selfErr*currIterRegions < GlobalErrTarget)
+        ;*/
+        
+         //current heuristic 5.0              
+        /*bool worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
+        || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && parErr*currIterRegions + finished_errorest + queued_errorest < lastErr)
+        ;*/
+        
+        //current heuristic
+        /*bool worstCaseScenarioGood =
+          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions;*/
+     
+                     
         bool verdict = (worstCaseScenarioGood && minIterReached) ||
-                       (selfRes == 0. && selfErr <= epsabs);
-        //if(verdict == true)
-        //    printf("it:%i %e +- %e thres:%f\n", iteration, selfRes, selfErr, ((leaves_estimate - finished_estimate) * epsrel)/
-        //              (currIterRegions));
+                       (selfRes == 0. && selfErr <= epsabs && minIterReached);
         return verdict;
       };
         
@@ -164,9 +224,10 @@ namespace quad {
         newErrs[tid] = 0;
         dRegionsIntegral[tid] = 0;
       }
-      
+             
       activeRegions[tid] = fail;
       newErrs[tid + currIterRegions] = selfErr;
+      
     }
   }
 
@@ -190,13 +251,13 @@ namespace quad {
     if (threadIdx.x == 0) {
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
-        sRegionPool[threadIdx.x].bounds[dim].lower = lower;
-        sRegionPool[threadIdx.x].bounds[dim].upper =
+        sRegionPool[0].bounds[dim].lower = lower;
+        sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
 
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
-        sRegionPool[threadIdx.x].div = depth; 
+        sRegionPool[0].div = depth; 
       }
     }
 
@@ -214,7 +275,7 @@ namespace quad {
                        size_t numRegions,
                        T* dRegionsIntegral,
                        T* dRegionsError,
-                       //int* activeRegions,
+                       int* activeRegions,
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
@@ -226,19 +287,7 @@ namespace quad {
                        int iteration,
                        int depth)
   {
-    __shared__ Region<NDIM> sRegionPool[SM_REGION_POOL_SIZE];
-    //__shared__ T shighs[NDIM];
-    //__shared__ T slows[NDIM];
-
-    /*if (threadIdx.x == 0) {
-      for (int i = 0; i < NDIM; ++i) {
-        slows[i] = lows[i];
-        shighs[i] = highs[i];
-      }
-    }*/
-
-    //T ERR = 0, RESULT = 0;
-    //const int fail = 1;
+    __shared__ Region<NDIM> sRegionPool[1];
 
     INIT_REGION_POOL<IntegT>(d_integrand,
                              dRegions,
@@ -252,18 +301,16 @@ namespace quad {
                              highs,
                              iteration,
                              depth);
-
+    
     if (threadIdx.x == 0) {
-      const double ERR = sRegionPool[threadIdx.x].result.err;
-      const double RESULT = sRegionPool[threadIdx.x].result.avg;
+      const double ERR = sRegionPool[0].result.err;
+      const double RESULT = sRegionPool[0].result.avg;
         
-      //T ratio = ERR / MaxErr(RESULT, epsrel, epsabs);
-      //const int fourthDiffDim = sRegionPool[threadIdx.x].result.bisectdim;
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
       dRegionsError[gridDim.x + blockIdx.x] = ERR;
-        
-      //activeRegions[blockIdx.x] = fail;
-      subDividingDimension[blockIdx.x] = sRegionPool[threadIdx.x].result.bisectdim;//fourthDiffDim;
+
+      activeRegions[blockIdx.x] = 1;
+      subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;//fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
 

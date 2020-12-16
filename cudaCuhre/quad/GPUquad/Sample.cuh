@@ -16,6 +16,37 @@ namespace quad {
     return x * x;
   }
 
+__device__
+double warpReduceSum(double val) {
+	val += __shfl_down_sync(0xffffffff, val, 16, 32);
+	val += __shfl_down_sync(0xffffffff, val, 8, 32);
+	val += __shfl_down_sync(0xffffffff, val, 4, 32);
+	val += __shfl_down_sync(0xffffffff, val, 2, 32);
+	val += __shfl_down_sync(0xffffffff, val, 1, 32);
+	return val;
+}
+
+__device__
+double blockReduceSum(double val) {
+
+	static __shared__ double shared[8]; 
+	int lane = threadIdx.x % 32;
+	int wid = threadIdx.x >> 5 /*threadIdx.x / 32*/;
+
+	val = warpReduceSum(val);    
+	if (lane == 0) shared[wid] = val; 
+
+	__syncthreads();              // Wait for all partial reductions
+
+	//read from shared memory only if that warp existed
+	val = (/*threadIdx.x < blockDim.x / 32*/ threadIdx.x < blockDim.x >> 5 ) ? shared[lane] : 0;
+
+	if (wid == 0) val = warpReduceSum(val); //Final reduce within first warp
+
+	return val;
+}
+
+
   template <typename T>
   __device__ T
   computeReduce(T sum)
@@ -79,7 +110,7 @@ namespace quad {
     T fun = gpu::apply(*d_integrand, x);
     fun = fun * jacobian;
     sdata[threadIdx.x] = fun; // target for reduction
-
+    
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * (constMem._cRuleWt[gIndex * NRULES + rul]);
 	  //if(constMem._cRuleWt[gIndex * NRULES + rul] > 0.)
@@ -97,7 +128,7 @@ namespace quad {
                     int NSETS,
                     Region<NDIM> sRegionPool[])
   {
-    __syncthreads();
+    //__syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     T vol = ldexp(1., -region->div);
 
@@ -110,7 +141,7 @@ namespace quad {
     int maxdim = 0;
     T maxrange = 0;
 
-    __syncthreads();
+    //__syncthreads();
     // set dimension range
     for (int dim = 0; dim < NDIM; ++dim) {
 
@@ -129,7 +160,7 @@ namespace quad {
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-    __syncthreads();
+    //__syncthreads();
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem);
@@ -137,7 +168,7 @@ namespace quad {
 
     __syncthreads();
     T* f = &sdata[0];
-    __syncthreads();
+    //__syncthreads();
 
     if (threadIdx.x == 0) {
       Result* r = &region->result;
@@ -177,7 +208,7 @@ namespace quad {
     }
     __syncthreads();
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = computeReduce<T>(sum[i]);
+      sum[i] = /*computeReduce<T>(sum[i])*/blockReduceSum(sum[i]);
       __syncthreads();
     }
 

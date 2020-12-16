@@ -162,7 +162,12 @@ namespace quad {
     std::vector<double> partionContributionsError;
     size_t numPartitions;
     const size_t numSplits = 4;
-
+    
+    ~PartitionManager(){
+        for(int i=0; i<numPartitions; i++)
+            partitions[i].Deallocate();
+    }
+    
     size_t
     GetNRegions()
     {
@@ -340,7 +345,7 @@ namespace quad {
         assert(partitionSizes[i] % 2 == 0);
         if (partitionSizes[i] % 2 != 0)
           printf("error, uneven partition size\n");
-        printf("p%i:%lu\n", i, partitionSizes[i]);
+        //printf("p%i:%lu\n", i, partitionSizes[i]);
       }
     }
 
@@ -426,12 +431,11 @@ namespace quad {
       // printf("storing %lu regions in host with %lu current partitions \n",
       // sourcePartition.numRegions, numPartitions);
       if (sourcePartition.numRegions == 0) {
-        printf("Zero regions won't save anything\n");
         return;
       }
 
-      printf("Saving %lu regions into four partitions\n",
-             sourcePartition.numRegions);
+      /*printf("Saving %lu regions into four partitions\n",
+             sourcePartition.numRegions);*/
       int numNewPartitions =
         4; // always expand by four partitions, we can change this later
       SetpartitionSizess(sourcePartition.numRegions);
@@ -493,17 +497,18 @@ namespace quad {
       // printf("Stored regions in host\n");
       size_t maxErrID =
         0; // 2. Find the partition with the largest error-estimate
-
+      //printf("Partition[%lu]:%e +- %e\n", 0, partionContributionsIntegral[0], partionContributionsError[0] );
       for (size_t i = 1; i < numPartitions; i++) {
         if (partionContributionsError[maxErrID] /*/partitionSizes[maxErrID]*/ <
             partionContributionsError[i] /*/partitionSizes[i]*/) {
           maxErrID = i;
         }
+        //printf("Partition[%lu]:%e +- %e\n", i, partionContributionsIntegral[i], partionContributionsError[i] );
       }
 
-      printf("Loading partition with %e +- %e errorest\n",
+      /*printf("Loading partition with %e +- %e errorest\n",
              partionContributionsIntegral[maxErrID],
-             partionContributionsError[maxErrID]);
+             partionContributionsError[maxErrID]);*/
       Partition<NDIM> priorityP =
         partitions[maxErrID]; // 3. get a pointer to that host partition
       // printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth,
