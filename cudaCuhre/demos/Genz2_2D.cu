@@ -19,8 +19,8 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+  
+  PrintHeader();
   while (cu_time_and_call<GENZ_2_2D, ndim>("GENZ_2_2D",
                        integrand,
                        epsrel,

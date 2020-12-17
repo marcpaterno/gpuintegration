@@ -21,9 +21,8 @@ main()
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
-  
+
+  PrintHeader();
   while (cu_time_and_call<absCosSum5DWithoutKPlus1, ndim>("absCosSum5DWithoutKPlus1",
                        integrand,
                        epsrel,

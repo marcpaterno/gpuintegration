@@ -16,13 +16,14 @@ main()
   double const epsrel_min = 1.0e-12;
   double true_value = 7.1790160638199853886e-7;
   GENZ_3_6D integrand;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+ 
              
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   constexpr int ndim = 6;
+  
+  PrintHeader();
   while (cu_time_and_call<GENZ_3_6D, ndim>("pdc_f1_latest",
                        integrand,
                        epsrel,

@@ -54,16 +54,21 @@ struct Config{
     int verbose = 0;
 };
 
+void PrintHeader(){
+    std::cout << "id, heuristicID, value, epsrel, epsabs, estimate, errorest, regions, "
+             "converge, final, total_time\n";
+}
+
 template <typename F, int ndim>
 bool
 cu_time_and_call(std::string id,
-              F integrand,
-              double epsrel,
-              double true_value,
-              char const* algname,
-              std::ostream& outfile,
-              Config config = Config(), 
-              quad::Volume<double, ndim>* vol = nullptr)
+                F integrand,
+                double epsrel,
+                double true_value,
+                char const* algname,
+                std::ostream& outfile,
+                Config config = Config(), 
+                quad::Volume<double, ndim>* vol = nullptr)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -84,10 +89,19 @@ cu_time_and_call(std::string id,
   
  outfile.precision(17);
  outfile << std::fixed  << std::scientific 
-          << id << ",\t" << true_value << ",\t"
-          << epsrel << ",\t" << epsabs << ",\t" << result.estimate << ",\t"
-          << result.errorest << ",\t" << result.nregions << ",\t" << result.nFinishedRegions 
-          << ",\t" << result.status << ",\t" << config._final << ",\t" 
-          << result.lastPhase << ",\t" << dt.count() << std::endl;
+          << id << ",\t" 
+          << config.heuristicID << ",t"
+          << true_value << ",\t"
+          << epsrel << ",\t" 
+          << epsabs << ",\t" 
+          << result.estimate << ",\t"
+          << result.errorest << ",\t" 
+          << result.nregions << ",\t" 
+          << result.nFinishedRegions << ",\t" 
+          << result.status << ",\t" 
+          << config._final << ",\t" 
+          << result.lastPhase << ",\t" 
+          << dt.count() 
+          << std::endl;
   return good;
 }

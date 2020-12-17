@@ -22,6 +22,7 @@ main()
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   
+  PrintHeader();
   while (cu_time_and_call<integral<GPU>>("pdc_f1_latest",
                                       d_integrand,
                                       epsrel,

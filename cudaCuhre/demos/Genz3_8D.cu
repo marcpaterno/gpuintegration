@@ -15,8 +15,9 @@ main()
   double const epsrel_min = 1.0240000000000002e-12;
   double true_value = 2.2751965817917756076e-10;
   GENZ_3_8D integrand;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, fregions,"
-             "converge, final, phase, total_time\n";
+  
+  PrintHeader();
+  
   constexpr int ndim = 8;
   Config configuration;
   configuration.outfileVerbosity = 0;

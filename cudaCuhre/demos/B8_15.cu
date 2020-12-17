@@ -22,6 +22,7 @@ main()
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   
+  PrintHeader();
   while (cu_time_and_call<BoxIntegral8_15, ndim>("B8_15",
                        integrand,
                        epsrel,

@@ -16,13 +16,12 @@ main()
   double true_value = 1495369.283757217694;
   constexpr int ndim = 8;
   BoxIntegral8_22 integrand;
-
+    
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, fregions,"
-             "converge, final, phase, total_time\n";
+  PrintHeader();
   while (cu_time_and_call<BoxIntegral8_22, ndim>("pdc_f1_latest",
                        integrand,
                        epsrel,

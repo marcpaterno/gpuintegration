@@ -22,12 +22,11 @@ main()
   constexpr int ndim = 9;
   quad::Volume<double, ndim> vol(lows, highs);
   
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
   
+  PrintHeader();
   while (cu_time_and_call<Gauss9D, ndim>("pdc_f1_depth",
                        integrand,
                        epsrel,

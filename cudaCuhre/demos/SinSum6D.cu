@@ -16,11 +16,12 @@ main()
   double true_value = -49.165073;
   SinSum6D integrand;
   constexpr int ndim = 6;
-  std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+  
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
+  
+  PrintHeader();
   while (cu_time_and_call<SinSum6D, ndim>("pdc_f1",
                        integrand,
                        epsrel,

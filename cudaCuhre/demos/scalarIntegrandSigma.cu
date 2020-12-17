@@ -22,6 +22,8 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
+  
+  PrintHeader();
   while (cu_time_and_call<quad::Snapshotsim_ScalarIntegrand_Sigma<GPU>, ndim>("pdc_f1_latest",
                                       d_integrand,
                                       epsrel,
