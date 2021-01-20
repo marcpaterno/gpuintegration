@@ -46,10 +46,10 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
   auto res = a.integrate(f, epsrel, epsabs);
   
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  int _final = 0;
-  std::cout.precision(15); 
+  int _final = 1;
+  std::cout.precision(17); 
   std::cout<<algname<<","
-		   <<correct_answer<<","
+		   <<correct_answer<<"," << std::scientific 
 			<<epsrel<<","
 			<<epsabs<<","
 			<<res.value<<","
@@ -64,7 +64,6 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 	return false;
 }
 
-
 int main()
 {
   cubacores(0, 0); // turn off the forking use in CUBA's CUHRE.
@@ -77,16 +76,15 @@ int main()
   GENZ_4_5D integrand;
   double epsrel = 1.0e-3;
   double true_value = 1.79132603674879e-06;
-  while(epsrel >= epsrel_min && time_and_call_alt<cubacpp::Cuhre, GENZ_4_5D>(cuhre, integrand, epsrel, true_value, "dc_f0") == true )
+  /*while(epsrel >= epsrel_min && time_and_call_alt<cubacpp::Cuhre, GENZ_4_5D>(cuhre, integrand, epsrel, true_value, "dc_f0") == true )
   {
     epsrel /= 5.0;
-  }
+  }*/
   
-  int verbose = 0;
-  int _final = 4;
-  cuhre.flags = verbose | _final;
-  epsrel = 1.0e-3;
-  while(epsrel >= epsrel_min && time_and_call_alt<cubacpp::Cuhre , GENZ_4_5D>(cuhre, integrand, epsrel, true_value, "dc_f1") == true)
+  //int verbose = 0;
+  //int _final = 4;
+  cuhre.flags = 4;
+  while(epsrel >= epsrel_min && time_and_call_alt<cubacpp::Cuhre , GENZ_4_5D>(cuhre, integrand, epsrel, true_value, "Genz4_5D") == true)
   {
       epsrel /= 5.0;
   }

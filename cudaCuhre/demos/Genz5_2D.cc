@@ -24,19 +24,19 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
   auto res = a.integrate(f, epsrel, epsabs);
   
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  int _final = 0;
-  std::cout.precision(15); 
+  int _final = 1;
+  std::cout.precision(17); 
   std::cout<<algname<<","
-		   <<std::to_string(correct_answer)<<","
+		   <<correct_answer<<"," << std::scientific 
 			<<epsrel<<","
 			<<epsabs<<","
-			<<std::to_string(res.value)<<","
-			<<std::to_string(res.error)<<","
+			<<res.value<<","
+			<<res.error<<","
 			<<res.nregions<<","
 			<<res.status<<","
 			<<_final<<","
@@ -51,18 +51,9 @@ double GENZ_5_2D(double x, double y)
 {
    double beta = .5;
     double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
-    return exp(t1);
+    return exp(t1)/(0.039462780237263662026);
 }
 
-class example{
-	public:
-	example() = default;
-	double operator()(double x, double y){
-		double beta = .5;
-		double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
-		return exp(t1);
-	}
-};
 
 int main()
 {
@@ -75,19 +66,13 @@ int main()
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
   
   double epsrel = 1.0e-3;
-  double true_value = 0.039462780237263662026;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f0") == true)
-  {
-    epsrel /= 5.0; 
-  }
-  
-  
-  int verbose = 0;
+  double true_value = 1.0;
+
   int _final = 4;
-  cuhre.flags = verbose | _final;
+  cuhre.flags = _final;
   //time_and_call_alt<cubacpp::Cuhre, example>(cuhre, ex, epsrel, true_value, "dc_f1");
   epsrel = 1.0e-3;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "dc_f1") == true)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_5_2D, epsrel, true_value, "GENZ_5_2D") == true)
   {
       epsrel /= 5.0;
   }

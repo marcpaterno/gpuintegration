@@ -1,5 +1,5 @@
-#include "function.cuh"
-#include "demo_utils.cuh"
+#include "cudaCuhre/demos/function.cuh"
+#include "cudaCuhre/demos/demo_utils.cuh"
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -7,7 +7,6 @@
 #include <iostream>
 
 using namespace quad;
-
 
 namespace detail{
     class GENZ_4_5D {
@@ -21,7 +20,7 @@ namespace detail{
                              pow(25,2)*pow(z-beta, 2) +
                              pow(25,2)*pow(w-beta, 2) +
                              pow(25,2)*pow(v-beta, 2))
-                      );
+                      )/*/(1.79132603674879e-06)*/;
         }
     };
 }
@@ -29,25 +28,34 @@ namespace detail{
 int
 main()
 {
-  double epsrel =  1e-3;
-  double const epsrel_min = 1.0240000000000002e-10;
+  double epsrel_min = 1.02400000000000016e-10;
+  double epsrel = 1.e-3;
   double true_value = 1.79132603674879e-06;
   detail::GENZ_4_5D integrand;
+  
   PrintHeader();
+  
   constexpr int ndim = 5;
+    
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
-  while (cu_time_and_call<detail::GENZ_4_5D, ndim>("Genz4_5D",
+  //configuration.heuristicID = 2 ;
+  int heuristics[3] = {0,4,2};
+ 
+  for(int i=2; i>=0; i--)
+  {
+    printf("Started new\n");
+    configuration.heuristicID = heuristics[i];
+    epsrel = 1.0e-3;
+    while(cu_time_and_call<detail::GENZ_4_5D, ndim>("Genz4_5D_h0",
                                                 integrand,
                                                 epsrel,
                                                 true_value,
                                                 "gpucuhre",
                                                 std::cout,
-                                                configuration) == true &&
-                                                epsrel > epsrel_min) {
-    epsrel /= 5.0;
+                                                configuration) == true && epsrel > epsrel_min){
+        epsrel /= 5;                                                
+    }
+      
   }
-
 }

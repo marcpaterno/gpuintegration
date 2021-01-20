@@ -2,7 +2,7 @@
 #define CUDACUHRE_FUNCTION_CHH
 
 #define FUN 11
-
+#include <stdio.h>
 double constexpr PI = 3.14159265358979323844;
 
 class Gauss9D {
@@ -62,6 +62,21 @@ public:
 
     double f = 1.0 / (0.1 + pow(cos(t1), 2));
     return f;
+  }
+};
+
+
+class Diagonal_ridge2D {
+public:
+  // correct answer: 1 on integration volume (-1,1)
+
+  __device__ __host__ double
+  operator()(double u, double v)
+  {
+    //if(u > 0.1 || v > 0.1)
+   //     printf("%f, %f\n", u, v);
+    double k = 0.01890022674239546529975841;
+    return 4*k*u*u/(.01 + pow(u-v-(1./3.),2));
   }
 };
 
@@ -463,7 +478,7 @@ public:
 	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
 	
     double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
-	return val;
+	return val/((1.286889807581113e+13));
   }
 };
 

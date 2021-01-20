@@ -18,7 +18,7 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-16;
+  double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
   auto res = a.integrate(f, epsrel, epsabs);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
@@ -49,14 +49,14 @@ struct Config{
     int phase_I_type = 0;
     int outfileVerbosity = 0;
     int numdevices = 1;
-    int heuristicID = 0;
+    int heuristicID = 4;
     int _final = 1;
     int verbose = 0;
 };
 
 void PrintHeader(){
     std::cout << "id, heuristicID, value, epsrel, epsabs, estimate, errorest, regions, "
-             "converge, final, total_time\n";
+             "status, final, lastPhase, total_time\n";
 }
 
 template <typename F, int ndim>
@@ -72,7 +72,7 @@ cu_time_and_call(std::string id,
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
-  double constexpr epsabs = 1.0e-22;
+  double constexpr epsabs = 1.0e-20;
   
   quad::Cuhre<double, ndim> alg(0, nullptr);
   
@@ -86,21 +86,32 @@ cu_time_and_call(std::string id,
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
-  
+   
+ std::string hID;
+ 
+ if(config.heuristicID == 0)
+    hID = "zero";
+ else if(config.heuristicID == 2)
+    hID = "reserved";
+ else if(config.heuristicID == 4)
+    hID = "aggressive";
+ else if(config.heuristicID == 7)
+    hID = "alt_aggressive";
+    
  outfile.precision(17);
  outfile << std::fixed  << std::scientific 
-          << id << ",\t" 
-          << config.heuristicID << ",t"
-          << true_value << ",\t"
-          << epsrel << ",\t" 
-          << epsabs << ",\t" 
-          << result.estimate << ",\t"
-          << result.errorest << ",\t" 
-          << result.nregions << ",\t" 
-          << result.nFinishedRegions << ",\t" 
-          << result.status << ",\t" 
-          << config._final << ",\t" 
-          << result.lastPhase << ",\t" 
+          << id << ","
+          << hID << ","
+          << true_value << ","
+          << epsrel << "," 
+          << epsabs << "," 
+          << result.estimate << ","
+          << result.errorest << "," 
+          << result.nregions << "," 
+          << result.nFinishedRegions << "," 
+          << result.status << "," 
+          << config._final << "," 
+          << result.lastPhase << "," 
           << dt.count() 
           << std::endl;
   return good;

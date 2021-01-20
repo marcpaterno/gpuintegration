@@ -6,16 +6,17 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace quad;
+
 namespace detail{
-    class GENZ_6_6D {
+    class GENZ_5_5D {
     public:
       __device__ __host__ double
-      operator()(double u, double v, double w, double x, double y, double z)
+      operator()(double x, double y, double z, double k, double m)
       {
-          if(z > .9 || y > .8 || x > .7 || w > .6 || v >.5 || u > .4)
-              return 0.;
-          else
-              return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u)/1.5477367885091207413e8;
+        double beta = .5;
+        double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta) - 10.* fabs(z - beta) - 10.* fabs(k - beta) - 10.* fabs(m - beta);
+        return exp(t1);
       }
     };
 }
@@ -23,17 +24,18 @@ namespace detail{
 int
 main()
 {
-  double epsrel =1e-3; // starting error tolerance.
+  double epsrel = 1.0e-3; // starting error tolerance.
   double const epsrel_min = 1.024e-10;
-  double true_value =  1.;
-  constexpr int ndim = 6;
+  double true_value = 0.0003093636;
+  detail::GENZ_5_5D integrand;
+  
+  constexpr int ndim = 5;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  detail::GENZ_6_6D integrand;
+  configuration.heuristicID = 7;
+  
   PrintHeader();
-             
-  while (cu_time_and_call<detail::GENZ_6_6D, ndim>("GENZ_6_6D",
+  while (cu_time_and_call<detail::GENZ_5_5D, ndim>("GENZ_5_D",
                        integrand,
                        epsrel,
                        true_value,

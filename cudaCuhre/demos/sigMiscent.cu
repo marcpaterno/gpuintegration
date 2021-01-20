@@ -19,20 +19,23 @@ main()
   quad::Volume<double, ndim> vol(lows, highs);
   
   Config configuration;
-  configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
+  configuration.outfileVerbosity = 1;
+  int heuristics[3] = {0, 2, 4};
   PrintHeader();
-  while (cu_time_and_call<integral<GPU>>("pdc_f1_latest",
-                                      d_integrand,
-                                      epsrel,
-                                      true_value,
-                                      "gpucuhre",
-                                      std::cout,
-                                      configuration,
-                                      &vol)) {
-    epsrel = epsrel / 1.5;
-    break;
+  
+  for(int i=2; i>=0; i--){
+      epsrel = 1e-3;
+      configuration.heuristicID = heuristics[i];
+      while (cu_time_and_call<integral<GPU>>("pdc_f1_latest",
+                                          d_integrand,
+                                          epsrel,
+                                          true_value,
+                                          "gpucuhre",
+                                          std::cout,
+                                          configuration,
+                                          &vol)) {
+        break;
+      }
   }
 
   return 0;

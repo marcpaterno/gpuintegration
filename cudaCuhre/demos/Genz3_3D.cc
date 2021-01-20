@@ -27,14 +27,14 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
   auto res = a.integrate(f, epsrel, epsabs);
   
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  int _final = 0;
-  std::cout.precision(15); 
-  std::cout<<algname<<","
+  int _final = 1;
+  std::cout.precision(17);  
+  std::cout<<algname<<"," << std::scientific 
 		   <<correct_answer<<","
 			<<epsrel<<","
 			<<epsabs<<","
@@ -52,7 +52,7 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 
 double GENZ_3_3D(double x, double y, double z)
 {
-    return pow(1+3*x+2*y+z, -4);
+    return pow(1+3*x+2*y+z, -4)/(0.010846560846560846561);
 }
 
 
@@ -67,17 +67,17 @@ int main()
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
   
   double epsrel = 1.0e-3;
-  double true_value = 0.010846560846560846561;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_3_3D, epsrel, true_value, "dc_f0") == true)
+  double true_value = 1.;
+  /*while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_3_3D, epsrel, true_value, "dc_f0") == true)
   {
      epsrel /= 5 ;
-  }
+  }*/
   
-  int verbose = 0;
+  //int verbose = 0;
   int _final = 4;
-  cuhre.flags = verbose | _final;
+  cuhre.flags = _final;
   epsrel = 1.0e-3;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_3_3D, epsrel, true_value, "dc_f1") == true)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_3_3D, epsrel, true_value, "GENZ_3_3D") == true)
   {
       epsrel /= 5.0;
   }

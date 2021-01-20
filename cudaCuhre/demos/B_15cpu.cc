@@ -27,19 +27,19 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
   auto res = a.integrate(f, epsrel, epsabs);
   
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  int _final = 0;
- 
-  std::cout<<algname<<","
-		   <<std::to_string(correct_answer)<<","
+  int _final = 1;
+ std::cout.precision(17); 
+  std::cout<<algname<<"," << std::scientific 
+		   <<correct_answer<<","
 			<<epsrel<<","
 			<<epsabs<<","
-			<<std::to_string(res.value)<<","
-			<<std::to_string(res.error)<<","
+			<<res.value<<","
+			<<res.error<<","
 			<<res.nregions<<","
 			<<res.status<<","
 	                <<_final<<","
@@ -64,7 +64,7 @@ double B8_15(double x,
     sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
           pow(m, 2) + pow(n, 2) + pow(o, 2);
 	double f = pow(sum, s / 2);
-	return f;
+	return f/(8879.851175413485);
 }
 
 
@@ -79,17 +79,17 @@ int main()
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
 	
   double epsrel = 1.0e-3;
-  double true_value = 8879.851175413485;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true)
+  double true_value = 1.;
+  /*while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f0") == true)
   {
     epsrel /= 5.0;
-  }
+  }*/
   
   int verbose = 0;
   int _final = 4;
   cuhre.flags = verbose | _final;
   epsrel = 1.0e-3;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "dc_f1") == true)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, B8_15, epsrel, true_value, "B8_15") == true)
   {
      epsrel /= 5.0;
   }

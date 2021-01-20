@@ -1,5 +1,5 @@
-#include "function.cuh"
-#include "demo_utils.cuh"
+#include "cudaCuhre/demos/function.cuh"
+#include "cudaCuhre/demos/demo_utils.cuh"
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -23,17 +23,19 @@ int
 main()
 {
   double epsrel = 1e-3;
-  double const epsrel_min = 1.024e-10;
-  double true_value = 1.;
+  double const epsrel_min = 5.12e-10;
+  double true_value = 1.0;
   detail::GENZ_3_8D integrand;
   PrintHeader();
-  
   constexpr int ndim = 8;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
-  while (cu_time_and_call<detail::GENZ_3_8D, ndim>("Genz3_8D",
+  int heuristics[3] = {0, 2,4};
+ 
+  for(int i=2; i>=0; i--){
+      epsrel = 1.0e-3;
+      configuration.heuristicID = heuristics[i];
+      while (cu_time_and_call<detail::GENZ_3_8D, ndim>("Genz3_8D",
                            integrand,
                            epsrel,
                            true_value,
@@ -41,8 +43,7 @@ main()
                            std::cout,
                            configuration) == true &&
              epsrel > epsrel_min) {
-    epsrel /= 5.0;
-   }
-
-  
+        epsrel /= 5.0;
+      }
+  }
 }

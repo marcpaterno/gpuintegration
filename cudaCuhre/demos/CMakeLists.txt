@@ -1,3 +1,4 @@
+add_subdirectory(Heuristics)
 find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
 
@@ -11,6 +12,15 @@ target_compile_options(B8_15 PRIVATE "-arch=sm_70")
 set_target_properties(B8_15 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(B8_15 util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
 target_include_directories(B8_15 PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(DiagonalRidge2D diagonalRidge2D.cu)
+target_compile_options(DiagonalRidge2D PRIVATE "-arch=sm_70")
+set_target_properties(DiagonalRidge2D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(DiagonalRidge2D util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(DiagonalRidge2D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
@@ -88,6 +98,16 @@ target_include_directories(Genz4_5DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(Genz4_8DGPU Genz4_8D.cu)
+target_compile_options(Genz4_8DGPU PRIVATE "-arch=sm_70")
+set_target_properties(Genz4_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz4_8DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(Genz4_8DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+
 add_executable(Genz5_2DGPU Genz5_2D.cu)
 target_compile_options(Genz5_2DGPU PRIVATE "-arch=sm_70")
 set_target_properties(Genz5_2DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -96,6 +116,25 @@ target_include_directories(Genz5_2DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
+
+add_executable(Genz5_5DGPU Genz5_5D.cu)
+target_compile_options(Genz5_5DGPU PRIVATE "-arch=sm_70")
+set_target_properties(Genz5_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz5_5DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(Genz5_5DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(Genz5_8DGPU Genz5_8D.cu)
+target_compile_options(Genz5_8DGPU PRIVATE "-arch=sm_70")
+set_target_properties(Genz5_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz5_8DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(Genz5_8DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 
 add_executable(Genz6_2DGPU Genz6_2D.cu)
 target_compile_options(Genz6_2DGPU PRIVATE "-arch=sm_70")
@@ -265,6 +304,13 @@ target_include_directories(Genz4_5DCPU PRIVATE
   ${CUBA_INCLUDE_DIR}
 )
 target_link_libraries(Genz4_5DCPU PRIVATE ${CUBA_LIBRARIES})
+
+add_executable(Genz5_8DCPU Genz5_8D.cc)
+target_include_directories(Genz5_8DCPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CUBA_INCLUDE_DIR}
+)
+target_link_libraries(Genz5_8DCPU PRIVATE ${CUBA_LIBRARIES})
 
 add_executable(Genz6_6DCPU Genz6_6D.cc)
 target_include_directories(Genz6_6DCPU PRIVATE
