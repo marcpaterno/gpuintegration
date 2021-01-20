@@ -80,6 +80,7 @@ namespace quad {
               double leaves_estimate,
               double finished_estimate,
               double finished_errorest,
+              double queued_estimate,
               double queued_errorest,
               T epsrel,
               T epsabs,
@@ -94,7 +95,7 @@ namespace quad {
     
     if(tid<currIterRegions){ 
       int fail = 0;
-
+    
       T selfErr = dRegionsError[tid + currIterRegions];
       T selfRes = dRegionsIntegral[tid + currIterRegions];
 
@@ -103,6 +104,7 @@ namespace quad {
       // only, to avoid race conditions
 
       int siblingIndex = (currIterRegions / 2) + tid;
+      
       if (siblingIndex < currIterRegions) {
         siblingIndex += currIterRegions;
       }
@@ -116,7 +118,7 @@ namespace quad {
       diff = fabs(.25 * diff);
 
       T err = selfErr + siblErr;
-
+        
       if (err > 0.0) {
         T c = 1 + 2 * diff / err;
         selfErr *= c;
@@ -129,6 +131,7 @@ namespace quad {
                          leaves_estimate,
                          finished_errorest,
                          finished_estimate,
+                         queued_estimate,
                          queued_errorest,
                          epsrel,
                          epsabs,
@@ -138,7 +141,10 @@ namespace quad {
                          parErr,
                          parRes,
                          lastErr,
-                         heuristicID](double selfRes, double selfErr) {
+                         heuristicID,
+                         siblErr,
+                         siblRes,
+                         tid](double selfRes, double selfErr) {
         double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
         double remainGlobalErrRoom =
           GlobalErrTarget - finished_errorest - queued_errorest;
@@ -150,84 +156,44 @@ namespace quad {
         switch(heuristicID){
             case 0:
                 worstCaseScenarioGood = false;
-                break;
-            case 1:
-                worstCaseScenarioGood =
-                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions && 
-                         selfErr*currIterRegions < GlobalErrTarget;
-                break;
-            case 2:
-                worstCaseScenarioGood =
-                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
-                         selfErr*currIterRegions < GlobalErrTarget;
-                break;
-            case 3:
-                worstCaseScenarioGood =
-                    selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
-                         selfErr*currIterRegions < remainGlobalErrRoom;
-                break;
+                break;          
+            case 2: //useless right now, same as heuristic 1
+                worstCaseScenarioGood = 
+                (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions) 
+                || 
+                 (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && selfErr*currIterRegions < remainGlobalErrRoom);       
+                break;          
             case 4:
                 worstCaseScenarioGood = 
-                (selfErr > selfRes && 
+                (selfErr > fabs(selfRes) && 
                 selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && 
                 selfErr < remainGlobalErrRoom/currIterRegions) 
                 || 
-                 (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && 
+                 (fabs(selfRes) < (fabs(leaves_estimate) * epsrel * iteration)/(total_nregions) && 
                  selfErr*currIterRegions < GlobalErrTarget);
-                break;
-            case 5:
-                bool worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
-                || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && parErr*currIterRegions + finished_errorest + queued_errorest < lastErr);
+                break;           
+            case 7:
+                worstCaseScenarioGood = 
+                 (selfRes*currIterRegions + queued_estimate + finished_estimate < leaves_estimate && selfErr*currIterRegions < GlobalErrTarget);
+                 break;       
         }
-        
-        
-        /*bool worstCaseScenarioGood =
-          selfRes < (leaves_estimate * epsrel*iteration) /
-                      (total_nregions);*/
-                      
-        //current heuristic 2.0              
-        /*bool worstCaseScenarioGood =
-          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
-                         selfErr*currIterRegions < GlobalErrTarget;*/
-        
-        //current heuristic 3.0              
-        /*bool worstCaseScenarioGood =
-          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions&& 
-                         selfErr*currIterRegions < remainGlobalErrRoom;*/
-        
-         //current heuristic 4.0
-        /*if(heuristicID == 4)
-         worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
-        || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && selfErr*currIterRegions < GlobalErrTarget)
-        ;*/
-        
-         //current heuristic 5.0              
-        /*bool worstCaseScenarioGood = (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions)
-        || (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && parErr*currIterRegions + finished_errorest + queued_errorest < lastErr)
-        ;*/
-        
-        //current heuristic
-        /*bool worstCaseScenarioGood =
-          selfRes < (leaves_estimate * epsrel*iteration)/total_nregions;*/
-     
-                     
+              
         bool verdict = (worstCaseScenarioGood && minIterReached) ||
                        (selfRes == 0. && selfErr <= epsabs && minIterReached);
         return verdict;
       };
         
       if (isPolished(selfRes, selfErr) == true ||
-          selfErr / (fabs(selfRes) * epsrel) < 1.) {
+          selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.) {
         newErrs[tid] = selfErr;
       } else {
         fail = 1;
-        newErrs[tid] = 0;
-        dRegionsIntegral[tid] = 0;
+        newErrs[tid] = 0.;
+        dRegionsIntegral[tid] = 0.;
       }
-             
+        
       activeRegions[tid] = fail;
       newErrs[tid + currIterRegions] = selfErr;
-      
     }
   }
 
@@ -309,12 +275,12 @@ namespace quad {
       dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
       dRegionsError[gridDim.x + blockIdx.x] = ERR;
 
-      activeRegions[blockIdx.x] = 1;
+      activeRegions[blockIdx.x] = 1; //redundant, check if removing has any effect
       subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;//fourthDiffDim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
 
-      if (numRegions == 1) {
+      if (numRegions == 1) { 
         dRegionsIntegral[blockIdx.x] = 0;
         dRegionsError[blockIdx.x] = 0;
       }
@@ -370,7 +336,7 @@ namespace quad {
     }
     return 1;
   }
-
+    
   /*
           sets the bounds of the 1st region from 0 to 1 while the
           global bounds(1st region's real boundaries) are assigned to sBound
