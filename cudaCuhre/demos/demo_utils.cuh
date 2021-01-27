@@ -92,11 +92,15 @@ cu_time_and_call(std::string id,
  if(config.heuristicID == 0)
     hID = "zero";
  else if(config.heuristicID == 2)
-    hID = "reserved";
+    hID = "budget errorest";
  else if(config.heuristicID == 4)
-    hID = "aggressive";
+    hID = "target errorest"; //default
  else if(config.heuristicID == 7)
-    hID = "alt_aggressive";
+    hID = "estimate budget";
+ //else if(config.heuristicID == 8)
+ //   hID = "extreme";
+ else if(config.heuristicID == 9)
+    hID = "aggressive";
     
  outfile.precision(17);
  outfile << std::fixed  << std::scientific 

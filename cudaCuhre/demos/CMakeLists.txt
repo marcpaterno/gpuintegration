@@ -249,6 +249,13 @@ target_include_directories(Genz5_2DCPU PRIVATE
 )
 target_link_libraries(Genz5_2DCPU PRIVATE ${CUBA_LIBRARIES})
 
+add_executable(Genz5_5DCPU Genz5_5D.cc)
+target_include_directories(Genz5_5DCPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CUBA_INCLUDE_DIR}
+)
+target_link_libraries(Genz5_5DCPU PRIVATE ${CUBA_LIBRARIES})
+
 add_executable(Gauss9Dcpu Gauss9Dcpu.cc)
 target_include_directories(Gauss9Dcpu PRIVATE
   ${CMAKE_SOURCE_DIR}

@@ -84,18 +84,18 @@ double blockReduceSum(double val) {
       x[dim] = 0;
     }
 
-    int posCnt = (constMem._gpuGenPermVarStart[pIndex + 1]) -
-                 (constMem._gpuGenPermVarStart[pIndex]);
-    int gIndex = constMem._gpuGenPermGIndex[pIndex];
+    int posCnt = __ldg(&constMem._gpuGenPermVarStart[pIndex + 1]) -
+                 __ldg(&constMem._gpuGenPermVarStart[pIndex]);
+    int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
 
     for (int posIter = 0; posIter < posCnt; ++posIter) {
       int pos =
         (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) + posIter]);
       int absPos = abs(pos);
       if (pos == absPos) {
-        g[absPos - 1] = (constMem._gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
       } else {
-        g[absPos - 1] = -(constMem._gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
       }
     }
 
@@ -112,7 +112,7 @@ double blockReduceSum(double val) {
     sdata[threadIdx.x] = fun; // target for reduction
     
     for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * (constMem._cRuleWt[gIndex * NRULES + rul]);
+      sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
 	  //if(constMem._cRuleWt[gIndex * NRULES + rul] > 0.)
 		//  printf("negative weight:%.20f\n", constMem._cRuleWt[gIndex * NRULES + rul]);
     }
@@ -131,12 +131,12 @@ double blockReduceSum(double val) {
     //__syncthreads();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     T vol = ldexp(1., -region->div);
-
+    
     T g[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
 
-    T ratio = Sq((constMem._gpuG[2 * NDIM]) / (constMem._gpuG[1 * NDIM]));
+    T ratio = Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
     int maxdim = 0;
     T maxrange = 0;
@@ -219,8 +219,8 @@ double blockReduceSum(double val) {
         for (int s = 0; s < NSETS; ++s) {
           maxerr = max(maxerr,
                        fabs(sum[rul + 1] +
-                            constMem._GPUScale[s * NRULES + rul] * sum[rul]) *
-                         constMem._GPUNorm[s * NRULES + rul]);
+                            __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
+                         __ldg(&constMem._GPUNorm[s * NRULES + rul]));
         }
         sum[rul] = maxerr;
       }

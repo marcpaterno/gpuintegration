@@ -66,6 +66,7 @@ namespace quad {
     }
   }
    
+
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -157,6 +158,12 @@ namespace quad {
             case 0:
                 worstCaseScenarioGood = false;
                 break;          
+            case 1:
+                worstCaseScenarioGood = selfRes < leaves_estimate/pow(2, iteration) || 
+                                        selfRes < leaves_estimate/total_nregions || 
+                                        selfErr < lastErr/pow(2,iteration) || 
+                                        selfErr < epsrel*leaves_estimate/total_nregions;
+                break;
             case 2: //useless right now, same as heuristic 1
                 worstCaseScenarioGood = 
                 (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions) 
@@ -176,6 +183,17 @@ namespace quad {
                 worstCaseScenarioGood = 
                  (selfRes*currIterRegions + queued_estimate + finished_estimate < leaves_estimate && selfErr*currIterRegions < GlobalErrTarget);
                  break;       
+            case 8:
+                worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions || 
+                                        selfErr < epsrel*leaves_estimate/total_nregions;
+                break;
+            case 9:
+                 worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions && 
+                                         selfErr < epsrel*leaves_estimate/total_nregions;
+                break;
+            case 10:
+                worstCaseScenarioGood = fabs(selfRes) < 2*leaves_estimate/pow(2,iteration) && 
+                                         selfErr < 2*leaves_estimate*epsrel/pow(2,iteration);
         }
               
         bool verdict = (worstCaseScenarioGood && minIterReached) ||

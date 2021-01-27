@@ -723,7 +723,7 @@ namespace quad {
                       << iter_errorest << "," << iter_finished_estimate << ","
                       << iter_finished_errorest << "," << dnumInActiveRegions
                       << "," << queued_estimate << "," << queued_errorest << ","
-                      << unevaluated_nregions << "\n";
+                      << unevaluated_nregions << "\n";    
       Device.ReleaseMemory(scannedArray);
     }
     
@@ -1376,7 +1376,6 @@ namespace quad {
                         int last_iteration = 0)
     {
         
-   
       size_t numThreads = BLOCK_SIZE;
       size_t numBlocks = numRegions;
       
@@ -1481,7 +1480,7 @@ namespace quad {
           true;
       
       if(estimateHasConverged && error > leaves_estimate*epsrel){
-        printf ("Finished early too many regions\n");
+        printf ("Finished early too many regions %e vs %e\n", error, leaves_estimate*epsrel);
         exit (EXIT_FAILURE);
       }
       
@@ -1521,36 +1520,9 @@ namespace quad {
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       double iter_finished_errorest =
         thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      /*printf("it:%i leaves_err:%e, already_fin_err:%e, iter estimate:%e +- %e (%e +- %e) (f_iter:%e +- %e)\n", iteration,
-                                                                                        leaves_errorest, 
-                                                                                        error, 
-                                                                                        iter_estimate, 
-                                                                                        iter_errorest, 
-                                                                                        iter_estimate-iter_finished_estimate,  //estimate to be passed in next iter
-                                                                                        iter_errorest-iter_finished_errorest,
-                                                                                        iter_finished_estimate,
-                                                                                        iter_finished_errorest);*/
-        
+         
       error = error + iter_finished_errorest;
-      /*printf("it:%i %.15e +- %.15e regions:%lu (iter_errorest:%e finished_iter_errorst:%e iter_errorest_total:%e)\n", iteration, 
-                                                 leaves_estimate, 
-                                                 leaves_errorest, 
-                                                 numRegions,
-                                                 iter_errorest,
-                                                 iter_finished_estimate,
-                                                 iter_finished_estimate+iter_errorest);*/
-      /*printf("it:%i, est:%e, errorest:%e,  it_est:%e it_errorest:%e, fest:%e, ferrorest:%e , qerrorest:%e, qerrorest:%e, numRegions:%lu minIterReached:%i\n", iteration,
-       leaves_estimate, 
-       leaves_errorest, 
-       iter_estimate,
-       iter_errorest,
-       integral,
-       error,
-       partitionManager.queued_reg_estimate,
-       partitionManager.queued_reg_errorest,
-       numRegions,
-       estimateHasConverged);*/
-       
+      
       if (last_iteration != 1)
         Phase_I_PrintFile(vol,
                           numRegions,
@@ -1604,7 +1576,7 @@ namespace quad {
       // double freeMem = Device.GetFreeMemPercentage();
       // if (numRegions <= first_phase_maxregions*8 && fail == 1) {
       // if (numRegions <= first_phase_maxregions && fail == 1) {
-      if (iteration < 300 && fail == 1) {
+      if (iteration < 700 && fail == 1) {
         //  if (numRegions <= first_phase_maxregions && fail == 1) {
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
@@ -1627,7 +1599,7 @@ namespace quad {
           (numRegions == 0 && !partitionManager.Empty());
           
         if ((NotEnoughMem || NoRegionsButPartitionsLeft /*|| numRegions >= 4194304*/) && fail == 1){
-         //printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
+        // printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
           Partition<NDIM> currentPartition;
           currentPartition.ShallowCopy(dRegions,
                                        dRegionsLength,
@@ -1681,7 +1653,7 @@ namespace quad {
       PrintOutfileHeaders();
       int lastIteration = 0;
       int iteration = 0;
-      for (iteration = 0; iteration < 300; iteration++) {
+      for (iteration = 0; iteration < 700; iteration++) {
         // printf("----------------------\n");
         FirstPhaseIteration<IntegT>(d_integrand,
                                     epsrel,
@@ -1704,7 +1676,7 @@ namespace quad {
         }
         // else if (numRegions > first_phase_maxregions && fail == 1) {
         // else if (numRegions > first_phase_maxregions*8 && fail == 1) {
-        else if (iteration == 299 && fail == 1) {
+        else if (iteration == 699 && fail == 1) {
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
