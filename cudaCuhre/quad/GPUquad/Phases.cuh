@@ -95,26 +95,22 @@ namespace quad {
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     if(tid<currIterRegions){ 
-      int fail = 0;
+      int active = 1;
     
-      T selfErr = dRegionsError[tid + currIterRegions];
-      T selfRes = dRegionsIntegral[tid + currIterRegions];
-
-      // that's how indices to the right to find the sibling
-      // but we want the sibling to be found at the second half of the array
-      // only, to avoid race conditions
-
-      int siblingIndex = (currIterRegions / 2) + tid;
+      T selfErr = dRegionsError[tid];
+      T selfRes = dRegionsIntegral[tid];
       
-      if (siblingIndex < currIterRegions) {
-        siblingIndex += currIterRegions;
-      }
-
+      size_t inRightSide = (2*tid >= currIterRegions);
+      size_t inLeftSide =  (0 >= inRightSide);
+      size_t siblingIndex = tid  + (inLeftSide*currIterRegions/2) - (inRightSide*currIterRegions/2);
+      size_t parIndex = tid - inRightSide*(currIterRegions*.5);
+            
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-
-      T parRes = dParentsIntegral[tid];
-      T parErr = dParentsError[tid];
+        
+      T parRes = dParentsIntegral[parIndex];
+      T parErr = dParentsError[parIndex];
+              
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
@@ -200,18 +196,9 @@ namespace quad {
                        (selfRes == 0. && selfErr <= epsabs && minIterReached);
         return verdict;
       };
-        
-      if (isPolished(selfRes, selfErr) == true ||
-          selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.) {
-        newErrs[tid] = selfErr;
-      } else {
-        fail = 1;
-        newErrs[tid] = 0.;
-        dRegionsIntegral[tid] = 0.;
-      }
-        
-      activeRegions[tid] = fail;
-      newErrs[tid + currIterRegions] = selfErr;
+      newErrs[tid] = selfErr;  
+      active = !(isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.);
+      activeRegions[tid] = active;
     }
   }
 
@@ -290,18 +277,10 @@ namespace quad {
       const double ERR = sRegionPool[0].result.err;
       const double RESULT = sRegionPool[0].result.avg;
         
-      dRegionsIntegral[gridDim.x + blockIdx.x] = RESULT;
-      dRegionsError[gridDim.x + blockIdx.x] = ERR;
-
-      activeRegions[blockIdx.x] = 1; //redundant, check if removing has any effect
-      subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;//fourthDiffDim;
+      activeRegions[blockIdx.x] = 1; 
+      subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[blockIdx.x] = RESULT;
       dRegionsError[blockIdx.x] = ERR;
-
-      if (numRegions == 1) { 
-        dRegionsIntegral[blockIdx.x] = 0;
-        dRegionsError[blockIdx.x] = 0;
-      }
     }
   }
 

@@ -4,6 +4,9 @@
 #include "../util/Volume.cuh"
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/inner_product.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/execution_policy.h>
 
 #include "PartitionManager.cuh"
 #include "Phases.cuh"
@@ -18,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <thrust/transform_reduce.h>
+
 
 //#define startRegions 256 //for 8D
 #define startRegions 1 // if starting with 1 region
@@ -171,14 +174,11 @@ namespace quad {
           dRegionsLength[i * numRegions + tid];
       }
 
-      dRegionsParentIntegral[interval_index] =
-        dRegionsIntegral[tid + numRegions];
-      dRegionsParentError[interval_index] = dRegionsError[tid + numRegions];
+      dRegionsParentIntegral[interval_index] = dRegionsIntegral[tid /*+ numRegions*/];
+      dRegionsParentError[interval_index] = dRegionsError[tid /*+ numRegions*/];
 
-      dRegionsParentIntegral[interval_index + newNumRegions] =
-        dRegionsIntegral[tid + numRegions];
-      dRegionsParentError[interval_index + newNumRegions] =
-        dRegionsError[tid + numRegions];
+      //dRegionsParentIntegral[interval_index + newNumRegions] = dRegionsIntegral[tid /*+ numRegions*/];
+      //dRegionsParentError[interval_index + newNumRegions] = dRegionsError[tid + numRegions];
 
       for (int i = 0; i < numOfDivisionOnDimension; ++i) {
         newActiveRegionsBisectDim[i * newNumRegions + interval_index] =
@@ -1038,13 +1038,12 @@ namespace quad {
       // so it's supposed to be called only after GenerateIntervals has been
       // called
       int numOfDivisionOnDimension = 2;
-      size_t nextIter_dParentsIntegral_size = numRegions * 2;
-      size_t nextIter_dParentsError_size = numRegions * 2;
+      size_t nextIter_dParentsIntegral_size = numRegions /** 2*/;
+      size_t nextIter_dParentsError_size = numRegions /** 2*/;
       size_t nextIter_dRegions_size = numRegions * NDIM;
       size_t nextIter_dRegionsLength_size = numRegions * NDIM;
-      size_t nextIter_dRegionsIntegral_size =
-        numRegions * 2; // is this really times two?
-      size_t nextIter_dRegionsError_size = numRegions * 2;
+      size_t nextIter_dRegionsIntegral_size = numRegions; 
+      size_t nextIter_dRegionsError_size = numRegions;
       size_t nextIter_newActiveRegions_size = numRegions * NDIM * numOfDivisionOnDimension;
       size_t nextIter_newActiveRegionsLength_size = numRegions * NDIM * numOfDivisionOnDimension;
 
@@ -1209,9 +1208,9 @@ namespace quad {
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
 
-        ExpandcuArray(dParentsIntegral, numRegions, numActiveRegions * 2);
+        ExpandcuArray(dParentsIntegral, numRegions/2, numActiveRegions );
         CudaCheckError();
-        ExpandcuArray(dParentsError, numRegions, numActiveRegions * 2);
+        ExpandcuArray(dParentsError, numRegions/2, numActiveRegions);
         // printf("After expansion dParents size:%lu\n", numActiveRegions * 4);
         CudaCheckError();
         size_t numThreads = BLOCK_SIZE;
@@ -1325,7 +1324,7 @@ namespace quad {
 
       T* newErrs = 0;
       QuadDebug(Device.AllocateMemory((void**)&newErrs,
-                                      sizeof(double) * numRegions * 2));
+                                      sizeof(double) * numRegions));
         
       RefineError<double>
         <<<numBlocks, BLOCK_SIZE>>>(dRegionsIntegral,
@@ -1353,7 +1352,7 @@ namespace quad {
       CudaCheckError();
       QuadDebug(cudaMemcpy(dRegionsError,
                            newErrs,
-                           sizeof(T) * numRegions * 2,
+                           sizeof(T) * numRegions,
                            cudaMemcpyDeviceToDevice));
 
       QuadDebug(cudaFree(newErrs));
@@ -1382,9 +1381,9 @@ namespace quad {
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
 
       QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
-                                      sizeof(T) * numRegions * 2));
+                                      sizeof(T) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&dRegionsError,
-                                      sizeof(T) * numRegions * 2));
+                                      sizeof(T) * numRegions));
 
       // move this to constructor, or init function
       if (numRegions == startRegions && error == 0) {
@@ -1430,12 +1429,10 @@ namespace quad {
       
       neval += numRegions * fEvalPerRegion;
       thrust::device_ptr<T> wrapped_ptr;
-      wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral + numRegions);
+      wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
 
-      double iter_estimate =
-        thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      double leaves_estimate =
-        partitionManager.queued_reg_estimate + integral + iter_estimate;
+      double iter_estimate =  thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
       estimate_change = abs(leaves_estimate - lastAvg);
       
       auto EstimateTrustWorthy = [iteration,
@@ -1504,25 +1501,23 @@ namespace quad {
         temp_integral = integral;
         temp_error = error;
       }
-    
-      wrapped_ptr = thrust::device_pointer_cast(dRegionsError + numRegions);
-      double iter_errorest =
-        thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
-      double leaves_errorest =
-        partitionManager.queued_reg_errorest + error + iter_errorest;
+      
+      wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
+      double iter_errorest = thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
       errorest_change = abs(leaves_errorest - lastErr);
-      //printf("TEMP RESULT:%e +- %e\n", leaves_estimate, leaves_errorest);
+
+      thrust::device_ptr<int> wrapped_mask;
+      wrapped_mask = thrust::device_pointer_cast(activeRegions);
+      
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
-      double iter_finished_estimate =
-        thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      double iter_finished_estimate = iter_estimate - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
       integral = integral + iter_finished_estimate;
       
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
-      double iter_finished_errorest =
-        thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
+      double iter_finished_errorest = iter_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
          
       error = error + iter_finished_errorest;
-      
       if (last_iteration != 1)
         Phase_I_PrintFile(vol,
                           numRegions,
