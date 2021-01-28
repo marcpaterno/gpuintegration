@@ -33,7 +33,7 @@ namespace detail{
 int
 main()
 {
-  double epsrel = 1.0e-3; // starting error tolerance.
+  double epsrel = 1e-3; // starting error tolerance.
   double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1495369.283757217694;
   constexpr int ndim = 8;
@@ -42,7 +42,7 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
-  
+  configuration.phase_2 = true;
   PrintHeader();
   while (cu_time_and_call<detail::BoxIntegral8_22, ndim>("B8_22",
                        integrand,
@@ -53,6 +53,7 @@ main()
                        configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
+    //break;
   }
 
 

@@ -42,11 +42,12 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
 }
 
 struct Config{
-    Config(int verbosity, int heuristic, int phaseT , int deviceNum, int finFlag): 
-        outfileVerbosity{verbosity}, phase_I_type(phaseT), numdevices{deviceNum}, heuristicID{heuristic}, _final(finFlag){}
+    Config(int verbosity, int heuristic, int phaseT , int deviceNum, int finFlag, bool phase2): 
+        outfileVerbosity{verbosity}, phase_I_type(phaseT), numdevices{deviceNum}, heuristicID{heuristic}, _final(finFlag), phase_2(phase2){}
     Config() = default;
     
     int phase_I_type = 0;
+    bool phase_2 = false;
     int outfileVerbosity = 0;
     int numdevices = 1;
     int heuristicID = 4;
@@ -78,7 +79,7 @@ cu_time_and_call(std::string id,
   
   auto const t0 = std::chrono::high_resolution_clock::now();
   cuhreResult const result = alg.integrate(
-    integrand, epsrel, epsabs, vol, config.outfileVerbosity, config._final, config.heuristicID, config.phase_I_type);
+    integrand, epsrel, epsabs, vol, config.outfileVerbosity, config._final, config.heuristicID, config.phase_I_type, config.phase_2);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
   bool good = false;

@@ -696,7 +696,8 @@ namespace quad {
               int verbosity = 0,
               int Final = 0,
               int heuristicID = 0,
-              int phase1type = 0)
+              int phase1type = 0,
+              bool phase2 = false)
     {
       cuhreResult res;
 
@@ -706,7 +707,7 @@ namespace quad {
       kernel->SetVerbosity(verbosity);
       kernel->SetPhase_I_type(phase1type);
       kernel->SetHeuristicID(heuristicID);
-
+      kernel->SetPhase2(phase2);
       int numprocs = 0;
       IntegT* d_integrand;
       // cudaMalloc((void**)&d_integrand, sizeof(IntegT));
@@ -741,26 +742,26 @@ namespace quad {
       res.status  = ExecutePhaseI(d_integrand, res, volume, phase1type);
       //printf("return status:%i\n", res.status);
       res.lastPhase = 1;
-      cudaFree(d_integrand);
-      return res;
-      /* if (convergence) {
+      //cudaFree(d_integrand);
+      //return res;
+      
+       if (res.status == 0) {
         cudaFree(d_integrand);
         return res;
       }
-
+      
      res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
                                                              res.estimate,
                                                              res.errorest,
                                                              res.nregions,
-                                                             res.neval,
-                                                             nullptr);
+                                                             res.neval);
       res.lastPhase = 2;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 
       cudaFree(d_integrand);
-      return res;*/
+      return res;
     }
   };
 }

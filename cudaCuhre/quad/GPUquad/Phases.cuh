@@ -67,6 +67,8 @@ namespace quad {
   }
    
 
+
+
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -104,7 +106,7 @@ namespace quad {
       size_t inLeftSide =  (0 >= inRightSide);
       size_t siblingIndex = tid  + (inLeftSide*currIterRegions/2) - (inRightSide*currIterRegions/2);
       size_t parIndex = tid - inRightSide*(currIterRegions*.5);
-            
+        
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
         
@@ -199,6 +201,9 @@ namespace quad {
       newErrs[tid] = selfErr;  
       active = !(isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.);
       activeRegions[tid] = active;
+      
+      
+      //printf("Refined[%lu] %.15e +- %.15e\n", tid, selfRes, selfErr); 
     }
   }
 
@@ -307,7 +312,7 @@ namespace quad {
     for (; idx < SM_REGION_POOL_SIZE / BLOCK_SIZE; ++idx) {
 
       int index = idx * BLOCK_SIZE + threadIdx.x;
-      sRegionPool[index].div = 0;
+      sRegionPool[index].div = 15;
       sRegionPool[index].result.err = 0;
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
@@ -321,7 +326,7 @@ namespace quad {
     int index = idx * BLOCK_SIZE + threadIdx.x;
     if (index < SM_REGION_POOL_SIZE) {
 
-      sRegionPool[index].div = 0;
+      sRegionPool[index].div = 15;
       sRegionPool[index].result.err = 0;
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
@@ -420,6 +425,8 @@ namespace quad {
 
         sBound[dim].unScaledLower = ScaleValue(lower, lows[dim], highs[dim]);
         sBound[dim].unScaledUpper = ScaleValue(upper, lows[dim], highs[dim]);
+        if(blockIdx.x == 0)
+            printf("dim %i %f-%f\n", dim, sBound[dim].unScaledLower, sBound[dim].unScaledUpper);
       }
     }
     return 1;
@@ -852,36 +859,16 @@ namespace quad {
     __shared__ T shighs[NDIM];
     __shared__ T slows[NDIM];
     __shared__ int max_global_pool_size;
-
-    /*
-    __shared__ int iterations_without;
-
-
-    T prev_ratio = 0;
-    T prev_error = 0;
-    */
-
+    
     int maxdiv = 0;
-    // T origerr;
-    // T origavg;
-    // int current_snap_array_index = 0;
-
     // SetBlockVars<T, NDIM>(slows, shighs, max_global_pool_size, gPool, lows,
     // highs, max_regions, ggRegionPool);
-
-    /*
-    double personal_estimate_ratio = 0;
-    int local_region_cap = 32734;
-    */
 
     if (threadIdx.x == 0) {
       memcpy(slows, lows, sizeof(T) * NDIM);
       memcpy(shighs, highs, sizeof(T) * NDIM);
       max_global_pool_size = max_regions;
       gPool = &ggRegionPool[blockIdx.x * max_regions];
-      /*
-      iterations_without = 0;
-      */
     }
 
     __syncthreads();              // added for testing
@@ -906,13 +893,13 @@ namespace quad {
 
     __syncthreads();
     // ERR and sRegionPool[0].result.err are not the same in the beginning
-    SampleRegionBlock<IntegT, T, NDIM>(
-      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
 
     // temporary solution
     if (threadIdx.x == 0 && phase1_type == 0) {
+      
       ERR = batch.dRegionsError[blockIdx.x];
       sRegionPool[0].result.err = ERR;
     } else {
@@ -923,20 +910,6 @@ namespace quad {
     }
 
     __syncthreads();
-    // if(threadIdx.x == 0)
-    //	printf("%i %.20f +- %.20f\n" , blockIdx.x, RESULT, ERR);
-    /*
-    prev_error = ERR;
-    prev_ratio = ERR/MaxErr(RESULT, epsrel, epsabs);
-
-    personal_estimate_ratio = RESULT/dPh1res[0];
-
-    if(numRegions != 0)
-            local_region_cap = min(2048,
-    (int)(personal_estimate_ratio*2048*numRegions));
-
-    T required_ratio_decrease = abs(1 - prev_ratio)/local_region_cap;
-    */
 
     int nregions = sRegionPoolSize; // is only 1 at this point
     T lastavg = RESULT;
@@ -948,10 +921,7 @@ namespace quad {
     T avg = 0;
     T sigsq = 0;
     // int snapshot_id = 0;
-    while (
-      nregions < max_global_pool_size &&
-      (ERR >
-       MaxErr(RESULT, epsrel, epsabs)) /*&& nregions < local_region_cap*/) {
+    while (nregions < max_global_pool_size && (ERR > MaxErr(RESULT, epsrel, 1e-200))) {
 
       sRegionPoolSize =
         EXTRACT_MAX<T, NDIM>(sRegionPool, gPool, sRegionPoolSize, gpuId, gPool);
@@ -973,9 +943,8 @@ namespace quad {
 
         bL = &RegionLeft->bounds[bisectdim];
         bR = &RegionRight->bounds[bisectdim];
-
         RegionRight->div = ++RegionLeft->div;
-
+       
         if (RegionRight->div > maxdiv)
           maxdiv = RegionRight->div;
         for (int dim = 0; dim < NDIM; ++dim) {
@@ -1026,39 +995,9 @@ namespace quad {
         ERR = Final ? lasterr : sqrt(sigsq);
         RESULT = Final ? lastavg : avg;
 
-        if (batch.numRegions == 0)
-          printf("%.20f +- %20f nregions:%i depth:%i\n",
-                 RESULT,
-                 ERR,
-                 nregions,
-                 RegionRight->div);
-        /*
-        if(numRegions!=0){
-                atomicAdd(global_errorest+nregions, ERR);
-                atomicAdd(numContributors+nregions, 1);
-        }
-        */
-
-        /*
-        if(abs(ERR/MaxErr(RESULT, epsrel,
-        epsabs)-prev_ratio)< 1.5*required_ratio_decrease){ iterations_without++;
-        }
-        prev_ratio = abs(ERR/MaxErr(RESULT, epsrel, epsabs));
-        */
       }
       __syncthreads();
 
-      /*
-     if(iterations_without >= 1 && numRegions!=0){
-            break;
-      }
-      */
-
-      /*
-      if(numRegions!=0 && dPh1res[1]/numRegions > ERR){
-              break;
-      }
-      */
 
       // if(ExistsIn(nregions, snap.sizes, snap.numSnapshots) == true)
       {
@@ -1139,7 +1078,7 @@ namespace quad {
          blockIdx.x, RESULT, ERR, 0,  0, i);
                }
       */
-      int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
+      int isActive = ERR > MaxErr(RESULT, epsrel, 1e-200);
 
       if (ERR > (1e+10)) {
         RESULT = 0.0;
@@ -1149,7 +1088,7 @@ namespace quad {
 
       // if(nregions > 2048)
       //	 printf("[%i] nregions:%i\n", blockIdx.x, nregions);
-      // printf("Final result%.20f \n %.20f\n", RESULT, ERR);
+      // printf("Final result%.15e +- %.15e nregions:%i active:%i\n", RESULT, ERR, nregions, isActive);
       // printf("%i, %i, %f, %.20f, %.20f, %.20f, %.20f\n", blockIdx.x,
       // nregions, ERR/MaxErr(RESULT, epsrel, epsabs),
       // batch.dRegionsIntegral[blockIdx.x], batch.dRegionsError[blockIdx.x],
@@ -1158,6 +1097,7 @@ namespace quad {
       batch.dRegionsIntegral[blockIdx.x] = RESULT;
       batch.dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
+      //printf("[%i] nregions:%i\n", blockIdx.x, nregions);
     }
   }
 }
