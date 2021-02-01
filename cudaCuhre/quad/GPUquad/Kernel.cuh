@@ -450,7 +450,6 @@ namespace quad {
       */
     }
     
-    
     void SetPhase2(bool flag)
     {
         phase2 = flag;
@@ -512,17 +511,10 @@ namespace quad {
       // the info is stored in host memory
       QuadDebug(Device.ReleaseMemory(dRegions));
       QuadDebug(Device.ReleaseMemory(dRegionsLength));
-
       QuadDebug(Device.ReleaseMemory(dParentsIntegral));
       QuadDebug(Device.ReleaseMemory(dParentsError));
-
       QuadDebug(Device.ReleaseMemory(lows));
       QuadDebug(Device.ReleaseMemory(highs));
-
-      //QuadDebug(Device.ReleaseMemory(gRegionPool));
-      Host.ReleaseMemory(curr_hRegions);
-      Host.ReleaseMemory(curr_hRegionsLength);
-
       QuadDebug(cudaFree(constMem._gpuG));
       QuadDebug(cudaFree(constMem._cRuleWt));
       QuadDebug(cudaFree(constMem._GPUScale));
@@ -532,10 +524,9 @@ namespace quad {
       QuadDebug(cudaFree(constMem._gpuGenPermVarStart));
       QuadDebug(cudaFree(constMem._gpuGenPermVarCount));
       QuadDebug(cudaFree(constMem._cGeneratorCount));
-
-      CudaCheckError();
       QuadDebug(cudaDeviceSynchronize());
     }
+    
     
     void
     StringstreamToFile(std::string per_iteration,
@@ -547,6 +538,7 @@ namespace quad {
           PrintToFile(per_iteration, "h" + std::to_string(heuristicID)+ "_Per_iteration.csv");
           break;
         case 2:
+          printf("Printing for verbosity 2\n");
           PrintToFile(per_iteration, "h" + std::to_string(heuristicID)+ "_Per_iteration.csv");
           PrintToFile(per_region, "Phase_1_regions.csv");
           break;
@@ -760,10 +752,11 @@ namespace quad {
                       double epsabs,
                       int iteration = 0)
     {
+
       if (outLevel < 1)
         return;
-
-      PrintIteration(activeRegions,            
+      
+      PrintIteration(activeRegions,              
                      iteration,
                      iter_nregions,
                      leaves_estimate,
@@ -941,7 +934,7 @@ namespace quad {
       if(iteration != 0){
         Host.ReleaseMemory(parentIDs);
       }
-      
+
       parentIDs = (size_t*)Host.AllocateMemory(parentIDs, sizeof(size_t)*numActiveRegions);
 	  CudaCheckError();
 	 
@@ -1175,10 +1168,11 @@ namespace quad {
                            newRegionsLength,
                            sizeof(T) * numRegions * NDIM,
                            cudaMemcpyDeviceToDevice));
-      free(curr_hRegions);
-      free(curr_hRegionsLength);
-      curr_hRegions = nullptr;
-      curr_hRegionsLength = nullptr;
+      Host.ReleaseMemory(curr_hRegions);
+       Host.ReleaseMemory(curr_hRegionsLength);
+      //free(curr_hRegionsLength);
+      //curr_hRegions = nullptr;
+      //curr_hRegionsLength = nullptr;
     }
 
     size_t
@@ -1393,6 +1387,47 @@ namespace quad {
       QuadDebug(cudaFree(newErrs));
     }
 
+    std::string doubleToString(double val, int prec_level){
+        std::ostringstream out;
+        out.precision(prec_level);
+        out << std::fixed << val;
+        return out.str();
+    }
+
+
+    bool sigDigitsSame(double x, double y, double z, int requiredDigits){
+        double third  = abs(x);
+        double second = abs(y);
+        double first  = abs(z);
+     
+        while (first < 1.) {
+          first *= 10;
+        }
+        while (second  < 1.) {
+          second *= 10;
+        }
+        while (third < 1.) {
+          third *= 10;
+        }
+        
+        std::string second_to_last = doubleToString(third, 15);
+        std::string last = doubleToString(second, 15);
+        std::string current = doubleToString(first, 15);
+        
+        bool verdict = true;
+        int sigDigits = 0;
+        
+        for (int i = 0; i < requiredDigits+1 && sigDigits < requiredDigits && verdict == true; ++i) {
+          verdict = current[i] == last[i] && last[i] == second_to_last[i] ?
+                      true :
+                      false;            
+           
+           sigDigits += (verdict == true && current[i] != '.') ? 1:0;
+        }
+        return verdict;
+    }
+
+
     template <typename IntegT>
     void
     FirstPhaseIteration(IntegT* d_integrand,
@@ -1469,8 +1504,8 @@ namespace quad {
       double iter_estimate =  thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions);
       double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
       estimate_change = abs(leaves_estimate - lastAvg);
-      
-      auto EstimateTrustWorthy = [iteration,
+      //printf("Iteration %i finished from prev iters:%e evaluated from this iter:%e their sum:%e\n", iteration, integral, iter_estimate, integral + iter_estimate);
+      /*auto EstimateTrustWorthy = [iteration,
                                   lastAvg = abs(this->lastAvg),
                                   secondTolastAvg = abs(this->secondTolastAvg),
                                   leaves_estimate,
@@ -1479,40 +1514,49 @@ namespace quad {
         double second = abs(lastAvg);
         double first = abs(leaves_estimate);
         int requiredDigits = ceil(log10(1 / epsrel));
+        printf("requiredDigits:%i\n", requiredDigits);
         
-        while (first / (10 * requiredDigits) < 1.) {
+        while (first < 1.) {
           first *= 10;
         }
-        while (second / (10 * requiredDigits) < 1.) {
+        while (second  < 1.) {
           second *= 10;
         }
-        while (third / (10 * requiredDigits) < 1.) {
+        while (third < 1.) {
           third *= 10;
         }
-
+        
         // i'm not relying on identifying individual zeros and '.' because
         // of implicit roundung that occurs on  to_string double parameters
-        std::string second_to_last = std::to_string(third);
-        std::string last = std::to_string(second);
-        std::string current = std::to_string(first);
-
-        double verdict = true;
+        
+        std::string second_to_last = doubleToString(third, 15);
+        std::string last = doubleToString(second, 15);
+        std::string current = doubleToString(first, 15);
+        std::cout<< current <<" vs "<<last<<" vs "<<second_to_last << std::endl; 
+        //if(current.length() != requiredDigits || last.length() != requiredDigits || second_to_last.length() != requiredDigits)
+        //return false;
+            
+        bool verdict = true;
         for (int i = 0; i < requiredDigits && verdict == true; ++i) {
+          std::cout<<"dig "<<i<<" "<< current[i] <<"|"<< last[i] <<"|"<< second_to_last[i] <<std::endl;
+          if(current[i] == '.' && last[i] == '.' && second_to_last[i] == '.')
+            i--;
           verdict = current[i] == last[i] && last[i] == second_to_last[i] ?
                       true :
                       false;
         }
 
         return verdict;
-      };
-
+      };*/
+      int requiredDigits = ceil(log10(1 / epsrel));
+      
       estimateHasConverged =
         estimateHasConverged == false ?
-          (iteration >= 2 ? EstimateTrustWorthy() : false) :
+          (iteration >= 2 ? sigDigitsSame(lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) : false) :
           true;
       
-      if(estimateHasConverged && error > leaves_estimate*epsrel){
-        printf ("Finished early too many regions %e vs %e\n", error, leaves_estimate*epsrel);
+      if(estimateHasConverged && error > abs(leaves_estimate)*epsrel){
+        printf ("Finished early too many regions and finshed error bigger than required error: %e vs %e\n", error, abs(leaves_estimate)*epsrel);
         exit (EXIT_FAILURE);
       }
       
@@ -1583,11 +1627,11 @@ namespace quad {
         lastAvg = leaves_estimate;
         lastErr = leaves_errorest;
       }
-
-      if (iteration != 0 && (lastErr <= MaxErr(lastAvg, epsrel, epsabs)) &&
+        
+      if (iteration != 0 && (leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs)) &&
           GLOBAL_ERROR) {
-        integral = lastAvg;
-        error = lastErr;
+        integral = leaves_estimate;
+        error = leaves_errorest;
         QuadDebug(cudaFree(activeRegions));
         QuadDebug(cudaFree(subDividingDimension));
         //nFinishedRegions = nregions;
@@ -1734,7 +1778,7 @@ namespace quad {
       // Host.ReleaseMemory(curr_hRegions);
       // Host.ReleaseMemory(curr_hRegionsLength);
         
-      if((outLevel >= 2 || phase2 == true) && fail == 1){
+      if(/*outLevel >= 2 ||*/ phase2 == true && fail == 1){
           curr_hRegions =
             (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * numRegions * NDIM);
           curr_hRegionsLength = (T*)Host.AllocateMemory(
@@ -1760,15 +1804,17 @@ namespace quad {
       //---------------
       integral = lastAvg;
       error = lastErr;
-      QuadDebug(cudaFree(dRegionsError));
-      QuadDebug(cudaFree(dRegionsIntegral));
+      if (fail == 0 || fail == 2) {
+        QuadDebug(cudaFree(dRegionsError));
+        QuadDebug(cudaFree(dRegionsIntegral));
+      }
       //---------------
 
       bool convergence = false;
       convergence = lastErr <= MaxErr(lastAvg, epsrel, epsabs);
       return !convergence;
 
-      if (fail == 0 || fail == 2) {
+      /*if (fail == 0 || fail == 2) {
         integral = lastAvg;
         error = lastErr;
         QuadDebug(cudaFree(dRegionsError));
@@ -1776,7 +1822,7 @@ namespace quad {
         return true;
       } else {
         return false;
-      }
+      }*/
     }
 
     void
@@ -2443,6 +2489,7 @@ namespace quad {
             CudaCheckError();
             // this function creates a batch out of all regins, ready to be
             // passed as an object to Phase 2 Kernel
+            printf("About to assign host regions to dRegions in start of phase2\n");
             Assing_Regions_To_Processor(dRegionsThread,
                                         dRegionsLengthThread,
                                         numRegions,
@@ -2584,6 +2631,8 @@ namespace quad {
         }*/
 
           if (phase_I_type == 0) {
+            Host.ReleaseMemory(curr_hRegions);
+            Host.ReleaseMemory(curr_hRegionsLength);  
             CudaCheckError();
             QuadDebug(Device.ReleaseMemory(dRegionsThread));
             CudaCheckError();

@@ -745,12 +745,14 @@ namespace quad {
       //cudaFree(d_integrand);
       //return res;
       
-       if (res.status == 0) {
+      //printf("phase2:%i status:%i\n", phase2, res.status);
+      if (res.status == 0 || phase2 == false) {
+        //printf("Freeing\n");
         cudaFree(d_integrand);
         return res;
       }
       
-     res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
+      res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
                                                              epsrel,
                                                              epsabs,
                                                              res.estimate,
@@ -759,7 +761,7 @@ namespace quad {
                                                              res.neval);
       res.lastPhase = 2;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
-
+      
       cudaFree(d_integrand);
       return res;
     }
