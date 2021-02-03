@@ -92,6 +92,8 @@ cu_time_and_call(std::string id,
  
  if(config.heuristicID == 0)
     hID = "zero";
+ else if(config.heuristicID == 1)
+    hID = "no load-balancing";
  else if(config.heuristicID == 2)
     hID = "budget errorest";
  else if(config.heuristicID == 4)

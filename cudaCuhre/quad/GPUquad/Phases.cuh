@@ -66,9 +66,77 @@ namespace quad {
     }
   }
    
-
-
-
+   __device__ bool 
+   ApplyHeuristic(int heuristicID, 
+                            double leaves_estimate, 
+                            double finished_estimate, 
+                            double queued_estimate, 
+                            double lastErr, 
+                            double finished_errorest, 
+                            double queued_errorest, 
+                            size_t currIterRegions, 
+                            size_t total_nregions,
+                            bool minIterReached,
+                            double parErr,
+                            double parRes,
+                            int depth,
+                            double selfRes,
+                            double selfErr,
+                            double epsrel,
+                            double epsabs){
+       
+        double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
+        double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest;
+        bool selfErrTarget = fabs(selfRes) * epsrel;
+        
+        bool worstCaseScenarioGood;
+        
+        auto ErrBiggerThanEstimateCase = [selfRes, selfErr, parRes, parErr, remainGlobalErrRoom, currIterRegions](){
+           return selfErr > fabs(selfRes) && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) &&  selfErr < remainGlobalErrRoom/currIterRegions ;
+        };
+        
+        
+        switch(heuristicID){
+           case 0:
+                worstCaseScenarioGood = false;
+                break;          
+            case 1:
+                worstCaseScenarioGood = false; 
+                break;
+            case 2: //useless right now, same as heuristic 1
+                worstCaseScenarioGood = 
+                ErrBiggerThanEstimateCase()
+                || 
+                 (selfRes < (leaves_estimate * epsrel * depth)/(total_nregions) && selfErr*currIterRegions < remainGlobalErrRoom);       
+                break;          
+            case 4:
+                worstCaseScenarioGood = 
+                ErrBiggerThanEstimateCase()
+                || 
+                 (fabs(selfRes) < (fabs(leaves_estimate) * epsrel * depth)/(total_nregions) && 
+                 selfErr*currIterRegions < GlobalErrTarget);
+                break;           
+            case 7:
+                worstCaseScenarioGood = 
+                 (selfRes*currIterRegions + queued_estimate + finished_estimate < leaves_estimate && selfErr*currIterRegions < GlobalErrTarget);
+                 break;       
+            case 8:
+                worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions || 
+                                        selfErr < epsrel*leaves_estimate/total_nregions;
+                break;
+            case 9:
+                 worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions && 
+                                         selfErr < epsrel*leaves_estimate/total_nregions;
+                break;
+            case 10:
+                worstCaseScenarioGood = fabs(selfRes) < 2*leaves_estimate/pow(2,depth) && 
+                                         selfErr < 2*leaves_estimate*epsrel/pow(2,depth);
+        }
+              
+        bool verdict = (worstCaseScenarioGood && minIterReached) || (selfRes == 0. && selfErr <= epsabs && minIterReached);
+        return verdict;
+   }
+   
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -87,7 +155,7 @@ namespace quad {
               double queued_errorest,
               T epsrel,
               T epsabs,
-              int iteration,
+              int depth,
               bool estConverged,
               double lastErr,
               int heuristicID)
@@ -97,8 +165,6 @@ namespace quad {
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     if(tid<currIterRegions){ 
-      int active = 1;
-    
       T selfErr = dRegionsError[tid];
       T selfRes = dRegionsIntegral[tid];
       
@@ -125,82 +191,26 @@ namespace quad {
 
       selfErr += diff;
 
-      auto isPolished = [iteration,
-                         currIterRegions,
-                         leaves_estimate,
-                         finished_errorest,
-                         finished_estimate,
-                         queued_estimate,
-                         queued_errorest,
-                         epsrel,
-                         epsabs,
-                         estConverged,
-                         total_nregions,
-                         iterEstimate,
-                         parErr,
-                         parRes,
-                         lastErr,
-                         heuristicID,
-                         siblErr,
-                         siblRes,
-                         tid](double selfRes, double selfErr) {
-        double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
-        double remainGlobalErrRoom =
-          GlobalErrTarget - finished_errorest - queued_errorest;
-        bool selfErrTarget = fabs(selfRes) * epsrel;
-        
-        bool minIterReached = estConverged;
-        bool worstCaseScenarioGood;
-        
-        switch(heuristicID){
-            case 0:
-                worstCaseScenarioGood = false;
-                break;          
-            case 1:
-                worstCaseScenarioGood = selfRes < leaves_estimate/pow(2, iteration) || 
-                                        selfRes < leaves_estimate/total_nregions || 
-                                        selfErr < lastErr/pow(2,iteration) || 
-                                        selfErr < epsrel*leaves_estimate/total_nregions;
-                break;
-            case 2: //useless right now, same as heuristic 1
-                worstCaseScenarioGood = 
-                (selfErr > selfRes && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && selfErr < remainGlobalErrRoom/currIterRegions) 
-                || 
-                 (selfRes < (leaves_estimate * epsrel * iteration)/(total_nregions) && selfErr*currIterRegions < remainGlobalErrRoom);       
-                break;          
-            case 4:
-                worstCaseScenarioGood = 
-                (selfErr > fabs(selfRes) && 
-                selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) && 
-                selfErr < remainGlobalErrRoom/currIterRegions) 
-                || 
-                 (fabs(selfRes) < (fabs(leaves_estimate) * epsrel * iteration)/(total_nregions) && 
-                 selfErr*currIterRegions < GlobalErrTarget);
-                break;           
-            case 7:
-                worstCaseScenarioGood = 
-                 (selfRes*currIterRegions + queued_estimate + finished_estimate < leaves_estimate && selfErr*currIterRegions < GlobalErrTarget);
-                 break;       
-            case 8:
-                worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions || 
-                                        selfErr < epsrel*leaves_estimate/total_nregions;
-                break;
-            case 9:
-                 worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions && 
-                                         selfErr < epsrel*leaves_estimate/total_nregions;
-                break;
-            case 10:
-                worstCaseScenarioGood = fabs(selfRes) < 2*leaves_estimate/pow(2,iteration) && 
-                                         selfErr < 2*leaves_estimate*epsrel/pow(2,iteration);
-        }
-              
-        bool verdict = (worstCaseScenarioGood && minIterReached) ||
-                       (selfRes == 0. && selfErr <= epsabs && minIterReached);
-        return verdict;
-      };
       newErrs[tid] = selfErr;  
-      active = !(isPolished(selfRes, selfErr) == true || selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.);
-      activeRegions[tid] = active;
+      int polished = (ApplyHeuristic(heuristicID, 
+                             leaves_estimate, 
+                             finished_estimate, 
+                             queued_estimate, 
+                             lastErr, 
+                             finished_errorest, 
+                             queued_errorest, 
+                             currIterRegions, 
+                             total_nregions,
+                             estConverged,
+                             parErr,
+                             parRes,
+                             depth,
+                             selfRes,
+                             selfErr,
+                             epsrel,
+                             epsabs) == true);
+      int PassRatioTest = heuristicID != 1 && selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.;
+      activeRegions[tid] = !(polished || PassRatioTest);
       
       
       //printf("Refined[%lu] %.15e +- %.15e\n", tid, selfRes, selfErr); 
@@ -1097,7 +1107,7 @@ namespace quad {
       batch.dRegionsIntegral[blockIdx.x] = RESULT;
       batch.dRegionsError[blockIdx.x] = ERR;
       dRegionsNumRegion[blockIdx.x] = nregions;
-      //printf("[%i] nregions:%i\n", blockIdx.x, nregions);
+      printf("[%i] nregions:%i\n", blockIdx.x, nregions);
     }
   }
 }
