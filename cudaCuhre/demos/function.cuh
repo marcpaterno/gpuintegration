@@ -428,6 +428,23 @@ public:
 //Genz_1 is not positive semi-definite
 //Genz_2 only known on 1D
 
+class GENZ_1_8D{
+    public:
+  __device__ __host__ double
+  operator()(double s,
+             double t,
+             double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z)
+  {
+    return cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x +
+                               7. * y + 8. * z);
+  }
+};
+
 class GENZ_2_2D {
 public:
   __device__ __host__ double
@@ -479,6 +496,28 @@ public:
 	
     double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
 	return val/((1.286889807581113e+13));
+  }
+};
+
+class GENZ_2_8D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double l, double m, double n, double p)
+  {
+	double a = 50.;
+    double b = .5;
+	
+    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
+    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
+	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
+	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
+	double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
+	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
+    double term_7 = 1./((1./pow(a,2)) + pow(n- b, 2));
+    double term_8 = 1./((1./pow(a,2)) + pow(p- b, 2));
+	
+    double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6*term_7*term_8;
+	return val;
   }
 };
 

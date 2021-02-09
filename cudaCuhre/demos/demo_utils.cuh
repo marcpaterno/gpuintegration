@@ -7,6 +7,7 @@
 #include "quad/quad.h"
 #include "quad/util/Volume.cuh"
 #include "quad/util/cudaUtil.h"
+#include "nvToolsExt.h" 
 
 using std::cout;
 using std::chrono::high_resolution_clock;
@@ -20,7 +21,9 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
   // We make epsabs so small that epsrel is always the stopping condition.
   double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
+  
   auto res = a.integrate(f, epsrel, epsabs);
+  
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double absolute_error = std::abs(res.value - correct_answer);
   bool const good = (res.status == 0);
@@ -78,8 +81,10 @@ cu_time_and_call(std::string id,
   quad::Cuhre<double, ndim> alg(0, nullptr);
   
   auto const t0 = std::chrono::high_resolution_clock::now();
+  //nvtxRangePushA("init_host_data");
   cuhreResult const result = alg.integrate(
     integrand, epsrel, epsabs, vol, config.outfileVerbosity, config._final, config.heuristicID, config.phase_I_type, config.phase_2);
+  //nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
   bool good = false;
