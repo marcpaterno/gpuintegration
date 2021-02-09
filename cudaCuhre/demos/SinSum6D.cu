@@ -19,16 +19,21 @@ main()
   
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
+  configuration.heuristicID = 1;
+  double lows[]  = {0.,  0.,  0.,  0., 0., 0.};	//original bounds
+  double highs[] = {10., 10., 10., 10.,10.,10.};
+  quad::Volume<double, ndim> vol(lows, highs);
+  configuration.phase_2 = false;
   PrintHeader();
-  while (cu_time_and_call<SinSum6D, ndim>("pdc_f1",
+  
+  while (cu_time_and_call<SinSum6D, ndim>("SinSum6D",
                        integrand,
                        epsrel,
                        true_value,
                        "gpucuhre",
                        std::cout,
-                       configuration) == true &&
+                       configuration,
+                       &vol) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }
