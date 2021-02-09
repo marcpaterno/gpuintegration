@@ -18,7 +18,7 @@ double const normalization = 1./integral;
 double genz_1_8d(double s, double t, double u, double v,
                  double w, double x, double y, double z)
 {
-  return normalization * cos(s + 2.*t + 3.*u + 4.*v + 5.*w + 6.*x + 7.*y + 8.*z);
+  return /*normalization **/ cos(s + 2.*t + 3.*u + 4.*v + 5.*w + 6.*x + 7.*y + 8.*z);
 }
 
 int main()
@@ -30,13 +30,14 @@ int main()
   cuhre.maxeval = maxeval;
 
   std::cout << "alg\tepsrel\tvalue\terrorest\terror\tneval\tnregions\ttime\n";
-
+   int _final = 4;
+  cuhre.flags = _final;
   double epsrel = 1.0e-3;
-  for (int i = 0; i <=6; ++i, epsrel /= 10.0)
+  //for (int i = 0; i <=6; ++i, epsrel /= 10.0)
   {
     // Quit the first time the integration does not converge.
-    bool const rc = time_and_call(cuhre, genz_1_8d, epsrel, 1.0, "cuhre");
-    if (!rc) break;
+    /*bool const rc = */time_and_call(cuhre, genz_1_8d, epsrel, 1.0, "cuhre");
+   // if (!rc) break;
   }
 }
 

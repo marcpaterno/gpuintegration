@@ -15,15 +15,17 @@ main()
   double epsabs = 1.0e-12;
   double const epsrel_min = 1.0240000000000002e-10;
   constexpr int ndim = 8;
-  GENZ_1_8d integrand;
+  GENZ_1_8D integrand;
       
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  double true_value = 0.;
+  configuration.heuristicID = 1;
+  double true_value = (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) *
+               sin(3.) * sin(7. / 2.) * sin(4.) *
+               (sin(37. / 2.) - sin(35. / 2.));/*0.000041433844333568199264*/;
   
   PrintHeader();
-  while (cu_time_and_call<GENZ_1_8d, ndim>("Genz4_5D",
+  while (cu_time_and_call<GENZ_1_8D, ndim>("Genz1_8D",
                                             integrand,
                                             epsrel,
                                             true_value,
