@@ -125,11 +125,11 @@ struct PhaseII_output{
 	
 	PhaseII_output operator+(const PhaseII_output& b) {
 		PhaseII_output addedObj;
-		addedObj.estimate 				= this->estimate + b.estimate;
-		addedObj.errorest 				= this->errorest + b.errorest;
-		addedObj.regions 				= this->regions + b.regions;
-		addedObj.num_failed_blocks 		= this->num_failed_blocks + b.num_failed_blocks;
-		addedObj.num_starting_blocks 	= this->regions + b.num_starting_blocks;
+		addedObj.estimate 				= estimate + b.estimate;
+		addedObj.errorest 				= errorest + b.errorest;
+		addedObj.regions 				= regions + b.regions;
+		addedObj.num_failed_blocks 		= num_failed_blocks + b.num_failed_blocks;
+		addedObj.num_starting_blocks 	= regions + b.num_starting_blocks;
 		return addedObj;
     }
 	

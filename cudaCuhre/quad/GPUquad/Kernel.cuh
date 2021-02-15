@@ -1650,8 +1650,9 @@ namespace quad {
       // if (numRegions <= first_phase_maxregions*8 && fail == 1) {
       // if (numRegions <= first_phase_maxregions && fail == 1) {
 
-      if ((iteration < 700 && fail == 1 && (phase2 == false || numRegions <= first_phase_maxregions)) ) {
+      if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < first_phase_maxregions)) {
         //  if (numRegions <= first_phase_maxregions && fail == 1) {
+        
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
                                   subDividingDimension,
@@ -1751,7 +1752,8 @@ namespace quad {
         // else if (numRegions > first_phase_maxregions && fail == 1) {
         // else if (numRegions > first_phase_maxregions*8 && fail == 1) {
         
-        else if ((phase2 == true && numRegions > first_phase_maxregions && fail == 1) || (phase2 == false && iteration == 699 && fail == 1)) {
+        else if ((phase2 == true && numRegions >= first_phase_maxregions && fail == 1) || (phase2 == false && iteration == 699 && fail == 1)) {
+          
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -1802,9 +1804,10 @@ namespace quad {
       }*/
       StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
       //---------------
-      integral = lastAvg;
-      error = lastErr;
+
       if (fail == 0 || fail == 2) {
+        integral = lastAvg;
+        error = lastErr;
         QuadDebug(cudaFree(dRegionsError));
         QuadDebug(cudaFree(dRegionsIntegral));
       }
@@ -2181,9 +2184,10 @@ namespace quad {
       result.num_failed_blocks =
         thrust::reduce(int_ptr, int_ptr + batch->numRegions);
 
-      /*printf("Batch Results:%f +- %f nregions:%i, numFailedRegions:%i\n",
+      /*printf("Batch Results:%f +- %f blocks:%i nregions:%i, numFailedRegions:%i\n",
              result.estimate,
              result.errorest,
+             batch->numRegions,
              result.regions,
              result.num_failed_blocks);*/
       return result;
@@ -2205,7 +2209,7 @@ namespace quad {
       int max_regions = max_globalpool_size;
       size_t numThreads = BLOCK_SIZE;
       size_t numBlocks = batch->numRegions;
-
+      //printf("Phase 2 numBlocks:%lu\n", numBlocks);
       BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds), stream>>>(
           d_integrand,
@@ -2489,7 +2493,7 @@ namespace quad {
             CudaCheckError();
             // this function creates a batch out of all regins, ready to be
             // passed as an object to Phase 2 Kernel
-            printf("About to assign host regions to dRegions in start of phase2\n");
+            //printf("About to assign host regions to dRegions in start of phase2\n");
             Assing_Regions_To_Processor(dRegionsThread,
                                         dRegionsLengthThread,
                                         numRegions,
@@ -2588,9 +2592,9 @@ namespace quad {
           // store good region phase 1 results in order to increment them with
           // phase 2 results
           PhaseII_output phase_II_final_output;
-          phase_II_final_output.estimate = 0.;
-          phase_II_final_output.errorest = 0.;
-          phase_II_final_output.regions = 0;
+          phase_II_final_output.estimate = integral;//0.;
+          phase_II_final_output.errorest = error; //0;
+          phase_II_final_output.regions = nregions;//0;
           phase_II_final_output.num_failed_blocks = 0;
           phase_II_final_output.num_starting_blocks = 0;
           // CALL EXECUTE BATCH HERE
@@ -2616,7 +2620,7 @@ namespace quad {
 
           cudaEventDestroy(start);
           cudaEventDestroy(event[gpu_id]);
-
+            
           integral += phase_II_final_output.estimate,
             error += phase_II_final_output.errorest;
           nregions += phase_II_final_output.regions;
