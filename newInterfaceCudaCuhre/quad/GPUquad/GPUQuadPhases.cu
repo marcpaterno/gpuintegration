@@ -5,19 +5,19 @@ namespace quad{
     template <typename IntegT, typename T, int NDIM>
     __device__
     void
-    INIT_REGION_POOL(IntegT* d_integrand, T *dRegions, T *dRegionsLength, size_t numRegions,  Region<NDIM> sRegionPool[], const Structures<T>& constMem, int FEVAL,  int NSETS){
+    INIT_REGION_POOL(IntegT* d_integrand, T *dRegions, T *dRegionsLength, size_t numRegions,  Region<NDIM> sRegionPool[], const Structures<T>& constMem, int FEVAL,  int NSETS, T* lows, T* highs, int numSplits){
     size_t index = blockIdx.x;
     
     if(threadIdx.x == 0){
       for(int dim = 0; dim < NDIM; ++dim){
 		T lower = dRegions[dim * numRegions + index];
-		sRegionPool[threadIdx.x].bounds[dim].lower = 0;
-		sRegionPool[threadIdx.x].bounds[dim].upper = 1;
+		sRegionPool[threadIdx.x].bounds[dim].lower = lower;
+		sRegionPool[threadIdx.x].bounds[dim].upper = lower + dRegionsLength[dim * numRegions + index];
 
-		sBound[dim].unScaledLower = lower;
-		sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions + index];
+		sBound[dim].unScaledLower =  lows[dim];
+		sBound[dim].unScaledUpper =  highs[dim];
         
-		sRegionPool[threadIdx.x].div = 0;
+		sRegionPool[threadIdx.x].div = numSplits;
       }
     }
     __syncthreads();
@@ -29,14 +29,13 @@ namespace quad{
     __global__
     void 
     INTEGRATE_GPU_PHASE1(IntegT* d_integrand, T *dRegions, T *dRegionsLength, size_t numRegions, T *dRegionsIntegral, T *dRegionsError, int *activeRegions, int *subDividingDimension, T epsrel, T epsabs, Structures<T> constMem,
-                       int FEVAL,
-                       int NSETS){
+                       int FEVAL, int NSETS, T* lows, T* highs, int numSplits){
     T ERR = 0, RESULT = 0;
     typedef  Region<NDIM> Region;
     __shared__ Region sRegionPool[SM_REGION_POOL_SIZE];
     
     int fail = 0;
-    INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions, dRegionsLength, numRegions,  sRegionPool, constMem, FEVAL, NSETS);
+    INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions, dRegionsLength, numRegions,  sRegionPool, constMem, FEVAL, NSETS, lows, highs, numSplits);
 
     if(threadIdx.x == 0){
       ERR = sRegionPool[threadIdx.x].result.err;
@@ -89,7 +88,7 @@ namespace quad{
 
     template <typename IntegT, typename T, int NDIM>
     __device__ int
-    INIT_REGION_POOL(IntegT* d_integrand, T *dRegions, T *dRegionsLength, int *subDividingDimension,  size_t numRegions, Region<NDIM> sRegionPool[],  Region<NDIM>*& gPool, Structures<T>& constMem, int FEVAL, int NSETS){
+    INIT_REGION_POOL(IntegT* d_integrand, T *dRegions, T *dRegionsLength, int *subDividingDimension,  size_t numRegions, Region<NDIM> sRegionPool[],  Region<NDIM>*& gPool, Structures<T>& constMem, int FEVAL, int NSETS, T* lows, T* highs, int numSplits){
         
     typedef Region<NDIM> Region;
     size_t intervalIndex = blockIdx.x;
@@ -127,12 +126,13 @@ namespace quad{
 	//gets unscaled lower and upper bounds for region
     if(threadIdx.x == 0){
       for(int dim = 0; dim < NDIM; ++dim){
-		 
-		sRegionPool[threadIdx.x].bounds[dim].lower = 0;
-		sRegionPool[threadIdx.x].bounds[dim].upper = 1;
-    	T lower = dRegions[dim * numRegions + intervalIndex];
-		sBound[dim].unScaledLower = lower;
-		sBound[dim].unScaledUpper = lower + dRegionsLength[dim * numRegions + intervalIndex];
+		T lower = dRegions[dim * numRegions + intervalIndex]; 
+		sRegionPool[threadIdx.x].bounds[dim].lower = lower/*0*/;
+		sRegionPool[threadIdx.x].bounds[dim].upper =  lower + dRegionsLength[dim * numRegions + intervalIndex];/*1*/;
+    	sRegionPool[threadIdx.x].div = numSplits;
+		sBound[dim].unScaledLower =  lows[dim];
+		sBound[dim].unScaledUpper =  highs[dim];
+        
       }    
     }
     
@@ -449,14 +449,14 @@ namespace quad{
     template <typename IntegT, typename T, int NDIM>
     __global__
     void
-    BLOCK_INTEGRATE_GPU_PHASE2(IntegT* d_integrand, T *dRegions, T *dRegionsLength, size_t numRegions, T *dRegionsIntegral, T *dRegionsError, int *dRegionsNumRegion, int *activeRegions, int *subDividingDimension, T epsrel, T epsabs, int gpuId, Structures<T> constMem, int FEVAL,  int NSETS){
+    BLOCK_INTEGRATE_GPU_PHASE2(IntegT* d_integrand, T *dRegions, T *dRegionsLength, size_t numRegions, T *dRegionsIntegral, T *dRegionsError, int *dRegionsNumRegion, int *activeRegions, int *subDividingDimension, T epsrel, T epsabs, int gpuId, Structures<T> constMem, int FEVAL,  int NSETS, T* lows, T* highs, int numSplits){
         
 		typedef  Region<NDIM> Region;
         __shared__ Region* gPool;
         __shared__ Region sRegionPool[SM_REGION_POOL_SIZE];
 		Region *gRegionPool = 0;	
        
-		int sRegionPoolSize = INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions, dRegionsLength, subDividingDimension,  numRegions, sRegionPool, gPool, constMem, FEVAL, NSETS);
+		int sRegionPoolSize = INIT_REGION_POOL<IntegT, T, NDIM>(d_integrand, dRegions, dRegionsLength, subDividingDimension,  numRegions, sRegionPool, gPool, constMem, FEVAL, NSETS, lows, highs, numSplits);
 		ComputeErrResult<T>(ERR, RESULT, sRegionPool);
 		
 		__syncthreads();
@@ -497,9 +497,9 @@ namespace quad{
 			sRegionPoolSize++;
 			
 			__syncthreads();
-			SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL,  NSETS,  sRegionPool, nregions);
+			SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL,  NSETS,  sRegionPool);
 			__syncthreads();
-			SampleRegionBlock<IntegT, T, NDIM>(d_integrand, sRegionPoolSize-1, constMem, FEVAL,  NSETS,  sRegionPool, /*(&RegionLeft->result)->avg - result.avg*/ nregions);
+			SampleRegionBlock<IntegT, T, NDIM>(d_integrand, sRegionPoolSize-1, constMem, FEVAL,  NSETS,  sRegionPool);
 			__syncthreads();
 			
 			if(threadIdx.x == 0){
@@ -510,8 +510,6 @@ namespace quad{
 				Result *rR = &RegionRight->result;
                 
 				T diff = rL->avg + rR->avg - result.avg;
-                double left = rL->avg;
-                double right = rR->avg;
 				diff = fabs(.25*diff);
 				T err = rL->err + rR->err;
                 

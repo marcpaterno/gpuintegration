@@ -1,3 +1,4 @@
+add_subdirectory(demos)
 find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
 

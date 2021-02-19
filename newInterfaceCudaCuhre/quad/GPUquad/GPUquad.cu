@@ -3,7 +3,8 @@
 
 #include "GPUQuadRule.cu"
 #include "GPUKernelquad.cu"
-	
+#include "../util/Volume.cuh"
+
 namespace quad{
 
   #if TIMING_DEBUG == 1
@@ -471,7 +472,7 @@ namespace quad{
 }
 
     template <typename IntegT>
-    int integrate(IntegT integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval){
+    int integrate(IntegT integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval, Volume<T, NDIM>* vol = nullptr){
       this->epsrel = epsrel;
       this->epsabs = epsabs;
       
@@ -479,7 +480,7 @@ namespace quad{
       cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
       memcpy(d_integrand, &integrand, sizeof(IntegT));
 
-      int errorFlag = 0, numprocs = 0;
+      int errorFlag = 1, numprocs = 0;
      
       
 
@@ -515,14 +516,14 @@ namespace quad{
 	  sprintf(msg, "\nMemory Usages:\nGPU memory usage\t: used = %.2f MB, free = %.2f MB, total = %.2f MB\n",used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 	  Print(msg);
 	}
-	T firstPhaseTime = 0;
+	//T firstPhaseTime = 0;
 	
 #if TIMING_DEBUG == 1
 	//timer::start_timer(&timer_one);
 #endif
 	
 	FIRST_PHASE_MAXREGIONS *= numDevices;
-	kernel->IntegrateFirstPhase(d_integrand, epsrel, epsabs, integral, error, nregions, neval);
+	kernel->IntegrateFirstPhase(d_integrand, epsrel, epsabs, integral, error, nregions, neval, vol);
 	 
 #if TIMING_DEBUG == 1
 	//firstPhaseTime = timer::stop_timer_returntime(&timer_one, "First Phase");
@@ -537,8 +538,8 @@ namespace quad{
 	  //timer::start_timer(&timer_one);
 #endif
 	  }
-	  printf("Integral before 2nd Phase:%f\n", integral);
-	  printf("Error before 2nd Phase:%f\n", error);
+	  //printf("Integral before 2nd Phase:%f\n", integral);
+	  //printf("Error before 2nd Phase:%f\n", error);
 	  errorFlag = kernel->IntegrateSecondPhase(d_integrand, epsrel, epsabs, integral, error, nregions, neval, optionalInfo);
 
 	  if(VERBOSE){

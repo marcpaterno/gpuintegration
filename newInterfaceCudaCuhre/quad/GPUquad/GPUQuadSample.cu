@@ -2,7 +2,6 @@
 #include "../util/cudaArray.cuh"
 
 namespace quad{
-
   template<typename T>
     __device__ 
     T Sq(T x) {
@@ -91,7 +90,7 @@ double warpReduceSum(double val) {
     template <typename IntegT, typename T, int NDIM>
     __device__
     void
-    SampleRegionBlock(IntegT* d_integrand, int sIndex, Structures<T> constMem, int FEVAL,  int NSETS,  Region<NDIM> sRegionPool[], int nregions = 0.){ 
+    SampleRegionBlock(IntegT* d_integrand, int sIndex, Structures<T> constMem, int FEVAL,  int NSETS,  Region<NDIM> sRegionPool[]){ 
     
 	typedef Region<NDIM> Region;
 	//read

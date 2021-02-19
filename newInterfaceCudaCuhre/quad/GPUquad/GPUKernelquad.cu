@@ -1,12 +1,13 @@
 
 #include "GPUQuadPhases.cu"
+#include "../util/Volume.cuh"
 
 namespace quad{
 
 //===========
 //FOR DEBUGGING
 
-bool cudaMemoryTest()
+/*bool cudaMemoryTest()
 {
 	bool status = false;
     const unsigned int N = 1048576;
@@ -18,9 +19,9 @@ bool cudaMemoryTest()
     memset(h_a, 0, bytes);
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
-    status = true;
+    //status = true;
 	return true;
-}
+}*/
 
 //==========
 
@@ -94,6 +95,10 @@ bool cudaMemoryTest()
     T *dRegionsLength;
     T *hRegions;
     T *hRegionsLength;
+    
+    T* highs;
+    T* lows;
+    
     int KEY, VERBOSE;
     size_t numRegions, numFunctionEvaluations;
     size_t fEvalPerRegion;
@@ -103,7 +108,7 @@ bool cudaMemoryTest()
 	Structures<T> constMem;
     
     int NUM_DEVICES ;
-	
+	int depthBeingProcessed;
 
 	//Debug Msg
     char msg[256];
@@ -119,13 +124,22 @@ bool cudaMemoryTest()
 
     ~GPUKernelCuhre(){
       if(VERBOSE){
-	sprintf(msg, "GPUKerneCuhre Destructur");
-	Println(log, msg);
+        sprintf(msg, "GPUKerneCuhre Destructur");
+        Println(log, msg);
       }
       QuadDebug(Device.ReleaseMemory(dRegions));
       QuadDebug(Device.ReleaseMemory(dRegionsLength));
       Host.ReleaseMemory(hRegions);
       Host.ReleaseMemory(hRegionsLength);
+      QuadDebug(cudaFree(constMem.gpuG));
+      QuadDebug(cudaFree(constMem.cRuleWt));
+      QuadDebug(cudaFree(constMem.GPUScale));
+      QuadDebug(cudaFree(constMem.GPUNorm));
+      QuadDebug(cudaFree(constMem.gpuGenPos));
+      QuadDebug(cudaFree(constMem.gpuGenPermGIndex));
+      QuadDebug(cudaFree(constMem.gpuGenPermVarStart));
+      QuadDebug(cudaFree(constMem.gpuGenPermVarCount));
+      QuadDebug(cudaFree(constMem.cGeneratorCount));
       QuadDebug(cudaDeviceReset());
     }
     
@@ -137,7 +151,7 @@ bool cudaMemoryTest()
       fEvalPerRegion = (1 + 2*NDIM + 2*NDIM + 2*NDIM + 2*NDIM + 2*NDIM*(NDIM - 1) + 4*NDIM*(NDIM - 1) + 4*NDIM*(NDIM - 1)*(NDIM - 2)/3 + (1 << NDIM));
       QuadDebug(cudaMemcpyToSymbol(dFEvalPerRegion, &fEvalPerRegion, sizeof(size_t), 0, cudaMemcpyHostToDevice));
       Rule.Init(&constMem, fEvalPerRegion, KEY, VERBOSE);
-      
+      depthBeingProcessed = 0;
       QuadDebug(Device.SetHeapSize());
     }
 	
@@ -171,6 +185,26 @@ bool cudaMemoryTest()
       cudaMemcpy(tmp, array, sizeof(K)*size, cudaMemcpyDeviceToHost);
       for(int i = 0 ; i < size; ++i){
 	printf("%.20lf \n",(T)tmp[i]);
+      }
+    }
+
+    void
+    AllocVolArrays(Volume<T, NDIM>* vol)
+    {
+      cudaMalloc((void**)&lows, sizeof(T) * NDIM);
+      cudaMalloc((void**)&highs, sizeof(T) * NDIM);
+      
+      
+      
+      if (vol) {
+        cudaMemcpy(lows, vol->lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+        cudaMemcpy(highs, vol->highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+      } else {
+        Volume<T, NDIM> tempVol;
+        cudaMemcpy(
+          lows, tempVol.lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
+        cudaMemcpy(
+          highs, tempVol.highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
       }
     }
 
@@ -243,10 +277,13 @@ bool cudaMemoryTest()
       
 	  if(last_element == 1)
 		numActiveRegions++;
-      std::cout << "numActiveRegions\t" << numRegions << "\t" << numActiveRegions << "\n";
+      
+      if(VERBOSE){
+        std::cout << "numActiveRegions\t" << numRegions << "\t" << numActiveRegions << "\n";
+      }
 
       if(numActiveRegions > 0){
-
+        depthBeingProcessed++;
 		int numOfDivisionOnDimension = 2;
 		/*if(numActiveRegions < (1 << 7)){
 		  numOfDivisionOnDimension = (1<<11)/numActiveRegions;
@@ -414,8 +451,7 @@ bool cudaMemoryTest()
 		Println(log, msg);
       }
 
-      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(d_integrand, dRegions, dRegionsLength, numRegions, dRegionsIntegral, dRegionsError, activeRegions, subDividingDimension, epsrel, epsabs, constMem,  Rule.GET_FEVAL(),
-          Rule.GET_NSETS());
+      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(d_integrand, dRegions, dRegionsLength, numRegions, dRegionsIntegral, dRegionsError, activeRegions, subDividingDimension, epsrel, epsabs, constMem,  Rule.GET_FEVAL(), Rule.GET_NSETS(), lows, highs, depthBeingProcessed);
 
       nregions += numRegions;
       neval += numRegions*fEvalPerRegion;
@@ -456,7 +492,8 @@ bool cudaMemoryTest()
     }
 
     template <typename IntegT>
-    void IntegrateFirstPhase(IntegT* d_integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval){
+    void IntegrateFirstPhase(IntegT* d_integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval, Volume<double, NDIM>* vol = nullptr){
+      AllocVolArrays(vol);
       for(int i  = 0; i < 100; i++){
 		FirstPhaseIteration<IntegT>(d_integrand, epsrel, epsabs, integral, error, nregions, neval);
 		
@@ -470,7 +507,7 @@ bool cudaMemoryTest()
 		if(numRegions < 1) 
 			return;
 	
-		if(numRegions >= FIRST_PHASE_MAXREGIONS) 
+		if(2*numRegions > FIRST_PHASE_MAXREGIONS) //to have max FIRST_PHASE_MAXREGIONS blocks instead FIRST_PHASE_MAXREGIONS*2 
 			break;
       }
 	  
@@ -622,14 +659,15 @@ bool cudaMemoryTest()
 	  if(VERBOSE){
 	    Println(log, "\n GPU Function PHASE2");
 	    sprintf(msg, "\t# of input intervals\t\t: %ld\n\t#. of Thread Blocks\t\t: %ld\n\t#. of Threads per Blocks\t: %ld\n",numRegionsThread, numBlocks, numThreads);
+        std::cout << " phase2 : 	blocks:" << numBlocks << " threads:" << numThreads << std::endl; 
 		//printf(msg, "\t# of input intervals\t\t: %ld\n\t#. of Thread Blocks\t\t: %ld\n\t#. of Threads per Blocks\t: %ld\n",numRegionsThread, numBlocks, numThreads);
 	    Println(log, msg);
 	  }
   	  CudaCheckError();
-
-	  std::cout << " phase2 : 	blocks:" << numBlocks << " threads:" << numThreads << std::endl; 
+    
 	 cudaDeviceSetLimit(cudaLimitMallocHeapSize, sizeof(Region<NDIM>)*2*numBlocks*MAX_GLOBALPOOL_SIZE);
-	 BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds), stream[gpu_id]>>>(d_integrand, dRegionsThread, dRegionsLengthThread, numRegionsThread, dRegionsIntegral, dRegionsError, dRegionsNumRegion, activeRegions, subDividingDimension, epsrel, epsabs, gpu_id, constMem, Rule.GET_FEVAL(), Rule.GET_NSETS());
+     CudaCheckError();
+	 BLOCK_INTEGRATE_GPU_PHASE2<IntegT, T, NDIM><<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds), stream[gpu_id]>>>(d_integrand, dRegionsThread, dRegionsLengthThread, numRegionsThread, dRegionsIntegral, dRegionsError, dRegionsNumRegion, activeRegions, subDividingDimension, epsrel, epsabs, gpu_id, constMem, Rule.GET_FEVAL(), Rule.GET_NSETS(), lows, highs, depthBeingProcessed);
 	  
 	  cudaDeviceSynchronize();
 	  //printf("BLOCK INTEGRATE_GPU done %d gpu:%i\n", cpu_thread_id, gpu_id);
@@ -673,7 +711,7 @@ bool cudaMemoryTest()
 	  int_ptr = thrust::device_pointer_cast(activeRegions);
 	  numFailedRegions += thrust::reduce(int_ptr, int_ptr+numRegionsThread);
 
-	  std::cout << "--" << numFailedRegions << std::endl;
+	  //std::cout << "--" << numFailedRegions << std::endl;
 	  //QuadDebug(cudaThreadExit());
 	  
 	  QuadDebug(Device.ReleaseMemory(dRegionsError));
