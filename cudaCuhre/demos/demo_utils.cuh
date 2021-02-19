@@ -9,6 +9,8 @@
 #include "quad/util/cudaUtil.h"
 #include "nvToolsExt.h" 
 
+//#ifdef USE_NVTX
+
 using std::cout;
 using std::chrono::high_resolution_clock;
 using std::chrono::duration;
@@ -19,7 +21,7 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-20;
+  double constexpr epsabs = 1.0e-40;
   auto t0 = std::chrono::high_resolution_clock::now();
   
   auto res = a.integrate(f, epsrel, epsabs);
@@ -53,7 +55,7 @@ struct Config{
     bool phase_2 = false;
     int outfileVerbosity = 0;
     int numdevices = 1;
-    int heuristicID = 4;
+    int heuristicID = 9;
     int _final = 1;
     int verbose = 0;
 };
@@ -81,7 +83,7 @@ cu_time_and_call(std::string id,
   quad::Cuhre<double, ndim> alg(0, nullptr);
   
   auto const t0 = std::chrono::high_resolution_clock::now();
-  //nvtxRangePushA("init_host_data");
+  //nvtxRangePush("init_host_data");
   cuhreResult const result = alg.integrate(
     integrand, epsrel, epsabs, vol, config.outfileVerbosity, config._final, config.heuristicID, config.phase_I_type, config.phase_2);
   //nvtxRangePop();
