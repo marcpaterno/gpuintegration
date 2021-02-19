@@ -630,42 +630,7 @@ namespace quad {
                   Volume<T, NDIM>* volume,
                   const int phase1type)
     {
-      assert(phase1type == 0 || phase1type == 1);
-
-      /*
-     //This is to replace if stetement below
-            switch(phase1type){
-                    case 0:
-                            return
-         kernel->IntegrateFirstPhaseDCUHRE(d_integrand, epsrel, epsabs,
-                                             res.estimate,
-                                             res.errorest,
-                                             res.nregions,
-                                             res.neval,
-                                             volume);
-                    case 1:
-                            return kernel->IntegrateFirstPhase(d_integrand,
-                                     epsrel,
-                                     epsabs,
-                                     res.estimate,
-                                     res.errorest,
-                                     res.nregions,
-                                     res.neval,
-                                     volume);
-
-
-            }
-      */
-
-      if (phase1type)
-        return kernel->IntegrateFirstPhaseDCUHRE(d_integrand,
-                                                 epsrel,
-                                                 epsabs,
-                                                 res.estimate,
-                                                 res.errorest,
-                                                 res.nregions,
-                                                 res.neval,
-                                                 volume);
+    
       return kernel->IntegrateFirstPhase(d_integrand,
                                          epsrel,
                                          epsabs,
@@ -740,14 +705,10 @@ namespace quad {
       FIRST_PHASE_MAXREGIONS *= numDevices;
 
       res.status  = ExecutePhaseI(d_integrand, res, volume, phase1type);
-      //printf("return status:%i\n", res.status);
       res.lastPhase = 1;
-      //cudaFree(d_integrand);
-      //return res;
+ 
       
-      //printf("phase2:%i status:%i\n", phase2, res.status);
       if (res.status == 0 || phase2 == false) {
-        //printf("Freeing\n");
         cudaFree(d_integrand);
         return res;
       }
