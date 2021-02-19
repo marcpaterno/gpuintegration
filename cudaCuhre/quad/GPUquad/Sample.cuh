@@ -128,7 +128,7 @@ double blockReduceSum(double val) {
                     int NSETS,
                     Region<NDIM> sRegionPool[])
   {
-    //__syncthreads();
+    
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     T vol = ldexp(1., -region->div);
     
@@ -141,7 +141,7 @@ double blockReduceSum(double val) {
     int maxdim = 0;
     T maxrange = 0;
 
-    //__syncthreads();
+    
     // set dimension range
     for (int dim = 0; dim < NDIM; ++dim) {
 
