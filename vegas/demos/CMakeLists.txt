@@ -1,3 +1,6 @@
+add_subdirectory(mcubes)
+add_subdirectory(mcubes_1D)
+
 add_executable(vegasGPU vegasGPU.cu)
 target_compile_features(vegasGPU PUBLIC cxx_std_17)
 target_compile_options(vegasGPU PRIVATE "-arch=sm_70" "-lineinfo" "--expt-relaxed-constexpr")

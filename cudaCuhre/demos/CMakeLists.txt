@@ -62,6 +62,15 @@ target_include_directories(Genz2_2DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(Genz2_6DGPU Genz2_6D.cu)
+target_compile_options(Genz2_6DGPU PRIVATE "-arch=sm_70")
+set_target_properties(Genz2_6DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz2_6DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(Genz2_6DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(Genz2_8DGPU Genz2_8D.cu)
 target_compile_options(Genz2_8DGPU PRIVATE "-arch=sm_70")
 set_target_properties(Genz2_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -98,11 +107,11 @@ target_include_directories(Genz3_8DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
+#find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 add_executable(Genz4_5DGPU Genz4_5D.cu)
 target_compile_options(Genz4_5DGPU PRIVATE "-arch=sm_70")
 set_target_properties(Genz4_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(Genz4_5DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain ${NVTX_LIBRARY}) 
+target_link_libraries(Genz4_5DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain) 
 target_include_directories(Genz4_5DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -172,12 +181,12 @@ target_include_directories(fun6d_demo PRIVATE
 target_link_libraries(fun6d_demo PRIVATE ${CUBA_LIBRARIES})
 set_property(TARGET fun6d_demo PROPERTY CUDA_ARCHITECTURES 70-real)
 
-add_executable(cuda_genz_1_8d genz_1_8d.cu)
-target_compile_options(cuda_genz_1_8d PRIVATE "-lineinfo")
-set_property(TARGET cuda_genz_1_8d PROPERTY CUDA_ARCHITECTURES 70-real)
-set_target_properties(cuda_genz_1_8d PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(cuda_genz_1_8d util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
-target_include_directories(cuda_genz_1_8d PRIVATE
+add_executable(Genz1_8DGPU Genz1_8D.cu)
+target_compile_options(Genz1_8DGPU PRIVATE "-lineinfo")
+set_property(TARGET Genz1_8DGPU PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(Genz1_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz1_8DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
+target_include_directories(Genz1_8DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
