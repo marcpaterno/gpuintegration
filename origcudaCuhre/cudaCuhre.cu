@@ -11,7 +11,7 @@
 
 using namespace quad;
 
-#define EPSABS 1e-12
+#define EPSABS 1e-40
 
 //---------------------------------------------------------------------
 // Globals, constants and typedefs
@@ -44,7 +44,7 @@ int main(int argc, char **argv){
     exit(0);
   }
  
-  TYPE epsrel = 1e-7;  
+  TYPE epsrel = 1.28e-8; 
   if (args.CheckCmdLineFlag("e")){
     args.GetCmdLineArgument("e", epsrel);
   }
@@ -59,7 +59,7 @@ int main(int argc, char **argv){
   if (args.CheckCmdLineFlag("N")){
     args.GetCmdLineArgument("N", numDevices);
   }
- 
+  
   // Initialize device
   QuadDebugExit(args.DeviceInit());
  

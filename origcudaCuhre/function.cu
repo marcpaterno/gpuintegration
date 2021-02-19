@@ -1,5 +1,5 @@
-#define FUN 11
-#define DIM 6
+#define FUN 12
+#define DIM 8
 
 #ifndef FUN
 #define FUN 2
@@ -112,6 +112,14 @@ double sum = 0;
   for(N=0; N<NDIM; N++)
     sum+= 10*xx[N];
   f = pow(10, NDIM)*sin(sum);
+#elif FUN == 12
+//this is BoxIntegral8_22
+   double s = 22;
+   double sum = 0;
+   sum = pow(xx[0], 2) + pow(xx[1], 2) + pow(xx[2], 2) + pow(xx[3], 2) + pow(xx[4], 2) +
+          pow(xx[5], 2) + pow(xx[6], 2) + pow(xx[7], 2);
+   f = pow(sum, s / 2);
+
 #endif
   
   return f;

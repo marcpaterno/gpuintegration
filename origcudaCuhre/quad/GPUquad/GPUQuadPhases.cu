@@ -188,8 +188,6 @@ namespace quad{
 		  size_t dataIndex = iterationsPerThread*BLOCK_SIZE + threadIdx.x;
 		 			  
 		  gPool[dataIndex] = gRegionPool[dataIndex];
-		  if(blockIdx.x == 4064)
-			printf("1gRegionPool[%i] -> gPool[%i]\n", dataIndex, dataIndex);
 		  __syncthreads(); 
 		}
 		
@@ -199,8 +197,6 @@ namespace quad{
 		size_t dataIndex = iterationsPerThread*BLOCK_SIZE + threadIdx.x;
 		if(dataIndex < gRegionPoolSize){
 		  gPool[dataIndex] = gRegionPool[dataIndex];
-		  if(blockIdx.x == 4064)
-			printf("2gRegionPool[%lu] -> gPool[%lu]\n", dataIndex, dataIndex);
 		}
 		
 		//the loop and if statement above, copied from global memory to global memory, AKA took care of the extension
@@ -212,10 +208,6 @@ namespace quad{
 		  int index = iterationsPerThread*BLOCK_SIZE+threadIdx.x;
 		  gPool[gRegionPos[index]] = sRegionPool[index];
 		  gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE/2) + index];
-		  if(blockIdx.x == 4064){
-			printf("3sRegionPool[%lu] -> gPool[%lu]\n", index, gRegionPos[index]);
-			printf("3sRegionPool[%lu] -> gPool[%lu]\n", (SM_REGION_POOL_SIZE/2) + index, gRegionPoolSize + index);
-		  }
 		}
 		
 		//if above loop was not entered
@@ -226,10 +218,6 @@ namespace quad{
 		  int index = iterationsPerThread*BLOCK_SIZE+threadIdx.x;
 		  gPool[gRegionPos[index]] = sRegionPool[index];
 		  gPool[gRegionPoolSize + index] = sRegionPool[(SM_REGION_POOL_SIZE/2) + index];
-		  if(blockIdx.x == 4064){
-			printf("4sRegionPool[%lu] -> gPool[%lu]\n", index, gRegionPos[index]);
-			printf("4sRegionPool[%lu] -> gPool[%lu]\n", (SM_REGION_POOL_SIZE/2) + index, gRegionPoolSize + index);
-		  }
 		}
 
 		__syncthreads();
@@ -428,7 +416,7 @@ namespace quad{
 		
 		//TODO : May be redundance sync
 		__syncthreads();
-	
+         
 		int nregions = sRegionPoolSize; //is only 1 at this point
 		
 		//if(ERR < MaxErr(RESULT, epsrel, epsabs))
@@ -506,17 +494,12 @@ namespace quad{
 			
 		  int isActive = ERR > MaxErr(RESULT, epsrel, epsabs);
 		  
-			if(/*(nregions > MAX_GLOBALPOOL_SIZE) || isActive || */ERR > (1e+10)){
-				printf("Bad region at block:%i\n", blockIdx.x);
-				
+			if(ERR > (1e+10)){
 				RESULT = 0.0;
 				ERR = 0.0;
 				isActive = 1;
 			}
-			//else
-			//	printf("Good region at block:%i\n", blockIdx.x);
-			
-			//printf("%ld %.16lf %.16lf %ld\n",(size_t)blockIdx.x, RESULT, ERR, (size_t)nregions);
+      
 			activeRegions[blockIdx.x] = isActive;
 			dRegionsIntegral[blockIdx.x] = RESULT;
 			dRegionsError[blockIdx.x] = ERR;

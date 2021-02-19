@@ -178,7 +178,7 @@ class CommandLineArgs{
       if (CheckCmdLineFlag("verbose")){
 	GetCmdLineArgument("verbose", verbose);
       }      
-	  printf("last\n");
+	  
       if (false&&verbose) {
 	printf("Using device %d: %s (SM%d, %d SMs, %lld free / %lld total MB physmem, ECC %s)\n",
 	       dev,
@@ -198,5 +198,4 @@ class CommandLineArgs{
 
 #define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
-
-#define MaxErr(avg, epsrel, epsabs) MAX(epsrel*fabs(avg), epsabs)
+#define MaxErr(avg, epsrel, epsabs) max(epsrel*fabs(avg), epsabs)
