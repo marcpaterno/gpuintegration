@@ -209,7 +209,7 @@ namespace quad {
                              selfErr,
                              epsrel,
                              epsabs) == true;
-      int PassRatioTest = heuristicID != 1 && selfErr / MaxErr(selfRes, epsrel, 1e-200) < 1.;
+      int PassRatioTest = heuristicID != 1 && selfErr / MaxErr(selfRes, epsrel, /*epsabs*/1e-200) < 1.;
       activeRegions[tid] = !(polished || PassRatioTest);
       
       
@@ -239,7 +239,7 @@ namespace quad {
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper = 
           lower + dRegionsLength[dim * numRegions + index];
-
+        
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
         sRegionPool[0].div = depth; 
@@ -315,13 +315,13 @@ namespace quad {
   */
   template <int NDIM>
   __device__ int
-  InitSMemRegions(Region<NDIM> sRegionPool[])
+  InitSMemRegions(Region<NDIM> sRegionPool[], int depth)
   {
     int idx = 0;
     for (; idx < SM_REGION_POOL_SIZE / BLOCK_SIZE; ++idx) {
 
       int index = idx * BLOCK_SIZE + threadIdx.x;
-      sRegionPool[index].div = 14;
+      sRegionPool[index].div = depth;
       sRegionPool[index].result.err = 0;
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
@@ -335,7 +335,7 @@ namespace quad {
     int index = idx * BLOCK_SIZE + threadIdx.x;
     if (index < SM_REGION_POOL_SIZE) {
 
-      sRegionPool[index].div = 14;
+      sRegionPool[index].div = depth;
       sRegionPool[index].result.err = 0;
       sRegionPool[index].result.avg = 0;
       sRegionPool[index].result.bisectdim = 0;
@@ -804,6 +804,7 @@ namespace quad {
                              T* dPh1res,
                              int max_regions,
                              RegionList& batch,
+                             int depth = 0,
                              int phase1_type = 0,
                              Region<NDIM>* phase1_regs = nullptr,
                              Snapshot<NDIM> snap = Snapshot<NDIM>(),
@@ -828,7 +829,7 @@ namespace quad {
     }
 
     __syncthreads();              // added for testing
-    InitSMemRegions(sRegionPool); // sets every region in shared memory to zero
+    InitSMemRegions(sRegionPool, depth); // sets every region in shared memory to zero
     int sRegionPoolSize = 1;
     __syncthreads();
     // temporary solution
@@ -851,8 +852,7 @@ namespace quad {
     // temporary solution
     if (threadIdx.x == 0) {
       ERR = batch.dRegionsError[blockIdx.x];
-      sRegionPool[0].result.err = ERR;
-       
+      sRegionPool[0].result.err = ERR;    
     }
 
     __syncthreads();
@@ -936,7 +936,8 @@ namespace quad {
         ERR = 0.0;
         isActive = 1;
       }
-
+      
+      //printf("[%i] %.15e %.15e\n", blockIdx.x, RESULT, batch.dRegionsIntegral[blockIdx.x]);
       batch.activeRegions[blockIdx.x] = isActive;
       batch.dRegionsIntegral[blockIdx.x] = RESULT;
       batch.dRegionsError[blockIdx.x] = ERR;

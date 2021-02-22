@@ -1543,11 +1543,12 @@ namespace quad {
       wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
       double iter_finished_estimate = iter_estimate - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
       integral = integral + iter_finished_estimate;
-      
+     
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       double iter_finished_errorest = iter_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
          
       error = error + iter_finished_errorest;
+      //printf("iteration %i finished: %.15e +- %.15e leaves:%.15e +- %.15e iter:%.15e +- %.15e\n", iteration, integral, error, leaves_estimate, leaves_errorest, iter_estimate, iter_errorest);
       if (last_iteration != 1)
         Phase_I_PrintFile(vol,
                           numRegions,
@@ -1594,7 +1595,6 @@ namespace quad {
 
       if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < first_phase_maxregions)) {
         //  if (numRegions <= first_phase_maxregions && fail == 1) {
-        
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
                                   subDividingDimension,
@@ -1689,7 +1689,6 @@ namespace quad {
           break;
         }
         else if ((phase2 == true && numRegions >= first_phase_maxregions && fail == 1) || (phase2 == false && iteration == 699 && fail == 1)) {
-          
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -1966,6 +1965,7 @@ namespace quad {
           0,
           0,
           0,
+          0,
           dPh1res,
           max_regions,
           *currentBatch,
@@ -2155,6 +2155,7 @@ namespace quad {
           Phase_I_result,
           max_regions,
           *batch,
+          depthBeingProcessed,
           phase_I_type,
           ph1_regions, // used for alternative phase 1
           Snapshot<NDIM>(),
@@ -2448,6 +2449,7 @@ namespace quad {
           phase_II_final_output.num_failed_blocks = 0;
           phase_II_final_output.num_starting_blocks = 0;
           // CALL EXECUTE BATCH HERE
+          
           phase_II_final_output += Execute_PhaseII_Batches(dRegionsThread,
                                                            dRegionsLengthThread,
                                                            numBlocks,
@@ -2461,7 +2463,7 @@ namespace quad {
                                                            Phase_I_result);
 
           CudaCheckError();
-
+          //printf("Phase 2 result after += operator:%.15e +- %.15e\n", phase_II_final_output.estimate, phase_II_final_output.errorest);
           cudaEventRecord(event[gpu_id], stream[gpu_id]);
           cudaEventSynchronize(event[gpu_id]);
 
@@ -2471,9 +2473,9 @@ namespace quad {
           cudaEventDestroy(start);
           cudaEventDestroy(event[gpu_id]);
             
-          integral += phase_II_final_output.estimate,
-            error += phase_II_final_output.errorest;
-          nregions += phase_II_final_output.regions;
+          integral = phase_II_final_output.estimate,
+          error = phase_II_final_output.errorest;
+          nregions = phase_II_final_output.regions;
           CudaCheckError();
             
           Host.ReleaseMemory(curr_hRegions);
