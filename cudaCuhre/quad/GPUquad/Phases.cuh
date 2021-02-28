@@ -240,7 +240,7 @@ namespace quad {
     if(tid<numRegions){ //consider not having the ones passing the previous test (id<numRegions && activeRegions[tid] != 1)
       
       T selfErr = dRegionsError[tid];
-      T selfRes = dRegionsIntegral[tid];
+      //T selfRes = dRegionsIntegral[tid];
       //if(tid<10 || tid == numRegions-1)
       //  printf("[%i] %.15e +- %.15e active:%i\n", tid, selfRes, selfErr, activeRegions[tid]);
       //double selfRatio = selfErr/MaxErr(selfRes, epsrel, 1e-200);
