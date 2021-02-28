@@ -7,6 +7,8 @@
 #include <thrust/inner_product.h>
 #include <thrust/transform_reduce.h>
 #include <thrust/execution_policy.h>
+#include <thrust/extrema.h>
+#include <thrust/pair.h>
 
 #include "PartitionManager.cuh"
 #include "Phases.cuh"
@@ -262,7 +264,16 @@ namespace quad {
     T* dParentsIntegral;
     T** hParentsError; // used only for batching phase 1 execution
     T** hParentsIntegral;
-
+    
+    //-----------------------------------
+    T* polishedRegions;
+    T* polishedRegionsLength;
+    int* polishedRegionsSubDivDimension;
+    T* polishedRegionsIntegral;
+    T* polishedRegionsError;
+    int* polishedRegionsDiv;
+    //-----------------------------------
+    
     T* highs;
     T* lows;
 
@@ -298,7 +309,7 @@ namespace quad {
     T* dlastErr;
     T* dlastAvg;
     int KEY, VERBOSE, outLevel;
-    size_t numRegions, h_numRegions, numFunctionEvaluations, numInActiveRegions;
+    size_t numRegions, numPolishedRegions, h_numRegions, numFunctionEvaluations, numInActiveRegions;
     size_t fEvalPerRegion;
     int first_phase_maxregions;
     int max_globalpool_size;
@@ -457,7 +468,7 @@ namespace quad {
     
     Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
-        
+      numPolishedRegions = 0;
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
@@ -474,9 +485,16 @@ namespace quad {
       hParentsError = new double*[numHostPartitions]; // used only for batching
                                                       // phase 1 execution
       hParentsIntegral = new double*[numHostPartitions];
-
+        
       ConfigureMemoryUtilization();
-
+      
+      polishedRegions = nullptr;
+      polishedRegionsLength = nullptr;
+      polishedRegionsSubDivDimension = nullptr;
+      polishedRegionsIntegral = nullptr;
+      polishedRegionsError = nullptr;
+      polishedRegionsDiv = nullptr;
+      
       /*QuadDebug(Device.AllocateMemory((void**)&gRegionPool,
                                       sizeof(Region<NDIM>) *
                                         first_phase_maxregions * 2 *
@@ -524,7 +542,6 @@ namespace quad {
       QuadDebug(cudaFree(constMem._cGeneratorCount));
       QuadDebug(cudaDeviceSynchronize());
     }
-    
     
     void
     StringstreamToFile(std::string per_iteration,
@@ -1058,6 +1075,31 @@ namespace quad {
     }
     
     size_t
+    GetGPUMemNeededForNextIteration_CallBeforeSplit(){
+        //if we split everything in 2 (means if we call GenerateActiveIntervals)
+        //will we have enough memory to compute at least the leaves for the next iteration?
+        
+        int numOfDivisionOnDimension = 2;
+        size_t nextIter_dParentsIntegral_size = 2*numRegions ; //parents are duplicated
+        size_t nextIter_dParentsError_size = 2*numRegions; //parents are duplicated
+        size_t nextIter_dRegions_size = 2*numRegions * NDIM;
+        size_t nextIter_dRegionsLength_size = 2*numRegions * NDIM;
+        size_t nextIter_dRegionsIntegral_size = 2*numRegions; 
+        size_t nextIter_dRegionsError_size = 2*numRegions;
+        
+        
+        size_t _activeRegions = 2*numRegions;
+        size_t _subDividingDimension = 2*numRegions;
+        
+        size_t Ints_Size = 4*(_activeRegions + _subDividingDimension);
+        size_t Doubles_Size = 8*(nextIter_dParentsIntegral_size + nextIter_dParentsError_size + nextIter_dRegions_size + nextIter_dRegionsLength_size + nextIter_dRegionsIntegral_size + nextIter_dRegionsError_size);
+        //the above doesn't consider the intermediate memory needed
+        size_t scatchSpaceInGenerateActiveIntervals = (Ints_Size + Doubles_Size)/2;
+        return Ints_Size + Doubles_Size + scatchSpaceInGenerateActiveIntervals;
+    }
+    
+    
+    size_t
     GetGPUMemNeededForNextIteration()
     {
       // numRegions implies the number of regions processed in next iteration
@@ -1123,19 +1165,20 @@ namespace quad {
 
       size_t numThreads = 512;
       // this has been changed temporarily, do not remove
-      // size_t numOfDivisionPerRegionPerDimension = 4;
-      // if(NDIM == 5 )numOfDivisionPerRegionPerDimension = 2;
-      // if(NDIM == 6 )numOfDivisionPerRegionPerDimension = 2;
-      // if(NDIM == 7 )numOfDivisionPerRegionPerDimension = 2;
-      // if(NDIM > 7 )numOfDivisionPerRegionPerDimension = 2;
-      // if(NDIM > 10 )numOfDivisionPerRegionPerDimension = 1;
-
-      size_t numOfDivisionPerRegionPerDimension = 1;
+      size_t numOfDivisionPerRegionPerDimension = 4;
+       if(NDIM == 5 )numOfDivisionPerRegionPerDimension = 2;
+       if(NDIM == 6 )numOfDivisionPerRegionPerDimension = 2;
+       if(NDIM == 7 )numOfDivisionPerRegionPerDimension = 2;
+       if(NDIM > 7 )numOfDivisionPerRegionPerDimension = 2;
+       if(NDIM > 10 )numOfDivisionPerRegionPerDimension = 1;
+       
+       depthBeingProcessed = log2(numOfDivisionPerRegionPerDimension)*NDIM;
+      //size_t numOfDivisionPerRegionPerDimension = 1;
 
       size_t numBlocks = (size_t)ceil(
         pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
       numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
-
+      
       T* newRegions = 0;
       T* newRegionsLength = 0;
       QuadDebug(Device.AllocateMemory((void**)&newRegions,
@@ -1172,7 +1215,7 @@ namespace quad {
       //curr_hRegions = nullptr;
       //curr_hRegionsLength = nullptr;
     }
-
+    
     size_t
     GenerateActiveIntervals(int* activeRegions,
                             int* subDividingDimension,
@@ -1235,6 +1278,7 @@ namespace quad {
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
         
+        //printf("expanding parents:%lu -> %lu\n", numRegions, numActiveRegions);
         ExpandcuArray(dParentsIntegral, numRegions/2, numActiveRegions);
         CudaCheckError();
         ExpandcuArray(dParentsError, numRegions/2, numActiveRegions);
@@ -1262,6 +1306,7 @@ namespace quad {
                                       numRegions,
                                       numActiveRegions,
                                       numOfDivisionOnDimension);
+                                                                                            
         // cudaDeviceSynchronize();
         CudaCheckError();
         T *genRegions = 0, *genRegionsLength = 0;
@@ -1309,6 +1354,155 @@ namespace quad {
 
       return numInActiveRegions;
     }
+    
+    void GetNextThreshold(double min, double max, int rightDirection, double& current){
+        if(rightDirection){
+            double diff = abs(max - current);
+            current += diff*.5;
+        }
+        else{
+            double diff = abs(min - current);
+            current -= diff*.5;
+        }
+    }
+    
+
+    size_t
+    FilterOut(T* dRegionsIntegral,
+              T* dRegionsError,
+              int* subDividingDimension,
+              T*& dParentsIntegral,
+              T*& dParentsError,
+              int*& activeRegions,
+              double& integral,
+              double& error,
+              size_t& nregions,
+              double iterEstimate,
+              double iterErrorest,
+              double iter_finished_estimate,
+              double iter_finished_errorest,
+              double targetError,
+              double epsrel,
+              double epsabs)
+    {
+      size_t numThreads = BLOCK_SIZE;
+      size_t numBlocks = numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
+      double MaxPercentOfErrorBudget = .25;
+      
+      int* unpolishedRegions = 0;
+      int* scannedArray  = 0; // de-allocated at the end of this function
+      size_t targetRegionNum = numRegions/2;
+      
+      double ErrThreshold = iterErrorest/(numRegions); //starts out as avg value
+      size_t numActiveRegions = numRegions;
+      double iter_polished_errorest = 0.;
+      double iter_polished_estimate = 0.;
+      
+      QuadDebug(Device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
+      QuadDebug(Device.AllocateMemory((void**)&unpolishedRegions, sizeof(int) * numRegions));
+     // double updateFactor = 2;
+      
+      thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(unpolishedRegions);
+      thrust::device_ptr<int> scan_ptr = thrust::device_pointer_cast(scannedArray);
+       
+      bool madeErrThresSmallerAtleastOnce = false;
+      bool madeErrThresLargerAtleastOnce = false;
+      
+      do{
+          
+        /*if(madeErrThresSmallerAtleastOnce == true && madeErrThresLargerAtleastOnce == true){
+            
+            madeErrThresLargerAtleastOnce = false;
+            madeErrThresSmallerAtleastOnce = false;
+            //consider changing orders of magnitude, that sounds easier for begininng
+            if(updateFactor > 1.1)
+                updateFactor -= .1;
+            //printf("factor updated:%f\n", updateFactor);
+        }*/
+            
+        iter_polished_errorest = 0.;
+        iter_polished_estimate = 0.;
+        numActiveRegions = 0;  
+        Filter<<<numBlocks, numThreads>>>(dRegionsIntegral, dRegionsError, unpolishedRegions, activeRegions, numRegions, epsrel, epsabs, ErrThreshold);
+        cudaDeviceSynchronize();
+        CudaCheckError();
+        
+        //---------------------------------------------------------------------------------------
+     
+        thrust::exclusive_scan(d_ptr, d_ptr + numRegions, scan_ptr);
+        //---------------------------------------------------------------------------------------
+        
+        int last_element;
+        QuadDebug(cudaMemcpy(&last_element,
+                           unpolishedRegions + numRegions - 1,
+                           sizeof(int),
+                           cudaMemcpyDeviceToHost));
+                           
+        QuadDebug(cudaMemcpy(&numActiveRegions,
+                           scannedArray + numRegions - 1,
+                           sizeof(int),
+                           cudaMemcpyDeviceToHost));
+      
+        if (last_element == 1)
+            numActiveRegions++;
+        
+        //printf("targetError:%.15e\n", targetError);
+        
+        
+        thrust::device_ptr<double> d_ptrE = thrust::device_pointer_cast(dRegionsError);
+        //auto result = thrust::max_element(d_ptrE, d_ptrE + numRegions);
+        //double max = *result;
+        auto result1 = thrust::min_element(d_ptrE, d_ptrE + numRegions);
+        auto result2 = thrust::max_element(d_ptrE, d_ptrE + numRegions);
+        double min = *result1;
+        double max = *result2;
+        //printf("minmax:%.15e, %.15e numRegions:%lu ErrThreshold:%.15e\n",min, max, numRegions, ErrThreshold);
+        
+        
+        if(numActiveRegions <= targetRegionNum){
+            thrust::device_ptr<double> wrapped_ptr;
+            thrust::device_ptr<int> wrapped_mask;
+            wrapped_mask = thrust::device_pointer_cast(unpolishedRegions);
+            wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
+            iter_polished_estimate = iterEstimate - iter_finished_estimate - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
+            
+            wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
+            iter_polished_errorest = iterErrorest - iter_finished_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
+            //printf("activeRegions/numRegions :%f percent errorestReserved:%f errorBudget:%.15e error:%.15e targetError:%.15e\n",(double)(numActiveRegions)/(double)numRegions,(double)iter_polished_errorest/(targetError - error), (targetError - error), error, targetError ); 
+            //printf("polished :%.15e +- %.15e \t  \n", iter_polished_estimate, iter_polished_errorest);
+            //printf("iter:%.15e +- %.15e\n", iterEstimate, iterErrorest);
+            //printf("finished from iter:%.15e +- %.15e\n", iter_finished_estimate, iter_finished_errorest);
+            if(iter_polished_errorest <= MaxPercentOfErrorBudget*(targetError - error) && iter_polished_errorest >= 0.){
+                //printf("Done with polished errorest:%.15e new fregions contribution:%.15e +- %.15e errorBudget:%.15e error:%.15e targetError:%.15e\n", iter_polished_errorest, integral + polished_estimate,  error + iter_polished_errorest, (targetError - error), error, targetError);
+                integral += iter_polished_estimate;
+                error += iter_polished_errorest;
+                break;
+            }
+        }
+
+        double unpolishedPercentage = (double)(numActiveRegions)/(double)numRegions;
+       // printf("activeRegions/numRegions :%f percent errorestReserved:%f\n",unpolishedPercentage,(double)iter_polished_errorest/(targetError - error) ); 
+        //printf("iter_polished_errorest:%.15e ferror:%.15e\n", iter_polished_errorest, error);
+        if(iter_polished_errorest > MaxPercentOfErrorBudget*(targetError - error) || unpolishedPercentage < .5 ){
+            //printf("MAKING THRESHOLD SMALLER %.15e -> %.15e\n", ErrThreshold, ErrThreshold/updateFactor );
+            //ErrThreshold /= updateFactor;
+            GetNextThreshold(min, max, 0, ErrThreshold);
+        }
+        else if(unpolishedPercentage > .5){
+            //printf("MAKING THRESHOLD BIGGERby %.15e -> %.15e\n", ErrThreshold, ErrThreshold*updateFactor );
+            //ErrThreshold *= updateFactor;
+            GetNextThreshold(min, max, 0, ErrThreshold);
+        }
+        
+      }while(numActiveRegions > targetRegionNum || iter_polished_errorest > MaxPercentOfErrorBudget*(targetError - error) || error > targetError);
+      
+      //printf("exited while loop\n");
+      QuadDebug(Device.ReleaseMemory(activeRegions));
+      QuadDebug(Device.ReleaseMemory(scannedArray));
+      activeRegions = unpolishedRegions; //GenerateActiveIntervals computes activeRegions, scannedArray, numInactiveRegions
+      CudaCheckError();
+      return numActiveRegions;
+    }
 
     void
     AllocVolArrays(Volume<T, NDIM>* vol)
@@ -1346,7 +1540,7 @@ namespace quad {
       // can't use dRegionsError to store newErrs, because sibling errors are
       // accessed
       size_t numBlocks = numRegions / BLOCK_SIZE + ((numRegions % BLOCK_SIZE) ? 1 : 0);
-      if (numRegions == startRegions)
+      if (/*numRegions == startRegions*/iteration == 0)
         return;
 
       T* newErrs = 0;
@@ -1454,7 +1648,8 @@ namespace quad {
                                       sizeof(T) * numRegions));
 
       // move this to constructor, or init function
-      if (numRegions == startRegions && error == 0) {
+      //if (numRegions == startRegions && error == 0) {
+      if(iteration == 0){
         QuadDebug(Device.AllocateMemory((void**)&dParentsIntegral,
                                         sizeof(T) * numRegions));
         QuadDebug(Device.AllocateMemory((void**)&dParentsError,
@@ -1506,11 +1701,6 @@ namespace quad {
           (iteration >= 2 ? sigDigitsSame(lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) : false) :
           true;
       
-      if(estimateHasConverged && error > abs(leaves_estimate)*epsrel){
-        printf ("Finished early too many regions and finshed error bigger than required error: %e vs %e\n", error, abs(leaves_estimate)*epsrel);
-        exit (EXIT_FAILURE);
-      }
-      
       hRefineError(activeRegions,
                    iter_estimate,
                    leaves_estimate,
@@ -1548,7 +1738,11 @@ namespace quad {
       double iter_finished_errorest = iter_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
          
       error = error + iter_finished_errorest;
-      //printf("iteration %i finished: %.15e +- %.15e leaves:%.15e +- %.15e iter:%.15e +- %.15e\n", iteration, integral, error, leaves_estimate, leaves_errorest, iter_estimate, iter_errorest);
+      
+
+      
+      //printf("iteration %i cummulative finished: %.15e +- %.15e (%.15e just added from this iter) leaves:%.15e +- %.15e numRegions:%lu estimateHasConverged:%i\n", iteration, integral, error, iter_finished_errorest, leaves_estimate, leaves_errorest, numRegions, estimateHasConverged);
+      //printf("Finished contribution at iteration %i %.15e +- %.15e iteration contribution:%.15e +- %.15e numRegions:%lu\n", iteration, iter_finished_estimate, iter_finished_errorest, iter_estimate, iter_errorest, numRegions);
       if (last_iteration != 1)
         Phase_I_PrintFile(vol,
                           numRegions,
@@ -1565,6 +1759,23 @@ namespace quad {
                           epsrel,
                           epsabs,
                           iteration);
+                          
+     if((estimateHasConverged || iteration > 20)&& error > abs(leaves_estimate)*epsrel){
+        //printf ("Warning too early and finshed error bigger than required error: %e vs %e  leaves_estimate:%.15e\n", error, abs(leaves_estimate)*epsrel, leaves_estimate);
+        //printf("iteration contribution %.15e +- %.15e\n", iter_estimate, iter_errorest);
+        //printf("Resetting finished error to %.15e, its state at the previous iteration\n", error - iter_finished_errorest);
+        
+        //printf("Unmarking finished regions in order to recover, will proceed to filter\n");
+        RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
+        cudaDeviceSynchronize();
+        error -= iter_finished_errorest;
+        integral -= iter_finished_estimate;
+        iter_finished_estimate = 0.;
+        iter_finished_errorest = 0.;
+        //exit (EXIT_FAILURE);
+      }
+      
+      
       
         secondTolastAvg = lastAvg;
         lastAvg = leaves_estimate;
@@ -1592,8 +1803,31 @@ namespace quad {
       // double freeMem = Device.GetFreeMemPercentage();
       // if (numRegions <= first_phase_maxregions*8 && fail == 1) {
       // if (numRegions <= first_phase_maxregions && fail == 1) {
-
-      if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < first_phase_maxregions)) {
+      //printf("Free Memory:%lu\n", Device.GetAmountFreeMem());
+      //printf("Mem needed for next iter if split all active in two %lu\n", GetGPUMemNeededForNextIteration());
+      //printf("New Mem Check says this will be usage in next iter %f\n", (double)GetGPUMemNeededForNextIteration_CallBeforeSplit()/(double)Device.GetAmountFreeMem());
+      //if(2*GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem()){
+      if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem()){
+            //printf("About to attempt filtering, target error:%.15e\n", leaves_estimate*epsrel);
+            FilterOut(dRegionsIntegral,
+              dRegionsError,
+              subDividingDimension,
+              dParentsIntegral,
+              dParentsError,
+              activeRegions,
+              integral,
+              error,
+              nregions,
+              iter_estimate,
+              iter_errorest,
+              iter_finished_estimate,
+              iter_finished_errorest,
+              abs(leaves_estimate)*epsrel,
+              epsrel,
+              epsabs);
+      }
+      
+      if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < 2*first_phase_maxregions)) {
         //  if (numRegions <= first_phase_maxregions && fail == 1) {
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
@@ -1607,13 +1841,16 @@ namespace quad {
         nFinishedRegions += numInActiveIntervals;
        
         bool NotEnoughMem =
-          GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem();
+          false;//GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem();
         
         bool NoRegionsButPartitionsLeft =
           (numRegions == 0 && !partitionManager.Empty());
-          
+        
+        
         if ((NotEnoughMem || NoRegionsButPartitionsLeft /*|| numRegions >= 4194304*/) && fail == 1){
-        // printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
+          printf("Old Mem Check says this will be usage in next iter:%f\n", (double)GetGPUMemNeededForNextIteration()/(double)Device.GetAmountFreeMem());
+          
+          //printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
           Partition<NDIM> currentPartition;
           currentPartition.ShallowCopy(dRegions,
                                        dRegionsLength,
@@ -1644,7 +1881,7 @@ namespace quad {
       else{
          nregions += numRegions + partitionManager.GetNRegions();  
       }
-      
+     
       QuadDebug(cudaFree(activeRegions));
       QuadDebug(cudaFree(subDividingDimension));
     }
@@ -1688,7 +1925,7 @@ namespace quad {
           fail = 2;
           break;
         }
-        else if ((phase2 == true && numRegions >= first_phase_maxregions && fail == 1) || (phase2 == false && iteration == 699 && fail == 1)) {
+        else if ((phase2 == true && numRegions >= 2*first_phase_maxregions && fail == 1) || (phase2 == false && iteration == 699 && fail == 1)) {
           int last_iteration = 1;
           QuadDebug(cudaFree(dRegionsError));
           QuadDebug(cudaFree(dRegionsIntegral));
@@ -2350,7 +2587,7 @@ namespace quad {
     {
       int num_gpus = 0; // number of CUDA GPUs
       int numFailedRegions = 0;
-
+      
       QuadDebug(Device.AllocateMemory((void**)&gRegionPool, sizeof(Region<NDIM>) * numRegions * max_globalpool_size));
       CudaCheckError();
       cudaGetDeviceCount(&num_gpus);

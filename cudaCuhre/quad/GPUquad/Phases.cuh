@@ -209,9 +209,42 @@ namespace quad {
                              selfErr,
                              epsrel,
                              epsabs) == true;
-      int PassRatioTest = heuristicID != 1 && selfErr / MaxErr(selfRes, epsrel, /*epsabs*/1e-200) < 1.;
+      int PassRatioTest = heuristicID != 1 && selfErr < MaxErr(selfRes, epsrel, /*epsabs*/1e-200);
       activeRegions[tid] = !(polished || PassRatioTest);
       
+      
+    }
+  }
+
+  __global__ void
+  RevertFinishedStatus(int* activeRegions, size_t numRegions){
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;        
+     if(tid<numRegions){
+        activeRegions[tid] = 1;
+     }         
+  }
+
+    template <typename T>
+  __global__ void
+  Filter(T* dRegionsIntegral,
+         T* dRegionsError,
+         int* unpolishedRegions,
+         int* activeRegions,
+         size_t numRegions,
+         T epsrel,
+         T epsabs,
+         double errThreshold)
+  {
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if(tid<numRegions){ //consider not having the ones passing the previous test (id<numRegions && activeRegions[tid] != 1)
+      
+      T selfErr = dRegionsError[tid];
+      T selfRes = dRegionsIntegral[tid];
+      //if(tid<10 || tid == numRegions-1)
+      //  printf("[%i] %.15e +- %.15e active:%i\n", tid, selfRes, selfErr, activeRegions[tid]);
+      //double selfRatio = selfErr/MaxErr(selfRes, epsrel, 1e-200);
+      unpolishedRegions[tid] = (selfErr > errThreshold ) * activeRegions[tid]; //onle "real active" regions can be polished (rename activeRegions in this context to polishedRegions)
       
     }
   }
@@ -937,7 +970,8 @@ namespace quad {
         isActive = 1;
       }
       
-      //printf("[%i] %.15e %.15e\n", blockIdx.x, RESULT, batch.dRegionsIntegral[blockIdx.x]);
+      
+      //printf("[%i] %.15e %.15e\n", blockIdx.x, RESULT , batch.dRegionsIntegral[blockIdx.x]);
       batch.activeRegions[blockIdx.x] = isActive;
       batch.dRegionsIntegral[blockIdx.x] = RESULT;
       batch.dRegionsError[blockIdx.x] = ERR;

@@ -708,7 +708,7 @@ namespace quad {
       res.lastPhase = 1;
  
       
-      if (res.status == 0 || phase2 == false) {
+      if (res.status == 0 || phase2 == false || kernel->getNumActiveRegions() == 0) {
         cudaFree(d_integrand);
         return res;
       }
