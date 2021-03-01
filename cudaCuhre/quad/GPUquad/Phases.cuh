@@ -177,7 +177,7 @@ namespace quad {
       T siblRes = dRegionsIntegral[siblingIndex];
         
       T parRes = dParentsIntegral[parIndex];
-      T parErr = dParentsError[parIndex];
+      //T parErr = dParentsError[parIndex];
               
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
@@ -192,7 +192,7 @@ namespace quad {
       selfErr += diff;
 
       newErrs[tid] = selfErr;  
-      int polished = ApplyHeuristic(heuristicID, 
+      /*int polished = ApplyHeuristic(heuristicID, 
                              leaves_estimate, 
                              finished_estimate, 
                              queued_estimate, 
@@ -208,9 +208,9 @@ namespace quad {
                              selfRes,
                              selfErr,
                              epsrel,
-                             epsabs) == true;
+                             epsabs) == true;*/
       int PassRatioTest = heuristicID != 1 && selfErr < MaxErr(selfRes, epsrel, /*epsabs*/1e-200);
-      activeRegions[tid] = !(polished || PassRatioTest);
+      activeRegions[tid] = !(/*polished ||*/ PassRatioTest);
       
       
     }
@@ -226,13 +226,10 @@ namespace quad {
 
     template <typename T>
   __global__ void
-  Filter(T* dRegionsIntegral,
-         T* dRegionsError,
+  Filter( T* dRegionsError,
          int* unpolishedRegions,
          int* activeRegions,
          size_t numRegions,
-         T epsrel,
-         T epsabs,
          double errThreshold)
   {
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -240,10 +237,6 @@ namespace quad {
     if(tid<numRegions){ //consider not having the ones passing the previous test (id<numRegions && activeRegions[tid] != 1)
       
       T selfErr = dRegionsError[tid];
-      //T selfRes = dRegionsIntegral[tid];
-      //if(tid<10 || tid == numRegions-1)
-      //  printf("[%i] %.15e +- %.15e active:%i\n", tid, selfRes, selfErr, activeRegions[tid]);
-      //double selfRatio = selfErr/MaxErr(selfRes, epsrel, 1e-200);
       unpolishedRegions[tid] = (selfErr > errThreshold ) * activeRegions[tid]; //onle "real active" regions can be polished (rename activeRegions in this context to polishedRegions)
       
     }

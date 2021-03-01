@@ -1451,85 +1451,67 @@ namespace quad {
       size_t numActiveRegions = numRegions;
       double iter_polished_errorest = 0.;
       double iter_polished_estimate = 0.;
-      double min = 0;
-      double max = 0;
       int numDirectionChanges = 0;
       
       QuadDebug(Device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
       QuadDebug(Device.AllocateMemory((void**)&unpolishedRegions, sizeof(int) * numRegions));
-      // double updateFactor = 2;
       
       thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(unpolishedRegions);
       thrust::device_ptr<int> scan_ptr = thrust::device_pointer_cast(scannedArray);
-      bool directionChange = false;
       int  direction = -1;
       
       thrust::device_ptr<double> d_ptrE = thrust::device_pointer_cast(dRegionsError);
-      auto result1 = thrust::min_element(d_ptrE, d_ptrE + numRegions);
-      auto result2 = thrust::max_element(d_ptrE, d_ptrE + numRegions);
-      min = *result1;
-      max = *result2;
+      
+      thrust::pair<thrust::device_vector<double>::iterator,thrust::device_vector<double>::iterator> tuple;
+      auto  __tuple = thrust::minmax_element(d_ptrE, d_ptrE + numRegions);
+      double min = *__tuple.first;
+      double max = *__tuple.second;      
+        
+      thrust::device_ptr<double> wrapped_ptr;
+      thrust::device_ptr<int> wrapped_mask;
       
       do{
         bool directionChange = false;
-        //printf("--------------\n");            
         iter_polished_errorest = 0.;
         iter_polished_estimate = 0.;
         numActiveRegions = 0;  
-        Filter<<<numBlocks, numThreads>>>(dRegionsIntegral, dRegionsError, unpolishedRegions, activeRegions, numRegions, epsrel, epsabs, ErrThreshold);
+        Filter<<<numBlocks, numThreads>>>(dRegionsError, unpolishedRegions, activeRegions, numRegions, ErrThreshold);
         cudaDeviceSynchronize();
         CudaCheckError();
-      
-        numActiveRegions = ComputeNumUnPolishedRegions(d_ptr, unpolishedRegions, scan_ptr, scannedArray, numRegions);
-        //printf("Trying THRESHOLD %.15e (%.15e, %.15e) percent of regions to keep:%f lastThreshold:%.15e\n", ErrThreshold, min, max, (double)(numActiveRegions)/(double)numRegions, lastThreshold);
         
-            
+        numActiveRegions = ComputeNumUnPolishedRegions(d_ptr, unpolishedRegions, scan_ptr, scannedArray, numRegions);
+       
         if(numActiveRegions <= targetRegionNum){
-            thrust::device_ptr<double> wrapped_ptr;
-            thrust::device_ptr<int> wrapped_mask;
+            
             wrapped_mask = thrust::device_pointer_cast(unpolishedRegions);
             wrapped_ptr = thrust::device_pointer_cast(dRegionsIntegral);
             iter_polished_estimate = iterEstimate - iter_finished_estimate - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
             
             wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
             iter_polished_errorest = iterErrorest - iter_finished_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
-            /*printf("percent errorestReserved:%f \t errorBudget:%.15e \t iter_polished_errorest:%.15e need errorBudget percent:%f\n", (double)iter_polished_errorest/(targetError - error), 
-                                                                                                         targetError - error, 
-                                                                                                         iter_polished_errorest, MaxPercentOfErrorBudget);*/
-            //printf("Finished Error:%.15e TargetError:%.15e\n", error, targetError);
+
             if((iter_polished_errorest <= MaxPercentOfErrorBudget*(targetError - error) || numDirectionChanges == 8)){
                 integral += iter_polished_estimate;
                 error += iter_polished_errorest;
-                //printf("Done\n");
                 break;
             }
             else if(iter_polished_errorest <= .85*(targetError - error)){
-                //printf("\tAcceptable threshold:%.15e  percent of the budget:%f\n", ErrThreshold, (double)iter_polished_errorest/(double)(targetError - error));
                 acceptableThreshold = ErrThreshold;
             }
-            /*else{
-                printf("\tthrowing away too much errorest:%.15e which is %f percent of the budget, the budget is:%.15e\n", iter_polished_errorest, (double)iter_polished_errorest/(double)(targetError - error), targetError - error);
-            }*/
         }
-       // else
-        //    printf("\tkeeping too many\n");
-        
-        //printf("Direction:%i\n", direction);
+     
         double unpolishedPercentage = (double)(numActiveRegions)/(double)numRegions;
+        //change that, intent is not clear should be returning directionChange and have the name AdjustErrorThreshold
         directionChange = AdjustErrorThreshold(iter_polished_errorest, MaxPercentOfErrorBudget*(targetError - error), unpolishedPercentage, direction, lastThreshold, ErrThreshold, min, max, numDirectionChanges);
-        //printf("Direction after threshold adjustment:%i\n", direction);
         if(numDirectionChanges >= 8){
-            //printf("gonna use acceptable threshold:%.15e\n", acceptableThreshold);
             ErrThreshold = acceptableThreshold; //saved as last resort, not original target for reamining errorest budget percentage to cover but good enough
         }
         else if(numDirectionChanges > 2 && numDirectionChanges < 8 && directionChange){
-            MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements a bit
-            //printf("Max Percentage of budget required increased to %f\n",  MaxPercentOfErrorBudget);
+            MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements 
         }
-        //printf("gonna try threshold:%.15e minmax:(%.15e, %.15e) numDirectionChanges:%i\n", ErrThreshold, min, max, numDirectionChanges);
-        //printf("--------------\n"); 
-        
+       
         if(numDirectionChanges == 8 && acceptableThreshold == 0.){
+            //triggering finish because we dont' want to be looking forever
             return numRegions;
         }
       }while(numActiveRegions > targetRegionNum || iter_polished_errorest > MaxPercentOfErrorBudget*(targetError - error) || error > targetError);
@@ -1794,30 +1776,24 @@ namespace quad {
                           iteration);
                           
      //printf("it: %i (%.15e +- %.15e) numRegions:%lu finished errorestimate:%.15e estimateHasConverged:%i\n", iteration, leaves_estimate, leaves_errorest, numRegions, error, estimateHasConverged);
-     if(/*(estimateHasConverged || iteration > 15) ||*/ error > abs(leaves_estimate)*epsrel){
-        //printf ("Warning too early and finshed error bigger than required error: %e vs %e  leaves_estimate:%.15e\n", error, abs(leaves_estimate)*epsrel, leaves_estimate);        
+     if(error > abs(leaves_estimate)*epsrel){
         RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
         cudaDeviceSynchronize();
         error -= iter_finished_errorest;
         integral -= iter_finished_estimate;
         iter_finished_estimate = 0.;
         iter_finished_errorest = 0.;
-        //exit (EXIT_FAILURE);
       }
-      
-      
-      
+
         secondTolastAvg = lastAvg;
         lastAvg = leaves_estimate;
         lastErr = leaves_errorest;
-      
-        
+           
       if ((iteration != 0 && leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs) && GLOBAL_ERROR) || mustFinish) {
         integral = leaves_estimate;
         error = leaves_errorest;
         QuadDebug(cudaFree(activeRegions));
         QuadDebug(cudaFree(subDividingDimension));
-        //nFinishedRegions = nregions;
         nregions += numRegions + partitionManager.NumRegionsStored();
         if(leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs))
             fail = 0;
@@ -1831,9 +1807,7 @@ namespace quad {
         error = temp_error;
       }
 
-      //if(2*GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem()){
       if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() || (!estimateHasConverged && numRegions > 2000000)){
-            //printf("Not enough mem, need to revert and filter\n");
             RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
             cudaDeviceSynchronize();
             error -= iter_finished_errorest;
@@ -1841,14 +1815,6 @@ namespace quad {
             iter_finished_estimate = 0.;
             iter_finished_errorest = 0.;
            
-           
-           /*printf("ForceReset it: %i (%.15e +- %.15e) numRegions:%lu Unmarking finished regions in order to recover, Resetting finished error to %.15e (current level:%.15e) estimateHasConverged:%i\n", iteration, 
-                                                                                                                                                                                                         leaves_estimate, 
-                                                                                                                                                                                                         leaves_errorest, 
-                                                                                                                                                                                                         numRegions, 
-                                                                                                                                                                                                         error - iter_finished_errorest,  
-                                                                                                                                                                                                         error, 
-                                                                                                                                                                                                         estimateHasConverged);*/
             size_t remainingRegs = FilterOut(dRegionsIntegral,
               dRegionsError,
               subDividingDimension,
@@ -1877,7 +1843,6 @@ namespace quad {
       }
       
       if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < 2*first_phase_maxregions)) {
-        //  if (numRegions <= first_phase_maxregions && fail == 1) {
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
                                   subDividingDimension,
