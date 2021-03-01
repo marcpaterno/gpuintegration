@@ -1369,6 +1369,7 @@ namespace quad {
     
     
     bool AdjustErrorThreshold(double ErrorestMarkedFinished, double MaxErrorestToAllowedToFinish, double percentRegionsToKeep, int& currentDirection, double& lastThreshold, double& threshold, double& minThreshold, double& maxThreshold, int& numDirectionChanges){
+        //printf("adjusting threshold with min max:%15e, %.15e\n", minThreshold, maxThreshold);
         int priorDirection = currentDirection;
         if(ErrorestMarkedFinished > MaxErrorestToAllowedToFinish || percentRegionsToKeep < .5){
             if(currentDirection == 1){
@@ -1397,7 +1398,8 @@ namespace quad {
             currentDirection = 1;
             GetNextThreshold(minThreshold, maxThreshold, currentDirection, threshold); //the flag was priorly set to zero
         }
-        return currentDirection != priorDirection; //return whether there is a direction change
+        //printf("new from within adjustment min max:%15e, %.15e\n", minThreshold, maxThreshold);
+        return currentDirection != priorDirection && priorDirection != -1; //return whether there is a direction change
     }
     
     size_t ComputeNumUnPolishedRegions(thrust::device_ptr<int> d_ptr, int* unpolishedRegions, thrust::device_ptr<int> scan_ptr, int* scannedArray, size_t numRegions){
@@ -1466,14 +1468,25 @@ namespace quad {
       auto  __tuple = thrust::minmax_element(d_ptrE, d_ptrE + numRegions);
       double min = *__tuple.first;
       double max = *__tuple.second;      
-        
       thrust::device_ptr<double> wrapped_ptr;
       thrust::device_ptr<int> wrapped_mask;
+      bool directionChange = false;
+      int maxDirectionChanges = 9;
       
-      do{
-        bool directionChange = false;
-        iter_polished_errorest = 0.;
+      do{      
         iter_polished_estimate = 0.;
+        iter_polished_errorest = 0.;
+        
+        //check if we have done a lot of work and need to settle for the last safe choice we had encountered
+        if(numDirectionChanges >= maxDirectionChanges){
+            ErrThreshold = acceptableThreshold; //saved as last resort, not original target for reamining errorest budget percentage to cover but good enough
+            //printf("using acceptable threshold %.15e after %i direction changes\n", acceptableThreshold, numDirectionChanges);
+        }//if we are changing directions, we will relax requirements for too big of errorest
+        else if(numDirectionChanges > 2 && numDirectionChanges <= 9 && directionChange){
+            MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements 
+            //printf("Updating percentage to %f current threshold:%.15e numDirectionChanges:%i\n", MaxPercentOfErrorBudget, ErrThreshold, numDirectionChanges);
+        }
+        
         numActiveRegions = 0;  
         Filter<<<numBlocks, numThreads>>>(dRegionsError, unpolishedRegions, activeRegions, numRegions, ErrThreshold);
         cudaDeviceSynchronize();
@@ -1490,33 +1503,35 @@ namespace quad {
             wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
             iter_polished_errorest = iterErrorest - iter_finished_errorest - thrust::inner_product(thrust::device, wrapped_ptr, wrapped_ptr + numRegions, wrapped_mask, 0.);
 
-            if((iter_polished_errorest <= MaxPercentOfErrorBudget*(targetError - error) || numDirectionChanges == 8)){
+            if((iter_polished_errorest <= MaxPercentOfErrorBudget*(targetError - error) || numDirectionChanges == maxDirectionChanges)){
+                //printf("ready to exit and updating finished estimates with polished contribution %.15e +- %.15e numDirectionChanges:%i iter_finished_errorest:%.15e ErrThreshold:%.15e\n", iter_polished_estimate, iter_polished_errorest, numDirectionChanges, iter_finished_errorest, ErrThreshold);
                 integral += iter_polished_estimate;
                 error += iter_polished_errorest;
                 break;
             }
-            else if(iter_polished_errorest <= .85*(targetError - error)){
+            else if(iter_polished_errorest <= .95*(targetError - error)){
+                //printf("Found acceptable threshold %.15e that covers %f percent of regions and %f percent of budget\n", ErrThreshold, (double)numActiveRegions/(double)numRegions, (double)iter_polished_errorest/double(targetError - error));
                 acceptableThreshold = ErrThreshold;
             }
         }
-     
+        //printf("Covers %f percent of regions %f percent of budget\n", (double)numActiveRegions/(double)numRegions, (double)iter_polished_errorest/double(targetError - error));
         double unpolishedPercentage = (double)(numActiveRegions)/(double)numRegions;
         //change that, intent is not clear should be returning directionChange and have the name AdjustErrorThreshold
         directionChange = AdjustErrorThreshold(iter_polished_errorest, MaxPercentOfErrorBudget*(targetError - error), unpolishedPercentage, direction, lastThreshold, ErrThreshold, min, max, numDirectionChanges);
-        if(numDirectionChanges >= 8){
-            ErrThreshold = acceptableThreshold; //saved as last resort, not original target for reamining errorest budget percentage to cover but good enough
-        }
-        else if(numDirectionChanges > 2 && numDirectionChanges < 8 && directionChange){
-            MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements 
-        }
-       
-        if(numDirectionChanges == 8 && acceptableThreshold == 0.){
+        //printf("Direction change:%i\n",  directionChange);
+        
+        if(numDirectionChanges == maxDirectionChanges && acceptableThreshold == 0.){
             //triggering finish because we dont' want to be looking forever
+            //printf("have 9 direction changes and zero valued acceptable threshold so gonna exit function\n");
+            //memory leak? dont' forget to add release of activeRegions and scannedArray
             return numRegions;
         }
+           
+       //printf("end of loop numActiveRegions:%lu targetRegionNum:%lu iter_polished_errorest:%.15e must be less than:%.15e ferror:%.15e targetError:%.15e\n", numActiveRegions, targetRegionNum, iter_polished_errorest, MaxPercentOfErrorBudget*(targetError - error), error, targetError);
+        //printf("----\n");    
       }while(numActiveRegions > targetRegionNum || iter_polished_errorest > MaxPercentOfErrorBudget*(targetError - error) || error > targetError);
       
-      
+      //printf("Exited loop\n");
       QuadDebug(Device.ReleaseMemory(activeRegions));
       QuadDebug(Device.ReleaseMemory(scannedArray));
       activeRegions = unpolishedRegions;
@@ -1775,10 +1790,11 @@ namespace quad {
                           epsabs,
                           iteration);
                           
-     //printf("it: %i (%.15e +- %.15e) numRegions:%lu finished errorestimate:%.15e estimateHasConverged:%i\n", iteration, leaves_estimate, leaves_errorest, numRegions, error, estimateHasConverged);
+     //printf("it: %i (%.15e +- %.15e) numRegions:%lu finished contribution %.15e +- %.15e estimateHasConverged:%i\n", iteration, leaves_estimate, leaves_errorest, numRegions, integral, error, estimateHasConverged);
      if(error > abs(leaves_estimate)*epsrel){
         RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
         cudaDeviceSynchronize();
+        //printf("Warning triggered, removing %.15e +- %.15e from finished contributions\n", iter_finished_estimate, iter_finished_errorest);
         error -= iter_finished_errorest;
         integral -= iter_finished_estimate;
         iter_finished_estimate = 0.;
@@ -1790,6 +1806,7 @@ namespace quad {
         lastErr = leaves_errorest;
            
       if ((iteration != 0 && leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs) && GLOBAL_ERROR) || mustFinish) {
+        //printf("Must finish, setting integral from %.15e %.15e to %.15e %.15e \n", integral, error, leaves_estimate, leaves_errorest);
         integral = leaves_estimate;
         error = leaves_errorest;
         QuadDebug(cudaFree(activeRegions));
@@ -1807,7 +1824,8 @@ namespace quad {
         error = temp_error;
       }
 
-      if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() || (!estimateHasConverged && numRegions > 2000000)){
+      if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() || (/*!estimateHasConverged &&*/ numRegions > /*2000000*/2000000)){
+            //printf("Filtering\n");
             RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
             cudaDeviceSynchronize();
             error -= iter_finished_errorest;
@@ -1833,13 +1851,12 @@ namespace quad {
               epsabs);
              // printf("Filtered target error:%.15e keeping %lu from %lu regions\n", leaves_estimate*epsrel, remainingRegs, numRegions);
               
-              if(remainingRegs == numRegions){
+              if(remainingRegs == numRegions){        
                  mustFinish = true;
                  RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
                  cudaDeviceSynchronize();
-              }
-              
-              
+                
+              }        
       }
       
       if (iteration < 700 && fail == 1 && (phase2 == false || numRegions < 2*first_phase_maxregions)) {
