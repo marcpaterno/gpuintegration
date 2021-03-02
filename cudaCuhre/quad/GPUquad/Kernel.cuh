@@ -1483,7 +1483,7 @@ namespace quad {
             //printf("using acceptable threshold %.15e after %i direction changes\n", acceptableThreshold, numDirectionChanges);
         }//if we are changing directions, we will relax requirements for too big of errorest
         else if(numDirectionChanges > 2 && numDirectionChanges <= 9 && directionChange){
-            MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements 
+           MaxPercentOfErrorBudget = numDirectionChanges > 1 ?  MaxPercentOfErrorBudget + .1: MaxPercentOfErrorBudget; //if we are doing a lot of back and forth, we must relax the requirements 
             //printf("Updating percentage to %f current threshold:%.15e numDirectionChanges:%i\n", MaxPercentOfErrorBudget, ErrThreshold, numDirectionChanges);
         }
         
@@ -1536,6 +1536,8 @@ namespace quad {
       QuadDebug(Device.ReleaseMemory(scannedArray));
       activeRegions = unpolishedRegions;
       CudaCheckError();
+      //printf("throwing away %lu (%f) regions worth %.15e errorest targetError:%.15e\n", numRegions - numActiveRegions, (double)numActiveRegions/(double)numRegions, iter_polished_errorest, targetError);
+      //printf("this leaves %lu active regions that are going to be split by GenerateActiveIntervals\n", numActiveRegions);
       return numActiveRegions;
     }
 
@@ -1794,7 +1796,7 @@ namespace quad {
      if(error > abs(leaves_estimate)*epsrel){
         RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
         cudaDeviceSynchronize();
-        //printf("Warning triggered, removing %.15e +- %.15e from finished contributions\n", iter_finished_estimate, iter_finished_errorest);
+        printf("Warning triggered, removing %.15e +- %.15e from finished contributions\n", iter_finished_estimate, iter_finished_errorest);
         error -= iter_finished_errorest;
         integral -= iter_finished_estimate;
         iter_finished_estimate = 0.;
@@ -1806,7 +1808,8 @@ namespace quad {
         lastErr = leaves_errorest;
            
       if ((iteration != 0 && leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs) && GLOBAL_ERROR) || mustFinish) {
-        //printf("Must finish, setting integral from %.15e %.15e to %.15e %.15e \n", integral, error, leaves_estimate, leaves_errorest);
+        if(mustFinish)
+            printf("Must finish, setting integral from %.15e %.15e to %.15e %.15e \n", integral, error, leaves_estimate, leaves_errorest);
         integral = leaves_estimate;
         error = leaves_errorest;
         QuadDebug(cudaFree(activeRegions));
@@ -1824,14 +1827,14 @@ namespace quad {
         error = temp_error;
       }
 
-      if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() || (/*!estimateHasConverged &&*/ numRegions > /*2000000*/2000000)){
-            //printf("Filtering\n");
-            RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
-            cudaDeviceSynchronize();
-            error -= iter_finished_errorest;
-            integral -= iter_finished_estimate;
-            iter_finished_estimate = 0.;
-            iter_finished_errorest = 0.;
+      if( GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() || estimateHasConverged/*|| (!estimateHasConverged && numRegions > 2000000)*/){
+            printf("Filtering numRegions:%lu estimateHasConverged:%i iteration:%i\n", numRegions, estimateHasConverged, iteration);
+            //RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
+            //cudaDeviceSynchronize();
+            //error -= iter_finished_errorest;
+            //integral -= iter_finished_estimate;
+           // iter_finished_estimate = 0.;
+            //iter_finished_errorest = 0.;
            
             size_t remainingRegs = FilterOut(dRegionsIntegral,
               dRegionsError,
@@ -1851,7 +1854,8 @@ namespace quad {
               epsabs);
              // printf("Filtered target error:%.15e keeping %lu from %lu regions\n", leaves_estimate*epsrel, remainingRegs, numRegions);
               
-              if(remainingRegs == numRegions){        
+              if(remainingRegs == numRegions && !estimateHasConverged){        
+                 printf("Didn't filter out anything\n");
                  mustFinish = true;
                  RevertFinishedStatus<<<numBlocks, numThreads>>>(activeRegions, numRegions);
                  cudaDeviceSynchronize();
@@ -1870,7 +1874,6 @@ namespace quad {
         depthBeingProcessed++;
         nregions += numInActiveIntervals;
         nFinishedRegions += numInActiveIntervals;
-        
         
         
         bool NotEnoughMem =
