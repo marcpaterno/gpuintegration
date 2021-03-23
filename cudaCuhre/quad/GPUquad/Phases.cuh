@@ -137,6 +137,64 @@ namespace quad {
         return verdict;
    }
    
+   template<int NDIM>
+   __device__
+   void
+   ActualCompute(double* generators, double* g, const Structures<double>& constMem, size_t feval_index, size_t total_feval){
+       for (int dim = 0; dim < NDIM; ++dim) {
+        g[dim] = 0;
+       }
+        int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
+                 __ldg(&constMem._gpuGenPermVarStart[feval_index]);
+        int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);   
+   
+        for (int posIter = 0; posIter < posCnt; ++posIter) {
+          int pos =
+            (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[feval_index]) + posIter]);
+          int absPos = abs(pos);
+          
+          if (pos == absPos) { 
+            g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+          } else {
+            g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+          }
+        }
+        
+        for(int dim=0; dim<NDIM; dim++){
+            generators[total_feval*dim + feval_index] = g[dim];
+        }
+        
+   }
+ 
+ template<int NDIM>
+  __global__
+  void
+  ComputeGenerators(double* generators, size_t FEVAL, const Structures<double> constMem){
+    size_t perm = 0;
+    double g[NDIM];
+    for (size_t dim = 0; dim < NDIM; ++dim) {
+      g[dim] = 0;
+    }
+    
+    size_t feval_index = perm * BLOCK_SIZE + threadIdx.x;
+    //printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
+    if (feval_index < FEVAL) {
+     ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+    }
+    __syncthreads();
+    for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
+       int feval_index = perm * BLOCK_SIZE + threadIdx.x;
+       ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+    }
+    __syncthreads();
+    feval_index = perm * BLOCK_SIZE + threadIdx.x;
+    if (feval_index < FEVAL) {
+      int feval_index = perm * BLOCK_SIZE + threadIdx.x;
+      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+    }
+    __syncthreads();
+  }
+   
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -146,18 +204,18 @@ namespace quad {
               T* newErrs,
               int* activeRegions,
               size_t currIterRegions,
-              size_t total_nregions,
-              double iterEstimate,
-              double leaves_estimate,
-              double finished_estimate,
-              double finished_errorest,
-              double queued_estimate,
-              double queued_errorest,
+              //size_t total_nregions,
+              //double iterEstimate,
+              //double leaves_estimate,
+              //double finished_estimate,
+              //double finished_errorest,
+              //double queued_estimate,
+              //double queued_errorest,
               T epsrel,
-              T epsabs,
-              int depth,
-              bool estConverged,
-              double lastErr,
+              //T epsabs,
+              //int depth,
+              //bool estConverged,
+              //double lastErr,
               int heuristicID)
   {
     // can we do anythign with the rest of the threads? maybe launch more blocks
@@ -255,11 +313,18 @@ namespace quad {
                    T* lows,
                    T* highs,
                    int iteration,
-                   int depth)
+                   int depth,
+                   double* generators)
   {
     size_t index = blockIdx.x;
-
+    __shared__ double vol;
+    __shared__ int maxDim;
+    __shared__ double ranges[NDIM];
+    __shared__ double Jacobian;
+    
     if (threadIdx.x == 0) {
+      Jacobian = 1;
+      double maxRange = 0;
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
@@ -268,13 +333,22 @@ namespace quad {
         
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
+        ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
         sRegionPool[0].div = depth; 
+        
+        double range = sRegionPool[0].bounds[dim].upper - lower;
+        Jacobian = Jacobian * ranges[dim];
+        if(range > maxRange){
+            maxDim = dim;
+            maxRange = range;
+        }
       }
+      vol = ldexp(1., -depth);
     }
 
     __syncthreads();
     SampleRegionBlock<IntegT, T, NDIM>(
-      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, &vol, &maxDim, ranges, &Jacobian, generators);
     __syncthreads();
   }
 
@@ -296,7 +370,8 @@ namespace quad {
                        T* lows,
                        T* highs,
                        int iteration,
-                       int depth)
+                       int depth,
+                       double* generators)
   {
     __shared__ Region<NDIM> sRegionPool[1];
 
@@ -311,7 +386,7 @@ namespace quad {
                              lows,
                              highs,
                              iteration,
-                             depth);
+                             depth, generators);
     
     if (threadIdx.x == 0) {
       const double ERR = sRegionPool[0].result.err;
@@ -830,6 +905,7 @@ namespace quad {
                              T* dPh1res,
                              int max_regions,
                              RegionList& batch,
+                             double* generators,
                              int depth = 0,
                              int phase1_type = 0,
                              Region<NDIM>* phase1_regs = nullptr,
@@ -871,7 +947,7 @@ namespace quad {
 
     __syncthreads();
     // ERR and sRegionPool[0].result.err are not the same in the beginning
-    SampleRegionBlock<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+    SampleRegionBlock_ph2<IntegT, T, NDIM>(d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, generators);//, 0, 0, 0, 0, nullptr);
     ALIGN_GLOBAL_TO_SHARED<IntegT, T, NDIM>(sRegionPool, gPool);
     ComputeErrResult<T, NDIM>(ERR, RESULT, sRegionPool);
     
@@ -882,8 +958,7 @@ namespace quad {
     }
 
     __syncthreads();
-   
-            
+    
     int nregions = sRegionPoolSize; // is only 1 at this point
     while (nregions < max_global_pool_size && (nregions == 1 || ERR > MaxErr(RESULT, epsrel, /*1e-200*/epsabs))) {
 
@@ -922,11 +997,11 @@ namespace quad {
       sRegionPoolSize++;
       nregions++;
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(
-        d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock_ph2<IntegT, T, NDIM>(
+        d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, generators);//, 0, 0, 0, 0, nullptr);
       __syncthreads();
-      SampleRegionBlock<IntegT, T, NDIM>(
-        d_integrand, sRegionPoolSize - 1, constMem, FEVAL, NSETS, sRegionPool);
+      SampleRegionBlock_ph2<IntegT, T, NDIM>(
+        d_integrand, sRegionPoolSize - 1, constMem, FEVAL, NSETS, sRegionPool, generators);//, 0, 0, 0, 0, nullptr);
       __syncthreads();
 
       if (threadIdx.x == 0) {
@@ -963,8 +1038,8 @@ namespace quad {
         isActive = 1;
       }
       
-      
-      //printf("[%i] %.15e %.15e\n", blockIdx.x, RESULT , batch.dRegionsIntegral[blockIdx.x]);
+      //if(blockIdx.x == 0 || blockIdx.x == 32000)
+      //  printf("[%i] %.15e %.15e\n", blockIdx.x, RESULT , batch.dRegionsIntegral[blockIdx.x]);
       batch.activeRegions[blockIdx.x] = isActive;
       batch.dRegionsIntegral[blockIdx.x] = RESULT;
       batch.dRegionsError[blockIdx.x] = ERR;

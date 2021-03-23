@@ -675,16 +675,11 @@ namespace quad {
       kernel->SetPhase2(phase2);
       int numprocs = 0;
       IntegT* d_integrand;
-      // cudaMalloc((void**)&d_integrand, sizeof(IntegT));
-      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-      // cudaMemcpy(d_integrand, &integrand, sizeof(IntegT),
-      // cudaMemcpyHostToDevice);
-      memcpy(d_integrand, &integrand, sizeof(IntegT));
-      // the above lines will be replace wiht the ones below
-      /*
-      IntegT* d_integrand = Make_GPU_Integrand(&integrand);
 
-      */
+      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      memcpy(d_integrand, &integrand, sizeof(IntegT));
+      CudaCheckError();
+ 
         
       if (numprocs > 1) {
         MPI_Init(&argc, &argv);

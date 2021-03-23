@@ -379,7 +379,7 @@ namespace quad {
         cudaMalloc((void**)&constMem->_gpuGenPermGIndex, sizeof(int) * FEVAL));
       QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1)));
-
+      //printf("_gpuGenPermVarStart has %lu entries\n", FEVAL + 1);
       QuadDebug(cudaMemcpy(constMem->_gpuG,
                            cpuG,
                            sizeof(T) * NDIM * NSETS,
