@@ -29,7 +29,7 @@ namespace detail{
 int
 main()
 {
-  double epsrel =  1e-3;
+  double epsrel = 1e-3;
   double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1.79132603674879e-06;
   detail::GENZ_4_5D integrand;
@@ -37,9 +37,9 @@ main()
   constexpr int ndim = 5;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
-  while (cu_time_and_call<detail::GENZ_4_5D, ndim>("Genz4_5D",
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = false;
+  while (cu_time_and_call<detail::GENZ_4_5D, ndim>("GENZ4_5D",
                                                 integrand,
                                                 epsrel,
                                                 true_value,
@@ -48,6 +48,7 @@ main()
                                                 configuration) == true &&
                                                 epsrel > epsrel_min) {
     epsrel /= 5.0;
+    //break;
   }
 
 }

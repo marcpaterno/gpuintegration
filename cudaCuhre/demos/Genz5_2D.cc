@@ -51,7 +51,7 @@ double GENZ_5_2D(double x, double y)
 {
    double beta = .5;
     double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
-    return exp(t1)/(0.039462780237263662026);
+    return exp(t1)/*/(0.039462780237263662026)*/;
 }
 
 
@@ -66,7 +66,7 @@ int main()
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
   
   double epsrel = 1.0e-3;
-  double true_value = 1.0;
+  double true_value = 0.039462780237263662026;
 
   int _final = 4;
   cuhre.flags = _final;

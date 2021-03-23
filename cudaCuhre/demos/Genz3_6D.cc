@@ -66,7 +66,7 @@ int main()
 
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
   
-  double epsrel = 1.0e-3;
+  double epsrel = 1.0240e-10;//1.0e-3;
   double true_value = 1.;
   /* while(time_and_call_alt(cuhre, GENZ_3_6D, epsrel, true_value, "dc_f0") == true &&  epsrel >= epsrel_min)
   {
@@ -80,6 +80,7 @@ int main()
   while(time_and_call_alt(cuhre, GENZ_3_6D, epsrel, true_value, "GENZ_3_6D") == true && epsrel >= epsrel_min)
   {
       epsrel /= 5.0;
+      break;
   }
   return 0;
 }

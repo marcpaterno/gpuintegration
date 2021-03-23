@@ -41,11 +41,11 @@ main()
   detail::BoxIntegral8_15 integrand;
   constexpr int ndim = 8;
   
-  constexpr int alternative_phase1 = 0;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
+
   PrintHeader();
   while (cu_time_and_call<detail::BoxIntegral8_15, ndim>("B8_15",
                        integrand,

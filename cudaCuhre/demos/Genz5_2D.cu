@@ -19,7 +19,6 @@ namespace detail{
         return exp(t1);
       }
     };
-    
 }
 
 int
@@ -33,8 +32,8 @@ main()
   constexpr int ndim = 2;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
-  
+  configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   PrintHeader();
   while (cu_time_and_call<detail::GENZ_5_2D, ndim>("GENZ_5_2D",
                        integrand,

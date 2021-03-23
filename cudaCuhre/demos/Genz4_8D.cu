@@ -36,10 +36,10 @@ main()
   PrintHeader();
   constexpr int ndim = 8;
   Config configuration;
-  configuration.outfileVerbosity = 1;
-  configuration.heuristicID = 9;
-  
-  while (cu_time_and_call<detail::GENZ_4_8D, ndim>("Genz4_8D",
+  configuration.outfileVerbosity = 0;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
+  while (cu_time_and_call<detail::GENZ_4_8D, ndim>("GENZ4_8D",
                                                 integrand,
                                                 epsrel,
                                                 true_value,
@@ -48,7 +48,6 @@ main()
                                                 configuration) == true &&
                                                 epsrel > epsrel_min) {
     epsrel /= 5.0;
-    break;
   }
 }
 

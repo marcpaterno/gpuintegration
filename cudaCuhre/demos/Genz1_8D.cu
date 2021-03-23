@@ -19,7 +19,8 @@ main()
       
   Config configuration;
   configuration.outfileVerbosity = 0;
-  //configuration.heuristicID = 1;
+  configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   double true_value = (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) *
                sin(3.) * sin(7. / 2.) * sin(4.) *
                (sin(37. / 2.) - sin(35. / 2.));/*0.000041433844333568199264*/;

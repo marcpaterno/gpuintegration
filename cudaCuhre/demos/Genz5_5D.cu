@@ -32,10 +32,11 @@ main()
   constexpr int ndim = 5;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 7;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = false;
   
   PrintHeader();
-  while (cu_time_and_call<detail::GENZ_5_5D, ndim>("GENZ_5_D",
+  while (cu_time_and_call<detail::GENZ_5_5D, ndim>("GENZ5_5D",
                        integrand,
                        epsrel,
                        true_value,

@@ -15,7 +15,7 @@ main()
   constexpr int ndim = 5;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  configuration.heuristicID = 0;
   
   PrintHeader();
   while (cu_time_and_call<Genz_1abs_5d, ndim>("Genz_1abs_5d",

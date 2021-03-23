@@ -29,11 +29,11 @@ main()
  
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  configuration.heuristicID = 0;
   constexpr int ndim = 3;
   
   PrintHeader();
-  while (cu_time_and_call<detail::GENZ_3_3D, ndim>("GENZ_3_3D",
+  while (cu_time_and_call<detail::GENZ_3_3D, ndim>("GENZ3_3D",
                        integrand,
                        epsrel,
                        true_value,

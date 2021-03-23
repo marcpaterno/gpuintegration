@@ -81,12 +81,13 @@ int main()
     epsrel /= 5.0;
   }*/
   
-  //int verbose = 0;
-  //int _final = 4;
-  cuhre.flags = 4;
+  int verbose = 3;
+  int _final = 4;
+  cuhre.flags = verbose | _final;
   while(epsrel >= epsrel_min && time_and_call_alt<cubacpp::Cuhre , GENZ_4_5D>(cuhre, integrand, epsrel, true_value, "Genz4_5D") == true)
   {
       epsrel /= 5.0;
+      break;
   }
   return 0;
 }

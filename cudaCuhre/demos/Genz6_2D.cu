@@ -20,6 +20,7 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 4;
+  //configuration.phase_2 = true;
   
   PrintHeader();
   while (cu_time_and_call<GENZ_6_2D, ndim>("pdc_f1_latest",

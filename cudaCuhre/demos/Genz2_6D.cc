@@ -51,20 +51,20 @@ time_and_call_alt(ALG const& a, F f, double epsrel, double correct_answer, std::
 }
 
 double 
-GENZ_2_6D(double x, double y/*, double z, double k, double l, double m*/)
+GENZ_2_6D(double x, double y, double z, double k, double l, double m)
   {
 	double a = 50.;
     double b = .5;
 	
     double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
     double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
-	//double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
-	//double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
-	//double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
-	//double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
+	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
+	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
+	double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
+	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
 	
-    double val  = term_1 * term_2 /** term_3 * term_4 * term_5 * term_6*/;
-	return val/(1.286889807581113e+13);
+    double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
+	return val;
   }
 
 
@@ -90,7 +90,7 @@ int main()
   int _final = 4;
   cuhre.flags = verbose | _final;
   epsrel = 1.0e-3;
-  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_2_6D, epsrel, true_value, "dc_f1") == true)
+  while(epsrel >= epsrel_min && time_and_call_alt(cuhre, GENZ_2_6D, epsrel, true_value, "GENZ2_6D") == true)
   {
       epsrel /= 5.0;
   }

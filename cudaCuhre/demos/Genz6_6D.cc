@@ -55,7 +55,7 @@ double GENZ_6_6D(double u, double v, double w, double x, double y, double z)
 	  if(z > .9 || y > .8 || x > .7 || w > .6 || v >.5 || u > .4)
 		  return 0.;
 	  else
-		  return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u)/(1.5477367885091207413e8);
+		  return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u);
   }
 
 

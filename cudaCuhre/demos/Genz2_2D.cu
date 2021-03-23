@@ -18,7 +18,7 @@ main()
   constexpr int ndim = 2;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  configuration.heuristicID = 0;
   
   PrintHeader();
   while (cu_time_and_call<GENZ_2_2D, ndim>("GENZ_2_2D",

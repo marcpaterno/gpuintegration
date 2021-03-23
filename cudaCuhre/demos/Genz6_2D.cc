@@ -69,7 +69,7 @@ int main()
   cout<<"id, value, epsrel, epsabs, estimate, errorest, regions, converge, final, total_time\n";
   
   double epsrel = 1.0e-3;
-  double true_value = pow(153.0818, 6);
+  double true_value =120489.75982636053604;
 
   //int verbose = 0;
   int _final = 4;

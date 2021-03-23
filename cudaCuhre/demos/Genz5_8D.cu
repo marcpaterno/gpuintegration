@@ -32,7 +32,8 @@ main()
   constexpr int ndim = 8;
   Config configuration;
   configuration.outfileVerbosity = 0;  
-  configuration.heuristicID = 7;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   PrintHeader();
 
   while(cu_time_and_call<detail::GENZ_5_8D, ndim>("GENZ5_8D",
@@ -42,6 +43,6 @@ main()
                                                 "gpucuhre",
                                                 std::cout,
                                                 configuration) == true && epsrel > epsrel_min){
-        epsrel /= 5;                                                
+        epsrel /= 5;    
   }
 }

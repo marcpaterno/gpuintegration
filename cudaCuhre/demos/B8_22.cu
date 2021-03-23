@@ -41,8 +41,8 @@ main()
     
   Config configuration;
   configuration.outfileVerbosity = 0;
-  //configuration.heuristicID = 4;
-  //configuration.phase_2 = false;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   PrintHeader();
   while (cu_time_and_call<detail::BoxIntegral8_22, ndim>("B8_22",
                        integrand,

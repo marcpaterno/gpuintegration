@@ -495,7 +495,7 @@ public:
 	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
 	
     double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
-	return val/((1.286889807581113e+13));
+	return val/*/((1.286889807581113e+13))*/;
   }
 };
 

@@ -14,7 +14,7 @@ namespace detail{
           __device__ __host__ double
           operator()(double x, double y, double z, double w, double v, double u, double t, double s)
           {
-            return pow(1+8*s+7*t+6*u+5*v+4*w+3*x+2*y+z, -9)/2.2751965817917756076e-10;
+            return pow(1+8*s+7*t+6*u+5*v+4*w+3*x+2*y+z, -9)/*/2.2751965817917756076e-10*/;
           }
     };
 }
@@ -22,18 +22,19 @@ namespace detail{
 int
 main()
 {
-  double epsrel = 1e-3;
+  double epsrel = 1.e-3;
   double const epsrel_min = 1.024e-10;
-  double true_value = 1.;
+  double true_value = 2.2751965817917756076e-10;
   detail::GENZ_3_8D integrand;
   PrintHeader();
   
   constexpr int ndim = 8;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   
-  while (cu_time_and_call<detail::GENZ_3_8D, ndim>("Genz3_8D",
+  while (cu_time_and_call<detail::GENZ_3_8D, ndim>("GENZ3_8D",
                            integrand,
                            epsrel,
                            true_value,

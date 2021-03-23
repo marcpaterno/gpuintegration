@@ -22,14 +22,14 @@ namespace detail{
 int
 main()
 {
-  double epsrel = 1.0e-3; // starting error tolerance.
+  double epsrel = 2.56e-09;//1.e-3; // starting error tolerance.
   double const epsrel_min = 1.0e-13;
   double true_value = 3.015702399795044e+17;
   GENZ_2_8D integrand;
   constexpr int ndim = 8;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  //configuration.heuristicID = 4;
+  //configuration.heuristicID = 0;
   PrintHeader();
   
   while (cu_time_and_call<GENZ_2_8D, ndim>("GENZ_2_8D",
@@ -41,5 +41,6 @@ main()
                            configuration) == true &&
              epsrel > epsrel_min) {
     epsrel /= 5.0;
+    break;
    }
 }

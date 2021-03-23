@@ -2,7 +2,7 @@
 #include "demo_utils.cuh"
 #include <chrono>
 #include <iostream>
-
+#include <type_traits>
 int
 main()
 {
@@ -23,6 +23,7 @@ main()
   int heuristics[3] = {0, 2, 4};
   PrintHeader();
   
+  std::cout << std::is_trivially_copyable<integral<GPU>>::value << '\n';
   for(int i=2; i>=0; i--){
       epsrel = 1e-3;
       configuration.heuristicID = heuristics[i];

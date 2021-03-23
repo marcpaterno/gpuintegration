@@ -21,7 +21,7 @@ time_and_call(ALG const& a, F f, double epsrel, double correct_answer, char cons
 {
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-40;
+  double constexpr epsabs = 1.0e-20;
   auto t0 = std::chrono::high_resolution_clock::now();
   
   auto res = a.integrate(f, epsrel, epsabs);
@@ -55,7 +55,7 @@ struct Config{
     bool phase_2 = false;
     int outfileVerbosity = 0;
     int numdevices = 1;
-    int heuristicID = 9;
+    int heuristicID = 0;
     int _final = 1;
     int verbose = 0;
 };

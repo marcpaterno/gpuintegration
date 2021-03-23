@@ -15,7 +15,7 @@ namespace detail{
           if(z > .9 || y > .8 || x > .7 || w > .6 || v >.5 || u > .4)
               return 0.;
           else
-              return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u)/1.5477367885091207413e8;
+              return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u)/*/1.5477367885091207413e8*/;
       }
     };
 }
@@ -23,17 +23,18 @@ namespace detail{
 int
 main()
 {
-  double epsrel =1e-3; // starting error tolerance.
+  double epsrel = 1.e-3; // starting error tolerance.
   double const epsrel_min = 1.024e-10;
-  double true_value =  1.;
+  double true_value =  1.5477367885091207413e8;
   constexpr int ndim = 6;
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  //configuration.heuristicID = 0;
+  //configuration.phase_2 = true;
   detail::GENZ_6_6D integrand;
   PrintHeader();
-             
-  while (cu_time_and_call<detail::GENZ_6_6D, ndim>("GENZ_6_6D",
+          
+  while (cu_time_and_call<detail::GENZ_6_6D, ndim>("GENZ6_6D",
                        integrand,
                        epsrel,
                        true_value,
