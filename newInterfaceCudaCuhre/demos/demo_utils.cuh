@@ -21,7 +21,7 @@ using std::chrono::high_resolution_clock;
 using std::chrono::duration;
 
 void PrintHeader(){
-    std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, "
+    std::cout << "id, value, epsrel, epsabs, estimate, errorest, regions, fregions, lastPhase,"
              "status, total_time\n";
 }
 
@@ -37,6 +37,7 @@ cu_time_and_call(std::string id,
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
+  //double constexpr epsabs = 1.e-20;
   int key = 0;
   int numDevices = 1;
   int verbose = 0;
@@ -48,12 +49,14 @@ cu_time_and_call(std::string id,
   double errorest = 0.;
   size_t nregions = 0;
   size_t neval = 0;
+  int lastPhase = 0;
+  size_t fregions = 0;
   
   auto const t0 = std::chrono::high_resolution_clock::now();
   int errorFlag = 1;
-  errorFlag = alg.integrate(integrand, epsrel, epsabs, estimate, errorest, nregions, neval, vol);                          
+  errorFlag = alg.integrate(integrand, epsrel, epsabs, estimate, errorest, nregions, neval, fregions, lastPhase, vol);                          
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  
+
  std::string hID;
  outfile.precision(17);
  outfile << std::fixed  << std::scientific 
@@ -64,6 +67,8 @@ cu_time_and_call(std::string id,
           << estimate << ","
           << errorest << "," 
           << nregions << "," 
+          << fregions << "," 
+          << lastPhase << ","
           << errorFlag << "," 
           << dt.count() 
           << std::endl;

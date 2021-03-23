@@ -18,6 +18,9 @@ namespace quad{
 		sBound[dim].unScaledUpper =  highs[dim];
         
 		sRegionPool[threadIdx.x].div = numSplits;
+        
+        ///if(blockIdx.x == 0)
+         //   printf("dim %i %.15e, %.15e div:%i\n", dim, lower, lower + dRegionsLength[dim * numRegions + index], numSplits);
       }
     }
     __syncthreads();
@@ -461,7 +464,7 @@ namespace quad{
 		
 		__syncthreads();
 		int nregions = sRegionPoolSize; //is only 1 at this point
-		
+        
 		for(; (nregions < MAX_GLOBALPOOL_SIZE) && (nregions == 1 || ERR > MaxErr(RESULT, epsrel, epsabs)); ++nregions ){
 			
 			gRegionPool = gPool;
@@ -524,6 +527,8 @@ namespace quad{
                     
 				ERR += rL->err + rR->err - result.err;
 				RESULT +=  rL->avg + rR->avg - result.avg;   
+                
+               
 			}
 			__syncthreads();
 		}	
@@ -541,7 +546,8 @@ namespace quad{
 			
             //if(blockIdx.x == 10)
             //    printf("it:%i block = %.15e, %.15e nregions:%i sRegionPoolSize:%i\n", nregions, RESULT, ERR, nregions, sRegionPoolSize);
-
+             //if(nregions < 5) 
+            //    printf("[%i] done with less than 5:%i %.15e +- %.15e\n", blockIdx.x, nregions, RESULT, ERR);
 			activeRegions[blockIdx.x] = isActive;
 			dRegionsIntegral[blockIdx.x] = RESULT;
 			dRegionsError[blockIdx.x] = ERR;

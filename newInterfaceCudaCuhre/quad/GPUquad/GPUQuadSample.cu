@@ -97,6 +97,8 @@ double warpReduceSum(double val) {
     Region *const region = (Region *)&sRegionPool[sIndex];
 	
     T vol = ldexp(1., -region->div); // this means: 1*2^(-region->div)
+    //if(threadIdx.x == 0 && blockIdx.x == 0)
+    //    printf("vol:%.15e with div:%i\n", vol, region->div);
     T g[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;

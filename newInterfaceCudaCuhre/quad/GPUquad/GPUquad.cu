@@ -472,7 +472,7 @@ namespace quad{
 }
 
     template <typename IntegT>
-    int integrate(IntegT integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval, Volume<T, NDIM>* vol = nullptr){
+    int integrate(IntegT integrand, T epsrel, T epsabs, T &integral, T &error, size_t &nregions, size_t &neval, size_t& fregions, int& lastPhase, Volume<T, NDIM>* vol = nullptr){
       this->epsrel = epsrel;
       this->epsabs = epsabs;
       
@@ -541,7 +541,7 @@ namespace quad{
 	  //printf("Integral before 2nd Phase:%f\n", integral);
 	  //printf("Error before 2nd Phase:%f\n", error);
 	  errorFlag = kernel->IntegrateSecondPhase(d_integrand, epsrel, epsabs, integral, error, nregions, neval, optionalInfo);
-
+      printf("number of failed regions in phase 2:%i\n", errorFlag);
 	  if(VERBOSE){
 #if TIMING_DEBUG == 1
 	  //timer::stop_timer(&timer_one, "Second Phase");
@@ -549,7 +549,7 @@ namespace quad{
 	  }
 	}
 	if(error <= MaxErr(integral, epsrel, epsabs))
-	  errorFlag = 0;
+	 errorFlag = 0;
 
 #if TIMING_DEBUG == 1
 	//T time = timer::stop_timer_returntime(&timer, "Total time :");
@@ -560,6 +560,8 @@ namespace quad{
 	//printf("Total Time:%f\n", time);
 #endif
       }      
+      lastPhase = kernel->GetLastPhase();
+      fregions = kernel->Getfregions();
       return errorFlag;
     }
   };

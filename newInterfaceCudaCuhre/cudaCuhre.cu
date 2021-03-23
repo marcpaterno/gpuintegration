@@ -79,6 +79,8 @@ int main(int argc, char **argv){
   QuadDebugExit(args.DeviceInit());
   //detail::BoxIntegral8_22 integrand;
   Diagonal_ridge2D integrand;
+  size_t fregions = 0;
+  int lastPhase = 0;
   
   for(int i = 0; i < 1; ++i){
     double integral = 0, error = 0;
@@ -88,7 +90,7 @@ int main(int argc, char **argv){
     std::chrono::duration<double, std::chrono::milliseconds::period>;
     auto const t0 = std::chrono::high_resolution_clock::now();
 
-    int errorFlag = cuhre.integrate<Diagonal_ridge2D>(integrand, epsrel, EPSABS, integral, error, nregions, neval, &vol);
+    int errorFlag = cuhre.integrate<Diagonal_ridge2D>(integrand, epsrel, EPSABS, integral, error, nregions, neval, fregions, lastPhase, &vol);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     printf("%.15e %.15e %lu %i\t", integral, error, nregions, errorFlag);
     std::cout << std::scientific << "Time:"<<dt.count() <<"\n";
