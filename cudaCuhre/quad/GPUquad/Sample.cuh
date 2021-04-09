@@ -81,37 +81,16 @@ double blockReduceSum(double val) {
                      int FEVAL)
   {
     for (int dim = 0; dim < NDIM; ++dim) {
-      //g[dim] = 0;
       x[dim] = 0;
     }
+    
      int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
-    /*int posCnt = __ldg(&constMem._gpuGenPermVarStart[pIndex + 1]) -
-                 __ldg(&constMem._gpuGenPermVarStart[pIndex]);
-    int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
-     
-    for (int posIter = 0; posIter < posCnt; ++posIter) {
-      int pos =
-        (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) + posIter]);
-      int absPos = abs(pos);
-      
-      if (pos == absPos) { 
-        g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-      } else {
-        g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-      }
-    }*/
     
     for (int dim = 0; dim < NDIM; ++dim) {
-      //x[dim] = sBound[dim].unScaledLower +((.5 + g[dim]) * b[dim].lower + (.5 - g[dim]) * b[dim].upper)*range[dim];
       double generator = __ldg(&generators[FEVAL*dim + pIndex]);
       x[dim] = sBound[dim].unScaledLower +((.5 + generator) * b[dim].lower + (.5 - generator) * b[dim].upper)*range[dim];
     }
      
-    /* if((blockIdx.x == 0 || blockIdx.x == 100) && (threadIdx.x == 0 || threadIdx.x == 16 || threadIdx.x == 54)){
-        printf("[%i][%i] g:%e, %e, %e, %e, %e\n", blockIdx, threadIdx.x, g[0], g[1], g[2], g[3], g[4]);
-        printf("[%i][%i] x:%e, %e, %e, %e, %e\n", blockIdx, threadIdx.x, x[0], x[1], x[2], x[3], x[4]);
-     }*/
-   
     T fun = gpu::apply(*d_integrand, x)* (*jacobian);
     sdata[threadIdx.x] = fun; // target for reduction
     
@@ -132,7 +111,6 @@ double blockReduceSum(double val) {
   {
     
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
-    //T vol = ldexp(1., -region->div); //this can be done outside by a single block in shared memory
     
     T g[NDIM];
     gpu::cudaArray<double, NDIM> x;
@@ -149,7 +127,7 @@ double blockReduceSum(double val) {
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * BLOCK_SIZE + threadIdx.x;
-    //__syncthreads();
+
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
@@ -157,7 +135,7 @@ double blockReduceSum(double val) {
 
     __syncthreads();
     T* f = &sdata[0];
-    //__syncthreads();
+  
 
     if (threadIdx.x == 0) {
       Result* r = &region->result; 
@@ -180,14 +158,14 @@ double blockReduceSum(double val) {
 
       r->bisectdim = bisectdim;
     }
-    __syncthreads();
+    __syncthreads(); 
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
     }
-    __syncthreads();
+    __syncthreads(); 
     // Balance permutations
     pIndex = perm * BLOCK_SIZE + threadIdx.x;
     if (pIndex < FEVAL) {
@@ -195,9 +173,9 @@ double blockReduceSum(double val) {
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
     }
-    __syncthreads();
+    __syncthreads(); 
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = /*computeReduce<T>(sum[i])*/blockReduceSum(sum[i]);
+      sum[i] = blockReduceSum(sum[i]);
       __syncthreads();
     }
 
@@ -222,8 +200,6 @@ double blockReduceSum(double val) {
     }
   }
 
-
-
 template <typename IntegT, typename T, int NDIM>
   __device__ void
   computePermutation_ph2(IntegT* d_integrand,
@@ -236,34 +212,18 @@ template <typename IntegT, typename T, int NDIM>
                      int FEVAL,
                      double* generators)
   {
-    // this is maybe a problem, lows, highs are now unused, we rely on sBound
-    // for global bounds, and bounds b for the phase 2 starting dims, and phase 1
-    // dims stored in dREgions, dREgionsLength
+
     for (int dim = 0; dim < NDIM; ++dim) {
-      //g[dim] = 0;
       x[dim] = 0;
     }
-     int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
-    /*int posCnt = __ldg(&constMem._gpuGenPermVarStart[pIndex + 1]) -
-                 __ldg(&constMem._gpuGenPermVarStart[pIndex]);
-   
-
-    for (int posIter = 0; posIter < posCnt; ++posIter) {
-      int pos =
-        (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[pIndex]) + posIter]);
-      int absPos = abs(pos);
-      if (pos == absPos) {
-        g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-      } else {
-        g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-      }
-    }*/
-
+    
+    int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
     T jacobian = 1;
+    
     for (int dim = 0; dim < NDIM; ++dim) {
       double generator = __ldg(&generators[FEVAL*dim + pIndex]);  
       x[dim] = (.5 + generator) * b[dim].lower + (.5 - generator) * b[dim].upper;
-      T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
+      T range = sBound[dim].unScaledUpper - sBound[dim].unScaledLower; //i thought i was computing ranges outside
       jacobian = jacobian * range;
       x[dim] = sBound[dim].unScaledLower + x[dim] * range;
     }
@@ -274,8 +234,6 @@ template <typename IntegT, typename T, int NDIM>
     
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
-	  //if(constMem._cRuleWt[gIndex * NRULES + rul] > 0.)
-		//  printf("negative weight:%.20f\n", constMem._cRuleWt[gIndex * NRULES + rul]);
     }
   }
 
@@ -368,7 +326,7 @@ template <typename IntegT, typename T, int NDIM>
     }
     __syncthreads();
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = /*computeReduce<T>(sum[i])*/blockReduceSum(sum[i]);
+      sum[i] = blockReduceSum(sum[i]);
       __syncthreads();
     }
 
