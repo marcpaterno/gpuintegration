@@ -14,6 +14,7 @@ namespace quad {
     int *cpuGenPermVarCount, *cpuGenPermGIndex, *cpuGenPermVarStart;
     int* genPtr;
     int KEY, RULE, NSETS, FEVAL, NDIM, PERMUTATIONS_POS_ARRAY_SIZE, VERBOSE;
+
     // int NRULES;
     size_t fEvalPerRegion;
     DeviceMemory<T> Device;
@@ -307,6 +308,9 @@ namespace quad {
           }
           CPUScale[idx * NRULES + r] = scale;
           CPUNorm[idx * NRULES + r] = 1 / sum;
+		  
+		  //printf("CPUNorm[%i]:%.15f\n",idx*(int)NRULES+r, CPUNorm[idx * NRULES + r]);
+		  
         }
       }
     }
@@ -318,7 +322,9 @@ namespace quad {
       K* tmp = (K*)malloc(sizeof(K) * size);
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
-        printf("%.20lf \n", (T)tmp[i]);
+        //printf("%.20lf \n", (T)tmp[i]);
+		std::cout.precision(17);
+		std::cout<<"list[" <<i<< "]:"<<tmp[i] << std::endl;
       }
     }
 
@@ -379,7 +385,6 @@ namespace quad {
         cudaMalloc((void**)&constMem->_gpuGenPermGIndex, sizeof(int) * FEVAL));
       QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1)));
-      //printf("_gpuGenPermVarStart has %lu entries\n", FEVAL + 1);
       QuadDebug(cudaMemcpy(constMem->_gpuG,
                            cpuG,
                            sizeof(T) * NDIM * NSETS,
@@ -415,18 +420,17 @@ namespace quad {
       QuadDebug(cudaMemcpy(constMem->_gpuGenPermVarStart,
                            cpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1),
-                           cudaMemcpyHostToDevice));
+                           cudaMemcpyHostToDevice));						 
     }
 
     void
-    Init(int ndim, size_t fEval, int key, int verbose, Structures<T>* constMem)
+    Init(size_t ndim, size_t fEval, int key, int verbose, Structures<T>* constMem)
     {
       NDIM = ndim;
       KEY = key;
       VERBOSE = verbose;
       fEvalPerRegion = fEval;
-      // printf("Function evaluations per region:%lu\n", fEvalPerRegion);
-      // requiring RULE 11 is why it doesn't work
+
       if (key == 13 && ndim == 2)
         RULE = 13;
       else if (key == 1 && ndim == 3)
@@ -463,26 +467,18 @@ namespace quad {
          4 * ndim * (ndim - 1) * (ndim - 2) * 3 / 3 + ndim * (1 << ndim));
       // NRULES = 5;
       Rule9Generate();
-      // printf("After Rule9Generate\n");
       cpuGenPermVarCount = (int*)Host.AllocateMemory((void*)cpuGenPermVarCount,
                                                      sizeof(int) * fEval);
       cpuGenPermVarStart = (int*)Host.AllocateMemory((void*)cpuGenPermVarStart,
-                                                     sizeof(int) * fEval);
+                                                     sizeof(int) * fEval+1);
       cpuGenPermGIndex = (int*)Host.AllocateMemory((void*)cpuGenPermGIndex,
-                                                   sizeof(int) * (fEval + 1));
-      // printf("After hostmallocs\n");
-
+                                                   sizeof(int) * (fEval));
       T* cpuGCopy = 0;
       cpuGCopy =
         (T*)Host.AllocateMemory((void*)cpuGCopy, sizeof(T) * NDIM * NSETS);
       for (int iter = 0; iter < NDIM * NSETS; ++iter) {
         cpuGCopy[iter] = cpuG[iter];
       }
-      // printf("After 2nd hostmalloc\n");
-      /*size_t countPos = 0;
-      for(int gIndex = 0; gIndex< NSETS; ++gIndex){
-        countPos += cpuGenCount[gIndex]*indxCnt[gIndex];
-        }*/
 
       genPtr = (int*)Host.AllocateMemory(
         (void*)genPtr, sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE);
@@ -501,20 +497,23 @@ namespace quad {
           int genPosCnt = 0;
           cpuGenPermVarStart[permCnt] = genPtrPosIndex;
           int isAccess[NDIM];
+          
           for (int dim = 0; dim < NDIM; ++dim) {
             isAccess[dim] = 0;
           }
-
+          
           for (int i = 0; i < indxCnt[gIndex]; ++i) {
-            // Find pos of cpuG[i]
             for (int dim = 0; dim < NDIM; ++dim) {
               if (cpuG[NDIM * gIndex + i] == fabs(g[dim]) && !isAccess[dim]) {
                 ++genPosCnt;
                 isAccess[dim] = 1;
-                if (g[dim] < 0)
-                  genPtr[genPtrPosIndex++] = -(dim + 1);
-                else
+                
+                if (g[dim] < 0){
+                   genPtr[genPtrPosIndex++] = -(dim + 1);
+				}
+                else{
                   genPtr[genPtrPosIndex++] = dim + 1;
+				}
                 break;
               }
             }
@@ -523,6 +522,7 @@ namespace quad {
           permCnt++;
           cpuGenPermVarCount[permCnt - 1] = genPosCnt;
           cpuGenPermGIndex[permCnt - 1] = gIndex;
+		
           for (int dim = 0; (dim < NDIM) && (flag == 1);) {
             g[dim] = -g[dim];
             if (g[dim++] < -0.0000000000000001) {
@@ -560,8 +560,6 @@ namespace quad {
       cpuGenPermVarStart[permCnt] = genPtrPosIndex;
       genPtrPosIndex = 0;
       loadDeviceConstantMemory(constMem);
-      // just added
-      // Host.ReleaseMemory(cpuGCopy);
     }
   };
 }
