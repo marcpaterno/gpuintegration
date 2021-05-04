@@ -1046,6 +1046,112 @@ namespace quad {
       dRegionsNumRegion[blockIdx.x] = nregions;
     }
   }
+
+
+   
+  //------------------------------------------------------------------------------------------
+  //Dummy methods
+  //Contain removed kernel code for comparison against Kokkos 
+  
+  
+    template <typename IntegT, typename T, int NDIM>
+  __device__ void
+  dummyINIT_REGION_POOL(IntegT* d_integrand,
+                   T* dRegions,
+                   T* dRegionsLength,
+                   size_t numRegions,
+                   const Structures<T>& constMem,
+                   int FEVAL,
+                   int NSETS,
+                   Region<NDIM> sRegionPool[],
+                   T* lows,
+                   T* highs,
+                   int iteration,
+                   int depth,
+                   double* generators)
+  {
+    size_t index = blockIdx.x;
+    __shared__ double vol;
+    __shared__ int maxDim;
+    __shared__ double ranges[NDIM];
+    __shared__ double Jacobian;
+    
+    if (threadIdx.x == 0) {
+      Jacobian = 1;
+      double maxRange = 0;
+      for (int dim = 0; dim < NDIM; ++dim) {
+        T lower = dRegions[dim * numRegions + index];
+        sRegionPool[0].bounds[dim].lower = lower;
+        sRegionPool[0].bounds[dim].upper = 
+          lower + dRegionsLength[dim * numRegions + index];
+        
+        sBound[dim].unScaledLower = lows[dim];
+        sBound[dim].unScaledUpper = highs[dim];
+        ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
+        sRegionPool[0].div = depth; 
+        
+        double range = sRegionPool[0].bounds[dim].upper - lower;
+        Jacobian = Jacobian * ranges[dim];
+        if(range > maxRange){
+            maxDim = dim;
+            maxRange = range;
+        }
+      }
+      vol = ldexp(1., -depth);
+    }
+
+    __syncthreads();
+    /*SampleRegionBlock<IntegT, T, NDIM>(
+      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, &vol, &maxDim, ranges, &Jacobian, generators);*/
+    __syncthreads();
+  }
+  
+  template <typename IntegT, typename T, int NDIM>
+  __global__ void
+  dummyINTEGRATE_GPU_PHASE1(IntegT* d_integrand,
+                       T* dRegions,
+                       T* dRegionsLength,
+                       size_t numRegions,
+                       T* dRegionsIntegral,
+                       T* dRegionsError,
+                       int* activeRegions,
+                       int* subDividingDimension,
+                       T epsrel,
+                       T epsabs,
+                       Structures<T> constMem,
+                       int FEVAL,
+                       int NSETS,
+                       T* lows,
+                       T* highs,
+                       int iteration,
+                       int depth,
+                       double* generators)
+  {
+    __shared__ Region<NDIM> sRegionPool[1];
+    
+    dummyINIT_REGION_POOL<IntegT>(d_integrand,
+                             dRegions,
+                             dRegionsLength,
+                             numRegions,
+                             constMem,
+                             FEVAL,
+                             NSETS,
+                             sRegionPool,
+                             lows,
+                             highs,
+                             iteration,
+                             depth, generators);
+    __syncthreads();
+    if (threadIdx.x == 0) {
+      const double ERR = sRegionPool[0].result.err;
+      const double RESULT = sRegionPool[0].result.avg;
+        
+      activeRegions[blockIdx.x] = 1; 
+      subDividingDimension[blockIdx.x] = 0;//sRegionPool[0].result.bisectdim;
+      dRegionsIntegral[blockIdx.x] = 1.;//RESULT;
+      dRegionsError[blockIdx.x] = 1000.*epsrel;//ERR;
+    }
+  }
 }
 
 #endif

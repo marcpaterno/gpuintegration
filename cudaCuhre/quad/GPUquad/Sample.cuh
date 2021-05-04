@@ -175,7 +175,7 @@ double blockReduceSum(double val) {
     }
     __syncthreads(); 
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum(sum[i]);
+      sum[i] = blockReduceSum/*computeReduce*/(sum[i]);
       __syncthreads();
     }
 
@@ -199,7 +199,108 @@ double blockReduceSum(double val) {
                         errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
     }
   }
+    
+    
+  template <typename IntegT, typename T, int NDIM>
+  __device__ void
+  dummySampleRegionBlock(IntegT* d_integrand,
+                    int sIndex,
+                    const Structures<T>& constMem,
+                    int FEVAL,
+                    int NSETS,
+                    Region<NDIM> sRegionPool[], double* vol, int* maxdim,  double range[],  double* jacobian, double* generators)
+  {
+    
+    Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
+    
+    T g[NDIM];
+    gpu::cudaArray<double, NDIM> x;
+    int perm = 0;
+    
+    //should probably move this outside of Sample, no need for all threads to compute it
+    T ratio = Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
+    int offset = 2 * NDIM;
 
+    T sum[NRULES];
+    Zap(sum);
+
+    // Compute first set of permutation outside for loop to extract the Function
+    // values for the permutation used to compute
+    // fourth dimension
+    int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+
+    if (pIndex < FEVAL) {
+      computePermutation<IntegT, T, NDIM>(
+        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
+    }
+
+    __syncthreads();
+    T* f = &sdata[0];
+  
+
+    if (threadIdx.x == 0) {
+      Result* r = &region->result; 
+      T* f1 = f;
+      T base = *f1 * 2 * (1 - ratio);
+      T maxdiff = 0;
+      int bisectdim = *maxdim;
+      for (int dim = 0; dim < NDIM; ++dim) {
+        T* fp = f1 + 1;
+        T* fm = fp + 1;
+        T fourthdiff =
+          fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
+
+        f1 = fm;
+        if (fourthdiff > maxdiff) {
+          maxdiff = fourthdiff;
+          bisectdim = dim;
+        }
+      }
+
+      r->bisectdim = bisectdim;
+    }
+    __syncthreads(); 
+
+    /*for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
+      int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+      computePermutation<IntegT, T, NDIM>(
+        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
+    }
+    __syncthreads(); 
+    // Balance permutations
+    pIndex = perm * BLOCK_SIZE + threadIdx.x;
+    if (pIndex < FEVAL) {
+      int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+      computePermutation<IntegT, T, NDIM>(
+        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL);
+    }
+    __syncthreads(); 
+    for (int i = 0; i < NRULES; ++i) {
+      sum[i] = blockReduceSum(sum[i]);
+      __syncthreads();
+    }
+
+    if (threadIdx.x == 0) {
+      Result* r = &region->result;
+      for (int rul = 1; rul < NRULES - 1; ++rul) {
+        T maxerr = 0;
+        for (int s = 0; s < NSETS; ++s) {
+          maxerr = max(maxerr,
+                       fabs(sum[rul + 1] +
+                            __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
+                         __ldg(&constMem._GPUNorm[s * NRULES + rul]));
+        }
+        sum[rul] = maxerr;
+      }
+
+      r->avg = (*vol) * sum[0];
+      r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
+                       errcoeff[0] * sum[2] <= sum[3]) ?
+                        errcoeff[1] * sum[1] :
+                        errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
+    }*/
+  }  
+    
 template <typename IntegT, typename T, int NDIM>
   __device__ void
   computePermutation_ph2(IntegT* d_integrand,

@@ -721,6 +721,89 @@ namespace quad {
       cudaFree(d_integrand);
       return res;
     }
+    
+    //------------------------------------------------------------------------------------------
+  //Dummy methods
+  //Contain removed kernel code for comparison against Kokkos
+    
+  template <typename IntegT>
+    cuhreResult
+    dummyintegrate(IntegT integrand,
+              T epsrel,
+              T epsabs,
+              Volume<T, NDIM>* volume = nullptr,
+              int verbosity = 0,
+              int maxIters = 0,
+              int Final = 0,
+              int heuristicID = 0,
+              int phase1type = 0,
+              bool phase2 = false)
+    {
+      cuhreResult res;
+
+      this->epsrel = epsrel;
+      this->epsabs = epsabs;
+      kernel->SetFinal(Final);
+      kernel->SetVerbosity(verbosity);
+      kernel->SetPhase_I_type(phase1type);
+      kernel->SetHeuristicID(heuristicID);
+      kernel->SetPhase2(phase2);
+      int numprocs = 0;
+      IntegT* d_integrand;
+
+      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      memcpy(d_integrand, &integrand, sizeof(IntegT));
+      CudaCheckError();
+ 
+        
+      if (numprocs > 1) {
+        MPI_Init(&argc, &argv);
+        MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+        res.status = MPI_INTEGRATE(&integrand,
+                                   epsrel,
+                                   epsabs,
+                                   res.estimate,
+                                   res.errorest,
+                                   res.nregions,
+                                   res.neval,
+                                   volume);
+        MPI_Finalize();
+        return res;
+      }
+
+      kernel->GenerateInitialRegions();
+      FIRST_PHASE_MAXREGIONS *= numDevices;
+
+      kernel->dummyIntegrateFirstPhase(d_integrand,
+                                        maxIters,
+                                         epsrel,
+                                         epsabs,
+                                         res.estimate,
+                                         res.errorest,
+                                         res.nregions,
+                                         res.nFinishedRegions,
+                                         res.neval,
+                                         volume);
+ 
+      
+      if (res.status == 0 || phase2 == false || kernel->getNumActiveRegions() == 0) {
+        cudaFree(d_integrand);
+        return res;
+      }
+      
+      res.phase2_failedblocks = kernel->IntegrateSecondPhase(d_integrand,
+                                                             epsrel,
+                                                             epsabs,
+                                                             res.estimate,
+                                                             res.errorest,
+                                                             res.nregions,
+                                                             res.neval);
+      res.lastPhase = 2;
+      res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
+      
+      cudaFree(d_integrand);
+      return res;
+    }  
   };
 }
 

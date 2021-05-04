@@ -2815,6 +2815,276 @@ namespace quad {
 
       return numFailedRegions;
     }
+  
+  
+  //------------------------------------------------------------------------------------------
+  //Dummy methods
+  //Contain removed kernel code for comparison against Kokkos
+  
+    template <typename IntegT>
+    void
+    dummyFirstPhaseIteration(IntegT* d_integrand,
+                        T epsrel,
+                        T epsabs,
+                        T& integral,
+                        T& error,
+                        size_t& nregions,
+                        size_t& nFinishedRegions,
+                        size_t& neval,
+                        T*& dParentsIntegral,
+                        T*& dParentsError,
+                        int iteration,
+                        Volume<T, NDIM>* vol,
+                        int last_iteration = 0)
+    {
+      size_t numThreads = BLOCK_SIZE;
+      size_t numBlocks = numRegions;
+      //printf("Amount of free memory at start of iteration:%lu\n", Device.GetAmountFreeMem());
+
+      //nvtxRangePush("Iteration Allocations");
+      dRegionsError = nullptr, dRegionsIntegral = nullptr;
+      int *activeRegions = 0, *subDividingDimension = 0;
+      IterationAllocations(dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, activeRegions, subDividingDimension, iteration);
+      //nvtxRangePop();
+      
+      //nvtxRangePush("Sample");
+	  //printf("Launching for %lu regions\n", numBlocks);
+      dummyINTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
+        <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
+          d_integrand,
+          dRegions,
+          dRegionsLength,
+          numRegions,
+          dRegionsIntegral,
+          dRegionsError,
+          activeRegions,
+          subDividingDimension,
+          epsrel,
+          epsabs,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs,
+          iteration,
+          depthBeingProcessed,
+          generators);
+          
+      neval += numRegions * fEvalPerRegion;
+      cudaDeviceSynchronize();
+      CudaCheckError();
+      //nvtxRangePop();
+      
+      double iter_estimate =  ComputeIterContribution(dRegionsIntegral);
+      double leaves_estimate = partitionManager.queued_reg_estimate + integral + iter_estimate;
+      
+      RelErrClassify(activeRegions, nregions, epsrel, /*depthBeingProcessed*/iteration);
+      
+      double iter_finished_estimate = 0, iter_finished_errorest = 0;
+      double iter_errorest = ComputeIterContribution(dRegionsError);
+      double leaves_errorest = partitionManager.queued_reg_errorest + error + iter_errorest;
+                                                                                       
+      ComputeFinishedEstimates(iter_finished_estimate, iter_finished_errorest, dRegionsIntegral, iter_estimate, dRegionsError, iter_errorest, activeRegions);
+      integral += iter_finished_estimate;
+      error += iter_finished_errorest;
+      printf("%.15f +- %.15f %lu\n", leaves_estimate, leaves_errorest, numRegions);
+      Phase_I_PrintFile(vol,
+                        numRegions,
+                        activeRegions,
+                        leaves_estimate,
+                        leaves_errorest,
+                        iter_estimate,
+                        iter_errorest,
+                        iter_finished_estimate,
+                        iter_finished_errorest,
+                        partitionManager.queued_reg_estimate,
+                        partitionManager.queued_reg_errorest,
+                        partitionManager.GetNRegions(),
+                        epsrel,
+                        epsabs,
+                        iteration);
+     
+     FixErrorBudgetOverflow(activeRegions, integral, error, iter_finished_estimate, iter_finished_errorest, leaves_estimate, epsrel);
+        
+     if(/*GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() && 
+     mustFinish == true && */
+     CheckTerminationCondition(leaves_estimate, leaves_errorest, integral, error, nregions, epsrel, epsabs, iteration, activeRegions, subDividingDimension))  
+        return;
+    
+      //nvtxRangePush("HS CLASSIFY");
+      HSClassify(dRegionsIntegral,
+              dRegionsError,
+              subDividingDimension,
+              dParentsIntegral,
+              dParentsError,
+              activeRegions,
+              integral,
+              error,
+              nregions,
+              iter_estimate,
+              iter_errorest,
+              iter_finished_estimate,
+              iter_finished_errorest,
+              leaves_estimate,
+              leaves_errorest,
+              epsrel,
+              epsabs,
+              iteration);
+      
+      
+      if(CheckTerminationCondition(leaves_estimate, leaves_errorest, integral, error, nregions, epsrel, epsabs, iteration, activeRegions, subDividingDimension))  
+        return;
+      //nvtxRangePop();
+      //nvtxRangePush("Sub-division");
+      if (iteration < 700 && fail == 1 && (phase2 == false || numRegions <= first_phase_maxregions)) {
+        size_t numInActiveIntervals =
+          GenerateActiveIntervals(activeRegions,
+                                  subDividingDimension,
+                                  dRegionsIntegral,
+                                  dRegionsError,
+                                  dParentsIntegral,
+                                  dParentsError);
+        CheckZeroNumRegionsTermination(integral, error, leaves_estimate, leaves_errorest);
+        depthBeingProcessed++;
+        nregions += numInActiveIntervals;
+        nFinishedRegions += numInActiveIntervals;
+        
+        
+        //bool NotEnoughMem = false;
+        // bool NotEnoughMem = GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem();
+        
+       /* bool NoRegionsButPartitionsLeft =
+          (numRegions == 0 && !partitionManager.Empty());*/
+        
+        
+        /*if ((NotEnoughMem || NoRegionsButPartitionsLeft ) && fail == 1){
+          printf("Old Mem Check says this will be usage in next iter:%f\n", (double)GetGPUMemNeededForNextIteration()/(double)Device.GetAmountFreeMem());
+          
+          //printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
+          Partition<NDIM> currentPartition;
+          currentPartition.ShallowCopy(dRegions,
+                                       dRegionsLength,
+                                       dParentsIntegral,
+                                       dParentsError,
+                                       numRegions,
+                                       depthBeingProcessed);
+          partitionManager.LoadNextActivePartition(
+            currentPartition); // storeAndGetNextPartition
+
+          // interface again with original implementation, to be changed
+          dRegions = currentPartition.regions;
+          dRegionsLength = currentPartition.regionsLength;
+          dParentsIntegral = currentPartition.parentsIntegral;
+          dParentsError = currentPartition.parentsError;
+          numRegions = currentPartition.numRegions;
+          depthBeingProcessed = currentPartition.depth;
+
+          thrust::device_ptr<double> wrapped_ptr;
+          wrapped_ptr = thrust::device_pointer_cast(dParentsIntegral);
+          double parentsEstimate =
+            thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions / 2);
+          wrapped_ptr = thrust::device_pointer_cast(dParentsError);
+          double parentsErrorest =
+            thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions / 2);
+        }*/
+      }
+      else{
+         //integral = leaves_estimate;
+         //error = leaves_errorest; this is for phase 2, phase 2 has no need for leaves, just the finished contributions
+         //printf("reached limit integral:%.15e error:%.15e numRegions:%lu\n", integral, error, numRegions);
+         nregions += numRegions + partitionManager.GetNRegions();  
+         
+         phase2Ready = true;
+      }
+      
+      QuadDebug(cudaFree(activeRegions));
+      QuadDebug(cudaFree(subDividingDimension));
+      //nvtxRangePop();
+    }
+  
+  
+    template <typename IntegT>
+    bool
+    dummyIntegrateFirstPhase(IntegT* d_integrand,
+                        int maxIters, 
+                        T epsrel,
+                        T epsabs,
+                        T& integral,
+                        T& error,
+                        size_t& nregions,
+                        size_t& nFinishedRegions,
+                        size_t& neval,
+                        Volume<T, NDIM>* vol = nullptr)
+    {
+      QuadDebug(Device.AllocateMemory((void**)&generators,
+                                      sizeof(double) * NDIM * fEvalPerRegion));
+	  ComputeGenerators<NDIM> <<<1, BLOCK_SIZE>>>(generators, fEvalPerRegion, constMem);   
+      cudaDeviceSynchronize();
+      CudaCheckError();      
+      
+      AllocVolArrays(vol);
+      CudaCheckError();
+      PrintOutfileHeaders();
+      int lastIteration = 0;
+      int iteration = 0;
+      
+ 
+      for (iteration = 0; iteration < maxIters && phase2Ready == false && fail == 1 && mustFinish == false; iteration++) {
+        dummyFirstPhaseIteration<IntegT>(d_integrand,
+                                    epsrel,
+                                    epsabs,
+                                    integral,
+                                    error,
+                                    nregions,
+                                    nFinishedRegions,
+                                    neval,
+                                    dParentsIntegral,
+                                    dParentsError,
+                                    iteration,
+                                    vol,
+                                    lastIteration);
+        if(phase2Ready == false && fail == 1){
+          QuadDebug(cudaFree(dRegionsError));
+          QuadDebug(cudaFree(dRegionsIntegral));
+        }
+      }
+
+      if(phase2 == true && fail == 1){
+          curr_hRegions =
+            (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * numRegions * NDIM);
+          curr_hRegionsLength = (T*)Host.AllocateMemory(
+            &curr_hRegionsLength, sizeof(T) * numRegions * NDIM);
+
+          QuadDebug(cudaMemcpy(curr_hRegions,
+                               dRegions,
+                               sizeof(T) * numRegions * NDIM,
+                               cudaMemcpyDeviceToHost));
+          QuadDebug(cudaMemcpy(curr_hRegionsLength,
+                               dRegionsLength,
+                               sizeof(T) * numRegions * NDIM,
+                               cudaMemcpyDeviceToHost));
+      }
+      
+      CudaCheckError();
+
+      StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
+      QuadDebug(Device.ReleaseMemory(dRegions));
+      QuadDebug(Device.ReleaseMemory(dRegionsLength));
+      
+      if (fail == 0 || fail == 2) {
+        QuadDebug(cudaFree(dRegionsError));
+        QuadDebug(cudaFree(dRegionsIntegral));
+        bool convergence = false;
+        convergence = error <= MaxErr(integral, epsrel, epsabs);
+        return !convergence;
+      }
+     else
+        return fail;
+    }
+  
+  
+  
+  
   };
 
 }
