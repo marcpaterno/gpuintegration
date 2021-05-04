@@ -46,3 +46,6 @@ add_executable(B8_22 B8_22.cpp)
 target_compile_options(B8_22 PRIVATE "-O2" "-DCUSTOM" "-arch=sm_70" "--expt-relaxed-constexpr")
 target_link_libraries(B8_22 Kokkos::kokkos Kokkos::kokkoskernels)
 
+add_executable(Init_Region_Pool Init_Region_Pool.cpp)
+target_compile_options(Init_Region_Pool PRIVATE "-O2" "-DCUSTOM" "-arch=sm_70" "--expt-relaxed-constexpr")
+target_link_libraries(Init_Region_Pool Kokkos::kokkos Kokkos::kokkoskernels)

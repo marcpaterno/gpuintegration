@@ -44,12 +44,13 @@ class Kernel{
 	ViewVectorDouble lows;
 	ViewVectorDouble highs;
 
-	Structures<T> constMem;
-	Rule<double> rule;
-	
+	//Structures<T> constMem;
+	//Rule<double> rule;
+	int NSETS;
     IntegrandAcrossIters integrandAcrossIters;
     
-	Kernel(){
+	Kernel(int nsets){
+        NSETS = nsets;
 		lows = ViewVectorDouble("lows", NDIM);
 		highs = ViewVectorDouble("highs", NDIM);
 		
@@ -66,9 +67,9 @@ class Kernel{
                         4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
 		int key = 0;
 		int verbose = 0;
-        //Kokkos::Profiling::pushRegion("Integration Rule Initialization");
-		rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::pushRegion("Integration Rule Initialization");
+		//rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
+        Kokkos::Profiling::popRegion();
 	}
 	
     bool 
@@ -123,7 +124,7 @@ class Kernel{
         size_t numBlocks =
           numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);			
 		  
-        Kokkos::parallel_for( "Phase1", team_policy(numBlocks, numThreads), KOKKOS_LAMBDA (const member_type team_member) {
+        Kokkos::parallel_for("AlignRegions", team_policy(numBlocks, numThreads), KOKKOS_LAMBDA (const member_type team_member) {
             
             int threadIdx = team_member.team_rank();
             int blockIdx = team_member.league_rank();  
@@ -160,7 +161,7 @@ class Kernel{
         size_t numThreads = BLOCK_SIZE;
 		size_t numBlocks = numActiveRegions / numThreads + ((numActiveRegions % numThreads) ? 1 : 0);
         
-		Kokkos::parallel_for( "Phase1", team_policy(numBlocks, numThreads), KOKKOS_LAMBDA (const member_type team_member) {
+		Kokkos::parallel_for("DivideIntervalsGPU", team_policy(numBlocks, numThreads), KOKKOS_LAMBDA (const member_type team_member) {
             int threadIdx = team_member.team_rank();
             int blockIdx = team_member.league_rank();        
 			size_t tid = blockIdx * numThreads + threadIdx;
@@ -236,7 +237,7 @@ class Kernel{
 		    
 			ExpandcuArray(dParentsIntegral, numRegions/2, numActiveRegions);
 			ExpandcuArray(dParentsError, numRegions/2, numActiveRegions);
-
+            Kokkos::Profiling::pushRegion("AlignRegions");
 			AlignRegions(dRegions,
                      dRegionsLength,
                      activeRegions,
@@ -252,10 +253,10 @@ class Kernel{
                      numRegions,
                      numActiveRegions,
                      numOfDivisionOnDimension);
-                
+            Kokkos::Profiling::popRegion();    
             ViewVectorDouble genRegions("genRegions", numActiveRegions * NDIM * numOfDivisionOnDimension);
 			ViewVectorDouble genRegionsLength("genRegionsLength", numActiveRegions * NDIM * numOfDivisionOnDimension);
-
+            Kokkos::Profiling::pushRegion("DivideIntervalsGPU");
 			DivideIntervalsGPU(genRegions,
 						   genRegionsLength,
 						   newActiveRegions,
@@ -263,7 +264,7 @@ class Kernel{
 						   newActiveRegionsBisectDim,
 						   numActiveRegions,
 						   numOfDivisionOnDimension);
-
+            Kokkos::Profiling::popRegion();  
 			dRegions = genRegions;
 			dRegionsLength = genRegionsLength;
 			numInActiveRegions = numRegions - numActiveRegions;
@@ -303,7 +304,7 @@ class Kernel{
       
     size_t ComputeNumUnPolishedRegions(ViewVectorDouble unpolishedRegions){        
        double _numUnPolishedRegions = 0;
-        Kokkos::parallel_reduce("Estimate computation", numRegions, KOKKOS_LAMBDA(const int64_t index, double &valueToUpdate){
+        Kokkos::parallel_reduce("ComputeNumUnPolishedRegions", numRegions, KOKKOS_LAMBDA(const int64_t index, double &valueToUpdate){
             valueToUpdate += unpolishedRegions(index);
         }, _numUnPolishedRegions);
         return (size_t)_numUnPolishedRegions;
@@ -325,7 +326,7 @@ class Kernel{
             size_t numRegions,
             double errThreshold)
     {
-        Kokkos::parallel_for("RefineError", numRegions, KOKKOS_LAMBDA (const int64_t index){
+        Kokkos::parallel_for("Filter", numRegions, KOKKOS_LAMBDA (const int64_t index){
             double selfErr = dRegionsError(index);
             //only "real active" regions can be polished (rename activeRegions in this context to polishedRegions)
             unpolishedRegions(index) = (selfErr > errThreshold ) * activeRegions(index); 
@@ -420,7 +421,7 @@ class Kernel{
             if(GetGPUMemNeededForNextIteration(numRegions, NDIM) < GetAmountFreeMem() && !estimateHasConverged){  
                 return;
 			}
-            //printf("Will attempt Filtering iteration:%i estimateHasConverged:%i\n", iteration, estimateHasConverged);
+            printf("Will attempt Filtering iteration:%i estimateHasConverged:%i\n", iteration, estimateHasConverged);
             double targetError = abs(leaves_estimate)*epsrel; 
             //printf("targetError:%.15f\n", targetError);
             //size_t numThreads = BLOCK_SIZE;
@@ -493,7 +494,7 @@ class Kernel{
                 
             }while(numActiveRegions > targetRegionNum || iter_polished_errorest > MaxPercentOfErrorBudget*(targetError - error) || error > targetError);
             
-        //printf("percentage of current regions to remain in memory :%f\n", (double)numActiveRegions/(double)numRegions);    
+        printf("percentage of current regions to remain in memory :%f\n", (double)numActiveRegions/(double)numRegions);    
         if(numActiveRegions == numRegions){        
             //printf("Didn't filter out anything\n");
             mustFinish = true;
@@ -560,6 +561,7 @@ class Kernel{
                         ViewVectorDouble& dParentsIntegral,
                         ViewVectorDouble& dParentsError,                        
                         constViewVectorDouble generators, 
+                        const Structures<double>& constMem,
                         double& integral,
                         double& error,
                         size_t& nregions,
@@ -572,7 +574,7 @@ class Kernel{
          //set KOKKOS_ENABLE_CUDA_LDG_INTRINSIC to use __ldg__
         //because we need to take dot-product, make activeRegions a double view 
         
-        //Kokkos::Profiling::pushRegion("Iteration Allocations");
+        Kokkos::Profiling::pushRegion("Iteration Allocations");
 		ViewVectorDouble activeRegions("activeRegions", numRegions);
 		ViewVectorInt subDividingDimension("subDividingDimension", numRegions);
 		
@@ -583,21 +585,21 @@ class Kernel{
 			dParentsIntegral = ViewVectorDouble("dParentsIntegral", numRegions);
 			dParentsError = ViewVectorDouble("dParentsError", numRegions);
 		}
-		//Kokkos::Profiling::popRegion();
+		Kokkos::Profiling::popRegion();
         
-        //Kokkos::Profiling::pushRegion("INTEGRATE_GPU_PHASE1");
+        Kokkos::Profiling::pushRegion("INTEGRATE_GPU_PHASE1");
         INTEGRATE_GPU_PHASE1<IntegT, NDIM>(d_integrand, dRegions, dRegionsLength, 
 			numRegions, dRegionsIntegral, dRegionsError, activeRegions, subDividingDimension,
-            epsrel, epsabs, constMem, fEvalPerRegion, rule.GET_NSETS(), lows, highs,
+            epsrel, epsabs, constMem, fEvalPerRegion, NSETS, lows, highs,
 			it, depthBeingProcessed, generators);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
-        //Kokkos::Profiling::pushRegion("RelErrClassify");
+        Kokkos::Profiling::pushRegion("RelErrClassify");
         RelErrClassify(heuristicID, activeRegions, dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, epsrel, it);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
         //Compute integral and error estimates through reductions
-        //Kokkos::Profiling::pushRegion("Reductions");
+        Kokkos::Profiling::pushRegion("Reductions");
         double iter_estimate = 0.;
         Kokkos::parallel_reduce("Estimate computation", numRegions, KOKKOS_LAMBDA(const int64_t index, double &valueToUpdate){
             valueToUpdate += dRegionsIntegral(index);
@@ -617,13 +619,13 @@ class Kernel{
         double iter_finished_errorest = iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
         integral += iter_finished_estimate;
         error += iter_finished_errorest;
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
         //printf("leaves_estimate:%.15f +- %.15f numRegions:%zu iteration:%i\n", leaves_estimate, leaves_errorest, numRegions, it);
-        //Kokkos::Profiling::pushRegion("FixErrorBudgetOverflow");
+        Kokkos::Profiling::pushRegion("FixErrorBudgetOverflow");
         FixErrorBudgetOverflow(activeRegions, integral,  error,  iter_finished_estimate, 
               iter_finished_errorest, leaves_estimate,  epsrel, fail);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
         if(CheckTerminationCondition(leaves_estimate, 
                                      leaves_errorest, 
@@ -638,7 +640,7 @@ class Kernel{
             return true;
         }
         
-        //Kokkos::Profiling::pushRegion("HSClassify");
+        Kokkos::Profiling::pushRegion("HSClassify");
         HSClassify(dRegionsIntegral,
                 dRegionsError,
                activeRegions,
@@ -655,7 +657,7 @@ class Kernel{
                epsabs,
                mustFinish,
                it);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
         if(CheckTerminationCondition(leaves_estimate, 
                                      leaves_errorest, 
@@ -671,7 +673,7 @@ class Kernel{
         }
         
         if (it < 700 && fail == 1){
-            //Kokkos::Profiling::pushRegion("GenerateActiveIntervals");
+            Kokkos::Profiling::pushRegion("GenerateActiveIntervals");
             size_t numInActiveIntervals =
             GenerateActiveIntervals(dRegions,
 								    dRegionsLength,
@@ -684,7 +686,7 @@ class Kernel{
             depthBeingProcessed++;
             nregions += numInActiveIntervals;
             nFinishedRegions += numInActiveIntervals;
-            //Kokkos::Profiling::popRegion();
+            Kokkos::Profiling::popRegion();
 			if(CheckZeroNumRegionsTermination(integral, error, leaves_estimate, leaves_errorest)){
 				//printf("Have zero regions so will trigger termination\n");
 				return true;
@@ -713,11 +715,11 @@ class Kernel{
                         ViewVectorDouble& dRegionsIntegral, 
                         ViewVectorDouble& dRegionsError,
                         ViewVectorDouble& dParentsIntegral,
-                        ViewVectorDouble& dParentsError){
+                        ViewVectorDouble& dParentsError,
+                        const Structures<double>& constMem){
         Kokkos::View<IntegT*, Kokkos::CudaSpace>   d_integrand("d_integrand", 1);
         ViewVectorDouble _generators("generators", NDIM*fEvalPerRegion);
 		ComputeGenerators<NDIM>(_generators, fEvalPerRegion, constMem);
-        
         
         constViewVectorDouble generators = _generators;
         
@@ -734,6 +736,7 @@ class Kernel{
                                 dParentsIntegral,
                                 dParentsError,
                                 generators, 
+                                constMem,
                                 integral, 
                                 error, 
                                 nregions,
@@ -769,7 +772,7 @@ class Kernel{
         
         depthBeingProcessed = log2(numOfDivisionPerRegionPerDimension)*NDIM;
         numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
-        //printf("NDIM:%i creating %zu regions wtih %zu slots in newRegions\n", NDIM, numRegions, numRegions*NDIM);		
+
         ViewVectorDouble newRegions("newRegions", numRegions * NDIM);
         ViewVectorDouble newRegionsLength("newRegionsLength", numRegions * NDIM);
         
@@ -809,6 +812,214 @@ class Kernel{
               
         dRegions = newRegions;
         dRegionsLength = newRegionsLength;
+    }
+
+
+    //--------------------------------------------------------------------------------------------------------
+    //Dummy methods
+    //parts of kernel code is removed to investigate performance for comparision against cuda
+    
+    template <typename IntegT>
+    int
+    dummyFirstPhaseIteration(IntegT d_integrand, 
+						int heuristicID,
+                        ViewVectorDouble& dRegions, 
+                        ViewVectorDouble& dRegionsLength, 
+                        ViewVectorDouble& dRegionsIntegral, 
+                        ViewVectorDouble& dRegionsError,
+                        ViewVectorDouble& dParentsIntegral,
+                        ViewVectorDouble& dParentsError,                        
+                        constViewVectorDouble generators, 
+                        const Structures<double>& constMem,
+                        double& integral,
+                        double& error,
+                        size_t& nregions,
+						size_t& nFinishedRegions,
+                        double epsrel,
+                        double epsabs,
+                        int& fail,
+                        bool& mustFinish,
+                        int it){
+         //set KOKKOS_ENABLE_CUDA_LDG_INTRINSIC to use __ldg__
+        //because we need to take dot-product, make activeRegions a double view 
+        
+        Kokkos::Profiling::pushRegion("Iteration Allocations");
+		ViewVectorDouble activeRegions("activeRegions", numRegions);
+		ViewVectorInt subDividingDimension("subDividingDimension", numRegions);
+		
+		dRegionsIntegral = ViewVectorDouble("dRegionsIntegral", numRegions);
+		dRegionsError = ViewVectorDouble("dRegionsError", numRegions);
+		      
+		if(it == 0){
+			dParentsIntegral = ViewVectorDouble("dParentsIntegral", numRegions);
+			dParentsError = ViewVectorDouble("dParentsError", numRegions);
+		}
+		Kokkos::Profiling::popRegion();
+        
+        Kokkos::Profiling::pushRegion("INTEGRATE_GPU_PHASE1");
+        dummyINTEGRATE_GPU_PHASE1<IntegT, NDIM>(d_integrand, dRegions, dRegionsLength, 
+			numRegions, dRegionsIntegral, dRegionsError, activeRegions, subDividingDimension,
+            epsrel, epsabs, constMem, fEvalPerRegion, NSETS, lows, highs,
+			it, depthBeingProcessed, generators);
+        Kokkos::Profiling::popRegion();
+        
+        Kokkos::Profiling::pushRegion("RelErrClassify");
+        RelErrClassify(heuristicID, activeRegions, dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, epsrel, it);
+        Kokkos::Profiling::popRegion();
+        
+        //Compute integral and error estimates through reductions
+        Kokkos::Profiling::pushRegion("Reductions");
+        double iter_estimate = 0.;
+        Kokkos::parallel_reduce("Estimate computation", numRegions, KOKKOS_LAMBDA(const int64_t index, double &valueToUpdate){
+            valueToUpdate += dRegionsIntegral(index);
+        }, iter_estimate);
+        
+        double iter_errorest = 0.;
+        Kokkos::parallel_reduce("Estimate computation", numRegions, KOKKOS_LAMBDA(const int64_t index, double &valueToUpdate){
+            valueToUpdate += dRegionsError(index);
+        }, iter_errorest);
+        
+        //printf("iter_estimate:%.15f +- %.15f numRegions:%lu iteration:%i\n", iter_estimate, iter_errorest, numRegions, it);
+        
+        double leaves_estimate = integral + iter_estimate;
+        double leaves_errorest = error + iter_errorest;
+        
+        double iter_finished_estimate = iter_estimate - KokkosBlas::dot(activeRegions, dRegionsIntegral);
+        double iter_finished_errorest = iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
+        integral += iter_finished_estimate;
+        error += iter_finished_errorest;
+        Kokkos::Profiling::popRegion();
+        
+        printf("leaves_estimate:%.15f +- %.15f numRegions:%zu iteration:%i\n", leaves_estimate, leaves_errorest, numRegions, it);
+        Kokkos::Profiling::pushRegion("FixErrorBudgetOverflow");
+        FixErrorBudgetOverflow(activeRegions, integral,  error,  iter_finished_estimate, 
+              iter_finished_errorest, leaves_estimate,  epsrel, fail);
+        Kokkos::Profiling::popRegion();
+        
+        if(CheckTerminationCondition(leaves_estimate, 
+                                     leaves_errorest, 
+                                     integral, 
+                                     error, 
+                                     nregions, 
+                                     fail,
+                                     mustFinish,
+                                     epsrel, 
+                                     epsabs, 
+                                     it)){  
+            return true;
+        }
+        
+        Kokkos::Profiling::pushRegion("HSClassify");
+        HSClassify(dRegionsIntegral,
+                dRegionsError,
+               activeRegions,
+               integral,
+               error,
+               nregions,
+               iter_estimate,
+               iter_errorest,
+               iter_finished_estimate,
+               iter_finished_errorest,
+               leaves_estimate,
+               leaves_errorest,
+               epsrel,
+               epsabs,
+               mustFinish,
+               it);
+        Kokkos::Profiling::popRegion();
+        
+        if(CheckTerminationCondition(leaves_estimate, 
+                                     leaves_errorest, 
+                                     integral, 
+                                     error, 
+                                     nregions, 
+                                     fail,
+                                     mustFinish,
+                                     epsrel, 
+                                     epsabs, 
+                                     it)){  
+            return true;
+        }
+        
+        if (it < 700 && fail == 1){
+           // Kokkos::Profiling::pushRegion("GenerateActiveIntervals");
+            size_t numInActiveIntervals =
+            GenerateActiveIntervals(dRegions,
+								    dRegionsLength,
+								    activeRegions,
+                                    subDividingDimension,
+                                    dRegionsIntegral,
+                                    dRegionsError,
+                                    dParentsIntegral,
+                                    dParentsError, generators);
+            depthBeingProcessed++;
+            nregions += numInActiveIntervals;
+            nFinishedRegions += numInActiveIntervals;
+            //Kokkos::Profiling::popRegion();
+			if(CheckZeroNumRegionsTermination(integral, error, leaves_estimate, leaves_errorest)){
+				//printf("Have zero regions so will trigger termination\n");
+				return true;
+			}
+        }            
+        else{
+            nregions += numRegions; 
+        }        
+		return false;
+    }
+    
+    
+    
+    template <typename IntegT>
+    bool
+    dummyIntegrateFirstPhase(IntegT _integrand, 
+                        double epsrel,
+                        double epsabs,
+						int heuristicID,
+                        double& integral,
+                        double& error,
+                        size_t& nregions,
+						size_t& nFinishedRegions,
+                        int& fail,
+						size_t maxIters,
+                        ViewVectorDouble& dRegions, 
+                        ViewVectorDouble& dRegionsLength, 
+                        ViewVectorDouble& dRegionsIntegral, 
+                        ViewVectorDouble& dRegionsError,
+                        ViewVectorDouble& dParentsIntegral,
+                        ViewVectorDouble& dParentsError,
+                        const Structures<double>& constMem){
+        Kokkos::View<IntegT*, Kokkos::CudaSpace>   d_integrand("d_integrand", 1);
+        ViewVectorDouble _generators("generators", NDIM*fEvalPerRegion);
+		ComputeGenerators<NDIM>(_generators, fEvalPerRegion, constMem);
+        
+        constViewVectorDouble generators = _generators;
+        
+		bool mustFinish = false;
+		bool terminate = false;
+        
+        for(int it = 0; it< maxIters && terminate == false; it++)
+            terminate = dummyFirstPhaseIteration(d_integrand, 
+								heuristicID,
+                                dRegions, 
+                                dRegionsLength, 
+                                dRegionsIntegral, 
+                                dRegionsError, 
+                                dParentsIntegral,
+                                dParentsError,
+                                generators, 
+                                constMem,
+                                integral, 
+                                error, 
+                                nregions,
+								nFinishedRegions,
+                                epsrel, 
+                                epsabs, 
+                                fail,
+                                mustFinish,
+                                it);   
+										
+		//printf("At IntegratePhaseI side estimate:%.15f\n", integral);								
+        return 0;
     }
 };   
     

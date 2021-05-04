@@ -15,9 +15,24 @@ class Cuhre{
     double* OutputRegions;
     double* OutputRegionsLength;
     size_t numOutputRegions;
-    bool output = false;;
+    bool output = false;
+    size_t fEvalPerRegion;
+    Structures<T> constMem;
+    Rule<double> rule;
     
-    Cuhre() = default;
+    //Cuhre() = default;
+    
+    Cuhre(){
+        fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
+                        2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
+                        4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
+		int key = 0;
+		int verbose = 0;
+        Kokkos::Profiling::pushRegion("Integration Rule Initialization");
+		rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
+		Kokkos::Profiling::popRegion();
+
+    }
     
     //reconsider this mechanism for generating output data
     Cuhre(double* hostRegionsIntegral, double* hostRegionsError, double* hostRegions, double* hostRegionsLength, size_t numToStore){
@@ -27,6 +42,14 @@ class Cuhre{
         OutputRegions = hostRegions;
         OutputRegionsLength = hostRegionsLength;
         numOutputRegions = numToStore;
+        
+        fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
+                        2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
+                        4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
+		int key = 0;
+		int verbose = 0;
+        Kokkos::Profiling::pushRegion("Integration Rule Initialization");
+		rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
     }
     
     void GenerateSubRegionOutput(ViewVectorDouble dRegionsIntegral, ViewVectorDouble dRegionsError, ViewVectorDouble dRegions, ViewVectorDouble dRegionsLength){
@@ -68,7 +91,7 @@ class Cuhre{
               Volume<T, NDIM>* volume = nullptr){
         cuhreResult res; 
         
-        Kernel<double, NDIM> kernel;      
+        Kernel<double, NDIM> kernel(rule.GET_NSETS());      
         ViewVectorDouble dRegions("dRegions", NDIM);
         ViewVectorDouble dRegionsLength("dRegionsLength", NDIM);
             
@@ -78,9 +101,9 @@ class Cuhre{
         ViewVectorDouble dParentsIntegral;
         ViewVectorDouble dParentsError;
         
-        //Kokkos::Profiling::pushRegion("GenerateInitialRegions");
+        Kokkos::Profiling::pushRegion("GenerateInitialRegions");
         kernel.GenerateInitialRegions(dRegions, dRegionsLength);
-        //Kokkos::Profiling::popRegion();
+        Kokkos::Profiling::popRegion();
         
         kernel.IntegrateFirstPhase(_integrand, 
                                     epsrel, 
@@ -97,13 +120,67 @@ class Cuhre{
                                     dRegionsIntegral, 
                                     dRegionsError,
                                     dParentsIntegral,
-                                    dParentsError);
+                                    dParentsError,
+                                    constMem);
                                     
         //printf("Result.status:%i\n", res.status);                       
         GenerateSubRegionOutput(dRegionsIntegral, dRegionsError, dRegions, dRegionsLength);
 		return res;
     }
     
+    
+    //--------------------------------------------------------------------------------------------------------
+    //Dummy methods
+    //parts of kernel code is removed to investigate performance for comparision against cuda
+    
+       template <typename IntegT>
+    cuhreResult
+    DummyIntegrate(IntegT _integrand, 
+              double epsrel, 
+              double epsabs, 
+			  int heuristicID = 0,
+			  size_t maxIters = 500,
+              double* hRegs = nullptr, 
+              double* hRegsLength = nullptr, 
+              Volume<T, NDIM>* volume = nullptr){
+        cuhreResult res; 
+        
+        Kernel<double, NDIM> kernel(rule.GET_NSETS());      
+        ViewVectorDouble dRegions("dRegions", NDIM);
+        ViewVectorDouble dRegionsLength("dRegionsLength", NDIM);
+            
+        ViewVectorDouble dRegionsIntegral;
+        ViewVectorDouble dRegionsError;
+        
+        ViewVectorDouble dParentsIntegral;
+        ViewVectorDouble dParentsError;
+        
+        Kokkos::Profiling::pushRegion("GenerateInitialRegions");
+        kernel.GenerateInitialRegions(dRegions, dRegionsLength);
+        Kokkos::Profiling::popRegion();
+        
+        kernel.dummyIntegrateFirstPhase(_integrand, 
+                                    epsrel, 
+                                    epsabs, 
+									heuristicID,
+                                    res.estimate,
+                                    res.errorest,
+                                    res.nregions,
+									res.nFinishedRegions,
+                                    res.status,
+									maxIters,
+                                    dRegions, 
+                                    dRegionsLength, 
+                                    dRegionsIntegral, 
+                                    dRegionsError,
+                                    dParentsIntegral,
+                                    dParentsError,
+                                    constMem);
+                                    
+        //printf("Result.status:%i\n", res.status);                       
+        GenerateSubRegionOutput(dRegionsIntegral, dRegionsError, dRegions, dRegionsLength);
+		return res;
+    }
 };
 
 #endif
