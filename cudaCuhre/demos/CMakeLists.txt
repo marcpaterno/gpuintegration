@@ -241,16 +241,6 @@ target_include_directories(scalarIntegrandSigmaGPU PRIVATE  ${CMAKE_SOURCE_DIR}
 												${GSL_INCLUDE_DIR}
 												${CUBACPP_DIR}
 												"/opt/openmpi-wahab/include")
-
-
-add_executable(Init_Region_Pool Init_Region_Pool.cu)
-target_compile_options(Init_Region_Pool PRIVATE "-arch=sm_70")
-set_target_properties(Init_Region_Pool PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(Init_Region_Pool util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
-target_include_directories(Init_Region_Pool PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
 												
 add_executable(sigMiscentCPU sigMiscent.cc)
 target_link_libraries(sigMiscentCPU PRIVATE ${CUBA_LIBRARIES} ${GSL_LIBRARIES} sigma_miscent_y1_scalarintegrand models utils)
