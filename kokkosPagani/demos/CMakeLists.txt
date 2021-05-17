@@ -1,3 +1,5 @@
+find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
+
 add_executable(Genz1_8D Genz1_8D.cpp)
 target_compile_options(Genz1_8D PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr")
 target_link_libraries(Genz1_8D Kokkos::kokkos Kokkos::kokkoskernels)
@@ -15,8 +17,8 @@ target_compile_options(Genz3_8D PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr"
 target_link_libraries(Genz3_8D Kokkos::kokkos Kokkos::kokkoskernels)
 
 add_executable(Genz4_5D Genz4_5D.cpp)
-target_compile_options(Genz4_5D PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr")
-target_link_libraries(Genz4_5D Kokkos::kokkos Kokkos::kokkoskernels)
+target_compile_options(Genz4_5D PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr" )
+target_link_libraries(Genz4_5D Kokkos::kokkos Kokkos::kokkoskernels ${NVTX_LIBRARY})
 
 add_executable(Genz4_8D Genz4_8D.cpp)
 target_compile_options(Genz4_8D PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr")
@@ -45,7 +47,3 @@ target_link_libraries(B8_15 Kokkos::kokkos Kokkos::kokkoskernels)
 add_executable(B8_22 B8_22.cpp)
 target_compile_options(B8_22 PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr")
 target_link_libraries(B8_22 Kokkos::kokkos Kokkos::kokkoskernels)
-
-add_executable(Init_Region_Pool Init_Region_Pool.cpp)
-target_compile_options(Init_Region_Pool PRIVATE "-arch=sm_70" "--expt-relaxed-constexpr")
-target_link_libraries(Init_Region_Pool Kokkos::kokkos Kokkos::kokkoskernels)
