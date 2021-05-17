@@ -36,3 +36,23 @@ target_include_directories(test_volume PRIVATE
 )
 add_test(test_volume test_volume)
 
+
+add_executable(RegionSampling RegionSampling.cu)
+target_compile_options(RegionSampling PRIVATE "-arch=sm_70")
+set_target_properties(RegionSampling PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(RegionSampling util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(RegionSampling PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(RegionSampling RegionSampling)
+
+add_executable(FourthDividedDifference FourthDividedDifference.cu)
+target_compile_options(FourthDividedDifference PRIVATE "-arch=sm_70")
+set_target_properties(FourthDividedDifference PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(FourthDividedDifference util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain)
+target_include_directories(FourthDividedDifference PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(FourthDividedDifference FourthDividedDifference)
