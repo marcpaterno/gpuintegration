@@ -289,7 +289,7 @@ struct Region {
 
 extern __shared__ GlobalBounds sBound[];
 
-__shared__ TYPE sdata[BLOCK_SIZE];
+//__shared__ TYPE sdata[BLOCK_SIZE];
 __shared__ TYPE* serror;
 __shared__ size_t* serrorPos;
 __shared__ bool GlobalMemCopy;
