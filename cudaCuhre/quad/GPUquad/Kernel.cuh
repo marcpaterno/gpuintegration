@@ -345,6 +345,22 @@ namespace quad {
   public:
     T weightsum, avgsum, guess, chisq, chisum, chisqsum;
 
+    void GetPtrsToArrays(double*& regions, double*& regionsLength, double*& regionsIntegral, double*& regionsError, double*& gener){
+        regions = dRegions;
+        regionsLength = dRegionsLength;
+        regionsIntegral = dRegionsIntegral;
+        regionsError = dRegionsError;
+        gener = generators;
+    }
+    
+    void GetVars(size_t& numFuncEvals, size_t& numRegs, Structures<double>*& constMemory, int& nsets, int& depth){
+        numFuncEvals = fEvalPerRegion;
+        numRegs = numRegions;
+        constMemory = &constMem;
+        nsets = rule.GET_NSETS();
+        depth = depthBeingProcessed;
+    }
+
     int
     GetPhase2_failedblocks()
     {
@@ -1075,6 +1091,7 @@ namespace quad {
         va_end(params);
         
         auto PrintSameIndex = [hArrays](size_t index){
+            std::cout<<index<<"): ";
             for(auto &array:hArrays){
                 std::cout<< array[index] << "\t";
             }   
@@ -1423,11 +1440,11 @@ namespace quad {
     void GetNextThreshold(double min, double max, int rightDirection, double& current){
         if(rightDirection){
             double diff = abs(max - current);
-            current += diff*.5;
+            current += diff*.5f;
         }
         else{
             double diff = abs(min - current);
-            current -= diff*.5;
+            current -= diff*.5f;
         }
     }
     
@@ -1501,8 +1518,7 @@ namespace quad {
       secondTolastAvg = lastAvg;
       lastAvg = leaves_estimate;
       lastErr = leaves_errorest;
-     // printf("it:%i need %lu have %lu which is %f percent numRegions:%lu\n", iteration, GetGPUMemNeededForNextIteration_CallBeforeSplit(), Device.GetAmountFreeMem(), (double)GetGPUMemNeededForNextIteration_CallBeforeSplit()/(double)Device.GetAmountFreeMem(), numRegions);
-      
+      //printf("it:%i need %lu have %lu which is %f percent numRegions:%lu\n", iteration, GetGPUMemNeededForNextIteration_CallBeforeSplit(), Device.GetAmountFreeMem(), (double)GetGPUMemNeededForNextIteration_CallBeforeSplit()/(double)Device.GetAmountFreeMem(), numRegions);
       if(phase2 == true  || (GetGPUMemNeededForNextIteration_CallBeforeSplit() < Device.GetAmountFreeMem() && !estimateHasConverged))  
         return;
       //printf("Will attempt Filtering\n");
@@ -1518,6 +1534,7 @@ namespace quad {
       size_t targetRegionNum = numRegions/2;
       
       double ErrThreshold = iterErrorest/(numRegions); //starts out as avg value
+      //printf("initial error threshold:%a = %.15e iterErrorest:%.15e\n", ErrThreshold, ErrThreshold, iterErrorest);
       double lastThreshold = ErrThreshold;
       size_t numActiveRegions = numRegions;
       double iter_polished_errorest = 0.;
@@ -1557,6 +1574,7 @@ namespace quad {
         CudaCheckError();
         
         numActiveRegions = ComputeNumUnPolishedRegions(d_ptr, unpolishedRegions, nullptr, scannedArray, numRegions);
+        //printf("number active regions:%lu with potential threshold %.15e\n", numActiveRegions, ErrThreshold);
         if(numActiveRegions <= targetRegionNum){
             
             wrapped_mask = thrust::device_pointer_cast(unpolishedRegions);
@@ -1569,6 +1587,7 @@ namespace quad {
             if((iter_polished_errorest <= MaxPercentOfErrorBudget*(targetError - error) || numDirectionChanges == maxDirectionChanges)){
                 integral += iter_polished_estimate;
                 error += iter_polished_errorest;
+                //printf("Found it %.15f +- %.15f\n", integral, error);
                 break;
             }
             else if(iter_polished_errorest <= .95*(targetError - error)){
@@ -1610,8 +1629,6 @@ namespace quad {
     {
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
-      
-      
       
       if (vol) {
         cudaMemcpy(lows, vol->lows, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
@@ -1674,11 +1691,11 @@ namespace quad {
 
       cudaDeviceSynchronize();
       CudaCheckError();
+      
       QuadDebug(cudaMemcpy(dRegionsError,
                            newErrs,
                            sizeof(T) * numRegions,
                            cudaMemcpyDeviceToDevice));
-
       QuadDebug(cudaFree(newErrs));
     }
     
@@ -1756,6 +1773,7 @@ namespace quad {
             //printf("Warning triggered, removing %.15e +- %.15e from finished contributions\n", iter_finished_estimate, iter_finished_errorest);
             error -= iter_finished_errorest;
             integral -= iter_finished_estimate;
+            //printf("Reverted estimates to %.15f +- %.15f\n", integral, error);
             iter_finished_estimate = 0.;
             iter_finished_errorest = 0.;
             cudaDeviceSynchronize();
@@ -1830,11 +1848,18 @@ namespace quad {
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
       int *activeRegions = 0, *subDividingDimension = 0;
       IterationAllocations(dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, activeRegions, subDividingDimension, iteration);
+      CudaCheckError();
       //nvtxRangePop();
       
-      //nvtxRangePush("Sample");
+      
+      /*if(iteration == 14){
+          printf("about to display\n");
+          display<double, 2>(numRegions*NDIM, dRegions, dRegionsLength);
+      }*/
+      
+      //nvtxRangePush("SampleKernel");
 	  //printf("Launching for %lu regions\n", numBlocks);
-      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM>
+      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
         <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
           d_integrand,
           dRegions,
@@ -1872,7 +1897,9 @@ namespace quad {
       ComputeFinishedEstimates(iter_finished_estimate, iter_finished_errorest, dRegionsIntegral, iter_estimate, dRegionsError, iter_errorest, activeRegions);
       integral += iter_finished_estimate;
       error += iter_finished_errorest;
-      
+      //printf("%i, %.15f, %.15f, %.15f, %.15f numRegions:%lu\n", iteration, leaves_estimate, leaves_errorest, iter_estimate, iter_errorest, numRegions);
+      //printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),  numRegions:%lu\n", iteration, iter_estimate, iter_errorest, iter_estimate, iter_errorest, numRegions);
+      //printf("-----------------------\n");
       Phase_I_PrintFile(vol,
                         numRegions,
                         activeRegions,
@@ -1890,7 +1917,7 @@ namespace quad {
                         iteration);
      
      FixErrorBudgetOverflow(activeRegions, integral, error, iter_finished_estimate, iter_finished_errorest, leaves_estimate, epsrel);
-        
+     //printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),  numRegions:%lu\n", iteration, iter_estimate, iter_errorest, iter_estimate, iter_errorest, numRegions);   
      if(/*GetGPUMemNeededForNextIteration_CallBeforeSplit() >= Device.GetAmountFreeMem() && 
      mustFinish == true && */
      CheckTerminationCondition(leaves_estimate, leaves_errorest, integral, error, nregions, epsrel, epsabs, iteration, activeRegions, subDividingDimension))  
