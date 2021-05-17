@@ -47,7 +47,7 @@ main()
   //configuration.phase_2 = true;
 
   PrintHeader();
-  while (cu_time_and_call<detail::BoxIntegral8_15, ndim>("B8_15",
+  while (cu_time_and_call<detail::BoxIntegral8_15, ndim>("8D f8",
                        integrand,
                        epsrel,
                        true_value,

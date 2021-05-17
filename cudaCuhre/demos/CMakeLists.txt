@@ -1,7 +1,6 @@
 add_subdirectory(Heuristics)
 find_package(CUBA REQUIRED)
 find_package(GSL REQUIRED)
-find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
 add_executable(cudaCuhre cudaCuhre.cu)
 set_property(TARGET cudaCuhre PROPERTY CUDA_ARCHITECTURES 70-real)
@@ -109,8 +108,9 @@ target_include_directories(Genz3_8DGPU PRIVATE
 )
 
 
+find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 add_executable(Genz4_5DGPU Genz4_5D.cu)
-target_compile_options(Genz4_5DGPU PRIVATE "-arch=sm_70" "-lineinfo")
+target_compile_options(Genz4_5DGPU PRIVATE "-arch=sm_70")
 set_target_properties(Genz4_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(Genz4_5DGPU util ${MPI_CXX_LIBRARIES} ${OpenMP_CXX_LIBRARIES} testmain) 
 target_include_directories(Genz4_5DGPU PRIVATE
@@ -340,7 +340,7 @@ target_include_directories(Genz4_5DCPU PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CUBA_INCLUDE_DIR}
 )
-target_link_libraries(Genz4_5DCPU PRIVATE ${CUBA_LIBRARIES})
+target_link_libraries(Genz4_5DCPU PRIVATE ${CUBA_LIBRARIES} )
 
 add_executable(Genz5_8DCPU Genz5_8D.cc)
 target_include_directories(Genz5_8DCPU PRIVATE

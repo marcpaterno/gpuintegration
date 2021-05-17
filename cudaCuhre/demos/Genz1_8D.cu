@@ -26,7 +26,7 @@ main()
                (sin(37. / 2.) - sin(35. / 2.));/*0.000041433844333568199264*/;
   
   PrintHeader();
-  while (cu_time_and_call<GENZ_1_8D, ndim>("Genz1_8D",
+  while (cu_time_and_call<GENZ_1_8D, ndim>("8D f1",
                                             integrand,
                                             epsrel,
                                             true_value,

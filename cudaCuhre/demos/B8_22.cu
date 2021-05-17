@@ -44,7 +44,7 @@ main()
   //configuration.heuristicID = 0;
   //configuration.phase_2 = true;
   PrintHeader();
-  while (cu_time_and_call<detail::BoxIntegral8_22, ndim>("B8_22",
+  while (cu_time_and_call<detail::BoxIntegral8_22, ndim>("8D f7",
                        integrand,
                        epsrel,
                        true_value,
