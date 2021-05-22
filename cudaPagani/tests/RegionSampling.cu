@@ -70,8 +70,8 @@ Make_GPU_Integrand(IntegT* integrand)
 
 namespace detail{
     struct Result{
-        double estimate;
-        double errorest;
+        double estimate = 0.;
+        double errorest = 0.;
     };
 }
 
@@ -127,23 +127,24 @@ detail::Result EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_int
     DeviceMemory<double> Device;
     Structures<double>* constMemPtr = nullptr;
     
-    kernel->GetVars(numFuncEvals, numRegions, constMemPtr, nsets, depthBeingProcessed);
-    kernel->GetPtrsToArrays(dRegions, dRegionsLength, dRegionsIntegral, dRegionsError, generators);
-    kernel->IterationAllocations(dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, activeRegions, subDividingDimension, iteration);
+    kernel->GetVars(numFuncEvals, numRegions, constMemPtr, nsets, depthBeingProcessed);CudaCheckError(); 
+    kernel->GetPtrsToArrays(dRegions, dRegionsLength, dRegionsIntegral, dRegionsError, generators);CudaCheckError(); 
+    kernel->IterationAllocations(dRegionsIntegral, dRegionsError, dParentsIntegral, dParentsError, activeRegions, subDividingDimension, iteration);CudaCheckError(); 
     
-    QuadDebug(Device.AllocateMemory((void**)&generators,
-                    sizeof(double) * NDIM * numFuncEvals));
-                    
-    ComputeGenerators<NDIM> <<<1, BLOCKDIM>>>(generators, numFuncEvals, *constMemPtr);   
-    cudaDeviceSynchronize(); 
-      
+    QuadDebug(Device.AllocateMemory((void**)&generators, sizeof(double) * NDIM * numFuncEvals));
+    CudaCheckError();                 
+    ComputeGenerators<NDIM> <<<1, BLOCK_SIZE>>>(generators, numFuncEvals, *constMemPtr);   CudaCheckError();
+    CudaCheckError(); 
+    
     Volume<double, NDIM> tempVol;
+    
     cudaMalloc((void**)&lows, sizeof(double) * NDIM);
     cudaMalloc((void**)&highs, sizeof(double) * NDIM);
-    cudaMemcpy(
-          lows, tempVol.lows, sizeof(double) * NDIM, cudaMemcpyHostToDevice);
-        cudaMemcpy(
-          highs, tempVol.highs, sizeof(double) * NDIM, cudaMemcpyHostToDevice);  
+    cudaMemcpy( lows, tempVol.lows, sizeof(double) * NDIM, cudaMemcpyHostToDevice);
+    cudaMemcpy( highs, tempVol.highs, sizeof(double) * NDIM, cudaMemcpyHostToDevice);  CudaCheckError();
+    
+    
+    kernel->AllocVolArrays(&tempVol);   
     
     INTEGRATE_GPU_PHASE1<IntegT, double, NDIM, BLOCKDIM>
         <<<numRegions, BLOCKDIM, NDIM * sizeof(GlobalBounds)>>>(
@@ -166,23 +167,22 @@ detail::Result EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_int
           depthBeingProcessed,
           generators);
     cudaDeviceSynchronize(); 
-    
+    CudaCheckError();
     double* regionsIntegral = nullptr;
     double* regionsError = nullptr;
     detail::Result result;
     
     CopyToHost(regionsIntegral, dRegionsIntegral, numRegions);
     result.estimate = std::accumulate(regionsIntegral , regionsIntegral+numRegions, result.estimate);
-    
+    CudaCheckError();
     CopyToHost(regionsError, dRegionsError, numRegions);
     result.errorest = std::accumulate(regionsError , regionsError + numRegions, result.errorest);
+    CudaCheckError();
     
-    PrintGPUArrays<double, 1>(numRegions, dRegionsIntegral);
-    printf("--\n");
-    PrintGPUArrays<double, 1>(numRegions, dRegionsError);
-    
+    Device.ReleaseMemory(generators);
     delete[] regionsError;
     delete[] regionsIntegral;
+    CudaCheckError();
     return result;
 }
 
@@ -200,7 +200,6 @@ TEST_CASE("Constant Positive Value Function")
         constexpr int block_size = 256;
         result = EvaluateRegions<PTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
         CHECK(abs(result.estimate - 15.37) <= .00000000000001);
-        std::cout<<"error for 256 threads "<< result.errorest;
     }
     
     SECTION("128 Threads per Block")
@@ -208,7 +207,6 @@ TEST_CASE("Constant Positive Value Function")
         constexpr int block_size = 128;
         result = EvaluateRegions<PTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
         CHECK(abs(result.estimate - 15.37) <= .00000000000001);
-        std::cout<<"error for 128 threads "<< result.errorest;
     }
     
     SECTION("64 Threads per Block")
@@ -216,51 +214,67 @@ TEST_CASE("Constant Positive Value Function")
         constexpr int block_size = 64;
         result = EvaluateRegions<PTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
         CHECK(abs(result.estimate - 15.37) <= .00000000000001);
-        std::cout<<"error for 64 threads "<< result.errorest;
     }
 }
 
 TEST_CASE("Constant Negative Value Function")
 {
-    /*constexpr int ndim = 2;
-    size_t numRegions = 16;
+    constexpr int ndim = 2;
     NTest integrand;
-    size_t maxIters = 1;
-	int heuristicID = 0; 
-    double epsrel = 1.0e-3;
-    double epsabs = 1.0e-12;
-    int key = 0;
-    int verbose = 0;
-    int numDevices = 1;
-    Cuhre<double, 2> cuhre(0, nullptr, key, verbose, numDevices);
-    cuhreResult res = cuhre.integrate<NTest>(integrand, epsrel, epsabs);
-        
-    double integral = res.estimate;
-    double error = res.errorest;
-
-    //returns are never precisely equal to 0. and -15.37
-	printf("totalEstimate:%.15f\n", integral);
-    CHECK(abs(integral - (-15.37)) <= .00000000000001);*/
+    Kernel<double, ndim> kernel(std::cout);
+    PrepKernel<ndim>(&kernel);
+    NTest* gpu_invocable_integrand = Make_GPU_Integrand(&integrand);
+    detail::Result result;
+      
+    SECTION("256 Threads per Block")
+    {
+        constexpr int block_size = 256;
+        result = EvaluateRegions<NTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
+        CHECK(abs(result.estimate  - (-15.37)) <= .00000000000001);
+    }
+    
+    SECTION("128 Threads per Block")
+    {
+        constexpr int block_size = 128;
+        result = EvaluateRegions<NTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
+        CHECK(abs(result.estimate  - (-15.37)) <= .00000000000001);
+    }
+    
+    SECTION("64 Threads per Block")
+    {
+        constexpr int block_size = 64;
+        result = EvaluateRegions<NTest, ndim, block_size>(&kernel, gpu_invocable_integrand);
+        CHECK(abs(result.estimate - (-15.37)) <= .00000000000001);
+    }
 }
 
 TEST_CASE("Constant Zero Value Function")
 {
-    /*constexpr int ndim = 2;
-    size_t numRegions = 16;
+    constexpr int ndim = 2;
     ZTest integrand;
-    size_t maxIters = 1;
-	int heuristicID = 0; 
-    double epsrel = 1.0e-3;
-    double epsabs = 1.0e-12;
-    int key = 0;
-    int verbose = 0;
-    int numDevices = 1;
-    Cuhre<double, 2> cuhre(0, nullptr, key, verbose, numDevices);
-    cuhreResult res = cuhre.integrate<ZTest>(integrand, epsrel, epsabs);
-        
-    double integral = res.estimate;
-    double error = res.errorest;
+    Kernel<double, ndim> kernel(std::cout);
+    PrepKernel<ndim>(&kernel);
+    ZTest* gpu_invocable_integrand = Make_GPU_Integrand(&integrand);
+    detail::Result result;
+      
+    SECTION("256 Threads per Block")
+    {
+        constexpr int block_size = 256;
+        result = EvaluateRegions<ZTest, ndim, block_size>(&kernel, gpu_invocable_integrand);CudaCheckError();
+        CHECK(result.estimate == 0.0);
+    }
     
-    CHECK(integral== 0.0);*/
+    SECTION("128 Threads per Block")
+    {
+        constexpr int block_size = 128;
+        result = EvaluateRegions<ZTest, ndim, block_size>(&kernel, gpu_invocable_integrand);CudaCheckError();
+        CHECK(result.estimate == 0.0);
+    }
+    
+    SECTION("64 Threads per Block")
+    {
+        constexpr int block_size = 64;
+        result = EvaluateRegions<ZTest, ndim, block_size>(&kernel, gpu_invocable_integrand);CudaCheckError();
+        CHECK(result.estimate == 0.0);
+    }
 }
-

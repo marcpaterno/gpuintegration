@@ -338,7 +338,12 @@ namespace quad {
         nsets = rule.GET_NSETS();
         depth = depthBeingProcessed;
     }
-
+    
+    void GetVolumeBounds(double* lowBounds, double* highBounds){
+        lowBounds = lows; 
+        highBounds = highs;
+    }
+    
     int
     GetPhase2_failedblocks()
     {
@@ -545,6 +550,7 @@ namespace quad {
       QuadDebug(cudaFree(constMem._cGeneratorCount));
       QuadDebug(cudaDeviceSynchronize());
       QuadDebug(cudaFree(generators));
+      CudaCheckError();
     }
     
     void
@@ -1605,6 +1611,11 @@ namespace quad {
     void
     AllocVolArrays(Volume<T, NDIM>* vol)
     {
+      /*
+        this is invoked by IntegateFirstPhase and doesn't need to called by user
+        is currently present in the test RegionSampling due to ~Kernel's destruction of highs, lows
+        if AllocVolArrays is never called, cudaFree will cause error
+      */
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
       
