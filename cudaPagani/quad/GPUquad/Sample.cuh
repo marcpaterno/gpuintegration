@@ -255,7 +255,7 @@ double blockReduceSum(double val) {
                         2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
                         4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));*/  
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
-    __shared__ double sdata[BLOCK_SIZE];
+    __shared__ double sdata[blockdim];
     T g[NDIM];
     gpu::cudaArray<double, NDIM> x;
     int perm = 0;
@@ -270,7 +270,7 @@ double blockReduceSum(double val) {
     // Compute first set of permutation outside for loop to extract the Function
     // values for the permutation used to compute
     // fourth dimension
-    int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+    int pIndex = perm * blockdim + threadIdx.x;
     
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM>(
@@ -303,16 +303,16 @@ double blockReduceSum(double val) {
     }
     __syncthreads(); 
 
-    for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
-      int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+    for (perm = 1; perm < FEVAL / blockdim; ++perm) {
+      int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
     }
     //__syncthreads(); 
     // Balance permutations
-    pIndex = perm * BLOCK_SIZE + threadIdx.x;
+    pIndex = perm * blockdim + threadIdx.x;
     if (pIndex < FEVAL) {
-      int pIndex = perm * BLOCK_SIZE + threadIdx.x;
+      int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
         d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
     }
