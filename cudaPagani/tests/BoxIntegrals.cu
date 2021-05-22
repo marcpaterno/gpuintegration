@@ -34,7 +34,7 @@ TEST_CASE("BoxIntegral8_15")
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
 
   double true__rel_err = abs(true_value - result.estimate)/true_value;
-  CHECK(true__rel_err <= result.errorest);
+  CHECK(true__rel_err <= epsrel);
 };
 
 TEST_CASE("BoxIntegral8_25")
@@ -58,7 +58,7 @@ TEST_CASE("BoxIntegral8_25")
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   
   double true__rel_err = abs(true_value - result.estimate)/true_value;
-  CHECK(true__rel_err <= result.errorest);
+  CHECK(true__rel_err <= epsrel);
 };
 
 TEST_CASE("BoxIntegral8_22")
@@ -82,5 +82,5 @@ TEST_CASE("BoxIntegral8_22")
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
   
   double true__rel_err = abs(true_value - result.estimate)/true_value;
-  CHECK(true__rel_err <= result.errorest);
+  CHECK(true__rel_err <= epsrel);
 };
