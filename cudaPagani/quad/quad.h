@@ -24,7 +24,7 @@ __constant__ TYPE errcoeff[] = {5, 1, 5};
 // Utilities
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
-#include "GPUquad/Interp2D.cuh"
+//#include "GPUquad/Interp2D.cuh"
 
 template <typename T>
 struct Structures {
