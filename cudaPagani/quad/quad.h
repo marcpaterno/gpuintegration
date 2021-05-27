@@ -2,10 +2,10 @@
 #define CUDACUHRE_QUAD_QUAD_h
 
 #define TIMING_DEBUG 1
-//#define BLOCK_SIZE 256
+#define BLOCK_SIZE 256
 //#define BLOCK_SIZE 128
 //#define BLOCK_SIZE 64
-#define BLOCK_SIZE 32
+//#define BLOCK_SIZE 32
 #define SM_REGION_POOL_SIZE 128
 
 #define GLOBAL_ERROR 1
