@@ -91,7 +91,7 @@ TEST_CASE("fun6")
     double previous_error_estimate = 1.0; // larger than ever should be returned
     Fun6 integrand;
     while (epsrel > 1.0e-6) {
-	  printf("Starting\n");
+	  printf("About to call alg.integrate\n");
       cuhreResult const res = alg.integrate<Fun6>(integrand, epsrel, epsabs, &vol, 0, 1, 0);
       // The integration should have converged.
 	  bool good = false;
@@ -123,7 +123,7 @@ TEST_CASE("fun6")
   }
 };
 
-TEST_CASE("genz_1abs_5d")
+/*TEST_CASE("genz_1abs_5d")
 {
   SECTION("decreasing epsrel results in non-increasing error estimate")
   {
@@ -160,5 +160,5 @@ TEST_CASE("genz_1abs_5d")
       epsrel /= 2.0;
     }
   }
-};
+};*/
 
