@@ -535,10 +535,7 @@ namespace quad {
       CudaCheckError();
       // dRegions and dRegionsLength need to be freed after phase 1, since all
       // the info is stored in host memory
-      QuadDebug(Device.ReleaseMemory(dParentsIntegral));
-      QuadDebug(Device.ReleaseMemory(dParentsError));
-      QuadDebug(Device.ReleaseMemory(lows));
-      QuadDebug(Device.ReleaseMemory(highs));
+
       QuadDebug(cudaFree(constMem._gpuG));
       QuadDebug(cudaFree(constMem._cRuleWt));
       QuadDebug(cudaFree(constMem._GPUScale));
@@ -547,9 +544,7 @@ namespace quad {
       QuadDebug(cudaFree(constMem._gpuGenPermGIndex));
       QuadDebug(cudaFree(constMem._gpuGenPermVarStart));
       QuadDebug(cudaFree(constMem._gpuGenPermVarCount));
-      QuadDebug(cudaFree(constMem._cGeneratorCount));
-      QuadDebug(cudaDeviceSynchronize());
-      QuadDebug(cudaFree(generators));
+      QuadDebug(cudaFree(constMem._cGeneratorCount));      
       CudaCheckError();
     }
     
@@ -1949,50 +1944,8 @@ namespace quad {
         depthBeingProcessed++;
         nregions += numInActiveIntervals;
         nFinishedRegions += numInActiveIntervals;
-        
-        
-        //bool NotEnoughMem = false;
-        // bool NotEnoughMem = GetGPUMemNeededForNextIteration() >= Device.GetAmountFreeMem();
-        
-       /* bool NoRegionsButPartitionsLeft =
-          (numRegions == 0 && !partitionManager.Empty());*/
-        
-        
-        /*if ((NotEnoughMem || NoRegionsButPartitionsLeft ) && fail == 1){
-          printf("Old Mem Check says this will be usage in next iter:%f\n", (double)GetGPUMemNeededForNextIteration()/(double)Device.GetAmountFreeMem());
-          
-          //printf("it:%i Saving to Host Partition with %lu regions Manager has %lu regs\n", iteration, numRegions, partitionManager.GetNRegions());
-          Partition<NDIM> currentPartition;
-          currentPartition.ShallowCopy(dRegions,
-                                       dRegionsLength,
-                                       dParentsIntegral,
-                                       dParentsError,
-                                       numRegions,
-                                       depthBeingProcessed);
-          partitionManager.LoadNextActivePartition(
-            currentPartition); // storeAndGetNextPartition
-
-          // interface again with original implementation, to be changed
-          dRegions = currentPartition.regions;
-          dRegionsLength = currentPartition.regionsLength;
-          dParentsIntegral = currentPartition.parentsIntegral;
-          dParentsError = currentPartition.parentsError;
-          numRegions = currentPartition.numRegions;
-          depthBeingProcessed = currentPartition.depth;
-
-          thrust::device_ptr<double> wrapped_ptr;
-          wrapped_ptr = thrust::device_pointer_cast(dParentsIntegral);
-          double parentsEstimate =
-            thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions / 2);
-          wrapped_ptr = thrust::device_pointer_cast(dParentsError);
-          double parentsErrorest =
-            thrust::reduce(wrapped_ptr, wrapped_ptr + numRegions / 2);
-        }*/
       }
       else{
-         //integral = leaves_estimate;
-         //error = leaves_errorest; this is for phase 2, phase 2 has no need for leaves, just the finished contributions
-         //printf("reached limit integral:%.15e error:%.15e numRegions:%lu\n", integral, error, numRegions);
          nregions += numRegions + partitionManager.GetNRegions();  
          
          phase2Ready = true;
@@ -2026,7 +1979,7 @@ namespace quad {
       PrintOutfileHeaders();
       int lastIteration = 0;
       int iteration = 0;
-      
+      fail = 1;
  
       for (iteration = 0; iteration < 700 && phase2Ready == false && fail == 1 && mustFinish == false; iteration++) {
         FirstPhaseIteration<IntegT>(d_integrand,
@@ -2042,43 +1995,24 @@ namespace quad {
                                     iteration,
                                     vol,
                                     lastIteration);
-        if(phase2Ready == false && fail == 1){
-          QuadDebug(cudaFree(dRegionsError));
-          QuadDebug(cudaFree(dRegionsIntegral));
-        }
+        QuadDebug(cudaFree(dRegionsError));
+        QuadDebug(cudaFree(dRegionsIntegral));     
       }
 
-      if(phase2 == true && fail == 1){
-          curr_hRegions =
-            (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * numRegions * NDIM);
-          curr_hRegionsLength = (T*)Host.AllocateMemory(
-            &curr_hRegionsLength, sizeof(T) * numRegions * NDIM);
-
-          QuadDebug(cudaMemcpy(curr_hRegions,
-                               dRegions,
-                               sizeof(T) * numRegions * NDIM,
-                               cudaMemcpyDeviceToHost));
-          QuadDebug(cudaMemcpy(curr_hRegionsLength,
-                               dRegionsLength,
-                               sizeof(T) * numRegions * NDIM,
-                               cudaMemcpyDeviceToHost));
-      }
-      
       CudaCheckError();
 
       StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
       QuadDebug(Device.ReleaseMemory(dRegions));
       QuadDebug(Device.ReleaseMemory(dRegionsLength));
-      
-      if (fail == 0 || fail == 2) {
-        QuadDebug(cudaFree(dRegionsError));
-        QuadDebug(cudaFree(dRegionsIntegral));
-        bool convergence = false;
-        convergence = error <= MaxErr(integral, epsrel, epsabs);
-        return !convergence;
-      }
-     else
-        return fail;
+      QuadDebug(Device.ReleaseMemory(dParentsIntegral));
+      QuadDebug(Device.ReleaseMemory(dParentsError));
+      QuadDebug(Device.ReleaseMemory(lows));
+      QuadDebug(Device.ReleaseMemory(highs));
+      QuadDebug(cudaFree(generators));
+
+      bool convergence = false;
+      convergence = error <= MaxErr(integral, epsrel, epsabs);
+      return !convergence;
     }
   };
 
