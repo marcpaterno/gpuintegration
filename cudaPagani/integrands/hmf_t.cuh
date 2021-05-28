@@ -8,9 +8,10 @@
 #include <array>
 #include <iostream>
 
-#include "y3_cluster_cpp/tests/cudaInterp.cuh"
+#include "quad/GPUquad/Interp2D.cuh"
 
 namespace quad{
+    
 template <class T>
 class hmf_t {
 public:
@@ -49,7 +50,7 @@ public:
 		  
     std::string buffer;
     std::getline(is, buffer);
-    std::vector<double> const vals_read = cosmosis::str_to_doubles(buffer);
+    std::vector<double> const vals_read = str_to_doubles(buffer);
     if (vals_read.size() == 2)
       {
 	m = hmf_t(table, vals_read[0], vals_read[1]);

@@ -93,6 +93,7 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
+
 class Managed 
 {
 	 public:

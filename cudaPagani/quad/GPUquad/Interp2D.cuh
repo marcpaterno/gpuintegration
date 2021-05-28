@@ -7,6 +7,8 @@
 #include "../quad.h"
 #include "../util/str_to_doubles.hh"
 
+namespace quad{
+
 class Interp2D : public Managed{
   public:
     __host__ __device__
@@ -208,6 +210,6 @@ class Interp2D : public Managed{
       return eval(do_clamp(x, min_x(), max_x()), do_clamp(y, min_y(), max_y()));
     }
   };
-
+}
 
 #endif

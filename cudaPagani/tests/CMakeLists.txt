@@ -53,3 +53,14 @@ target_include_directories(FourthDividedDifference PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(FourthDividedDifference FourthDividedDifference)
+
+add_executable(Interpolation Interpolation.cu)
+target_compile_options(Interpolation PRIVATE "-arch=sm_70")
+set_target_properties(Interpolation PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Interpolation util)
+target_include_directories(Interpolation PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+  ${CMAKE_SOURCE_DIR}/tests/data
+)
+add_test(Interpolation Interpolation)

@@ -3,6 +3,8 @@
 
 #include "../util/cudaArray.cuh"
 
+namespace quad{
+
 template<size_t Order>
 class polynomial{
   private:
@@ -20,5 +22,5 @@ class polynomial{
       return out;
     }
 };
-
+}
 #endif
