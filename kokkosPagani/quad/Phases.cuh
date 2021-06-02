@@ -84,7 +84,7 @@ INIT_REGION_POOL(IntegT d_integrand,
                  ViewVectorDouble dRegions, 
                  ViewVectorDouble dRegionsLength,
                  size_t numRegions,
-                 Structures<double> constMem,
+                 const Structures<double>& constMem,
                  int FEVAL,
                  int NSETS,                
                  ViewVectorDouble lows,
@@ -97,8 +97,8 @@ INIT_REGION_POOL(IntegT d_integrand,
     
     typedef Kokkos::View<Region<NDIM>*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewRegion;
     
-    ScratchViewDouble ERR(team_member.team_scratch(0), 1);
-    ScratchViewDouble RESULT(team_member.team_scratch(0), 1);
+    //ScratchViewDouble ERR(team_member.team_scratch(0), 1);
+    //ScratchViewDouble RESULT(team_member.team_scratch(0), 1);
     //ScratchViewRegion sRegionPool(team_member.team_scratch(0), 1);
     ScratchViewDouble vol(team_member.team_scratch(0), 1);
     ScratchViewDouble Jacobian(team_member.team_scratch(0), 1);
@@ -181,8 +181,8 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
         
         int shMemBytes = ScratchViewInt::shmem_size(1) +   //for maxDim
                          ScratchViewDouble::shmem_size(1) +   //for vol
-                         ScratchViewDouble::shmem_size(1) +  //for RESULT
-                         ScratchViewDouble::shmem_size(1) +  //for ERR
+                         //ScratchViewDouble::shmem_size(1) +  //for RESULT
+                         //ScratchViewDouble::shmem_size(1) +  //for ERR
                          ScratchViewDouble::shmem_size(1) +   //for Jacobian
                          ScratchViewDouble::shmem_size(1) +  //for maxDim
                          ScratchViewDouble::shmem_size(NDIM) +  //for ranges
