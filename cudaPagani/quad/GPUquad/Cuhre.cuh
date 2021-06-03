@@ -107,10 +107,11 @@ namespace quad {
       kernel->SetPhase_I_type(phase1type);
       kernel->SetHeuristicID(heuristicID);
       kernel->SetPhase2(phase2);
-      IntegT* d_integrand;
+      
 
-      cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-      memcpy(d_integrand, &integrand, sizeof(IntegT));
+      //cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
+      //memcpy(d_integrand, &integrand, sizeof(IntegT));
+      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
       CudaCheckError();
       
       kernel->GenerateInitialRegions();
