@@ -18,13 +18,11 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-//static int FIRST_PHASE_MAXREGIONS = (1 << 15);
 __constant__ TYPE errcoeff[] = {5, 1, 5};
 
 // Utilities
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
-//#include "GPUquad/Interp2D.cuh"
 
 template <typename T>
 struct Structures {
@@ -43,15 +41,15 @@ struct Structures {
 
   ~Structures() {}
 
-  T* /*const __restrict__*/ _gpuG;
-  T* /*const __restrict__*/ _cRuleWt;
-  T* /*const __restrict__*/ _GPUScale;
-  T* /*const __restrict__*/ _GPUNorm;
-  int* /*const __restrict__*/ _gpuGenPos;
-  int* /*const __restrict__*/ _gpuGenPermGIndex;
-  int* /*const __restrict__*/ _gpuGenPermVarCount;
-  int* /*const __restrict__*/ _gpuGenPermVarStart;
-  size_t* /*const __restrict__*/ _cGeneratorCount;
+  T*  _gpuG;
+  T*  _cRuleWt;
+  T*  _GPUScale;
+  T*  _GPUNorm;
+  int*  _gpuGenPos;
+  int*  _gpuGenPermGIndex;
+  int*  _gpuGenPermVarCount;
+  int*  _gpuGenPermVarStart;
+  size_t* _cGeneratorCount;
 };
 
 struct cuhreResult {
@@ -92,7 +90,6 @@ struct Bounds {
 struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
-
 
 class Managed 
 {
@@ -290,16 +287,6 @@ struct Region {
 };
 
 #define NRULES 5
-
-extern __shared__ GlobalBounds sBound[];
-
-//__shared__ TYPE sdata[BLOCK_SIZE];
-__shared__ TYPE* serror;
-__shared__ size_t* serrorPos;
-__shared__ bool GlobalMemCopy;
-__shared__ int max_global_pool_size;
-__shared__ TYPE ERR, RESULT;
-__shared__ size_t gRegionPos[SM_REGION_POOL_SIZE / 2], gRegionPoolSize;
 
 template <int NDIM>
 struct Snapshot {
