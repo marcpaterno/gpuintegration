@@ -368,12 +368,10 @@ namespace quad {
                              depth, generators);
                                                
     if (threadIdx.x == 0) {
-        const double ERR = sRegionPool[0].result.err;
-        const double RESULT = sRegionPool[0].result.avg;
         activeRegions[blockIdx.x] = 1; 
         subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
-        dRegionsIntegral[blockIdx.x] = RESULT;
-        dRegionsError[blockIdx.x] = ERR;
+        dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
+        dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
     }
   }
 
