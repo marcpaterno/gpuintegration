@@ -13,8 +13,7 @@ make_from_file(char const* filename)
   static_assert(std::is_default_constructible<M>::value, "Type must be default constructable");
   char const* basedir =  std::getenv("PAGANI_DIR");
   std::string fname(basedir);
-  fname += "\/tests";
-  fname += '/';
+  fname += "/tests/";
   fname += filename;
   std::cout<<"Filename:"<<fname<<std::endl;
   std::ifstream in(fname);
@@ -23,7 +22,7 @@ make_from_file(char const* filename)
     msg += fname;
     throw std::runtime_error(msg);
   }
-  std::cout<<"read file\n";
+  
   M result;
   in >> result;
   return result;
@@ -57,7 +56,6 @@ TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
     memcpy(dhmf2, &hmf2, sizeof(hmftGPU));
     ExecuteObject<hmftGPU><<<1,1>>>(dhmf2, lnM, zt, result);
     cudaDeviceSynchronize();
-    std::cout<<"result:"<<*result<<"\n";
     CHECK(*result != 0.);
     
     cudaFree(dhmf2);
