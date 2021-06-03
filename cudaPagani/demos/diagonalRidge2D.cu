@@ -32,7 +32,6 @@ int
 main()
 {
   double epsrel =  1e-3;
-  double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1.;
   Diagonal_ridge2D integrand;
   
@@ -56,16 +55,4 @@ main()
                     configuration,
                     &vol);
                                             
-  /*while (cu_time_and_call<Diagonal_ridge2D, ndim>("Diagonal_Ridge2D",
-                                            integrand,
-                                            epsrel,
-                                            true_value,
-                                            "gpucuhre",
-                                            std::cout,
-                                            configuration,
-                                            &vol) == true &&
-                                            epsrel >= epsrel_min) {
-    epsrel /= 5.0;
-    //break;
-  }*/
 }
