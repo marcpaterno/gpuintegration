@@ -3,6 +3,17 @@ set_property(TARGET hello PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(hello PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_test(hello hello)
 
+add_executable(StatefullIntegrand StatefulIntegrand.cu)
+set_property(TARGET StatefullIntegrand PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(StatefullIntegrand PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(StatefullIntegrand quadutil)
+target_include_directories(StatefullIntegrand PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(StatefullIntegrand StatefullIntegrand)
+
+
 add_executable(test_cuhre_convergence test_cuhre_convergence.cu)
 set_property(TARGET test_cuhre_convergence PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(test_cuhre_convergence PROPERTIES POSITION_INDEPENDENT_CODE ON)
