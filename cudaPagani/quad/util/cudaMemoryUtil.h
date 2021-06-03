@@ -132,6 +132,28 @@ namespace quad {
     }
 };
 
+  template <class T>
+  T*
+  cuda_malloc_managed() {
+    T* temp = nullptr;
+    auto rc = cudaMallocManaged(&temp, sizeof(T));
+    if (rc != cudaSuccess) throw std::bad_alloc();
+    return temp;    
+  }
+
+  template <class T>
+  T*
+  cuda_copy_to_managed(T const& on_host) {
+    T* buffer = cuda_malloc_managed<T>();
+    try {
+        new(buffer) T(on_host);
+    } catch ( ... ) {
+        cudaFree(buffer);
+        throw;
+    }
+    return buffer;
+  }
+
 }
 
 #endif
