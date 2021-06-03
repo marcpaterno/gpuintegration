@@ -12,7 +12,7 @@ int
 main()
 {
   double epsrel = 1.0e-3;
-  double epsabs = 1.0e-12;
+  //double epsabs = 1.0e-12;
   double const epsrel_min = 1.0240000000000002e-10;
   constexpr int ndim = 8;
   GENZ_1_8D integrand;
