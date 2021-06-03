@@ -33,7 +33,6 @@ main()
 {
   double epsrel =  1e-3;
   double true_value = 1.;
-  Diagonal_ridge2D integrand;
   
   PrintHeader();
   
