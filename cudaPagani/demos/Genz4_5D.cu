@@ -45,8 +45,8 @@ main()
                                                 true_value,
                                                 "gpucuhre",
                                                 std::cout,
-                                                configuration) == true /*&&
-                                                epsrel > epsrel_min*/) {
+                                                configuration) == true &&
+                                                epsrel > epsrel_min) {
     epsrel /= 5.0;
     //break;
   }
