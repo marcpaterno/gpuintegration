@@ -97,19 +97,15 @@ INIT_REGION_POOL(IntegT d_integrand,
     
     typedef Kokkos::View<Region<NDIM>*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewRegion;
     
-    //ScratchViewDouble ERR(team_member.team_scratch(0), 1);
-    //ScratchViewDouble RESULT(team_member.team_scratch(0), 1);
-    //ScratchViewRegion sRegionPool(team_member.team_scratch(0), 1);
     ScratchViewDouble vol(team_member.team_scratch(0), 1);
     ScratchViewDouble Jacobian(team_member.team_scratch(0), 1);
     ScratchViewDouble ranges(team_member.team_scratch(0), NDIM);
     ScratchViewInt maxDim(team_member.team_scratch(0), 1);
     ScratchViewGlobalBounds sBound(team_member.team_scratch(0), NDIM);
-    ScratchViewDouble sdata(team_member.team_scratch(0), BLOCK_SIZE);
 	
-    int threadIdx = team_member.team_rank();
+    //int threadIdx = team_member.team_rank();
 		   
-    if(threadIdx == 0){
+    if(team_member.team_rank() == 0){
 		
 		int blockIdx = team_member.league_rank();     
         Jacobian(0) = 1;
@@ -148,7 +144,7 @@ INIT_REGION_POOL(IntegT d_integrand,
 						 ranges, 
 						 Jacobian, 
 						 generators,
-						 sdata,
+						 //sdata,
 						 sBound,
 						 team_member);
     team_member.team_barrier();
@@ -181,18 +177,16 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
         
         int shMemBytes = ScratchViewInt::shmem_size(1) +   //for maxDim
                          ScratchViewDouble::shmem_size(1) +   //for vol
-                         //ScratchViewDouble::shmem_size(1) +  //for RESULT
-                         //ScratchViewDouble::shmem_size(1) +  //for ERR
                          ScratchViewDouble::shmem_size(1) +   //for Jacobian
-                         ScratchViewDouble::shmem_size(1) +  //for maxDim
                          ScratchViewDouble::shmem_size(NDIM) +  //for ranges
                          ScratchViewRegion::shmem_size(1)+ //how come shmem_size doesn't return size_t? the tutorial exercise was returning an int too
                          ScratchViewGlobalBounds::shmem_size(NDIM)+ //for sBound
                          ScratchViewDouble::shmem_size(BLOCK_SIZE); //for sdata
+                
+                         
                          
 		Kokkos::parallel_for( "Phase1", team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)), KOKKOS_LAMBDA (const member_type team_member) {
-            int threadIdx = team_member.team_rank();
-            int blockIdx = team_member.league_rank();   
+            
 			ScratchViewRegion sRegionPool(team_member.team_scratch(0), 1);
 				
             INIT_REGION_POOL<IntegT, NDIM>(d_integrand,
@@ -200,15 +194,11 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
 				lows, highs, iteration, depth, generators, sRegionPool, team_member);
 			team_member.team_barrier();
 			
-			if (threadIdx == 0) {
-				const double ERR = sRegionPool(0).result.err;
-				const double RESULT = sRegionPool(0).result.avg;
-            
-			activeRegions(blockIdx) = 1.; 
-			subDividingDimension(blockIdx) = sRegionPool(0).result.bisectdim;
-			dRegionsIntegral(blockIdx) = RESULT;
-			dRegionsError(blockIdx) = ERR;
-            //printf("%.15f +- %.15f\n", RESULT, ERR);
+			if (team_member.team_rank() == 0) {           
+                activeRegions(team_member.league_rank()) = 1.; 
+                subDividingDimension(team_member.league_rank()) = sRegionPool(0).result.bisectdim;
+                dRegionsIntegral(team_member.league_rank()) = sRegionPool(0).result.avg;;
+                dRegionsError(team_member.league_rank()) =  sRegionPool(0).result.err;;
 			}
         });     
 }

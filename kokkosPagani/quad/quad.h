@@ -21,26 +21,6 @@
 #define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
 
-//if Kokkos::Cuda tests pass, if Kokkos::CudaSpace tests fail
-typedef Kokkos::View<int*, Kokkos::CudaSpace>   ViewVectorInt;
-typedef Kokkos::View<float*, Kokkos::CudaSpace>   ViewVectorFloat;
-typedef Kokkos::View<double*, Kokkos::CudaSpace>   ViewVectorDouble;
-typedef Kokkos::View<size_t*, Kokkos::CudaSpace>   ViewVectorSize_t;
-
-typedef Kokkos::View<const double*, Kokkos::CudaSpace>   constViewVectorDouble;
-typedef Kokkos::View<const int*, Kokkos::CudaSpace>   constViewVectorInt;
-typedef Kokkos::View<const size_t*, Kokkos::CudaSpace>   constViewVectorSize_t;
-
-typedef Kokkos::TeamPolicy<>    team_policy;
-typedef Kokkos::TeamPolicy<>::member_type  member_type;
-typedef Kokkos::TeamPolicy<>    team_policy;
-typedef Kokkos::TeamPolicy<>::member_type  member_type;
-typedef Kokkos::View<double*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewDouble;    
-typedef Kokkos::View<int*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewInt; 
-typedef Kokkos::View<int*, Kokkos::Serial> HostVectorInt;
-typedef Kokkos::View<double*, Kokkos::Serial> HostVectorDouble;
-typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
-
 struct Bounds {
   double lower, upper;
 };
@@ -61,7 +41,32 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
+//-------------------------------------------------------------------------------
+//Device Views 
+typedef Kokkos::View<int*, Kokkos::CudaSpace>   ViewVectorInt;
+typedef Kokkos::View<float*, Kokkos::CudaSpace>   ViewVectorFloat;
+typedef Kokkos::View<double*, Kokkos::CudaSpace>   ViewVectorDouble;
+typedef Kokkos::View<size_t*, Kokkos::CudaSpace>   ViewVectorSize_t;
+//-------------------------------------------------------------------------------
+//Const Device views
+typedef Kokkos::View<const double*, Kokkos::CudaSpace>   constViewVectorDouble;
+typedef Kokkos::View<const int*, Kokkos::CudaSpace>   constViewVectorInt;
+typedef Kokkos::View<const size_t*, Kokkos::CudaSpace>   constViewVectorSize_t;
+//-------------------------------------------------------------------------------
+//policies
+typedef Kokkos::TeamPolicy<>    team_policy;
+typedef Kokkos::TeamPolicy<>::member_type  member_type;
+//-------------------------------------------------------------------------------
+//Shared Memory
+typedef Kokkos::View<double*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewDouble;    
+typedef Kokkos::View<int*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewInt; 
 typedef Kokkos::View<GlobalBounds*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewGlobalBounds;
+//-------------------------------------------------------------------------------
+//Host views
+typedef Kokkos::View<int*, Kokkos::Serial> HostVectorInt;
+typedef Kokkos::View<double*, Kokkos::Serial> HostVectorDouble;
+typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
+//-------------------------------------------------------------------------------
 
 struct cuhreResult {
 
@@ -91,19 +96,14 @@ struct cuhreResult {
 
 template <typename T>
 struct Structures {
-  //__host__ __device__
-  //Structures(){}
-
- // ~Structures() {}
-
-  /*const*/ViewVectorDouble _gpuG;
-  /*const*/ViewVectorDouble _cRuleWt;
-  /*const*/ViewVectorDouble _GPUScale;
-  /*const*/ViewVectorDouble _GPUNorm;
-  /*const*/ViewVectorInt _gpuGenPos;
-  /*const*/ViewVectorInt  _gpuGenPermGIndex;
-  /*const*/ViewVectorInt _gpuGenPermVarCount;
-  /*const*/ViewVectorInt _gpuGenPermVarStart;
+  constViewVectorDouble _gpuG;
+  constViewVectorDouble _cRuleWt;
+  constViewVectorDouble _GPUScale;
+  constViewVectorDouble _GPUNorm;
+  constViewVectorInt _gpuGenPos;
+  constViewVectorInt  _gpuGenPermGIndex;
+  constViewVectorInt _gpuGenPermVarCount;
+  constViewVectorInt _gpuGenPermVarStart;
   ViewVectorSize_t _cGeneratorCount;
 };
 
@@ -112,7 +112,7 @@ typedef Kokkos::View<Structures<double>*, Kokkos::Cuda>   ViewStructures;
 #define NRULES 5
 
 inline
-__device__ __host__
+/*__device__*/ __host__
 double MaxErr(double avg, double epsrel, double epsabs) {
   return max(epsrel * std::abs(avg), epsabs);
 }

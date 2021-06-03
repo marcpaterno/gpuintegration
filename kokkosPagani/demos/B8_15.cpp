@@ -31,7 +31,7 @@ int main(int argc, char **argv)
         BoxIntegral8_15 integrand;
      
 		double epsrel = 1.0e-3;
-		double epsabs = 1.0e-12;
+		//double epsabs = 1.0e-12;
 		double epsrel_min = 1.0e-10;
 		double true_value = 8879.851175413485;
         const int ndim = 8;

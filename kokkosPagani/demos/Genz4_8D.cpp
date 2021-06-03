@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         GENZ_4_8D integrand;
      
 		double epsrel = 1.0e-3;
-		double epsabs = 1.0e-12;
+		//double epsabs = 1.0e-12;
 		double epsrel_min = 1.0e-10;
 		double true_value = 6.383802190004379e-10;
         const int ndim = 8;

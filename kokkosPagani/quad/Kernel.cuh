@@ -65,8 +65,8 @@ class Kernel{
 		fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
                         2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
                         4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
-		int key = 0;
-		int verbose = 0;
+		//int key = 0;
+		//int verbose = 0;
         //Kokkos::Profiling::pushRegion("Integration Rule Initialization");
 		//rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
         //Kokkos::Profiling::popRegion();

@@ -8,7 +8,7 @@
 TEST_CASE("Unit-Volume 2D")
 {
     constexpr int NDIM = 2;
-    int NSETS = 0; //variable unused for the purposes of this test
+    //int NSETS = 0; //variable unused for the purposes of this test
     Kernel<double, NDIM> kernel(0);     
       
     ViewVectorDouble dRegions("dRegions", NDIM);
@@ -53,7 +53,7 @@ TEST_CASE("Unit-Volume 5D")
 {
     
     constexpr int NDIM = 5;
-    int NSETS = 0; //variable unused for the purposes of this test
+    //int NSETS = 0; //variable unused for the purposes of this test
     Kernel<double, NDIM> kernel(0);     
       
     ViewVectorDouble dRegions("dRegions", NDIM);
@@ -95,7 +95,7 @@ TEST_CASE("Unit-Volume 5D")
 TEST_CASE("Unit-Volume 10D")
 {
     constexpr int NDIM = 10;
-    int NSETS = 0; //variable unused for the purposes of this test
+    //int NSETS = 0; //variable unused for the purposes of this test
     Kernel<double, NDIM> kernel(0);        
       
     ViewVectorDouble dRegions("dRegions", NDIM);

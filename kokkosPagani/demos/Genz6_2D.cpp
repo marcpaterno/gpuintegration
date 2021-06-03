@@ -22,7 +22,7 @@ int main(int argc, char **argv)
         GENZ_6_2D integrand;
      
 		double epsrel = 1.0e-3;
-		double epsabs = 1.0e-12;
+		//double epsabs = 1.0e-12;
 		double epsrel_min = 1.0e-10;
 		double true_value = 1495369.283757217694;
         const int ndim = 2;

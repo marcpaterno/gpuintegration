@@ -13,22 +13,16 @@ Sq(T x){
 template <typename T>
 __device__ T
 computeReduce(ScratchViewDouble sdata, T sum, const member_type team_member)
-{
-	int threadIdx = team_member.team_rank();
-    int blockIdx = team_member.league_rank();  
-    
-    sdata[threadIdx] = sum;
+{    
+    sdata(team_member.team_rank()) = sum;
     team_member.team_barrier();
     for (size_t offset = BLOCK_SIZE / 2; offset > 0; offset >>= 1) {
-		if (threadIdx < offset) {
-			sdata(threadIdx) += sdata(threadIdx + offset);
+		if (team_member.team_rank() < offset) {
+			sdata(team_member.team_rank()) += sdata(team_member.team_rank() + offset);
 		}
 		team_member.team_barrier();
     }
-    
-    //if(blockIdx == 0)
-    //    printf("sdata[0]:%.15f\n", sdata[0]);
-    return sdata[0];
+    return sdata(0);
 }
 
 template <typename IntegT, typename T, int NDIM>
@@ -39,7 +33,7 @@ computePermutation(IntegT d_integrand,
                    double* g,
                    gpu::cudaArray<T, NDIM>& x,
                    double* sum,
-                   const Structures<T>& constMem,
+                   Structures<T> constMem,
                    ScratchViewDouble range,
                    ScratchViewDouble jacobian,
                    constViewVectorDouble generators,
@@ -66,7 +60,6 @@ computePermutation(IntegT d_integrand,
     
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt(gIndex * NRULES + rul));
-	  //printf("adding %.15f (fun is %.15f)\n", fun * (constMem._cRuleWt(gIndex * NRULES + rul)), fun);
     }
 }
     
@@ -74,7 +67,7 @@ template<typename IntegT, int NDIM>
 __device__ void
     Sample(IntegT d_integrand, 
 		   int sIndex, 
-		   const Structures<double>& constMem, 
+		   Structures<double> constMem, 
 		   int FEVAL, 
 		   int NSETS, 
 		   Kokkos::View<Region<NDIM>*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > sRegionPool,
@@ -83,13 +76,14 @@ __device__ void
 		   ScratchViewDouble range,
 		   ScratchViewDouble jacobian,
 		   constViewVectorDouble generators,
-		   ScratchViewDouble sdata,
+		   //ScratchViewDouble sdata,
 		   ScratchViewGlobalBounds sBound,
 		   const member_type team_member){
 	
 	int threadIdx = team_member.team_rank();
     int blockIdx = team_member.league_rank();      
-	
+	    
+    ScratchViewDouble sdata(team_member.team_scratch(0), BLOCK_SIZE);
 	Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool(sIndex);
     double errcoeff[] = {5, 1, 5};
     double g[NDIM];
@@ -113,10 +107,9 @@ __device__ void
     }
 
     team_member.team_barrier();
-    double* f = &sdata[0];
-  
-
+    
     if (threadIdx == 0) {
+      double* f = &sdata(0);
       Result* r = &region->result; 
      
       double* f1 = f;
@@ -145,17 +138,15 @@ __device__ void
       int pIndex = perm * BLOCK_SIZE + threadIdx;
       computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
     }
-    team_member.team_barrier();
-    // Balance permutations
+
     pIndex = perm * BLOCK_SIZE + threadIdx;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx;
       computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
     }
-    team_member.team_barrier();
+
     for (int i = 0; i < NRULES; ++i) {
 		sum[i] = computeReduce(sdata, sum[i], team_member);
-		team_member.team_barrier();
     }
     
     if (threadIdx == 0) {

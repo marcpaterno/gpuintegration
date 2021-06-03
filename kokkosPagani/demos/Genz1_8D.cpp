@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         GENZ_1_8D integrand;
         int heuristicID = 1;
 		double epsrel = 1.0e-3;
-		double epsabs = 1.0e-12;
+		//double epsabs = 1.0e-12;
 		double epsrel_min = 1.0e-10;
 		double true_value = (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) *
                sin(3.) * sin(7. / 2.) * sin(4.) *

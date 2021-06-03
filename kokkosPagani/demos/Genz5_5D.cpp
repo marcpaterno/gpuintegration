@@ -21,7 +21,7 @@ int main(int argc, char **argv)
         GENZ_5_5D integrand;
      
 		double epsrel = 1.0e-3;
-		double epsabs = 1.0e-12;
+		//double epsabs = 1.0e-12;
 		double epsrel_min = 1.0e-10;
 		double true_value = 0.0003093636;
         const int ndim = 5;
