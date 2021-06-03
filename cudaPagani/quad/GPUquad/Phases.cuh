@@ -282,6 +282,7 @@ namespace quad {
                    int FEVAL,
                    int NSETS,
                    Region<NDIM> sRegionPool[],
+                   GlobalBounds sBound[],
                    T* lows,
                    T* highs,
                    int iteration,
@@ -289,10 +290,13 @@ namespace quad {
                    double* generators)
   {
     size_t index = blockIdx.x;
+    //may not be worth pre-computing
     __shared__ double Jacobian;
     __shared__ int maxDim;
-    __shared__ double ranges[NDIM];
     __shared__ double vol;
+    
+    __shared__ double ranges[NDIM];
+    
        
     if (threadIdx.x == 0) { 
 
@@ -316,16 +320,12 @@ namespace quad {
             }
         }
           
-        vol = ldexp(1., -depth);
-        //sRegionPool[0].result.err = 0.;
-        //sRegionPool[0].result.avg = 0.;
-        //sRegionPool[0].result.bisectdim = 0;
-        
+        vol = ldexp(1., -depth);       
     }
    
     __syncthreads();
     SampleRegionBlock<IntegT, T, NDIM, blockDim>(
-      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, &vol, &maxDim, ranges, &Jacobian, generators, iteration);
+      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, sBound, &vol, &maxDim, ranges, &Jacobian, generators, iteration);
     __syncthreads();
   }
 
@@ -351,7 +351,8 @@ namespace quad {
                        double* generators)
   {
     __shared__ Region<NDIM> sRegionPool[1];
-     
+    __shared__ GlobalBounds sBound[NDIM];
+    
     INIT_REGION_POOL<IntegT, double, NDIM, blockDim>(d_integrand,
                              dRegions,
                              dRegionsLength,
@@ -360,6 +361,7 @@ namespace quad {
                              FEVAL,
                              NSETS,
                              sRegionPool,
+                             sBound,
                              lows,
                              highs,
                              iteration,

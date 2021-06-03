@@ -67,7 +67,7 @@ double blockReduceSum(double val) {
     return sdata[0];
   }
 
-  template <typename IntegT, typename T, int NDIM>
+  /*template <typename IntegT, typename T, int NDIM>
   __device__ void
   ___computePermutation(IntegT* d_integrand,
                      int pIndex,
@@ -100,12 +100,8 @@ double blockReduceSum(double val) {
     
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
-      /*if(rul == 0 && blockIdx.x == 0 && pIndex == 0 && iteration == 2)
-      {
-          printf("%i, %.15f x:%.15f, %.15f, %.15f, %.15f, %.15f, %.15f, %.15f, %.15f\n", threadIdx.x, fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]), x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
-      }*/
     }
-  }
+  }*/
 
 
  template <typename IntegT, typename T, int NDIM>
@@ -113,6 +109,7 @@ double blockReduceSum(double val) {
   computePermutation(IntegT* d_integrand,
                      int pIndex,
                      Bounds* b,
+                     GlobalBounds sBound[],
                      T* g,
                      gpu::cudaArray<T, NDIM>& x,
                      T* sum,
@@ -144,7 +141,7 @@ double blockReduceSum(double val) {
     }
   }
 
-  template <typename IntegT, typename T, int NDIM, int blockdim>
+  /*template <typename IntegT, typename T, int NDIM, int blockdim>
   __device__ void
   ___SampleRegionBlock(IntegT* d_integrand,
                     int sIndex,
@@ -197,7 +194,7 @@ double blockReduceSum(double val) {
     __syncthreads(); //warp reduction so is it ok to not use syncthreads
  
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum/*computeReduce*/(sum[i]);
+      sum[i] = blockReduceSum(sum[i]);
     __syncthreads(); //do we really need this?
     }
        
@@ -239,7 +236,7 @@ double blockReduceSum(double val) {
         }
         r->bisectdim = bisectdim;                      
     }
-  }
+  }*/
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
    template <typename IntegT, typename T, int NDIM, int blockdim>
@@ -249,11 +246,15 @@ double blockReduceSum(double val) {
                     const Structures<T>& constMem,
                     int FEVAL,
                     int NSETS,
-                    Region<NDIM> sRegionPool[], double* vol, int* maxdim,  double range[],  double* jacobian, double* generators, int iteration)
+                    Region<NDIM> sRegionPool[], 
+                    GlobalBounds sBound[],
+                    double* vol, 
+                    int* maxdim,  
+                    double range[],  
+                    double* jacobian, 
+                    double* generators, 
+                    int iteration)
   {
-    /*constexpr int feval = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
-                        2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
-                        4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));*/  
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     __shared__ double sdata[blockdim];
     T g[NDIM];
@@ -261,7 +262,6 @@ double blockReduceSum(double val) {
     int perm = 0;
     
     T ratio = Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
-    
     int offset = 2 * NDIM;
 
     T sum[NRULES];
@@ -274,7 +274,7 @@ double blockReduceSum(double val) {
     
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM>(
-        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
+        d_integrand, pIndex, region->bounds, sBound, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
     }
     
     __syncthreads();
@@ -306,7 +306,7 @@ double blockReduceSum(double val) {
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
-        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
+        d_integrand, pIndex, region->bounds, sBound, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
     }
     //__syncthreads(); 
     // Balance permutations
@@ -314,13 +314,13 @@ double blockReduceSum(double val) {
     if (pIndex < FEVAL) {
       int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM>(
-        d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
+        d_integrand, pIndex, region->bounds, sBound, g, x, sum, constMem, range, jacobian, generators, FEVAL, iteration, sdata);
     }
    // __syncthreads(); 
     
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum/*computeReduce*/(sum[i]);
-      __syncthreads();
+      sum[i] = blockReduceSum/*computeReduce*/(sum[i]/*, sdata*/);
+      //__syncthreads();
     }
 
     if (threadIdx.x == 0) {
