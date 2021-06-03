@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         while (time_and_call<GENZ_4_5D, ndim>("GENZ_4_5D", integrand,
             epsrel, true_value, std::cout) == true && epsrel >= epsrel_min) {
             epsrel /= 5.0;
-			//break;
+			break;
         }
     }
     Kokkos::finalize();  
