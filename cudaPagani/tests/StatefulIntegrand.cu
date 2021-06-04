@@ -69,7 +69,8 @@ struct ToyModel {
 
   explicit
   ToyModel(int const* d) { 
-    std::memcpy(data.data, d, sizeof(int) * 5);
+    //std::memcpy(data.data, d, sizeof(int) * 5);
+    data.Initialize(d);
   }
 
   ToyModel() = default;

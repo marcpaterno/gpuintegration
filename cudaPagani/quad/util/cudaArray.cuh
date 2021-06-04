@@ -1,10 +1,20 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
+#include <string.h>
+
 namespace gpu {
   template <typename T, std::size_t s>
   class cudaArray {
   public:
+    
+    void
+    Initialize(T const* initData)
+    {
+      std::memcpy(data, initData, sizeof(T) * s);
+    }
+  
+  
     __host__ __device__ const T*
     begin() const
     {
