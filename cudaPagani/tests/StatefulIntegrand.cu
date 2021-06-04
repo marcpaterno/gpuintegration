@@ -58,8 +58,6 @@ struct ToyIntegrandWithHeapModel {
   
   __host__ __device__ double
   operator()(double x, double y) const {
-    printf("inside ToyIntegrandWithHeapModel operator()\n");
-    printf("%i, %i, %i, %i, %i\n", model.data[0], model.data[1], model.data[2], model.data[3], model.data[4]);
     return model(x, y);
   }
   
@@ -143,7 +141,6 @@ TEST_CASE("Dynamic Array"){
     std::array<int, 5> attributes { 5, 4, 3, 2, 1};
     ToyIntegrandWithHeapModel my_integrand(attributes.data(), attributes.size());
     auto [result, rc]  = toy_integration_algorithm(my_integrand);
-    std::cout<<"Result:"<<result<<"\n";
     CHECK(result == 34.0);
     CHECK(result == my_integrand.true_value);
 }

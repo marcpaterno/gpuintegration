@@ -38,7 +38,6 @@ namespace gpu {
   public:
   
     cudaDynamicArray(){
-      printf("called dynamic array user constuctor\n");
        data = nullptr;
        N = 0;
     }
@@ -80,8 +79,6 @@ namespace gpu {
     cudaDynamicArray&
     operator=(const cudaDynamicArray& source)
     {
-      printf("Inside operator=\n");
-      printf("Calling operator= on object at %p copying %lu objects\n", this, source.size());
       cudaMallocManaged((void**)&data, sizeof(T) * source.size());
       cudaMemcpy(data, source.data, sizeof(T) * N, cudaMemcpyHostToDevice);
       return *this;
