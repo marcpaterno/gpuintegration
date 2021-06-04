@@ -3,6 +3,19 @@ set_property(TARGET hello PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(hello PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_test(hello hello)
 
+add_library(do_integration_from_c do_integration_from_c.cu)
+set_property(TARGET do_integration_from_c PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(do_integration_from_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(do_integration_from_c util)
+target_include_directories(do_integration_from_c PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(test_integration_from_c test_integration_from_c.c)
+target_link_libraries(test_integration_from_c do_integration_from_c)
+add_test(test_integration_from_c test_integration_from_c)
+
 add_executable(StatefullIntegrand StatefulIntegrand.cu)
 set_property(TARGET StatefullIntegrand PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(StatefullIntegrand PROPERTIES POSITION_INDEPENDENT_CODE ON)
