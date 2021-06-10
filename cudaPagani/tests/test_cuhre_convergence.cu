@@ -1,40 +1,42 @@
 #define CATCH_CONFIG_MAIN
 #include "../quad/GPUquad/Cuhre.cuh"
-#include "catch2/catch.hpp"
 #include "../quad/quad.h" // for cuhreResult
+#include "catch2/catch.hpp"
 
 //#include "fun6.cuh"
 
+// double constexpr integral = 6.371054e-01; // Value is approximate
+// double constexpr normalization = 1./integral;
 
-//double constexpr integral = 6.371054e-01; // Value is approximate
-//double constexpr normalization = 1./integral;
+static double const fun6_normalization =
+  12.0 / (7.0 - 6 * log(2.0) * std::log(2.0) + log(64.0));
 
-static double const fun6_normalization = 12.0/(7.0 - 6 * log(2.0) * std::log(2.0) + log(64.0));
-
-
-double __fun6(double u, double v, double w, double x, double y, double z)
+double
+__fun6(double u, double v, double w, double x, double y, double z)
 {
-  return fun6_normalization* (u * v + (std::pow(w, y) * x * y)/(1+u) + z*z);
+  return fun6_normalization *
+         (u * v + (std::pow(w, y) * x * y) / (1 + u) + z * z);
 }
 
 struct Fun6 {
 
   __device__ __host__ double
-    operator()(double u, double v, double w, double x, double y, double z)
+  operator()(double u, double v, double w, double x, double y, double z)
   {
-     return (12.0/(7.0 - 6 * log(2.0) * log(2.0) + log(64.0))) * (u * v + (pow(w, y) * x * y)/(1+u) + z*z);
+    return (12.0 / (7.0 - 6 * log(2.0) * log(2.0) + log(64.0))) *
+           (u * v + (pow(w, y) * x * y) / (1 + u) + z * z);
   }
 };
 
 struct Genz_1abs_5d {
 
-  __device__ __host__
-    Genz_1abs_5d () { };
+  __device__ __host__ Genz_1abs_5d(){};
 
   __device__ __host__ double
-    operator() (double v, double w, double x, double y, double z)
+  operator()(double v, double w, double x, double y, double z)
   {
-    return ( 1./6.371054e-01)* fabs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+    return (1. / 6.371054e-01) *
+           fabs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z));
   }
 };
 
@@ -69,59 +71,57 @@ time_and_call(F integrand,
   return good;
 }
 
-TEST_CASE("fun6")
-{
-  SECTION("decreasing epsrel results in non-increasing error estimate")
-  {
+TEST_CASE("fun6"){
+  SECTION("decreasing epsrel results in non-increasing error estimate"){
     // We start with a very large error tolerance, and will
     // repeatedly decrease the tolerance.
-	
-	int key = 0;
-	int verbose = 0;
-	int numDevices = 1;
-    double epsrel = 1.0e-3;
-    double constexpr epsabs = 1.0e-40;
-	constexpr int ndim = 6;
-    double lows[] =  {0., 0., 0., 0., 0., 0.};
-    double highs[] = {1., 1., 1., 1., 1., 1.};
-    
-    quad::Volume<double, ndim> vol(lows, highs);
-	quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numDevices);
-	
-    double previous_error_estimate = 1.0; // larger than ever should be returned
-    Fun6 integrand;
-    while (epsrel > 1.0e-6) {
-	  printf("About to call alg.integrate\n");
-      cuhreResult const res = alg.integrate<Fun6>(integrand, epsrel, epsabs, &vol, 0, 1, 0);
-      // The integration should have converged.
-	  bool good = false;
 
-	  if (res.status == 0 || res.status == 2) {
-		good = true;
-	  }
-	  
-      CHECK(good == true);
-		std::cout << std::fixed  << res.estimate << ",\t"
-          << std::fixed << res.errorest << ",\t" << std::fixed
-          << res.nregions << ",\t" << std::fixed << res.status << ",\t"
-          << std::endl;
-      // The fractional error error estimate should be
-      // no larger than the specified fractional error
-      // tolerance unless the program does not claim to 
-	  // have confidence in the computed result
-	  if(good == true)
-		CHECK(res.errorest/res.estimate <= epsrel);
+    int key = 0;
+int verbose = 0;
+int numDevices = 1;
+double epsrel = 1.0e-3;
+double constexpr epsabs = 1.0e-40;
+constexpr int ndim = 6;
+double lows[] = {0., 0., 0., 0., 0., 0.};
+double highs[] = {1., 1., 1., 1., 1., 1.};
 
-      // The error estimate should be no larger than the previous iteration.
-      CHECK(res.errorest <= previous_error_estimate);
-		
-      // Prepare for the next loop.
-      previous_error_estimate = res.errorest;
-      epsrel /= 2.0;
-	  
-    }
+quad::Volume<double, ndim> vol(lows, highs);
+quad::Cuhre<double, ndim> alg(0, nullptr, key, verbose, numDevices);
+
+double previous_error_estimate = 1.0; // larger than ever should be returned
+Fun6 integrand;
+while (epsrel > 1.0e-6) {
+  printf("About to call alg.integrate\n");
+  cuhreResult const res =
+    alg.integrate<Fun6>(integrand, epsrel, epsabs, &vol, 0, 1, 0);
+  // The integration should have converged.
+  bool good = false;
+
+  if (res.status == 0 || res.status == 2) {
+    good = true;
   }
-};
+
+  CHECK(good == true);
+  std::cout << std::fixed << res.estimate << ",\t" << std::fixed << res.errorest
+            << ",\t" << std::fixed << res.nregions << ",\t" << std::fixed
+            << res.status << ",\t" << std::endl;
+  // The fractional error error estimate should be
+  // no larger than the specified fractional error
+  // tolerance unless the program does not claim to
+  // have confidence in the computed result
+  if (good == true)
+    CHECK(res.errorest / res.estimate <= epsrel);
+
+  // The error estimate should be no larger than the previous iteration.
+  CHECK(res.errorest <= previous_error_estimate);
+
+  // Prepare for the next loop.
+  previous_error_estimate = res.errorest;
+  epsrel /= 2.0;
+}
+}
+}
+;
 
 /*TEST_CASE("genz_1abs_5d")
 {
@@ -161,4 +161,3 @@ TEST_CASE("fun6")
     }
   }
 };*/
-

@@ -33,7 +33,7 @@ TEST_CASE("BoxIntegral8_15")
   auto const result = cuhre.integrate<BoxIntegral8_15>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
 
-  double true__rel_err = abs(true_value - result.estimate)/true_value;
+  double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);
 };
 
@@ -56,8 +56,8 @@ TEST_CASE("BoxIntegral8_25")
 
   auto const result = cuhre.integrate<BoxIntegral8_25>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
-  
-  double true__rel_err = abs(true_value - result.estimate)/true_value;
+
+  double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);
 };
 
@@ -71,16 +71,16 @@ TEST_CASE("BoxIntegral8_22")
   quad::Volume<double, ndim> vol(lows, highs);
   quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
   BoxIntegral8_22 integrand;
-  
+
   std::string id = "BoxIntegral8_22";
   int _final = 1;
   int outfileVerbosity = 0;
   int phase_I_type = 0; // alternative phase 1
   double true_value = 1495369.283757217694;
-  
+
   auto const result = cuhre.integrate<BoxIntegral8_22>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
-  
-  double true__rel_err = abs(true_value - result.estimate)/true_value;
+
+  double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);
 };
