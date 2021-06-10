@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
-#include <string.h>
+#include <cstring>
 
 namespace gpu {
   template <typename T, std::size_t s>
