@@ -1,8 +1,8 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 
-#include "cudaDebugUtil.h"
 #include "../quad.h"
+#include "cudaDebugUtil.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -12,8 +12,8 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -35,9 +35,8 @@ public:
   /**
    * Checks whether a flag "--<flag>" is present in the commandline
    */
-  bool
-  CheckCmdLineFlag(const char* arg_name) const;
-  
+  bool CheckCmdLineFlag(const char* arg_name) const;
+
   /**
    * Returns the value specified for a given commandline parameter
    * --<flag>=<value>
@@ -47,7 +46,8 @@ public:
   GetCmdLineArgument(const char* arg_name, T& val)
   {
     auto const itr = pairs.find(arg_name);
-    if (itr == pairs.end()) return;
+    if (itr == pairs.end())
+      return;
 
     std::istringstream str_stream(itr->second);
     T buffer;
@@ -103,7 +103,7 @@ public:
   /**
    * The number of pairs parsed
    */
-  std::size_t 
+  std::size_t
   ParsedArgc()
   {
     return pairs.size();
@@ -126,7 +126,7 @@ public:
         exit(1);
       }
 
-      //printf("DeviceCount:%i\n", deviceCount);
+      // printf("DeviceCount:%i\n", deviceCount);
       for (int i = 0; i < deviceCount; i++) {
         int gpu_id;
         cudaDeviceProp devProp;
@@ -193,11 +193,10 @@ public:
 #define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
 
-inline
-__device__ __host__
-double MaxErr(double avg, double epsrel, double epsabs) {
+inline __device__ __host__ double
+MaxErr(double avg, double epsrel, double epsabs)
+{
   return max(epsrel * std::abs(avg), epsabs);
 }
-
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
 
-#include <cuda.h>
 #include "cudaDebugUtil.h"
+#include <cuda.h>
 
 namespace quad {
   template <typename T>
@@ -28,56 +28,58 @@ namespace quad {
   template <typename T>
   class DeviceMemory : public MemoryUtil<T> {
   public:
-	
-	double GetFreeMemPercentage(){
-		size_t free_physmem, total_physmem;
-		QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
-		return (double)free_physmem/total_physmem;
-	}
-	
-	size_t GetAmountFreeMem()
-	{
-		size_t free_physmem, total_physmem;
-		QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
-		return free_physmem;
-	}
-	
+    double
+    GetFreeMemPercentage()
+    {
+      size_t free_physmem, total_physmem;
+      QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+      return (double)free_physmem / total_physmem;
+    }
+
+    size_t
+    GetAmountFreeMem()
+    {
+      size_t free_physmem, total_physmem;
+      QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+      return free_physmem;
+    }
+
     cudaError_t
     AllocateMemory(void** d_ptr, size_t n)
     {
       return cudaMalloc(d_ptr, n);
     }
-	
-	cudaError_t
+
+    cudaError_t
     AllocateUnifiedMemory(void** d_ptr, size_t n)
     {
       return cudaMallocManaged(d_ptr, n);
     }
-	
+
     cudaError_t
     ReleaseMemory(void* d_ptr)
     {
       return cudaFree(d_ptr);
     }
-	
+
     cudaError_t
     SetHeapSize(size_t hSize = (size_t)2 * 1024 * 1024 * 1024)
     {
       return cudaDeviceSetLimit(cudaLimitMallocHeapSize, hSize);
     }
-	
+
     cudaError_t
     CopyHostToDeviceConstantMemory(const char* d_ptr, void* h_ptr, size_t n)
     {
       return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
     }
-	
+
     cudaError_t
     CopyHostToDeviceConstantMemory(const void* d_ptr, void* h_ptr, size_t n)
     {
       return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
     }
-	
+
     //@brief Initialize Device
     cudaError_t
     DeviceInit(int dev = -1, int verbose = 0)
@@ -130,26 +132,30 @@ namespace quad {
       } while (0);
       return error;
     }
-};
+  };
 
   template <class T>
   T*
-  cuda_malloc_managed() {
+  cuda_malloc_managed()
+  {
     T* temp = nullptr;
     auto rc = cudaMallocManaged(&temp, sizeof(T));
-    if (rc != cudaSuccess) throw std::bad_alloc();
-    return temp;    
+    if (rc != cudaSuccess)
+      throw std::bad_alloc();
+    return temp;
   }
 
   template <class T>
   T*
-  cuda_copy_to_managed(T const& on_host) {
+  cuda_copy_to_managed(T const& on_host)
+  {
     T* buffer = cuda_malloc_managed<T>();
     try {
-        new(buffer) T(on_host);
-    } catch ( ... ) {
-        cudaFree(buffer);
-        throw;
+      new (buffer) T(on_host);
+    }
+    catch (...) {
+      cudaFree(buffer);
+      throw;
     }
     return buffer;
   }

@@ -7,14 +7,12 @@ namespace gpu {
   template <typename T, std::size_t s>
   class cudaArray {
   public:
-    
     void
     Initialize(T const* initData)
     {
       std::memcpy(data, initData, sizeof(T) * s);
     }
-  
-  
+
     __host__ __device__ const T*
     begin() const
     {
@@ -33,9 +31,14 @@ namespace gpu {
       return s;
     }
 
-    __host__ __device__ T& operator[](std::size_t i) { return data[i]; }
+    __host__ __device__ T&
+    operator[](std::size_t i)
+    {
+      return data[i];
+    }
 
-    __host__ __device__ T const& operator[](std::size_t i) const
+    __host__ __device__ T const&
+    operator[](std::size_t i) const
     {
       return data[i];
     }
@@ -46,12 +49,12 @@ namespace gpu {
   template <typename T>
   class cudaDynamicArray {
   public:
-  
-    cudaDynamicArray(){
-       data = nullptr;
-       N = 0;
+    cudaDynamicArray()
+    {
+      data = nullptr;
+      N = 0;
     }
-    
+
     // host-only function
     void
     Initialize(T const* initData, size_t s)
@@ -60,13 +63,13 @@ namespace gpu {
       cudaMallocManaged((void**)&data, sizeof(T) * s);
       cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
     }
-    
-    __host__ __device__
-    ~cudaDynamicArray() {
-      #ifndef __CUDACC__
+
+    __host__ __device__ ~cudaDynamicArray()
+    {
+#ifndef __CUDACC__
       cudaFree(data);
-      #endif
-   }
+#endif
+    }
 
     __host__ __device__ const T*
     begin() const
@@ -80,7 +83,7 @@ namespace gpu {
       return (&data[0] + N);
     }
 
-    __host__ __device__  constexpr std::size_t
+    __host__ __device__ constexpr std::size_t
     size() const
     {
       return N;
