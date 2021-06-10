@@ -1,5 +1,5 @@
-#include "function.cuh"
 #include "demo_utils.cuh"
+#include "function.cuh"
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -19,15 +19,15 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   configuration.heuristicID = 0;
-  
+
   PrintHeader();
   while (cu_time_and_call<GENZ_2_2D, ndim>("GENZ_2_2D",
-                       integrand,
-                       epsrel,
-                       true_value,
-                       "gpucuhre",
-                       std::cout,
-                       configuration) == true &&
+                                           integrand,
+                                           epsrel,
+                                           true_value,
+                                           "gpucuhre",
+                                           std::cout,
+                                           configuration) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }

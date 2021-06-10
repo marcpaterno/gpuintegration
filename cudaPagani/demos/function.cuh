@@ -7,8 +7,7 @@ double constexpr PI = 3.14159265358979323844;
 
 class Gauss9D {
 public:
-  __device__ __host__ 
-  double
+  __device__ __host__ double
   operator()(double x,
              double y,
              double z,
@@ -17,11 +16,13 @@ public:
              double m,
              double n,
              double o,
-			 double p)
-{
-	double sum = pow(x,2) + pow(y,2) + pow(z, 2) + pow(k, 2) + pow(l,2) + pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p,2);
-	return exp(-1*sum/(2*pow(0.01,2)))*(1/pow(sqrt(2*PI)*0.01, 9));
-}
+             double p)
+  {
+    double sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
+                 pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p, 2);
+    return exp(-1 * sum / (2 * pow(0.01, 2))) *
+           (1 / pow(sqrt(2 * PI) * 0.01, 9));
+  }
 };
 
 class SinSum6D {
@@ -38,7 +39,7 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k, double l, double m)
   {
-    return pow(10, 6)*sin(10*(x + y + z + k + l + m));
+    return pow(10, 6) * sin(10 * (x + y + z + k + l + m));
   }
 };
 
@@ -65,7 +66,6 @@ public:
   }
 };
 
-
 class Diagonal_ridge2D {
 public:
   // correct answer: 1 on integration volume (-1,1)
@@ -73,10 +73,10 @@ public:
   __device__ __host__ double
   operator()(double u, double v)
   {
-    //if(u > 0.1 || v > 0.1)
-   //     printf("%f, %f\n", u, v);
+    // if(u > 0.1 || v > 0.1)
+    //     printf("%f, %f\n", u, v);
     double k = 0.01890022674239546529975841;
-    return 4*k*u*u/(.01 + pow(u-v-(1./3.),2));
+    return 4 * k * u * u / (.01 + pow(u - v - (1. / 3.), 2));
   }
 };
 
@@ -147,7 +147,7 @@ public:
     double sum = 0;
     sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
           pow(m, 2) + pow(n, 2) + pow(o, 2);
-	return pow(sum, s / 2);
+    return pow(sum, s / 2);
   }
 };
 
@@ -241,7 +241,7 @@ public:
     double t1 = 1.0;
     int N = 1;
     int NDIM = 8;
-	
+
     for (N = 1; N <= NDIM; ++N) {
       t1 = t1 * cos(pow(2.0, 2.0 * N) * xx[N - 1]);
     }
@@ -415,7 +415,7 @@ public:
     double alpha = 10.0;
     double beta = .5;
     // int N = 1;
-	
+
     double t1 = fabs(x - beta) + fabs(y - beta) + fabs(z - beta) +
                 fabs(k - beta) + fabs(l - beta) + fabs(m - beta) +
                 fabs(n - beta) + fabs(o - beta);
@@ -423,13 +423,11 @@ public:
   }
 };
 
+// Genz_1 is not positive semi-definite
+// Genz_2 only known on 1D
 
-
-//Genz_1 is not positive semi-definite
-//Genz_2 only known on 1D
-
-class GENZ_1_8D{
-    public:
+class GENZ_1_8D {
+public:
   __device__ __host__ double
   operator()(double s,
              double t,
@@ -440,8 +438,8 @@ class GENZ_1_8D{
              double y,
              double z)
   {
-    return cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x +
-                               7. * y + 8. * z);
+    return cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x + 7. * y +
+               8. * z);
   }
 };
 
@@ -450,14 +448,14 @@ public:
   __device__ __host__ double
   operator()(double x, double y)
   {
-	double a = 50.;
+    double a = 50.;
     double b = .5;
-	
-    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
-    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
-	
-    double val  = term_1 * term_2;
-	return val;
+
+    double term_1 = 1. / ((1. / pow(a, 2)) + pow(x - b, 2));
+    double term_2 = 1. / ((1. / pow(a, 2)) + pow(y - b, 2));
+
+    double val = term_1 * term_2;
+    return val;
   }
 };
 
@@ -466,16 +464,16 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k)
   {
-	double a = 50.;
+    double a = 50.;
     double b = .5;
-	
-    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
-    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
-	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
-	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
-	
-    double val  = term_1 * term_2 * term_3 * term_4;
-	return val;
+
+    double term_1 = 1. / ((1. / pow(a, 2)) + pow(x - b, 2));
+    double term_2 = 1. / ((1. / pow(a, 2)) + pow(y - b, 2));
+    double term_3 = 1. / ((1. / pow(a, 2)) + pow(z - b, 2));
+    double term_4 = 1. / ((1. / pow(a, 2)) + pow(k - b, 2));
+
+    double val = term_1 * term_2 * term_3 * term_4;
+    return val;
   }
 };
 
@@ -484,40 +482,48 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k, double l, double m)
   {
-	double a = 50.;
+    double a = 50.;
     double b = .5;
-	
-    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
-    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
-	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
-	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
-	double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
-	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
-	
-    double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
-	return val/*/((1.286889807581113e+13))*/;
+
+    double term_1 = 1. / ((1. / pow(a, 2)) + pow(x - b, 2));
+    double term_2 = 1. / ((1. / pow(a, 2)) + pow(y - b, 2));
+    double term_3 = 1. / ((1. / pow(a, 2)) + pow(z - b, 2));
+    double term_4 = 1. / ((1. / pow(a, 2)) + pow(k - b, 2));
+    double term_5 = 1. / ((1. / pow(a, 2)) + pow(l - b, 2));
+    double term_6 = 1. / ((1. / pow(a, 2)) + pow(m - b, 2));
+
+    double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
+    return val /*/((1.286889807581113e+13))*/;
   }
 };
 
 class GENZ_2_8D {
 public:
   __device__ __host__ double
-  operator()(double x, double y, double z, double k, double l, double m, double n, double p)
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double p)
   {
-	double a = 50.;
+    double a = 50.;
     double b = .5;
-	
-    double term_1 = 1./((1./pow(a,2)) + pow(x- b, 2));
-    double term_2 = 1./((1./pow(a,2)) + pow(y- b, 2));
-	double term_3 = 1./((1./pow(a,2)) + pow(z- b, 2));
-	double term_4 = 1./((1./pow(a,2)) + pow(k- b, 2));
-	double term_5 = 1./((1./pow(a,2)) + pow(l- b, 2));
-	double term_6 = 1./((1./pow(a,2)) + pow(m- b, 2));
-    double term_7 = 1./((1./pow(a,2)) + pow(n- b, 2));
-    double term_8 = 1./((1./pow(a,2)) + pow(p- b, 2));
-	
-    double val  = term_1 * term_2 * term_3 * term_4 * term_5 * term_6*term_7*term_8;
-	return val;
+
+    double term_1 = 1. / ((1. / pow(a, 2)) + pow(x - b, 2));
+    double term_2 = 1. / ((1. / pow(a, 2)) + pow(y - b, 2));
+    double term_3 = 1. / ((1. / pow(a, 2)) + pow(z - b, 2));
+    double term_4 = 1. / ((1. / pow(a, 2)) + pow(k - b, 2));
+    double term_5 = 1. / ((1. / pow(a, 2)) + pow(l - b, 2));
+    double term_6 = 1. / ((1. / pow(a, 2)) + pow(m - b, 2));
+    double term_7 = 1. / ((1. / pow(a, 2)) + pow(n - b, 2));
+    double term_8 = 1. / ((1. / pow(a, 2)) + pow(p - b, 2));
+
+    double val =
+      term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
+    return val;
   }
 };
 
@@ -526,7 +532,7 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z)
   {
-    return pow(1+3*x+2*y+z, -4);
+    return pow(1 + 3 * x + 2 * y + z, -4);
   }
 };
 
@@ -535,32 +541,39 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z, double w, double v, double u)
   {
-    return pow(1+6*u+5*v+4*w+3*x+2*y+z, -7);
+    return pow(1 + 6 * u + 5 * v + 4 * w + 3 * x + 2 * y + z, -7);
   }
 };
 
 class GENZ_3_8D {
 public:
   __device__ __host__ double
-  operator()(double x, double y, double z, double w, double v, double u, double t, double s)
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-    return pow(1+8*s+7*t+6*u+5*v+4*w+3*x+2*y+z, -9);
+    return pow(1 + 8 * s + 7 * t + 6 * u + 5 * v + 4 * w + 3 * x + 2 * y + z,
+               -9);
   }
 };
 
 class GENZ_4_5D {
 public:
-	__device__ __host__ double
-	operator()(double x, double y, double z, double w, double v){
-		//double alpha = 25.;
-		double beta = .5;
-		return exp(-1.0*(pow(25,2)*pow(x-beta, 2) + 
-				         pow(25,2)*pow(y-beta, 2) +
-				         pow(25,2)*pow(z-beta, 2) +
-				         pow(25,2)*pow(w-beta, 2) +
-				         pow(25,2)*pow(v-beta, 2))
-				  );
-	}
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v)
+  {
+    // double alpha = 25.;
+    double beta = .5;
+    return exp(-1.0 *
+               (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2) +
+                pow(25, 2) * pow(z - beta, 2) + pow(25, 2) * pow(w - beta, 2) +
+                pow(25, 2) * pow(v - beta, 2)));
+  }
 };
 
 class GENZ_5_2D {
@@ -569,19 +582,21 @@ public:
   operator()(double x, double y)
   {
     double beta = .5;
-    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta);
+    double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta);
     return exp(t1);
   }
 };
 
 class GENZ_5_6D {
 public:
-//correct answer 3.77681814414355e-09
+  // correct answer 3.77681814414355e-09
   __device__ __host__ double
   operator()(double x, double y, double z, double w, double v, double p)
   {
     double beta = .5;
-    double t1 = -10.*fabs(x - beta) - 10.* fabs(y - beta) - 10.* fabs(z - beta)- 10.* fabs(w - beta)- 10.* fabs(v - beta)- 10.* fabs(p - beta);
+    double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
+                10. * fabs(z - beta) - 10. * fabs(w - beta) -
+                10. * fabs(v - beta) - 10. * fabs(p - beta);
     return exp(t1);
   }
 };
@@ -591,10 +606,10 @@ public:
   __device__ __host__ double
   operator()(double y, double z)
   {
-	  if(z > .9 || y > .8 )
-		  return 0.;
-	  else
-		  return exp(10*z + 9*y);
+    if (z > .9 || y > .8)
+      return 0.;
+    else
+      return exp(10 * z + 9 * y);
   }
 };
 
@@ -603,10 +618,10 @@ public:
   __device__ __host__ double
   operator()(double u, double v, double w, double x, double y, double z)
   {
-	  if(z > .9 || y > .8 || x > .7 || w > .6 || v >.5 || u > .4)
-		  return 0.;
-	  else
-		  return exp(10*z + 9*y + 8*x + 7*w + 6*v + 5*u);
+    if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
+      return 0.;
+    else
+      return exp(10 * z + 9 * y + 8 * x + 7 * w + 6 * v + 5 * u);
   }
 };
 

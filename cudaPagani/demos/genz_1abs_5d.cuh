@@ -8,19 +8,17 @@
 // unit hypercube.
 
 double constexpr integral = 6.371054e-01; // Value is approximate
-double constexpr normalization = 1./integral;
+double constexpr normalization = 1. / integral;
 
 struct Genz_1abs_5d {
 
-  __device__ __host__
-    Genz_1abs_5d () { };
+  __device__ __host__ Genz_1abs_5d(){};
 
   __device__ __host__ double
-    operator() (double v, double w, double x, double y, double z)
+  operator()(double v, double w, double x, double y, double z)
   {
-    return normalization * abs(cos(4.*v + 5.*w + 6.*x + 7.*y + 8.*z));
+    return normalization * abs(cos(4. * v + 5. * w + 6. * x + 7. * y + 8. * z));
   }
 };
-
 
 #endif

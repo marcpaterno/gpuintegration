@@ -8,13 +8,13 @@
 using namespace quad;
 
 class XYZ {
-    public:
-    __device__ __host__ double
-    operator()(double x, double y, double z)
-    {
-        return x*y*z;
-    }
-};   
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z)
+  {
+    return x * y * z;
+  }
+};
 
 int
 main()
@@ -24,18 +24,18 @@ main()
   double const epsrel_min = 1.0240000000000002e-10;
   XYZ integrand;
   constexpr int ndim = 3;
-  
+
   Config configuration;
   configuration.outfileVerbosity = 0;
 
   PrintHeader();
   while (cu_time_and_call<XYZ, ndim>("XYZ",
-                       integrand,
-                       epsrel,
-                       true_value,
-                       "gpucuhre",
-                       std::cout,
-                       configuration) == true &&
+                                     integrand,
+                                     epsrel,
+                                     true_value,
+                                     "gpucuhre",
+                                     std::cout,
+                                     configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
   }
