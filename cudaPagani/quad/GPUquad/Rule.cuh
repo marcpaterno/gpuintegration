@@ -308,9 +308,9 @@ namespace quad {
           }
           CPUScale[idx * NRULES + r] = scale;
           CPUNorm[idx * NRULES + r] = 1 / sum;
-		  
-		  //printf("CPUNorm[%i]:%.15f\n",idx*(int)NRULES+r, CPUNorm[idx * NRULES + r]);
-		  
+
+          // printf("CPUNorm[%i]:%.15f\n",idx*(int)NRULES+r, CPUNorm[idx *
+          // NRULES + r]);
         }
       }
     }
@@ -322,9 +322,9 @@ namespace quad {
       K* tmp = (K*)malloc(sizeof(K) * size);
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
-        //printf("%.20lf \n", (T)tmp[i]);
-		std::cout.precision(17);
-		std::cout<<"list[" <<i<< "]:"<<tmp[i] << std::endl;
+        // printf("%.20lf \n", (T)tmp[i]);
+        std::cout.precision(17);
+        std::cout << "list[" << i << "]:" << tmp[i] << std::endl;
       }
     }
 
@@ -420,11 +420,15 @@ namespace quad {
       QuadDebug(cudaMemcpy(constMem->_gpuGenPermVarStart,
                            cpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1),
-                           cudaMemcpyHostToDevice));						 
+                           cudaMemcpyHostToDevice));
     }
 
     void
-    Init(size_t ndim, size_t fEval, int key, int verbose, Structures<T>* constMem)
+    Init(size_t ndim,
+         size_t fEval,
+         int key,
+         int verbose,
+         Structures<T>* constMem)
     {
       NDIM = ndim;
       KEY = key;
@@ -470,7 +474,7 @@ namespace quad {
       cpuGenPermVarCount = (int*)Host.AllocateMemory((void*)cpuGenPermVarCount,
                                                      sizeof(int) * fEval);
       cpuGenPermVarStart = (int*)Host.AllocateMemory((void*)cpuGenPermVarStart,
-                                                     sizeof(int) * fEval+1);
+                                                     sizeof(int) * fEval + 1);
       cpuGenPermGIndex = (int*)Host.AllocateMemory((void*)cpuGenPermGIndex,
                                                    sizeof(int) * (fEval));
       T* cpuGCopy = 0;
@@ -497,23 +501,22 @@ namespace quad {
           int genPosCnt = 0;
           cpuGenPermVarStart[permCnt] = genPtrPosIndex;
           int isAccess[NDIM];
-          
+
           for (int dim = 0; dim < NDIM; ++dim) {
             isAccess[dim] = 0;
           }
-          
+
           for (int i = 0; i < indxCnt[gIndex]; ++i) {
             for (int dim = 0; dim < NDIM; ++dim) {
               if (cpuG[NDIM * gIndex + i] == fabs(g[dim]) && !isAccess[dim]) {
                 ++genPosCnt;
                 isAccess[dim] = 1;
-                
-                if (g[dim] < 0){
-                   genPtr[genPtrPosIndex++] = -(dim + 1);
-				}
-                else{
+
+                if (g[dim] < 0) {
+                  genPtr[genPtrPosIndex++] = -(dim + 1);
+                } else {
                   genPtr[genPtrPosIndex++] = dim + 1;
-				}
+                }
                 break;
               }
             }
@@ -522,7 +525,7 @@ namespace quad {
           permCnt++;
           cpuGenPermVarCount[permCnt - 1] = genPosCnt;
           cpuGenPermGIndex[permCnt - 1] = gIndex;
-		
+
           for (int dim = 0; (dim < NDIM) && (flag == 1);) {
             g[dim] = -g[dim];
             if (g[dim++] < -0.0000000000000001) {

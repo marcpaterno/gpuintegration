@@ -3,24 +3,27 @@
 
 #include "../util/cudaArray.cuh"
 
-namespace quad{
+namespace quad {
 
-template<size_t Order>
-class polynomial{
+  template <size_t Order>
+  class polynomial {
   private:
     const gpu::cudaArray<double, Order> coeffs;
+
   public:
     __host__ __device__
-    polynomial(gpu::cudaArray<double, Order> coeffs) : coeffs(coeffs) {}
-    
-    __host__ __device__
-    constexpr double
-    operator()(const double x) const{
+    polynomial(gpu::cudaArray<double, Order> coeffs)
+      : coeffs(coeffs)
+    {}
+
+    __host__ __device__ constexpr double
+    operator()(const double x) const
+    {
       double out = 0.0;
       for (auto i = 0u; i < Order; i++)
-	out = coeffs[i] + x * out;
+        out = coeffs[i] + x * out;
       return out;
     }
-};
+  };
 }
 #endif

@@ -65,126 +65,146 @@ namespace quad {
       __syncthreads();
     }
   }
-   
-   __device__ bool 
-   ApplyHeuristic(int heuristicID, 
-                            double leaves_estimate, 
-                            double finished_estimate, 
-                            double queued_estimate, 
-                            double lastErr, 
-                            double finished_errorest, 
-                            double queued_errorest, 
-                            size_t currIterRegions, 
-                            size_t total_nregions,
-                            bool minIterReached,
-                            double parErr,
-                            double parRes,
-                            int depth,
-                            double selfRes,
-                            double selfErr,
-                            double epsrel,
-                            double epsabs){
-       
-        double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
-        double remainGlobalErrRoom = GlobalErrTarget - finished_errorest - queued_errorest;
-        bool selfErrTarget = fabs(selfRes) * epsrel;
-        
-        bool worstCaseScenarioGood;
-        
-        auto ErrBiggerThanEstimateCase = [selfRes, selfErr, parRes, parErr, remainGlobalErrRoom, currIterRegions](){
-           return selfErr > fabs(selfRes) && selfErr/fabs(selfRes) >= .9*parErr/fabs(parRes) &&  selfErr < remainGlobalErrRoom/currIterRegions ;
-        };
-        
-        
-        switch(heuristicID){
-           case 0:
-                worstCaseScenarioGood = false;
-                break;          
-            case 1:
-                worstCaseScenarioGood = false; 
-                break;
-            case 2: //useless right now, same as heuristic 1
-                worstCaseScenarioGood = 
-                ErrBiggerThanEstimateCase()
-                || 
-                 (selfRes < (leaves_estimate * epsrel * depth)/(total_nregions) && selfErr*currIterRegions < remainGlobalErrRoom);       
-                break;          
-            case 4:
-                worstCaseScenarioGood = 
-                ErrBiggerThanEstimateCase()
-                || 
-                 (fabs(selfRes) < (fabs(leaves_estimate) * epsrel * depth)/(total_nregions) && 
-                 selfErr*currIterRegions < GlobalErrTarget);
-                break;           
-            case 7:
-                worstCaseScenarioGood = 
-                 (selfRes*currIterRegions + queued_estimate + finished_estimate < leaves_estimate && selfErr*currIterRegions < GlobalErrTarget);
-                 break;       
-            case 8:
-                worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions || 
-                                        selfErr < epsrel*leaves_estimate/total_nregions;
-                break;
-            case 9:
-                 worstCaseScenarioGood = selfRes < leaves_estimate/total_nregions && 
-                                         selfErr < epsrel*leaves_estimate/total_nregions;
-                break;
-            case 10:
-                worstCaseScenarioGood = fabs(selfRes) < 2*leaves_estimate/pow(2,depth) && 
-                                         selfErr < 2*leaves_estimate*epsrel/pow(2,depth);
-        }
-              
-        bool verdict = (worstCaseScenarioGood && minIterReached) || (selfRes == 0. && selfErr <= epsabs && minIterReached);
-        return verdict;
-   }
-   
-   template<int NDIM>
-   __device__
-   void
-   ActualCompute(double* generators, double* g, const Structures<double>& constMem, size_t feval_index, size_t total_feval){
-       for (int dim = 0; dim < NDIM; ++dim) {
-        g[dim] = 0;
-       }
-        int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
+
+  __device__ bool
+  ApplyHeuristic(int heuristicID,
+                 double leaves_estimate,
+                 double finished_estimate,
+                 double queued_estimate,
+                 double lastErr,
+                 double finished_errorest,
+                 double queued_errorest,
+                 size_t currIterRegions,
+                 size_t total_nregions,
+                 bool minIterReached,
+                 double parErr,
+                 double parRes,
+                 int depth,
+                 double selfRes,
+                 double selfErr,
+                 double epsrel,
+                 double epsabs)
+  {
+
+    double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
+    double remainGlobalErrRoom =
+      GlobalErrTarget - finished_errorest - queued_errorest;
+    bool selfErrTarget = fabs(selfRes) * epsrel;
+
+    bool worstCaseScenarioGood;
+
+    auto ErrBiggerThanEstimateCase = [selfRes,
+                                      selfErr,
+                                      parRes,
+                                      parErr,
+                                      remainGlobalErrRoom,
+                                      currIterRegions]() {
+      return selfErr > fabs(selfRes) &&
+             selfErr / fabs(selfRes) >= .9 * parErr / fabs(parRes) &&
+             selfErr < remainGlobalErrRoom / currIterRegions;
+    };
+
+    switch (heuristicID) {
+      case 0:
+        worstCaseScenarioGood = false;
+        break;
+      case 1:
+        worstCaseScenarioGood = false;
+        break;
+      case 2: // useless right now, same as heuristic 1
+        worstCaseScenarioGood =
+          ErrBiggerThanEstimateCase() ||
+          (selfRes < (leaves_estimate * epsrel * depth) / (total_nregions) &&
+           selfErr * currIterRegions < remainGlobalErrRoom);
+        break;
+      case 4:
+        worstCaseScenarioGood =
+          ErrBiggerThanEstimateCase() ||
+          (fabs(selfRes) <
+             (fabs(leaves_estimate) * epsrel * depth) / (total_nregions) &&
+           selfErr * currIterRegions < GlobalErrTarget);
+        break;
+      case 7:
+        worstCaseScenarioGood =
+          (selfRes * currIterRegions + queued_estimate + finished_estimate <
+             leaves_estimate &&
+           selfErr * currIterRegions < GlobalErrTarget);
+        break;
+      case 8:
+        worstCaseScenarioGood =
+          selfRes < leaves_estimate / total_nregions ||
+          selfErr < epsrel * leaves_estimate / total_nregions;
+        break;
+      case 9:
+        worstCaseScenarioGood =
+          selfRes < leaves_estimate / total_nregions &&
+          selfErr < epsrel * leaves_estimate / total_nregions;
+        break;
+      case 10:
+        worstCaseScenarioGood =
+          fabs(selfRes) < 2 * leaves_estimate / pow(2, depth) &&
+          selfErr < 2 * leaves_estimate * epsrel / pow(2, depth);
+    }
+
+    bool verdict = (worstCaseScenarioGood && minIterReached) ||
+                   (selfRes == 0. && selfErr <= epsabs && minIterReached);
+    return verdict;
+  }
+
+  template <int NDIM>
+  __device__ void
+  ActualCompute(double* generators,
+                double* g,
+                const Structures<double>& constMem,
+                size_t feval_index,
+                size_t total_feval)
+  {
+    for (int dim = 0; dim < NDIM; ++dim) {
+      g[dim] = 0;
+    }
+    int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
                  __ldg(&constMem._gpuGenPermVarStart[feval_index]);
-        int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);   
-   
-        for (int posIter = 0; posIter < posCnt; ++posIter) {
-          int pos =
-            (constMem._gpuGenPos[(constMem._gpuGenPermVarStart[feval_index]) + posIter]);
-          int absPos = abs(pos);
-          
-          if (pos == absPos) { 
-            g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-          } else {
-            g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
-          }
-        }
-        
-        for(int dim=0; dim<NDIM; dim++){
-            generators[total_feval*dim + feval_index] = g[dim];
-        }
-        
-   }
- 
- template<int NDIM>
-  __global__
-  void
-  ComputeGenerators(double* generators, size_t FEVAL, const Structures<double> constMem){
+    int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);
+
+    for (int posIter = 0; posIter < posCnt; ++posIter) {
+      int pos =
+        (constMem
+           ._gpuGenPos[(constMem._gpuGenPermVarStart[feval_index]) + posIter]);
+      int absPos = abs(pos);
+
+      if (pos == absPos) {
+        g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+      } else {
+        g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+      }
+    }
+
+    for (int dim = 0; dim < NDIM; dim++) {
+      generators[total_feval * dim + feval_index] = g[dim];
+    }
+  }
+
+  template <int NDIM>
+  __global__ void
+  ComputeGenerators(double* generators,
+                    size_t FEVAL,
+                    const Structures<double> constMem)
+  {
     size_t perm = 0;
     double g[NDIM];
     for (size_t dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0;
     }
-    
+
     size_t feval_index = perm * BLOCK_SIZE + threadIdx.x;
-    //printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
+    // printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
     if (feval_index < FEVAL) {
-     ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
     __syncthreads();
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
-       int feval_index = perm * BLOCK_SIZE + threadIdx.x;
-       ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+      int feval_index = perm * BLOCK_SIZE + threadIdx.x;
+      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
     __syncthreads();
     feval_index = perm * BLOCK_SIZE + threadIdx.x;
@@ -194,7 +214,7 @@ namespace quad {
     }
     __syncthreads();
   }
-   
+
   template <typename T>
   __global__ void
   RefineError(T* dRegionsIntegral,
@@ -210,27 +230,28 @@ namespace quad {
     // can we do anythign with the rest of the threads? maybe launch more blocks
     // instead and a  single thread per block?
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if(tid<currIterRegions){ 
+
+    if (tid < currIterRegions) {
       T selfErr = dRegionsError[tid];
       T selfRes = dRegionsIntegral[tid];
-      
-      size_t inRightSide = (2*tid >= currIterRegions);
-      size_t inLeftSide =  (0 >= inRightSide);
-      size_t siblingIndex = tid  + (inLeftSide*currIterRegions/2) - (inRightSide*currIterRegions/2);
-      size_t parIndex = tid - inRightSide*(currIterRegions*.5);
-        
+
+      size_t inRightSide = (2 * tid >= currIterRegions);
+      size_t inLeftSide = (0 >= inRightSide);
+      size_t siblingIndex = tid + (inLeftSide * currIterRegions / 2) -
+                            (inRightSide * currIterRegions / 2);
+      size_t parIndex = tid - inRightSide * (currIterRegions * .5);
+
       T siblErr = dRegionsError[siblingIndex];
       T siblRes = dRegionsIntegral[siblingIndex];
-        
+
       T parRes = dParentsIntegral[parIndex];
-      //T parErr = dParentsError[parIndex];
-              
+      // T parErr = dParentsError[parIndex];
+
       T diff = siblRes + selfRes - parRes;
       diff = fabs(.25 * diff);
 
       T err = selfErr + siblErr;
-        
+
       if (err > 0.0) {
         T c = 1 + 2 * diff / err;
         selfErr *= c;
@@ -238,37 +259,41 @@ namespace quad {
 
       selfErr += diff;
 
-      newErrs[tid] = selfErr;  
-      int PassRatioTest = heuristicID != 1 && selfErr < MaxErr(selfRes, epsrel, /*epsabs*/1e-200);
+      newErrs[tid] = selfErr;
+      int PassRatioTest = heuristicID != 1 &&
+                          selfErr < MaxErr(selfRes, epsrel, /*epsabs*/ 1e-200);
       activeRegions[tid] = !(/*polished ||*/ PassRatioTest);
-      
-      
     }
   }
 
   __global__ void
-  RevertFinishedStatus(int* activeRegions, size_t numRegions){
-    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;        
-    
-    
-     if(tid<numRegions){
-        activeRegions[tid] = 1;
-     }         
+  RevertFinishedStatus(int* activeRegions, size_t numRegions)
+  {
+    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (tid < numRegions) {
+      activeRegions[tid] = 1;
+    }
   }
 
-    template <typename T>
+  template <typename T>
   __global__ void
-  Filter( T* dRegionsError,
+  Filter(T* dRegionsError,
          int* unpolishedRegions,
          int* activeRegions,
          size_t numRegions,
          double errThreshold)
   {
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if(tid<numRegions){ //consider not having the ones passing the previous test (id<numRegions && activeRegions[tid] != 1)
+
+    if (tid < numRegions) { // consider not having the ones passing the previous
+                            // test (id<numRegions && activeRegions[tid] != 1)
       T selfErr = dRegionsError[tid];
-      unpolishedRegions[tid] = (selfErr > errThreshold ) * activeRegions[tid]; //onle "real active" regions can be polished (rename activeRegions in this context to polishedRegions)
+      unpolishedRegions[tid] =
+        (selfErr > errThreshold) *
+        activeRegions[tid]; // onle "real active" regions can be polished
+                            // (rename activeRegions in this context to
+                            // polishedRegions)
     }
   }
 
@@ -290,42 +315,53 @@ namespace quad {
                    double* generators)
   {
     size_t index = blockIdx.x;
-    //may not be worth pre-computing
+    // may not be worth pre-computing
     __shared__ double Jacobian;
     __shared__ int maxDim;
     __shared__ double vol;
-    
-    __shared__ double ranges[NDIM];
-    
-       
-    if (threadIdx.x == 0) { 
 
-        Jacobian = 1.;
-        double maxRange = 0;
-        for (int dim = 0; dim < NDIM; ++dim) {       
-            T lower = dRegions[dim * numRegions + index];
-            sRegionPool[0].bounds[dim].lower = lower;
-            sRegionPool[0].bounds[dim].upper = lower + dRegionsLength[dim * numRegions + index];
-           
-            sBound[dim].unScaledLower = lows[dim];
-            sBound[dim].unScaledUpper = highs[dim];
-            ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-            sRegionPool[0].div = depth; 
-            
-            double range = sRegionPool[0].bounds[dim].upper - lower;
-            Jacobian = Jacobian * ranges[dim];
-            if(range > maxRange){
-                maxDim = dim;
-                maxRange = range;
-            }
+    __shared__ double ranges[NDIM];
+
+    if (threadIdx.x == 0) {
+
+      Jacobian = 1.;
+      double maxRange = 0;
+      for (int dim = 0; dim < NDIM; ++dim) {
+        T lower = dRegions[dim * numRegions + index];
+        sRegionPool[0].bounds[dim].lower = lower;
+        sRegionPool[0].bounds[dim].upper =
+          lower + dRegionsLength[dim * numRegions + index];
+
+        sBound[dim].unScaledLower = lows[dim];
+        sBound[dim].unScaledUpper = highs[dim];
+        ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
+        sRegionPool[0].div = depth;
+
+        double range = sRegionPool[0].bounds[dim].upper - lower;
+        Jacobian = Jacobian * ranges[dim];
+        if (range > maxRange) {
+          maxDim = dim;
+          maxRange = range;
         }
-          
-        vol = ldexp(1., -depth);       
+      }
+
+      vol = ldexp(1., -depth);
     }
-   
+
     __syncthreads();
-    SampleRegionBlock<IntegT, T, NDIM, blockDim>(
-      d_integrand, 0, constMem, FEVAL, NSETS, sRegionPool, sBound, &vol, &maxDim, ranges, &Jacobian, generators, iteration);
+    SampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
+                                                 0,
+                                                 constMem,
+                                                 FEVAL,
+                                                 NSETS,
+                                                 sRegionPool,
+                                                 sBound,
+                                                 &vol,
+                                                 &maxDim,
+                                                 ranges,
+                                                 &Jacobian,
+                                                 generators,
+                                                 iteration);
     __syncthreads();
   }
 
@@ -352,26 +388,27 @@ namespace quad {
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
-    
+
     INIT_REGION_POOL<IntegT, double, NDIM, blockDim>(d_integrand,
-                             dRegions,
-                             dRegionsLength,
-                             numRegions,
-                             constMem,
-                             FEVAL,
-                             NSETS,
-                             sRegionPool,
-                             sBound,
-                             lows,
-                             highs,
-                             iteration,
-                             depth, generators);
-                                               
+                                                     dRegions,
+                                                     dRegionsLength,
+                                                     numRegions,
+                                                     constMem,
+                                                     FEVAL,
+                                                     NSETS,
+                                                     sRegionPool,
+                                                     sBound,
+                                                     lows,
+                                                     highs,
+                                                     iteration,
+                                                     depth,
+                                                     generators);
+
     if (threadIdx.x == 0) {
-        activeRegions[blockIdx.x] = 1; 
-        subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
-        dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
-        dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
+      activeRegions[blockIdx.x] = 1;
+      subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
+      dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
+      dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
     }
   }
 
