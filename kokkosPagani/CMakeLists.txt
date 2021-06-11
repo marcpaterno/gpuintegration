@@ -4,8 +4,6 @@ enable_testing()
 
 set(Kokkos_DIR "$ENV{Kokkos_ROOT}" CACHE STRING "Kokkos root directory")
 
-#find_package(Kokkos REQUIRED)
-#find_package(KokkosKernels REQUIRED)
 add_subdirectory(kokkos)
 add_subdirectory(kokkos-kernels)
 include_directories(quad)
