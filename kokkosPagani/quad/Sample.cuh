@@ -33,7 +33,9 @@ computePermutation(IntegT d_integrand,
                    double* g,
                    gpu::cudaArray<T, NDIM>& x,
                    double* sum,
-                   const Structures<T>& constMem,
+                   //const Structures<T>& constMem,
+                   constViewVectorInt _gpuGenPermGIndex,
+                   constViewVectorDouble _cRuleWt,
                    ScratchViewDouble range,
                    ScratchViewDouble jacobian,
                    constViewVectorDouble generators,
@@ -48,7 +50,7 @@ computePermutation(IntegT d_integrand,
       x[dim] = 0;
     }
     
-    int gIndex = __ldg(&constMem._gpuGenPermGIndex(pIndex));
+    int gIndex = __ldg(&_gpuGenPermGIndex(pIndex));
     
     for (int dim = 0; dim < NDIM; ++dim) {
       double generator = __ldg(&generators(FEVAL*dim + pIndex));
@@ -59,7 +61,7 @@ computePermutation(IntegT d_integrand,
     sdata(threadIdx) = fun; // target for reduction
     
     for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * __ldg(&constMem._cRuleWt(gIndex * NRULES + rul));
+      sum[rul] += fun * __ldg(&_cRuleWt(gIndex * NRULES + rul));
     }
 }
     
@@ -67,7 +69,12 @@ template<typename IntegT, int NDIM>
 __device__ void
     Sample(IntegT d_integrand, 
 		   int sIndex, 
-		   const Structures<double>& constMem, 
+		   //const Structures<double>& constMem, 
+           constViewVectorDouble _gpuG,
+           constViewVectorDouble _GPUScale,
+           constViewVectorDouble _GPUNorm,
+           constViewVectorInt _gpuGenPermGIndex,
+           constViewVectorDouble _cRuleWt,
 		   int FEVAL, 
 		   int NSETS, 
 		   Kokkos::View<Region<NDIM>*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > sRegionPool,
@@ -91,7 +98,7 @@ __device__ void
     int perm = 0;
     
     //should probably move this outside of Sample, no need for all threads to compute it
-    double ratio = Sq(__ldg(&constMem._gpuG(2 * NDIM)) / __ldg(&constMem._gpuG(1 * NDIM)));
+    double ratio = Sq(__ldg(&_gpuG(2 * NDIM)) / __ldg(&_gpuG(1 * NDIM)));
     int offset = 2 * NDIM;
 
     double sum[NRULES];
@@ -103,7 +110,7 @@ __device__ void
     int pIndex = perm * BLOCK_SIZE + threadIdx;
 
     if (pIndex < FEVAL) {
-      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
+      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, /*constMem*/_gpuGenPermGIndex, _cRuleWt, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
     }
 
     team_member.team_barrier();
@@ -136,13 +143,13 @@ __device__ void
 
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int pIndex = perm * BLOCK_SIZE + threadIdx;
-      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
+      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, /*constMem*/_gpuGenPermGIndex, _cRuleWt, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
     }
 
     pIndex = perm * BLOCK_SIZE + threadIdx;
     if (pIndex < FEVAL) {
       int pIndex = perm * BLOCK_SIZE + threadIdx;
-      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, constMem, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
+      computePermutation<IntegT, double, NDIM>(d_integrand, pIndex, region->bounds, g, x, sum, /*constMem*/_gpuGenPermGIndex, _cRuleWt, range, jacobian, generators, sdata, sBound, FEVAL, team_member);
     }
 
     for (int i = 0; i < NRULES; ++i) {
@@ -156,8 +163,8 @@ __device__ void
         for (int s = 0; s < NSETS; ++s) {
           maxerr = max(maxerr,
                        fabs(sum[rul + 1] +
-                            __ldg(&constMem._GPUScale(s * NRULES + rul)) * sum[rul]) *
-                         __ldg(&constMem._GPUNorm(s * NRULES + rul)));						
+                            __ldg(&_GPUScale(s * NRULES + rul)) * sum[rul]) *
+                         __ldg(&_GPUNorm(s * NRULES + rul)));						
         }
         sum[rul] = maxerr;
       }

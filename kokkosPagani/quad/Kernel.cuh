@@ -591,7 +591,7 @@ class Kernel{
         //printf("Launching kernel numRegions:%lu\n", numRegions);
         INTEGRATE_GPU_PHASE1<IntegT, NDIM>(d_integrand, dRegions, dRegionsLength, 
 			numRegions, dRegionsIntegral, dRegionsError, activeRegions, subDividingDimension,
-            epsrel, epsabs, constMem, fEvalPerRegion, NSETS, lows, highs,
+            epsrel, epsabs, /*constMem&*/constMem._gpuG, constMem._GPUScale, constMem._GPUNorm, constMem._gpuGenPermGIndex, constMem._cRuleWt, fEvalPerRegion, NSETS, lows, highs,
 			it, depthBeingProcessed, generators);
         Kokkos::Profiling::popRegion();
         //printf("Finished kernel\n");

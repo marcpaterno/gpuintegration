@@ -84,7 +84,12 @@ INIT_REGION_POOL(IntegT d_integrand,
                  ViewVectorDouble dRegions, 
                  ViewVectorDouble dRegionsLength,
                  size_t numRegions,
-                 const Structures<double>& constMem,
+                 //const Structures<double>& constMem,
+                 constViewVectorDouble _gpuG,
+                 constViewVectorDouble _GPUScale,
+                 constViewVectorDouble _GPUNorm,
+                 constViewVectorInt _gpuGenPermGIndex,
+                 constViewVectorDouble _cRuleWt,
                  int FEVAL,
                  int NSETS,                
                  ViewVectorDouble lows,
@@ -135,7 +140,8 @@ INIT_REGION_POOL(IntegT d_integrand,
     team_member.team_barrier();                                  
     Sample<IntegT, NDIM>(d_integrand, 
 					     sIndex,  
-						 constMem,
+						 //constMem,
+                         _gpuG, _GPUScale, _GPUNorm, _gpuGenPermGIndex, _cRuleWt,
 						 FEVAL,
 						 NSETS,
 						 sRegionPool,
@@ -162,7 +168,12 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
 					 ViewVectorInt subDividingDimension,
 					 double epsrel,
 					 double epsabs,
-					 Structures<double> constMem,
+					 //Structures<double> constMem,
+                     constViewVectorDouble _gpuG,
+                     constViewVectorDouble _GPUScale,
+                     constViewVectorDouble _GPUNorm,
+                     constViewVectorInt _gpuGenPermGIndex,
+                     constViewVectorDouble _cRuleWt,
 					 int FEVAL,
 					 int NSETS,
 					 ViewVectorDouble lows,
@@ -174,7 +185,7 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
         uint32_t nBlocks = numRegions;
         uint32_t nThreads = BLOCK_SIZE;
         typedef Kokkos::View<Region<NDIM>*, Kokkos::DefaultExecutionSpace::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ScratchViewRegion;
-        
+        using mainKernelPolicy =  Kokkos::TeamPolicy<Kokkos::LaunchBounds<256,4>>;    
         int shMemBytes = ScratchViewInt::shmem_size(1) +   //for maxDim
                          ScratchViewDouble::shmem_size(1) +   //for vol
                          ScratchViewDouble::shmem_size(1) +   //for Jacobian
@@ -184,13 +195,13 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                          ScratchViewDouble::shmem_size(BLOCK_SIZE); //for sdata
                 
                          
-                         
-		Kokkos::parallel_for( "Phase1", team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)), KOKKOS_LAMBDA (const member_type team_member) {
+        Kokkos::parallel_for( "Phase1", mainKernelPolicy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)), KOKKOS_LAMBDA (const member_type team_member) {                  
+		//Kokkos::parallel_for( "Phase1", team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)), KOKKOS_LAMBDA (const member_type team_member) {
             
 			ScratchViewRegion sRegionPool(team_member.team_scratch(0), 1);
 				
             INIT_REGION_POOL<IntegT, NDIM>(d_integrand,
-				dRegions, dRegionsLength, numRegions, constMem, FEVAL, NSETS, 
+				dRegions, dRegionsLength, numRegions, /*constMem*/_gpuG, _GPUScale, _GPUNorm, _gpuGenPermGIndex, _cRuleWt, FEVAL, NSETS, 
 				lows, highs, iteration, depth, generators, sRegionPool, team_member);
 			team_member.team_barrier();
 			
