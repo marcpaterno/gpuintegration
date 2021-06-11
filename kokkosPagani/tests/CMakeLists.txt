@@ -1,4 +1,4 @@
-find_package(KokkosKernels REQUIRED)
+#find_package(KokkosKernels REQUIRED)
 
 add_executable(GenerateRegions GenerateInitialRegions.cpp)
 target_compile_options(GenerateRegions PRIVATE "-O2" "-DCUSTOM" "-arch=sm_70" "--expt-relaxed-constexpr")
