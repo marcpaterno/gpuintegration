@@ -32,7 +32,7 @@ namespace gpu {
 
     T data[s];
   };
-  
+
   namespace detail {
     template <class F, size_t N, std::size_t... I>
     __device__ double
