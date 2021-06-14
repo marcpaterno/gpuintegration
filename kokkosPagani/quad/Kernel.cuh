@@ -128,9 +128,13 @@ public:
     size_t numBlocks =
       numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
 
+
+    Kokkos::TeamPolicy<Kokkos::LaunchBounds<256,4>> team_policy1(numBlocks, numThreads);
+    auto team_policy = Kokkos::Experimental::require(team_policy1,Kokkos::Experimental::WorkItemProperty::HintLightWeight);
+
     Kokkos::parallel_for(
       "AlignRegions",
-      team_policy(numBlocks, numThreads),
+      team_policy1,
       KOKKOS_LAMBDA(const member_type team_member) {
         int threadIdx = team_member.team_rank();
         int blockIdx = team_member.league_rank();
@@ -171,10 +175,13 @@ public:
     size_t numThreads = BLOCK_SIZE;
     size_t numBlocks =
       numActiveRegions / numThreads + ((numActiveRegions % numThreads) ? 1 : 0);
-
+   
+    Kokkos::TeamPolicy<Kokkos::LaunchBounds<256,4>> team_policy1(numBlocks, numThreads);
+    auto team_policy = Kokkos::Experimental::require(team_policy1,Kokkos::Experimental::WorkItemProperty::HintLightWeight);
+   
     Kokkos::parallel_for(
       "DivideIntervalsGPU",
-      team_policy(numBlocks, numThreads),
+      team_policy1,
       KOKKOS_LAMBDA(const member_type team_member) {
         int threadIdx = team_member.team_rank();
         int blockIdx = team_member.league_rank();
@@ -322,6 +329,9 @@ public:
                          double epsrel,
                          int& fail)
   {
+      
+      
+      
     if (error > abs(newLeavesEstimate) * epsrel) {
       // printf("REVERTING ACTIVE REGIONS\n");
       Kokkos::parallel_for(
@@ -340,6 +350,7 @@ public:
   size_t
   ComputeNumUnPolishedRegions(ViewVectorDouble unpolishedRegions)
   {
+                  
     double _numUnPolishedRegions = 0;
     Kokkos::parallel_reduce(
       "ComputeNumUnPolishedRegions",
@@ -372,6 +383,7 @@ public:
          size_t numRegions,
          double errThreshold)
   {
+      
     Kokkos::parallel_for(
       "Filter", numRegions, KOKKOS_LAMBDA(const int64_t index) {
         double selfErr = dRegionsError(index);
@@ -960,6 +972,7 @@ public:
 
     // need c++17 for KOKKOS_LAMBDA that is defined as [=,*this] __host__
     // __device__, interestingly adding __host__ below causes problems
+    
     Kokkos::parallel_for(
       "GenerateInitialRegions",
       team_policy(numBlocks, numThreads)

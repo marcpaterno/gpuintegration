@@ -51,9 +51,12 @@ ComputeGenerators(ViewVectorDouble generators,
   uint32_t nBlocks = 1;
   uint32_t nThreads = BLOCK_SIZE;
 
+  Kokkos::TeamPolicy<Kokkos::LaunchBounds<256,4>> team_policy1(nBlocks, nThreads);
+  auto team_policy = Kokkos::Experimental::require(team_policy1,Kokkos::Experimental::WorkItemProperty::HintLightWeight);
+
   Kokkos::parallel_for(
     "Phase1",
-    team_policy(nBlocks, nThreads),
+    team_policy1,
     KOKKOS_LAMBDA(const member_type team_member) {
       int threadIdx = team_member.team_rank();
       int blockIdx = team_member.league_rank();
