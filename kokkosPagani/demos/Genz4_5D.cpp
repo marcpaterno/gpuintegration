@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 		double epsrel_min = 1.0e-10;
 		double true_value = 1.79132603674879e-06;
         const int ndim = 5;
-        while (time_and_call<GENZ_4_5D, ndim>("GENZ_4_5D", integrand,
+        while (time_and_call<GENZ_4_5D, ndim>("5D f4", integrand,
             epsrel, true_value, std::cout) == true && epsrel >= epsrel_min) {
             epsrel /= 5.0;
 			break;

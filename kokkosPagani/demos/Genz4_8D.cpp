@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 		double epsrel_min = 1.0e-10;
 		double true_value = 6.383802190004379e-10;
         const int ndim = 8;
-        while (time_and_call<GENZ_4_8D, ndim>("GENZ_4_8D", integrand,
+        while (time_and_call<GENZ_4_8D, ndim>("8D f4", integrand,
             epsrel, true_value, std::cout) == true && epsrel >= epsrel_min) {
             epsrel /= 5.0;
         }

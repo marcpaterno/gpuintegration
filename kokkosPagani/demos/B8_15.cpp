@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 		double epsrel_min = 1.0e-10;
 		double true_value = 8879.851175413485;
         const int ndim = 8;
-        while (time_and_call<BoxIntegral8_15, ndim>("BoxIntegral8_15", integrand,
+        while (time_and_call<BoxIntegral8_15, ndim>("B8_15", integrand,
             epsrel, true_value, std::cout) == true && epsrel >= epsrel_min) {
             epsrel /= 5.0;
         }

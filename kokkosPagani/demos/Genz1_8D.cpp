@@ -36,7 +36,7 @@ int main(int argc, char **argv)
                sin(3.) * sin(7. / 2.) * sin(4.) *
                (sin(37. / 2.) - sin(35. / 2.));
         const int ndim = 8;
-        while (time_and_call<GENZ_1_8D, ndim>("GENZ_1_8D", integrand,
+        while (time_and_call<GENZ_1_8D, ndim>("8D f1", integrand,
             epsrel, true_value, std::cout, heuristicID) == true && epsrel >= epsrel_min) {
             epsrel /= 5.0;
         }
