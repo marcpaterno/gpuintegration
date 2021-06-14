@@ -38,7 +38,7 @@ main()
   // configuration.phase_2 = false;
 
   PrintHeader();
-  while (cu_time_and_call<detail::GENZ_5_5D, ndim>("GENZ5_5D",
+  while (cu_time_and_call<detail::GENZ_5_5D, ndim>("5D f5",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
