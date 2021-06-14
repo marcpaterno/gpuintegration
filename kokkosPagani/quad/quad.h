@@ -1,7 +1,7 @@
 #ifndef KOKKOSCUHRE_QUAD_H
 #define KOKKOSCUHRE_QUAD_H
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 64
 #include <Kokkos_Core.hpp>
 
 // headers from cudaUtil.h

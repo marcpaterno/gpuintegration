@@ -2068,7 +2068,7 @@ namespace quad {
       // nvtxRangePush("SampleKernel");
       // printf("Launching for %lu regions\n", numBlocks);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
-        <<<numBlocks, numThreads, NDIM * sizeof(GlobalBounds)>>>(
+        <<<numBlocks, numThreads/*, NDIM * sizeof(GlobalBounds)*/>>>(
           d_integrand,
           dRegions,
           dRegionsLength,
