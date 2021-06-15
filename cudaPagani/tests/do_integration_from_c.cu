@@ -1,3 +1,7 @@
+extern "C" {
+#include "tests/do_integration_from_c.h"
+}
+
 #include "quad/GPUquad/Cuhre.cuh"
 
 extern "C" {

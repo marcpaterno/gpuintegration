@@ -1,5 +1,4 @@
-int do_integration_from_c(double*);
-
+#include "do_integration_from_c.h"
 #include <stdio.h>
 
 int
