@@ -35,13 +35,13 @@ computePermutation(IntegT d_integrand,
                    gpu::cudaArray<T, NDIM>& x,
                    double* sum,
                    // const Structures<T>& constMem,
-                   constViewVectorInt _gpuGenPermGIndex,
-                   constViewVectorDouble _cRuleWt,
-                   ScratchViewDouble range,
-                   ScratchViewDouble jacobian,
-                   constViewVectorDouble generators,
-                   ScratchViewDouble sdata,
-                   ScratchViewGlobalBounds sBound,
+                   const int* _gpuGenPermGIndex,
+                   const double* _cRuleWt,
+                   double* range,
+                   double* jacobian,
+                   const double* generators,
+                   double* sdata,
+                   GlobalBounds* sBound,
                    int FEVAL,
                    const member_type team_member)
 {
@@ -52,20 +52,20 @@ computePermutation(IntegT d_integrand,
     x[dim] = 0;
   }
 
-  int gIndex = __ldg(&_gpuGenPermGIndex(pIndex));
+  int gIndex = __ldg(&_gpuGenPermGIndex[pIndex]);
 
   for (int dim = 0; dim < NDIM; ++dim) {
-    double generator = __ldg(&generators(FEVAL * dim + pIndex));
-    x[dim] = sBound(dim).unScaledLower + ((.5 + generator) * b[dim].lower +
+    double generator = __ldg(&generators[FEVAL * dim + pIndex]);
+    x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                           (.5 - generator) * b[dim].upper) *
                                            range[dim];
   }
 
-  double fun = gpu::apply(d_integrand(0), x) * (jacobian(0));
-  sdata(threadIdx) = fun; // target for reduction
+  double fun = gpu::apply(d_integrand(0), x) * (jacobian[0]);
+  sdata[threadIdx] = fun; // target for reduction
 
   for (int rul = 0; rul < NRULES; ++rul) {
-    sum[rul] += fun * __ldg(&_cRuleWt(gIndex * NRULES + rul));
+    sum[rul] += fun * __ldg(&_cRuleWt[gIndex * NRULES + rul]);
   }
 }
 
@@ -74,23 +74,21 @@ __device__ void
 Sample(IntegT d_integrand,
        int sIndex,
        // const Structures<double>& constMem,
-       constViewVectorDouble _gpuG,
-       constViewVectorDouble _GPUScale,
-       constViewVectorDouble _GPUNorm,
-       constViewVectorInt _gpuGenPermGIndex,
-       constViewVectorDouble _cRuleWt,
+       const double* _gpuG,
+       const double* _GPUScale,
+       const double* _GPUNorm,
+       const int* _gpuGenPermGIndex,
+       const double* _cRuleWt,
        int FEVAL,
        int NSETS,
-       Kokkos::View<Region<NDIM>*,
-                    Kokkos::DefaultExecutionSpace::scratch_memory_space,
-                    Kokkos::MemoryTraits<Kokkos::Unmanaged>> sRegionPool,
-       ScratchViewDouble vol,
-       ScratchViewInt maxdim,
-       ScratchViewDouble range,
-       ScratchViewDouble jacobian,
-       constViewVectorDouble generators,
+      Region<NDIM>* sRegionPool,
+       double* vol,
+       int maxdim,
+       double* range,
+       double* jacobian,
+       const double* generators,
        // ScratchViewDouble sdata,
-       ScratchViewGlobalBounds sBound,
+       GlobalBounds* sBound,
        const member_type team_member)
 {
 
@@ -98,7 +96,7 @@ Sample(IntegT d_integrand,
   int blockIdx = team_member.league_rank();
 
   ScratchViewDouble sdata(team_member.team_scratch(0), BLOCK_SIZE);
-  Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool(sIndex);
+  Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
   double errcoeff[] = {5, 1, 5};
   double g[NDIM];
   gpu::cudaArray<double, NDIM> x;
@@ -106,7 +104,7 @@ Sample(IntegT d_integrand,
 
   // should probably move this outside of Sample, no need for all threads to
   // compute it
-  double ratio = Sq(__ldg(&_gpuG(2 * NDIM)) / __ldg(&_gpuG(1 * NDIM)));
+  double ratio = Sq(__ldg(&_gpuG[2 * NDIM]) / __ldg(&_gpuG[1 * NDIM]));
   int offset = 2 * NDIM;
 
   double sum[NRULES];
@@ -129,7 +127,7 @@ Sample(IntegT d_integrand,
                                              range,
                                              jacobian,
                                              generators,
-                                             sdata,
+                                             sdata.data(),
                                              sBound,
                                              FEVAL,
                                              team_member);
@@ -144,7 +142,7 @@ Sample(IntegT d_integrand,
     double* f1 = f;
     double base = *f1 * 2 * (1 - ratio);
     double maxdiff = 0.;
-    int bisectdim = maxdim(0);
+    int bisectdim = maxdim;
     for (int dim = 0; dim < NDIM; ++dim) {
       double* fp = f1 + 1;
       double* fm = fp + 1;
@@ -176,7 +174,7 @@ Sample(IntegT d_integrand,
                                              range,
                                              jacobian,
                                              generators,
-                                             sdata,
+                                             sdata.data(),
                                              sBound,
                                              FEVAL,
                                              team_member);
@@ -196,7 +194,7 @@ Sample(IntegT d_integrand,
                                              range,
                                              jacobian,
                                              generators,
-                                             sdata,
+                                             sdata.data(),
                                              sBound,
                                              FEVAL,
                                              team_member);
@@ -213,14 +211,14 @@ Sample(IntegT d_integrand,
       for (int s = 0; s < NSETS; ++s) {
         maxerr = max(
           maxerr,
-          fabs(sum[rul + 1] + __ldg(&_GPUScale(s * NRULES + rul)) * sum[rul]) *
-            __ldg(&_GPUNorm(s * NRULES + rul)));
+          fabs(sum[rul + 1] + __ldg(&_GPUScale[s * NRULES + rul]) * sum[rul]) *
+            __ldg(&_GPUNorm[s * NRULES + rul]));
       }
       sum[rul] = maxerr;
     }
 
-    r->avg = (vol(0)) * sum[0];
-    r->err = (vol(0)) * ((errcoeff[0] * sum[1] <= sum[2] &&
+    r->avg = (vol[0]) * sum[0];
+    r->err = (vol[0]) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));

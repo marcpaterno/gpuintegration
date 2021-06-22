@@ -99,25 +99,23 @@ template <typename IntegT, int NDIM>
 __device__ void
 INIT_REGION_POOL(
   IntegT d_integrand,
-  ViewVectorDouble dRegions,
-  ViewVectorDouble dRegionsLength,
+  double* dRegions,
+  double* dRegionsLength,
   size_t numRegions,
   // const Structures<double>& constMem,
-  constViewVectorDouble _gpuG,
-  constViewVectorDouble _GPUScale,
-  constViewVectorDouble _GPUNorm,
-  constViewVectorInt _gpuGenPermGIndex,
-  constViewVectorDouble _cRuleWt,
+  const double* _gpuG,
+  const double* _GPUScale,
+  const double* _GPUNorm,
+  const int* _gpuGenPermGIndex,
+  const double* _cRuleWt,
   int FEVAL,
   int NSETS,
-  ViewVectorDouble lows,
-  ViewVectorDouble highs,
-  int iteration,
+  double* lows,
+  double* highs,
+  //int iteration,
   int depth,
-  constViewVectorDouble generators,
-  Kokkos::View<Region<NDIM>*,
-               Kokkos::DefaultExecutionSpace::scratch_memory_space,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>> sRegionPool,
+  const double* generators,
+  Region<NDIM>* sRegionPool,
   const member_type team_member)
 {
 
@@ -140,17 +138,17 @@ INIT_REGION_POOL(
     Jacobian(0) = 1;
     double maxRange = 0;
     for (int dim = 0; dim < NDIM; ++dim) {
-      double lower = dRegions(dim * numRegions + blockIdx);
-      sRegionPool(0).bounds[dim].lower = lower;
-      sRegionPool(0).bounds[dim].upper =
-        lower + dRegionsLength(dim * numRegions + blockIdx);
+      double lower = dRegions[dim * numRegions + blockIdx];
+      sRegionPool[0].bounds[dim].lower = lower;
+      sRegionPool[0].bounds[dim].upper =
+        lower + dRegionsLength[dim * numRegions + blockIdx];
 
-      sBound(dim).unScaledLower = lows(dim);
-      sBound(dim).unScaledUpper = highs(dim);
+      sBound(dim).unScaledLower = lows[dim];
+      sBound(dim).unScaledUpper = highs[dim];
       ranges(dim) = sBound(dim).unScaledUpper - sBound(dim).unScaledLower;
-      sRegionPool(0).div = depth;
+      //sRegionPool(0).div = depth;
 
-      double range = sRegionPool(0).bounds[dim].upper - lower;
+      double range = sRegionPool[0].bounds[dim].upper - lower;
       Jacobian(0) = Jacobian(0) * ranges(dim);
 
       if (range > maxRange) {
@@ -174,13 +172,13 @@ INIT_REGION_POOL(
                        FEVAL,
                        NSETS,
                        sRegionPool,
-                       vol,
-                       maxDim,
-                       ranges,
-                       Jacobian,
+                       vol.data(),
+                       maxDim(0),
+                       ranges.data(),
+                       Jacobian.data(),
                        generators,
                        // sdata,
-                       sBound,
+                       sBound.data(),
                        team_member);
   team_member.team_barrier();
 }
@@ -188,28 +186,28 @@ INIT_REGION_POOL(
 template <typename IntegT, int NDIM>
 void
 INTEGRATE_GPU_PHASE1(IntegT d_integrand,
-                     ViewVectorDouble dRegions,
-                     ViewVectorDouble dRegionsLength,
+                     double* dRegions,
+                     double* dRegionsLength,
                      size_t numRegions,
-                     ViewVectorDouble dRegionsIntegral,
-                     ViewVectorDouble dRegionsError,
-                     ViewVectorDouble activeRegions,
-                     ViewVectorInt subDividingDimension,
-                     double epsrel,
-                     double epsabs,
+                     double* dRegionsIntegral,
+                     double* dRegionsError,
+                     double* activeRegions,
+                     int* subDividingDimension,
+                     //double epsrel,
+                     //double epsabs,
                      // Structures<double> constMem,
-                     constViewVectorDouble _gpuG,
-                     constViewVectorDouble _GPUScale,
-                     constViewVectorDouble _GPUNorm,
-                     constViewVectorInt _gpuGenPermGIndex,
-                     constViewVectorDouble _cRuleWt,
+                     const double* _gpuG,
+                     const double* _GPUScale,
+                     const double* _GPUNorm,
+                     const int* _gpuGenPermGIndex,
+                     const double* _cRuleWt,
                      int FEVAL,
                      int NSETS,
-                     ViewVectorDouble lows,
-                     ViewVectorDouble highs,
-                     int iteration,
+                     double* lows,
+                     double* highs,
+                    // int iteration,
                      int depth,
-                     constViewVectorDouble generators)
+                     const double* generators)
 {
 
   uint32_t nBlocks = numRegions;
@@ -218,7 +216,7 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                        Kokkos::DefaultExecutionSpace::scratch_memory_space,
                        Kokkos::MemoryTraits<Kokkos::Unmanaged>>
     ScratchViewRegion;
-  using mainKernelPolicy = Kokkos::TeamPolicy<Kokkos::LaunchBounds<256, 4>>;
+  using mainKernelPolicy = Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 16>>;
   int shMemBytes = ScratchViewInt::shmem_size(1) +       // for maxDim
                    ScratchViewDouble::shmem_size(1) +    // for vol
                    ScratchViewDouble::shmem_size(1) +    // for Jacobian
@@ -253,21 +251,19 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                                      NSETS,
                                      lows,
                                      highs,
-                                     iteration,
+                                    // iteration,
                                      depth,
                                      generators,
-                                     sRegionPool,
+                                     sRegionPool.data(),
                                      team_member);
       team_member.team_barrier();
 
       if (team_member.team_rank() == 0) {
-        activeRegions(team_member.league_rank()) = 1.;
-        subDividingDimension(team_member.league_rank()) =
+        activeRegions[team_member.league_rank()] = 1.;
+        subDividingDimension[team_member.league_rank()] =
           sRegionPool(0).result.bisectdim;
-        dRegionsIntegral(team_member.league_rank()) = sRegionPool(0).result.avg;
-        ;
-        dRegionsError(team_member.league_rank()) = sRegionPool(0).result.err;
-        ;
+        dRegionsIntegral[team_member.league_rank()] = sRegionPool(0).result.avg;
+        dRegionsError[team_member.league_rank()] = sRegionPool(0).result.err;
       }
     });
 }
