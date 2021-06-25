@@ -38,7 +38,7 @@ computePermutation(IntegT d_integrand,
                    const int* _gpuGenPermGIndex,
                    const double* _cRuleWt,
                    double* range,
-                   double* jacobian,
+                   double jacobian,
                    const double* generators,
                    double* sdata,
                    GlobalBounds* sBound,
@@ -61,7 +61,7 @@ computePermutation(IntegT d_integrand,
                                            range[dim];
   }
 
-  double fun = gpu::apply(d_integrand(0), x) * (jacobian[0]);
+  double fun = gpu::apply(d_integrand(0), x) * (jacobian);
   sdata[threadIdx] = fun; // target for reduction
 
   for (int rul = 0; rul < NRULES; ++rul) {
@@ -82,10 +82,10 @@ Sample(IntegT d_integrand,
        int FEVAL,
        int NSETS,
       Region<NDIM>* sRegionPool,
-       double* vol,
+       double vol,
        int maxdim,
        double* range,
-       double* jacobian,
+       double jacobian,
        const double* generators,
        // ScratchViewDouble sdata,
        GlobalBounds* sBound,
@@ -217,8 +217,8 @@ Sample(IntegT d_integrand,
       sum[rul] = maxerr;
     }
 
-    r->avg = (vol[0]) * sum[0];
-    r->err = (vol[0]) * ((errcoeff[0] * sum[1] <= sum[2] &&
+    r->avg = (vol) * sum[0];
+    r->err = (vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));

@@ -49,9 +49,9 @@ ComputeGenerators(ViewVectorDouble generators,
                   const Structures<double> constMem)
 {
   uint32_t nBlocks = 1;
-  uint32_t nThreads = BLOCK_SIZE;
+  uint32_t nThreads = 64;
 
-  Kokkos::TeamPolicy<Kokkos::LaunchBounds<256, 4>> team_policy1(nBlocks,
+  Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 18>> team_policy1(nBlocks,
                                                                 nThreads);
   auto team_policy = Kokkos::Experimental::require(
     team_policy1, Kokkos::Experimental::WorkItemProperty::HintLightWeight);
@@ -68,7 +68,7 @@ ComputeGenerators(ViewVectorDouble generators,
         g[dim] = 0;
       }
 
-      size_t feval_index = perm * BLOCK_SIZE + threadIdx;
+      size_t feval_index = perm * nThreads + threadIdx;
       if (feval_index < FEVAL) {
         ActualCompute<NDIM>(
           generators, g, constMem, feval_index, FEVAL, team_member);
@@ -76,17 +76,17 @@ ComputeGenerators(ViewVectorDouble generators,
 
       team_member.team_barrier();
 
-      for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
-        int feval_index = perm * BLOCK_SIZE + threadIdx;
+      for (perm = 1; perm < FEVAL / nThreads; ++perm) {
+        int feval_index = perm * nThreads + threadIdx;
         ActualCompute<NDIM>(
           generators, g, constMem, feval_index, FEVAL, team_member);
       }
 
       team_member.team_barrier();
 
-      feval_index = perm * BLOCK_SIZE + threadIdx;
+      feval_index = perm * nThreads + threadIdx;
       if (feval_index < FEVAL) {
-        int feval_index = perm * BLOCK_SIZE + threadIdx;
+        int feval_index = perm * nThreads + threadIdx;
         ActualCompute<NDIM>(
           generators, g, constMem, feval_index, FEVAL, team_member);
       }
@@ -113,7 +113,8 @@ INIT_REGION_POOL(
   double* lows,
   double* highs,
   //int iteration,
-  int depth,
+  double vol,
+  double Jacobian,
   const double* generators,
   Region<NDIM>* sRegionPool,
   const member_type team_member)
@@ -124,8 +125,8 @@ INIT_REGION_POOL(
                        Kokkos::MemoryTraits<Kokkos::Unmanaged>>
     ScratchViewRegion;
 
-  ScratchViewDouble vol(team_member.team_scratch(0), 1);
-  ScratchViewDouble Jacobian(team_member.team_scratch(0), 1);
+  //ScratchViewDouble vol(team_member.team_scratch(0), 1);
+  //ScratchViewDouble Jacobian(team_member.team_scratch(0), 1);
   ScratchViewDouble ranges(team_member.team_scratch(0), NDIM);
   ScratchViewInt maxDim(team_member.team_scratch(0), 1);
   ScratchViewGlobalBounds sBound(team_member.team_scratch(0), NDIM);
@@ -135,7 +136,7 @@ INIT_REGION_POOL(
   if (team_member.team_rank() == 0) {
 
     int blockIdx = team_member.league_rank();
-    Jacobian(0) = 1;
+    //Jacobian(0) = 1;
     double maxRange = 0;
     for (int dim = 0; dim < NDIM; ++dim) {
       double lower = dRegions[dim * numRegions + blockIdx];
@@ -149,14 +150,14 @@ INIT_REGION_POOL(
       //sRegionPool(0).div = depth;
 
       double range = sRegionPool[0].bounds[dim].upper - lower;
-      Jacobian(0) = Jacobian(0) * ranges(dim);
+      //Jacobian(0) = Jacobian(0) * ranges(dim);
 
       if (range > maxRange) {
         maxDim(0) = dim;
         maxRange = range;
       }
     }
-    vol(0) = ldexp(1., -depth);
+    //vol(0) = ldexp(1., -depth);
   }
 
   int sIndex = 0;
@@ -172,10 +173,10 @@ INIT_REGION_POOL(
                        FEVAL,
                        NSETS,
                        sRegionPool,
-                       vol.data(),
+                       vol,
                        maxDim(0),
                        ranges.data(),
-                       Jacobian.data(),
+                       Jacobian,
                        generators,
                        // sdata,
                        sBound.data(),
@@ -205,9 +206,10 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                      int NSETS,
                      double* lows,
                      double* highs,
-                    // int iteration,
-                     int depth,
-                     const double* generators)
+                     double vol,
+                     double Jacobian,
+                     const double* generators,
+                     int iteration)
 {
 
   uint32_t nBlocks = numRegions;
@@ -216,20 +218,26 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                        Kokkos::DefaultExecutionSpace::scratch_memory_space,
                        Kokkos::MemoryTraits<Kokkos::Unmanaged>>
     ScratchViewRegion;
-  using mainKernelPolicy = Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 16>>;
-  int shMemBytes = ScratchViewInt::shmem_size(1) +       // for maxDim
-                   ScratchViewDouble::shmem_size(1) +    // for vol
-                   ScratchViewDouble::shmem_size(1) +    // for Jacobian
+    
+    Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 18>> mainKernelPolicy(nBlocks, nThreads);
+   // auto mainPolicy = Kokkos::Experimental::require(mainKernelPolicy, Kokkos::Experimental::WorkItemProperty::HintHeavyWeight);
+   
+    //if(iteration <= 5)
+    //    mainPolicy = Kokkos::Experimental::require(mainKernelPolicy, Kokkos::Experimental::WorkItemProperty::HintLightWeight);
+    
+    int shMemBytes = ScratchViewInt::shmem_size(1) +       // for maxDim
+                   //ScratchViewDouble::shmem_size(1) +    // for vol
+                   //ScratchViewDouble::shmem_size(1) +    // for Jacobian
                    ScratchViewDouble::shmem_size(NDIM) + // for ranges
                    ScratchViewRegion::shmem_size(
                      1) + // how come shmem_size doesn't return size_t? the
                           // tutorial exercise was returning an int too
                    ScratchViewGlobalBounds::shmem_size(NDIM) + // for sBound
                    ScratchViewDouble::shmem_size(BLOCK_SIZE);  // for sdata
-
+    
   Kokkos::parallel_for(
     "Phase1",
-    mainKernelPolicy(nBlocks, nThreads)
+    mainKernelPolicy
       .set_scratch_size(0, Kokkos::PerTeam(shMemBytes)),
     KOKKOS_LAMBDA(const member_type team_member) {
       // Kokkos::parallel_for( "Phase1", team_policy(nBlocks,
@@ -252,7 +260,8 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                                      lows,
                                      highs,
                                     // iteration,
-                                     depth,
+                                     vol,
+                                     Jacobian,
                                      generators,
                                      sRegionPool.data(),
                                      team_member);
