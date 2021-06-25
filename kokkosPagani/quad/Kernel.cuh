@@ -790,13 +790,30 @@ public:
     
     printf("Blas dot product %lu regions\n", numRegions);
     Kokkos::Profiling::pushRegion("Inner Product 1");
+    double activeEst = 0.;
+    Kokkos::parallel_reduce(
+      "Inner product 1",
+      numRegions,
+      KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+        valueToUpdate += dRegionsIntegral(index)*activeRegions(index);
+      },
+      activeEst);
     double iter_finished_estimate =
-      iter_estimate - KokkosBlas::dot(activeRegions, dRegionsIntegral);
+      iter_estimate - activeEst;
     Kokkos::Profiling::popRegion();
+    
     printf("Blas 2nd dot product %lu regions\n", numRegions);  
     Kokkos::Profiling::pushRegion("Inner Product 2");
+    double activeErrorest = 0.;
+    Kokkos::parallel_reduce(
+      "Inner product 2",
+      numRegions,
+      KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+        valueToUpdate += dRegionsError(index)*activeRegions(index);
+      },
+      activeErrorest);
     double iter_finished_errorest =
-      iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
+      iter_errorest - activeErrorest;
     Kokkos::Profiling::popRegion();
     integral += iter_finished_estimate;
     error += iter_finished_errorest;
