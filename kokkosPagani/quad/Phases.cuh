@@ -192,7 +192,7 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
                      size_t numRegions,
                      double* dRegionsIntegral,
                      double* dRegionsError,
-                     double* activeRegions,
+                     int* activeRegions,
                      int* subDividingDimension,
                      //double epsrel,
                      //double epsabs,
@@ -268,7 +268,7 @@ INTEGRATE_GPU_PHASE1(IntegT d_integrand,
       team_member.team_barrier();
 
       if (team_member.team_rank() == 0) {
-        activeRegions[team_member.league_rank()] = 1.;
+        activeRegions[team_member.league_rank()] = 1;
         subDividingDimension[team_member.league_rank()] =
           sRegionPool(0).result.bisectdim;
         dRegionsIntegral[team_member.league_rank()] = sRegionPool(0).result.avg;

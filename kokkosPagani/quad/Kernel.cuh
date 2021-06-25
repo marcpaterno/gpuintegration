@@ -110,13 +110,13 @@ public:
   void
   AlignRegions(ViewVectorDouble dRegions,
                ViewVectorDouble dRegionsLength,
-               ViewVectorDouble activeRegions,
+               ViewVectorInt activeRegions,
                ViewVectorDouble dRegionsIntegral,
                ViewVectorDouble dRegionsError,
                ViewVectorDouble dRegionsParentIntegral,
                ViewVectorDouble dRegionsParentError,
                ViewVectorInt subDividingDimension,
-               ViewVectorDouble scannedArray,
+               ViewVectorInt scannedArray,
                ViewVectorDouble newActiveRegions,
                ViewVectorDouble newActiveRegionsLength,
                ViewVectorInt newActiveRegionsBisectDim,
@@ -221,18 +221,18 @@ public:
   }
 
   void
-  ReturnLastIndexValues(ViewVectorDouble listA,
-                        ViewVectorDouble listB,
+  ReturnLastIndexValues(ViewVectorInt listA,
+                        ViewVectorInt listB,
                         double& lastA,
                         double& lastB)
   {
     int sizeA = listA.extent(0);
     int sizeB = listB.extent(0);
-    ViewVectorDouble A_sub(listA, std::make_pair(sizeA - 1, sizeA));
-    ViewVectorDouble B_sub(listB, std::make_pair(sizeB - 1, sizeB));
+    ViewVectorInt A_sub(listA, std::make_pair(sizeA - 1, sizeA));
+    ViewVectorInt B_sub(listB, std::make_pair(sizeB - 1, sizeB));
 
-    ViewVectorDouble::HostMirror hostA_sub = Kokkos::create_mirror_view(A_sub);
-    ViewVectorDouble::HostMirror hostB_sub = Kokkos::create_mirror_view(B_sub);
+    ViewVectorInt::HostMirror hostA_sub = Kokkos::create_mirror_view(A_sub);
+    ViewVectorInt::HostMirror hostB_sub = Kokkos::create_mirror_view(B_sub);
 
     deep_copy(hostA_sub, A_sub);
     deep_copy(hostB_sub, B_sub);
@@ -243,7 +243,7 @@ public:
   size_t
   GenerateActiveIntervals(ViewVectorDouble& dRegions,
                           ViewVectorDouble& dRegionsLength,
-                          ViewVectorDouble activeRegions,
+                          ViewVectorInt activeRegions,
                           ViewVectorInt subDividingDimension,
                           ViewVectorDouble dRegionsIntegral,
                           ViewVectorDouble dRegionsError,
@@ -251,7 +251,7 @@ public:
                           ViewVectorDouble& dParentsError,
                           constViewVectorDouble generators)
   {
-    ViewVectorDouble scannedArray("scannedArray", numRegions);
+    ViewVectorInt scannedArray("scannedArray", numRegions);
     deep_copy(scannedArray, activeRegions);
     exclusive_prefix_scan(scannedArray);
 
@@ -323,7 +323,7 @@ public:
   }
 
   void
-  FixErrorBudgetOverflow(ViewVectorDouble activeRegions,
+  FixErrorBudgetOverflow(ViewVectorInt activeRegions,
                          double& integral,
                          double& error,
                          double& iter_finished_estimate,
@@ -349,14 +349,14 @@ public:
   }
 
   size_t
-  ComputeNumUnPolishedRegions(ViewVectorDouble unpolishedRegions)
+  ComputeNumUnPolishedRegions(ViewVectorInt unpolishedRegions)
   {
 
-    double _numUnPolishedRegions = 0;
+    int _numUnPolishedRegions = 0;
     Kokkos::parallel_reduce(
       "ComputeNumUnPolishedRegions",
       numRegions,
-      KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+      KOKKOS_LAMBDA(const int64_t index, int& valueToUpdate) {
         valueToUpdate += unpolishedRegions(index);
       },
       _numUnPolishedRegions);
@@ -379,8 +379,8 @@ public:
 
   void
   Filter(ViewVectorDouble dRegionsError,
-         ViewVectorDouble unpolishedRegions,
-         ViewVectorDouble activeRegions,
+         ViewVectorInt unpolishedRegions,
+         ViewVectorInt activeRegions,
          size_t numRegions,
          double errThreshold)
   {
@@ -460,7 +460,7 @@ public:
   void
   HSClassify(ViewVectorDouble dRegionsIntegral,
              ViewVectorDouble dRegionsError,
-             ViewVectorDouble& activeRegions,
+             ViewVectorInt& activeRegions,
              double& integral,
              double& error,
              size_t& nregions,
@@ -503,7 +503,7 @@ public:
 
     double MaxPercentOfErrorBudget = .25;
     double acceptableThreshold = 0.;
-    ViewVectorDouble unpolishedRegions("numRegions", numRegions); 
+    ViewVectorInt unpolishedRegions("numRegions", numRegions); 
 
     size_t targetRegionNum = numRegions / 2;
     double ErrThreshold = iterErrorest / (numRegions); 
@@ -618,7 +618,7 @@ public:
 
   void
   RelErrClassify(int heuristicID,
-                 ViewVectorDouble activeRegions,
+                 ViewVectorInt activeRegions,
                  ViewVectorDouble dRegionsIntegral,
                  ViewVectorDouble& dRegionsError,
                  ViewVectorDouble dParentsIntegral,
@@ -691,7 +691,7 @@ public:
     // because we need to take dot-product, make activeRegions a double view
     //printf("Start of iteration\n");
     Kokkos::Profiling::pushRegion("Iteration Allocations");
-    ViewVectorDouble activeRegions("activeRegions", numRegions);
+    ViewVectorInt activeRegions("activeRegions", numRegions);
     ViewVectorInt subDividingDimension("subDividingDimension", numRegions);
 
     dRegionsIntegral = ViewVectorDouble("dRegionsIntegral", numRegions);

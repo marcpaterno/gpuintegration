@@ -184,14 +184,14 @@ ComputeMin(ViewVectorDouble list)
 }
 
 double
-exclusive_prefix_scan(ViewVectorDouble list)
+exclusive_prefix_scan(ViewVectorInt list)
 {
-  double update = 0.;
+  int update = 0.;
 
   Kokkos::parallel_scan(
     list.extent(0),
-    KOKKOS_LAMBDA(const int i, double& update, const bool final) {
-      const double val_i = list(i);
+    KOKKOS_LAMBDA(const int i, int& update, const bool final) {
+      const int val_i = list(i);
       if (final) {
         list(i) = update;
       }
