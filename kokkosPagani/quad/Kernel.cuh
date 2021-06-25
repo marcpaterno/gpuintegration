@@ -128,7 +128,7 @@ public:
     size_t numThreads = 64;
     size_t numBlocks =
       numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
-    printf("Aligning %lu numRegions\n", numRegions);
+
     Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 18>> team_policy1(numBlocks,
                                                                   numThreads);
     auto team_policy = Kokkos::Experimental::require(
@@ -177,7 +177,6 @@ public:
     size_t numThreads = 64;
     size_t numBlocks =
       numActiveRegions / numThreads + ((numActiveRegions % numThreads) ? 1 : 0);
-    printf("Dividing %lu regions\n", numActiveRegions);
     Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 18>> team_policy1(numBlocks,
                                                                   numThreads);
     auto team_policy = Kokkos::Experimental::require(
@@ -490,45 +489,25 @@ public:
                          requiredDigits) :
            false) :
         true;
-    // printf("it:%i estimateHasConverged:%i\n", iteration,
-    // estimateHasConverged);
     integrandAcrossIters.secondToLastIterIntegral =
       integrandAcrossIters.lastIterIntegral;
     integrandAcrossIters.lastIterIntegral = leaves_estimate;
-    // printf("GetGPUMemNeededForNextIteration:%zu Available Mem:%zu
-    // percentage:%f\n", GetGPUMemNeededForNextIteration(numRegions, NDIM),
-    // GetAmountFreeMem(),
-    //	(double)((double)GetGPUMemNeededForNextIteration(numRegions,
-    // NDIM)/((double)GetAmountFreeMem())));
-    // if(!estimateHasConverged || (GetGPUMemNeededForNextIteration(numRegions,
-    // NDIM) < GetAmountFreeMem())) 	return;
-
-    // FIND OUT HOW TO GET AMOUNT OF FREE MEMORY WITH KOKKOS INSTEAD OF CUDA
 
     if (GetGPUMemNeededForNextIteration(numRegions, NDIM) <
           GetAmountFreeMem() &&
         !estimateHasConverged) {
       return;
     }
-    // printf("Will attempt Filtering iteration:%i estimateHasConverged:%i\n",
-    // iteration, estimateHasConverged);
+    
     double targetError = abs(leaves_estimate) * epsrel;
-    // printf("targetError:%.15f\n", targetError);
-    // size_t numThreads = BLOCK_SIZE;
-    // size_t numBlocks = numRegions / numThreads + ((numRegions % numThreads) ?
-    // 1 : 0);
 
     double MaxPercentOfErrorBudget = .25;
     double acceptableThreshold = 0.;
-    ViewVectorDouble unpolishedRegions(
-      "numRegions", numRegions); // int* unpolishedRegions = 0;
-    // ViewVectorDouble scannedArray;//int* scannedArray  = 0; // de-allocated
-    // at the end of this function
+    ViewVectorDouble unpolishedRegions("numRegions", numRegions); 
+
     size_t targetRegionNum = numRegions / 2;
-    // printf("iter errorest:%.15f numRegions:%lu\n", iterErrorest, numRegions);
-    double ErrThreshold = iterErrorest / (numRegions); // starts out as avg
-                                                       // value
-    // printf("Initial threshold:%.15f\n", ErrThreshold);
+    double ErrThreshold = iterErrorest / (numRegions); 
+
     double lastThreshold = ErrThreshold;
     size_t numActiveRegions = numRegions;
     double iter_polished_errorest = 0.;
@@ -539,7 +518,7 @@ public:
     double min = 0., max = 0.;
     min = ComputeMin(dRegionsError);
     max = ComputeMax(dRegionsError);
-    // printf("min:%.15f max:%.15f\n", min, max);
+
     bool directionChange = false;
     int maxDirectionChanges = 9;
 
@@ -548,17 +527,12 @@ public:
       iter_polished_errorest = 0.;
 
       if (numDirectionChanges >= maxDirectionChanges) {
-        ErrThreshold =
-          acceptableThreshold; // saved as last resort, not original target for
-                               // reamining errorest budget percentage to cover
-                               // but good enough
+        ErrThreshold = acceptableThreshold; 
       } else if (numDirectionChanges > 2 && numDirectionChanges <= 9 &&
                  directionChange) {
-        MaxPercentOfErrorBudget =
-          numDirectionChanges > 1 ?
+        MaxPercentOfErrorBudget =  numDirectionChanges > 1 ?
             MaxPercentOfErrorBudget + .1 :
-            MaxPercentOfErrorBudget; // if we are doing a lot of back and forth,
-                                     // we must relax the requirements
+            MaxPercentOfErrorBudget;
       }
 
       numActiveRegions = 0;
@@ -570,14 +544,33 @@ public:
       numActiveRegions = ComputeNumUnPolishedRegions(unpolishedRegions);
 
       if (numActiveRegions <= targetRegionNum) {
+          
+        double polishedEstimate = 0.;
+        Kokkos::parallel_reduce("polished errorest", numRegions,
+            KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+                valueToUpdate += dRegionsIntegral(index)*unpolishedRegions(index);
+            },
+            polishedEstimate);
+          
         iter_polished_estimate =
-          iterEstimate - iter_finished_estimate -
-          KokkosBlas::dot(unpolishedRegions, dRegionsIntegral);
-
+          iterEstimate - iter_finished_estimate - polishedEstimate;
+        //iter_polished_estimate =
+        //  iterEstimate - iter_finished_estimate -
+        //  KokkosBlas::dot(unpolishedRegions, dRegionsIntegral);
+          
+        double polishedErrorest = 0.;
+        Kokkos::parallel_reduce("polished errorest", numRegions,
+            KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+                valueToUpdate += dRegionsError(index)*unpolishedRegions(index);
+            },
+            polishedErrorest);
+        
         iter_polished_errorest =
-          iterErrorest - iter_finished_errorest -
-          KokkosBlas::dot(unpolishedRegions, dRegionsError);
-
+          iterErrorest - iter_finished_errorest - polishedErrorest;
+        //iter_polished_errorest =
+        //  iterErrorest - iter_finished_errorest -
+        //  KokkosBlas::dot(unpolishedRegions, dRegionsError);
+          
         if ((iter_polished_errorest <=
                MaxPercentOfErrorBudget * (targetError - error) ||
              numDirectionChanges == maxDirectionChanges)) {
@@ -586,14 +579,12 @@ public:
           break;
         } else if (iter_polished_errorest <= .95 * (targetError - error)) {
           acceptableThreshold = ErrThreshold;
-          // printf("Found acceptableThreshold:%.15e\n", acceptableThreshold);
         }
       }
 
       double unpolishedPercentage =
         (double)(numActiveRegions) / (double)numRegions;
-      // change that, intent is not clear should be returning directionChange
-      // and have the name AdjustErrorThreshold
+
       directionChange =
         AdjustErrorThreshold(iter_polished_errorest,
                              MaxPercentOfErrorBudget * (targetError - error),
@@ -607,9 +598,6 @@ public:
 
       if (numDirectionChanges == maxDirectionChanges &&
           acceptableThreshold == 0.) {
-        // printf("Could not do it numDirectionChanges:%i
-        // acceptableThreshold:%.15e estimateHasConverged:%i\n",
-        // numDirectionChanges, acceptableThreshold, estimateHasConverged);
         if (!estimateHasConverged || GetGPUMemNeededForNextIteration(
                                        numRegions, NDIM) >= GetAmountFreeMem())
           mustFinish = true;
@@ -621,10 +609,7 @@ public:
                MaxPercentOfErrorBudget * (targetError - error) ||
              error > targetError);
 
-    printf("percentage of current regions to remain in memory :%f (%lu/%lu)\n",
-    (double)numActiveRegions/(double)numRegions, numActiveRegions, numRegions);
     if (numActiveRegions == numRegions) {
-      // printf("Didn't filter out anything\n");
       mustFinish = true;
     } else {
       activeRegions = unpolishedRegions;
@@ -646,7 +631,6 @@ public:
     int currIterRegions = numRegions;
     ViewVectorDouble newErrs("newErrs", numRegions);
     // int heuristicID = positiveSemiDefinite;
-    printf("Refine Err Relerr classify %lu regions\n", numRegions);
     Kokkos::parallel_for(
       "RefineError", numRegions, KOKKOS_LAMBDA(const int64_t index) {
         double selfErr = dRegionsError(index);
@@ -759,7 +743,7 @@ public:
 
     // Compute integral and error estimates through reductions
     
-    printf("Reduction 1 %lu regions\n", numRegions);
+    //printf("Reduction 1 %lu regions\n", numRegions);
     Kokkos::Profiling::pushRegion("Reduction 1");
     double iter_estimate = 0.;
     Kokkos::parallel_reduce(
@@ -771,7 +755,7 @@ public:
       iter_estimate);
 
     Kokkos::Profiling::popRegion();
-    printf("Reduction 2 %lu regions\n", numRegions); 
+
     Kokkos::Profiling::pushRegion("Reduction 2");
     double iter_errorest = 0.;
     Kokkos::parallel_reduce(
@@ -788,11 +772,10 @@ public:
     double leaves_estimate = integral + iter_estimate;
     double leaves_errorest = error + iter_errorest;
     
-    printf("Blas dot product %lu regions\n", numRegions);
     Kokkos::Profiling::pushRegion("Inner Product 1");
     double activeEst = 0.;
     Kokkos::parallel_reduce(
-      "Inner product 1",
+      "ProParRed1",
       numRegions,
       KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
         valueToUpdate += dRegionsIntegral(index)*activeRegions(index);
@@ -800,13 +783,15 @@ public:
       activeEst);
     double iter_finished_estimate =
       iter_estimate - activeEst;
+    //double iter_finished_estimate =
+    //  iter_estimate - KokkosBlas::dot(activeRegions, dRegionsIntegral);
+      
     Kokkos::Profiling::popRegion();
     
-    printf("Blas 2nd dot product %lu regions\n", numRegions);  
     Kokkos::Profiling::pushRegion("Inner Product 2");
     double activeErrorest = 0.;
     Kokkos::parallel_reduce(
-      "Inner product 2",
+      "ProParRed2",
       numRegions,
       KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
         valueToUpdate += dRegionsError(index)*activeRegions(index);
@@ -814,10 +799,13 @@ public:
       activeErrorest);
     double iter_finished_errorest =
       iter_errorest - activeErrorest;
+      
+    //double iter_finished_errorest =
+    //  iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
+      
     Kokkos::Profiling::popRegion();
     integral += iter_finished_estimate;
     error += iter_finished_errorest;
-    Kokkos::Profiling::popRegion();
 
     /*printf("leaves_estimate:%.15f +- %.15f numRegions:%zu iteration:%i\n",
      leaves_estimate, leaves_errorest, numRegions, it);*/
@@ -845,7 +833,6 @@ public:
       return true;
     }
 
-    printf("HS classify\n");
     Kokkos::Profiling::pushRegion("HSClassify");
     HSClassify(dRegionsIntegral,
                dRegionsError,
