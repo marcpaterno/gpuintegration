@@ -57,7 +57,7 @@ ComputeGenerators(ViewVectorDouble generators,
     team_policy1, Kokkos::Experimental::WorkItemProperty::HintLightWeight);
 
   Kokkos::parallel_for(
-    "Phase1", team_policy1, KOKKOS_LAMBDA(const member_type team_member) {
+    "Phase1", team_policy, KOKKOS_LAMBDA(const member_type team_member) {
       int threadIdx = team_member.team_rank();
       int blockIdx = team_member.league_rank();
 

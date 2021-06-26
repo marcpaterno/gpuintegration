@@ -136,7 +136,7 @@ public:
 
     Kokkos::parallel_for(
       "AlignRegions",
-      team_policy1,
+      team_policy,
       KOKKOS_LAMBDA(const member_type team_member) {
         int threadIdx = team_member.team_rank();
         int blockIdx = team_member.league_rank();
@@ -184,7 +184,7 @@ public:
     
     Kokkos::parallel_for(
       "DivideIntervalsGPU",
-      team_policy1,
+      team_policy,
       KOKKOS_LAMBDA(const member_type team_member) {
         int threadIdx = team_member.team_rank();
         int blockIdx = team_member.league_rank();
@@ -252,8 +252,8 @@ public:
                           constViewVectorDouble generators)
   {
     ViewVectorInt scannedArray("scannedArray", numRegions);
-    deep_copy(scannedArray, activeRegions);
-    exclusive_prefix_scan(scannedArray);
+    //deep_copy(scannedArray, activeRegions);
+    exclusive_prefix_scan(activeRegions, scannedArray);
 
     double lastElement = 0.;
     double lastScanned = 0.;
@@ -267,6 +267,7 @@ public:
       numActiveRegions++;
 
     if (numActiveRegions > 0) {
+      Kokkos::Profiling::pushRegion("Aligning regions");
       size_t numOfDivisionOnDimension = 2;
       ViewVectorDouble newActiveRegions("newActiveRegions",
                                         numActiveRegions * NDIM);
@@ -278,7 +279,7 @@ public:
 
       ExpandcuArray(dParentsIntegral, numRegions / 2, numActiveRegions);
       ExpandcuArray(dParentsError, numRegions / 2, numActiveRegions);
-      Kokkos::Profiling::pushRegion("AlignRegions");
+      
       AlignRegions(dRegions,
                    dRegionsLength,
                    activeRegions,
@@ -295,11 +296,13 @@ public:
                    numActiveRegions,
                    numOfDivisionOnDimension);
       Kokkos::Profiling::popRegion();
+      
+      Kokkos::Profiling::pushRegion("Dividing intervals");
       ViewVectorDouble genRegions(
         "genRegions", numActiveRegions * NDIM * numOfDivisionOnDimension);
       ViewVectorDouble genRegionsLength(
         "genRegionsLength", numActiveRegions * NDIM * numOfDivisionOnDimension);
-      Kokkos::Profiling::pushRegion("DivideIntervalsGPU");
+      
       DivideIntervalsGPU(genRegions,
                          genRegionsLength,
                          newActiveRegions,
@@ -307,11 +310,11 @@ public:
                          newActiveRegionsBisectDim,
                          numActiveRegions,
                          numOfDivisionOnDimension);
-      Kokkos::Profiling::popRegion();
+      
       dRegions = genRegions;
       dRegionsLength = genRegionsLength;
       numInActiveRegions = numRegions - numActiveRegions;
-
+      Kokkos::Profiling::popRegion();
       numRegions = numActiveRegions * numOfDivisionOnDimension;
 
     } else {

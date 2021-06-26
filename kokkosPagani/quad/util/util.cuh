@@ -184,16 +184,16 @@ ComputeMin(ViewVectorDouble list)
 }
 
 double
-exclusive_prefix_scan(ViewVectorInt list)
+exclusive_prefix_scan(ViewVectorInt input, ViewVectorInt output)
 {
   int update = 0.;
 
   Kokkos::parallel_scan(
-    list.extent(0),
+    input.extent(0),
     KOKKOS_LAMBDA(const int i, int& update, const bool final) {
-      const int val_i = list(i);
+      const int val_i = input(i);
       if (final) {
-        list(i) = update;
+        output(i) = update;
       }
       update += val_i;
     });
@@ -205,13 +205,14 @@ ExpandcuArray(ViewVectorDouble& array, int currentSize, int newSize)
 {
   int copy_size = std::min(currentSize, newSize);
   // CHANGE THAT TO REALLOC AFTER, NO NEED TO COPY AT ALL
-  if (newSize > currentSize) {
+  Kokkos::realloc(array, newSize);
+  /*if (newSize > currentSize) {
     // printf("resizing parents\n");
     Kokkos::resize(array, newSize);
   } else {
     // printf("reallocating parents\n");
     Kokkos::realloc(array, newSize);
-  }
+  }*/
 }
 
 #endif
