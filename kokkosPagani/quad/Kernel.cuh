@@ -253,8 +253,9 @@ public:
   {
     ViewVectorInt scannedArray("scannedArray", numRegions);
     //deep_copy(scannedArray, activeRegions);
+    Kokkos::Profiling::pushRegion("Exclusive scan");
     exclusive_prefix_scan(activeRegions, scannedArray);
-
+    Kokkos::Profiling::popRegion();
     double lastElement = 0.;
     double lastScanned = 0.;
 
