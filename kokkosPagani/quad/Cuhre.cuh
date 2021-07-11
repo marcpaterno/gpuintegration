@@ -108,8 +108,8 @@ public:
     cuhreResult res;
 
     Kernel<double, NDIM> kernel(rule.GET_NSETS());
-    ViewVectorDouble dRegions("dRegions", NDIM);
-    ViewVectorDouble dRegionsLength("dRegionsLength", NDIM);
+    ViewVectorDouble dRegions(Kokkos::ViewAllocateWithoutInitializing("dRegions"), NDIM);
+    ViewVectorDouble dRegionsLength(Kokkos::ViewAllocateWithoutInitializing("dRegionsLength"), NDIM);
 
     ViewVectorDouble dRegionsIntegral;
     ViewVectorDouble dRegionsError;

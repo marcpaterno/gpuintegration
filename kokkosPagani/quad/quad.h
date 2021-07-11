@@ -44,7 +44,8 @@ struct GlobalBounds {
 // Device Views
 typedef Kokkos::View<int*, Kokkos::CudaSpace> ViewVectorInt;
 typedef Kokkos::View<float*, Kokkos::CudaSpace> ViewVectorFloat;
-typedef Kokkos::View<double*, Kokkos::CudaSpace> ViewVectorDouble;
+typedef Kokkos::View<double*, Kokkos::CudaSpace> ViewVectorDouble; 
+typedef Kokkos::View<double*, Kokkos::CudaSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged> > ViewVectorDoubleNoMang; 
 typedef Kokkos::View<size_t*, Kokkos::CudaSpace> ViewVectorSize_t;
 //-------------------------------------------------------------------------------
 // Const Device views
