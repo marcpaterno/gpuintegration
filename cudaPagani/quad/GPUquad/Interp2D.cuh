@@ -47,7 +47,7 @@ namespace quad {
       cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
       cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
     }
-
+    
     template <size_t M, size_t N>
     Interp2D(std::array<double, M> const& xs,
              std::array<double, N> const& ys,
@@ -137,7 +137,6 @@ namespace quad {
       size_t currentIndex = size / 2;
       leftI = 0;
       rightI = size - 1;
-
       while (leftI <= rightI) {
         currentIndex = (rightI + leftI) * 0.5;
         if (AreNeighbors(val, arr, currentIndex, currentIndex + 1)) {
@@ -151,7 +150,6 @@ namespace quad {
         } else {
           leftI = currentIndex;
         }
-        // printf("[%i](%i) currentIndex:%lu\n", currentIndex);
       }
     }
 
@@ -162,7 +160,6 @@ namespace quad {
       // points in the z-table
       size_t y1 = 0, y2 = 0;
       size_t x1 = 0, x2 = 0;
-
       FindNeighbourIndices(y, interpR, _rows, y1, y2);
       FindNeighbourIndices(x, interpC, _cols, x1, x2);
       // this is how  zij is accessed by gsl2.6 Interp2D i.e. zij =
@@ -212,7 +209,7 @@ namespace quad {
       return interpR[_rows - 1];
     }
 
-    __device__ double
+    __device__ __host__ double
     do_clamp(double v, double lo, double hi) const
     {
       assert(!(hi < lo));
