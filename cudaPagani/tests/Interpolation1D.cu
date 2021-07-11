@@ -28,7 +28,6 @@ TEST_CASE("Interp1D exact at knots", "[interpolation][1d]")
   //user's input arrays
   const size_t s = 9;
   std::array<double, s> xs = {1., 2., 3., 4., 5., 6, 7., 8., 9.};
-  //std::array<double, s> ys = {1., 2., 3., 4., 5., 6, 7., 8., 9.};
   std::array<double, s> ys = xs;
   
   auto Transform = [](std::array<double, s>& ys){
@@ -51,6 +50,7 @@ TEST_CASE("Interp1D exact at knots", "[interpolation][1d]")
   for (std::size_t i = 0; i < s; ++i) { 
     CHECK(ys[i] == results[i]); 
   }
+  cudaFree(results);
 }
 
 TEST_CASE("Interp1D on quadratic")
@@ -72,4 +72,5 @@ TEST_CASE("Interp1D on quadratic")
   cudaDeviceSynchronize();
   
   CHECK(*result == Approx(2.24263).epsilon(1e-4));
+  cudaFree(result);
 }
