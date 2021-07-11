@@ -101,3 +101,13 @@ target_include_directories(Interpolation1D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(Interpolation1D Interpolation1D)
+
+add_executable(Interpolation2D Interpolation2D.cu)
+set_property(TARGET Interpolation2D PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(Interpolation2D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Interpolation2D quadutil ${NVTX_LIBRARY})
+target_include_directories(Interpolation2D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(Interpolation2D Interpolation2D)
