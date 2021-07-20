@@ -7,6 +7,7 @@ set(Kokkos_DIR "$ENV{Kokkos_ROOT}" CACHE STRING "Kokkos root directory")
 add_subdirectory(kokkos)
 add_subdirectory(kokkos-kernels)
 include_directories(quad)
+include_directories(externals)
 
 add_subdirectory(demos)
 
