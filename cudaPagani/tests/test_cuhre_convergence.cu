@@ -52,7 +52,7 @@ time_and_call(F integrand,
   double constexpr epsabs = 1.0e-40;
 
   // Why does the integration algorithm need ndim as a template parameter?
-  quad::Cuhre<double, NDIM> alg;
+  quad::Pagani<double, NDIM> alg;
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   auto const res = alg.integrate(integrand, epsrel, epsabs);
@@ -83,7 +83,7 @@ double lows[] = {0., 0., 0., 0., 0., 0.};
 double highs[] = {1., 1., 1., 1., 1., 1.};
 
 quad::Volume<double, ndim> vol(lows, highs);
-quad::Cuhre<double, ndim> alg;
+quad::Pagani<double, ndim> alg;
 
 double previous_error_estimate = 1.0; // larger than ever should be returned
 Fun6 integrand;

@@ -16,7 +16,7 @@ namespace quad {
 #endif
 
   template <typename T, int NDIM>
-  class Cuhre {
+  class Pagani {
 
     // Debug message
     char msg[256];
@@ -36,7 +36,7 @@ namespace quad {
   
     //ADD DEFAULT CONSTRUCTOR
     
-    Cuhre(/*int pargc,
+    Pagani(/*int pargc,
           char** pargv,*/
           int key = 0,
           int verbose = 0,
@@ -50,7 +50,7 @@ namespace quad {
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
-    ~Cuhre()
+    ~Pagani()
     {
       delete kernel;
       // QuadDebug(cudaDeviceReset());

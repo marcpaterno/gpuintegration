@@ -16,7 +16,7 @@ TEST_CASE("Transform to Non-default Volume")
 
     constexpr int ndim = 2;
     double epsrel = 1.0e-7;
-    quad::Cuhre<double, ndim> alg;
+    quad::Pagani<double, ndim> alg;
     double true_answer = 23434.02645929748905473389;
     double lows[] = {0., 0.};
     double highs[] = {1., 1.};
@@ -44,7 +44,7 @@ TEST_CASE("Transform to Non-default Volume")
 
     double epsrel = 1.0e-7;
     constexpr int ndim = 2;
-    quad::Cuhre<double, ndim> alg;
+    quad::Pagani<double, ndim> alg;
     double true_answer = 5858.50661482437226368347;
     double lows[] = {0., 0.};
     double highs[] = {.5, .5};
@@ -71,7 +71,7 @@ TEST_CASE("Transform to Non-default Volume")
 
     double epsrel = 1.0e-7;
     constexpr int ndim = 2;
-    quad::Cuhre<double, ndim> alg;
+    quad::Pagani<double, ndim> alg;
     double true_answer = 11564.50055253929167520255;
     double lows[] = {0., 0.};
     double highs[] = {.5, .75};
@@ -99,7 +99,7 @@ TEST_CASE("Transform to Non-default Volume")
 
     double epsrel = 1.0e-7;
     constexpr int ndim = 2;
-    quad::Cuhre<double, ndim> alg;
+    quad::Pagani<double, ndim> alg;
     double true_answer = 27.01361247915259511387;
     double lows[] = {.6, .65};
     double highs[] = {.8, .9};
@@ -127,7 +127,7 @@ TEST_CASE("Transform to Non-default Volume")
 
     double epsrel = 1.0e-6;
     constexpr int ndim = 6;
-    quad::Cuhre<double, ndim> alg;
+    quad::Pagani<double, ndim> alg;
     double true_answer = 5986238682.18309402465820312500;
     double lows[] = {0., 0., 0., 0., 0., 0.};
     double highs[] = {.5, .75, .6, .3, .8, .4};

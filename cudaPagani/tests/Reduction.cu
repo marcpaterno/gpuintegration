@@ -54,8 +54,8 @@ TEST_CASE("Constant Positive Value Function")
   //int key = 0;
   //int verbose = 0;
   //int numDevices = 1;
-  Cuhre<double, 2> cuhre;
-  cuhreResult res = cuhre.integrate<PTest>(integrand, epsrel, epsabs);
+  Pagani<double, 2> pagani;
+  cuhreResult res = pagani.integrate<PTest>(integrand, epsrel, epsabs);
 
   double integral = res.estimate;
   double error = res.errorest;

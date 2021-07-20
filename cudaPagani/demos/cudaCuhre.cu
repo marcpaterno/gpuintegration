@@ -22,7 +22,7 @@ main(int argc, char** argv)
   TYPE epsrel = 2.560e-09;
   constexpr int ndim = 8;
 
-  Cuhre<TYPE, ndim> cuhre;
+  Pagani<TYPE, ndim> cuhre;
   BoxIntegral8_22 integrand;
   int _final = 1;
   int outfileVerbosity = 0;

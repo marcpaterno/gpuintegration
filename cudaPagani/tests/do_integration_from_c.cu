@@ -26,8 +26,8 @@ do_integration_from_c(double* res)
   Integrand integrand;
   constexpr int ndim = 2;
 
-  quad::Cuhre<double, ndim> cuhre;
-  auto const result = cuhre.integrate<Integrand>(integrand, epsrel, epsabs);
+  quad::Pagani<double, ndim> pagani;
+  auto const result = pagani.integrate<Integrand>(integrand, epsrel, epsabs);
   int rc = result.status;
   if (rc == 0)
     *res = result.estimate;

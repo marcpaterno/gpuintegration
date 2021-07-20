@@ -21,7 +21,7 @@ TEST_CASE("BoxIntegral8_15")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre;
+  quad::Pagani<double, ndim> pagani;
   BoxIntegral8_15 integrand;
 
   std::string id = "BoxIntegral8_15";
@@ -30,7 +30,7 @@ TEST_CASE("BoxIntegral8_15")
   int phase_I_type = 0; // alternative phase 1
   double true_value = 8879.851175413485;
 
-  auto const result = cuhre.integrate<BoxIntegral8_15>(
+  auto const result = pagani.integrate<BoxIntegral8_15>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
@@ -45,7 +45,7 @@ TEST_CASE("BoxIntegral8_25")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre;
+  quad::Pagani<double, ndim> pagani;
   BoxIntegral8_25 integrand;
 
   std::string id = "BoxIntegral8_25";
@@ -54,7 +54,7 @@ TEST_CASE("BoxIntegral8_25")
   int phase_I_type = 0; // alternative phase 1
   double true_value = 14996089.096112404019;
 
-  auto const result = cuhre.integrate<BoxIntegral8_25>(
+  auto const result = pagani.integrate<BoxIntegral8_25>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
@@ -69,7 +69,7 @@ TEST_CASE("BoxIntegral8_22")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre;
+  quad::Pagani<double, ndim> pagani;
   BoxIntegral8_22 integrand;
 
   std::string id = "BoxIntegral8_22";
@@ -78,7 +78,7 @@ TEST_CASE("BoxIntegral8_22")
   int phase_I_type = 0; // alternative phase 1
   double true_value = 1495369.283757217694;
 
-  auto const result = cuhre.integrate<BoxIntegral8_22>(
+  auto const result = pagani.integrate<BoxIntegral8_22>(
     integrand, epsrel, epsabs, &vol, outfileVerbosity, _final, phase_I_type);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
