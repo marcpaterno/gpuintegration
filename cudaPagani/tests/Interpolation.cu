@@ -62,4 +62,3 @@ TEST_CASE("HMF_t CONDITIONAL MODEL EXECUTION")
   cudaFree(dhmf2);
   cudaFree(result);
 }
-

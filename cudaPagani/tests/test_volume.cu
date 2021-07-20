@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
-#include "cudaPagani/quad/GPUquad/Pagani.cuh"
-#include "cudaPagani/quad/quad.h" // for cuhreResult
 #include "catch2/catch.hpp"
 #include "cudaPagani/demos/function.cuh"
+#include "cudaPagani/quad/GPUquad/Pagani.cuh"
+#include "cudaPagani/quad/quad.h" // for cuhreResult
 
 TEST_CASE("Transform to Non-default Volume")
 {

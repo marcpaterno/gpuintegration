@@ -2,12 +2,12 @@
 #include <cmath>
 #include <iomanip>
 
-#include "function.cuh"
 #include "cudaPagani/quad/quad.h"
 #include "cudaPagani/quad/util/cudaUtil.h"
+#include "function.cuh"
 
-#include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/GPUquad/Interp2D.cuh"
+#include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/util/Volume.cuh"
 
 using namespace quad;

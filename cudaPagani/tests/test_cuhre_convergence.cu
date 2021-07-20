@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 #include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/quad.h" // for cuhreResult
-#include "catch2/catch.hpp"
 
 //#include "fun6.cuh"
 
@@ -76,7 +76,7 @@ TEST_CASE("fun6"){
     // We start with a very large error tolerance, and will
     // repeatedly decrease the tolerance.
 
-double epsrel = 1.0e-3;
+    double epsrel = 1.0e-3;
 double constexpr epsabs = 1.0e-40;
 constexpr int ndim = 6;
 double lows[] = {0., 0., 0., 0., 0., 0.};

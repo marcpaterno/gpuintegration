@@ -3,11 +3,11 @@
 #include <iomanip>
 #include <iostream>
 
-#include "nvToolsExt.h"
 #include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/quad.h"
 #include "cudaPagani/quad/util/Volume.cuh"
 #include "cudaPagani/quad/util/cudaUtil.h"
+#include "nvToolsExt.h"
 
 //#ifdef USE_NVTX
 

@@ -51,9 +51,9 @@ TEST_CASE("Constant Positive Value Function")
   int heuristicID = 0;
   double epsrel = 1.0e-3;
   double epsabs = 1.0e-12;
-  //int key = 0;
-  //int verbose = 0;
-  //int numDevices = 1;
+  // int key = 0;
+  // int verbose = 0;
+  // int numDevices = 1;
   Pagani<double, 2> pagani;
   cuhreResult res = pagani.integrate<PTest>(integrand, epsrel, epsabs);
 
@@ -64,4 +64,3 @@ TEST_CASE("Constant Positive Value Function")
   printf("ttotalEstimate:%.15f\n", integral);
   CHECK(abs(integral - 15.37) <= .00000000000001);
 }
-

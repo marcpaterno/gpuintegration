@@ -4,8 +4,8 @@
 #include "cudaPagani/quad/util/cudaMemoryUtil.h"
 #include "cudaPagani/quad/util/cudaTimerUtil.h"
 
-#include "cudaPagani/quad/util/Volume.cuh"
 #include "cudaPagani/quad/GPUquad/Kernel.cuh"
+#include "cudaPagani/quad/util/Volume.cuh"
 #include <chrono>
 #include <map>
 #include <stdio.h>
@@ -33,14 +33,13 @@ namespace quad {
     std::ofstream log;
 
   public:
-  
-    //ADD DEFAULT CONSTRUCTOR
-    
+    // ADD DEFAULT CONSTRUCTOR
+
     Pagani(/*int pargc,
           char** pargv,*/
-          int key = 0,
-          int verbose = 0,
-          int numDevices = 1)
+           int key = 0,
+           int verbose = 0,
+           int numDevices = 1)
     {
       // QuadDebug(cudaDeviceReset());
       KEY = key;

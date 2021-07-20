@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "cudaPagani/quad/util/cudaArray.cuh"
 #include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/quad.h"
+#include "cudaPagani/quad/util/cudaArray.cuh"
 #include <cmath>
 #include <fstream>
 #include <iomanip>
