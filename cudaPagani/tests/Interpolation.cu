@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "integrands/hmf_t.cuh"
-#include "quad/util/conditional.cuh"
+#include "cudaPagani/integrands/hmf_t.cuh"
+#include "cudaPagani/quad/util/conditional.cuh"
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -14,7 +14,7 @@ make_from_file(char const* filename)
                 "Type must be default constructable");
   char const* basedir = std::getenv("PAGANI_DIR");
   std::string fname(basedir);
-  fname += "/tests/";
+  fname += "/cudaPagani/tests/";
   fname += filename;
   std::cout << "Filename:" << fname << std::endl;
   std::ifstream in(fname);

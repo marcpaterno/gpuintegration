@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_DRULE_CUH
 
-#include "../util/cudaMemoryUtil.h"
+#include "cudaPagani/quad/util/cudaMemoryUtil.h"
 
 namespace quad {
   template <typename T>

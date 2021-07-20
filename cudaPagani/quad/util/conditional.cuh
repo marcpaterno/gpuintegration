@@ -1,9 +1,9 @@
 #ifndef CONDITIONAL_H
 #define CONDITIONAL_H
 
-#include "quad/GPUquad/Interp1D.cuh"
-#include "quad/GPUquad/Interp2D.cuh"
-#include "quad/GPUquad/Polynomial.cuh"
+#include "cudaPagani/quad/GPUquad/Interp1D.cuh"
+#include "cudaPagani/quad/GPUquad/Interp2D.cuh"
+#include "cudaPagani/quad/GPUquad/Polynomial.cuh"
 
 struct GPU {
   template <size_t order>

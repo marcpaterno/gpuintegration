@@ -1,6 +1,6 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_PARTITIONMANAGER_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_PARTITIONMANAGER_CUH
-#include "../util/cudaMemoryUtil.h"
+#include "cudaPagani/quad/util/cudaMemoryUtil.h"
 #include <algorithm>
 #include <cuda.h>
 #include <stdio.h>

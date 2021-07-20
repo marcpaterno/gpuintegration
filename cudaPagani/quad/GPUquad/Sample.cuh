@@ -1,11 +1,11 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
-#include "../quad.h"
-#include "../util/Volume.cuh"
-#include "../util/cudaApply.cuh"
-#include "../util/cudaArray.cuh"
-#include "../util/cudaUtil.h"
+#include "cudaPagani/quad/quad.h"
+#include "cudaPagani/quad/util/Volume.cuh"
+#include "cudaPagani/quad/util/cudaApply.cuh"
+#include "cudaPagani/quad/util/cudaArray.cuh"
+#include "cudaPagani/quad/util/cudaUtil.h"
 
 namespace quad {
 

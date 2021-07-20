@@ -1,13 +1,13 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 
-#include "../quad.h"
-#include "cudaDebugUtil.h"
+#include "cudaPagani/quad/quad.h"
+#include "cudaPagani/quad/util/cudaDebugUtil.h"
 
 #include <float.h>
 #include <stdio.h>
 
-#include "../deviceProp.h"
+#include "cudaPagani/quad/deviceProp.h"
 #include <cmath>
 #include <fstream>
 #include <iostream>

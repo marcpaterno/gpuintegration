@@ -17,7 +17,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-include_directories(AFTER externals)
+include_directories(AFTER ${CMAKE_SOURCE_DIR} ${PAGANI_DIR} externals)
 
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 

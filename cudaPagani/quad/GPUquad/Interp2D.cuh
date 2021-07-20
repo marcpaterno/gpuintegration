@@ -1,11 +1,11 @@
 #ifndef GPUQUADINTERP2D_H
 #define GPUQUADINTERP2D_H
 
-#include "../quad.h"
-#include "../util/cudaArray.cuh"
-#include "../util/cudaMemoryUtil.h"
-#include "../util/cudaTimerUtil.h"
-#include "../util/str_to_doubles.hh"
+#include "cudaPagani/quad/quad.h"
+#include "cudaPagani/quad/util/cudaArray.cuh"
+#include "cudaPagani/quad/util/cudaMemoryUtil.h"
+#include "cudaPagani/quad/util/cudaTimerUtil.h"
+#include "cudaPagani/quad/util/str_to_doubles.hh"
 
 namespace quad {
 

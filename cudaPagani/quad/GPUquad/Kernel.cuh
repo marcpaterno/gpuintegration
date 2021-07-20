@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 
-#include "../util/Volume.cuh"
+#include "cudaPagani/quad/util/Volume.cuh"
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
@@ -10,9 +10,9 @@
 #include <thrust/pair.h>
 #include <thrust/transform_reduce.h>
 
-#include "PartitionManager.cuh"
-#include "Phases.cuh"
-#include "Rule.cuh"
+#include "cudaPagani/quad/GPUquad/PartitionManager.cuh"
+#include "cudaPagani/quad/GPUquad/Phases.cuh"
+#include "cudaPagani/quad/GPUquad/Rule.cuh"
 
 #include "nvToolsExt.h"
 #include <cuda.h>

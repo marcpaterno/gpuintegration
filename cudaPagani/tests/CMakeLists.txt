@@ -28,7 +28,6 @@ target_include_directories(StatefullIntegrand PRIVATE
 )
 add_test(StatefullIntegrand StatefullIntegrand)
 
-
 add_executable(test_cuhre_convergence test_cuhre_convergence.cu)
 set_property(TARGET test_cuhre_convergence PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(test_cuhre_convergence PROPERTIES POSITION_INDEPENDENT_CODE ON)

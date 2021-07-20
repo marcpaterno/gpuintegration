@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "quad/util/cudaMemoryUtil.h"
-#include "quad/GPUquad/Interp1D.cuh"
+#include "cudaPagani/quad/util/cudaMemoryUtil.h"
+#include "cudaPagani/quad/GPUquad/Interp1D.cuh"
 
 #include <chrono>
 #include <fstream>

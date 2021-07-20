@@ -1,4 +1,4 @@
-#include "cudaUtil.h"
+#include "cudaPagani/quad/util/cudaUtil.h"
 
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
