@@ -26,7 +26,7 @@ do_integration_from_c(double* res)
   Integrand integrand;
   constexpr int ndim = 2;
 
-  quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
+  quad::Cuhre<double, ndim> cuhre;
   auto const result = cuhre.integrate<Integrand>(integrand, epsrel, epsabs);
   int rc = result.status;
   if (rc == 0)

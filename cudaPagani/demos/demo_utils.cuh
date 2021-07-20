@@ -94,7 +94,7 @@ cu_time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
-  quad::Cuhre<double, ndim> alg(0, nullptr);
+  quad::Cuhre<double, ndim> alg;
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");

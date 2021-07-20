@@ -21,7 +21,7 @@ TEST_CASE("BoxIntegral8_15")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
+  quad::Cuhre<double, ndim> cuhre;
   BoxIntegral8_15 integrand;
 
   std::string id = "BoxIntegral8_15";
@@ -45,7 +45,7 @@ TEST_CASE("BoxIntegral8_25")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
+  quad::Cuhre<double, ndim> cuhre;
   BoxIntegral8_25 integrand;
 
   std::string id = "BoxIntegral8_25";
@@ -69,7 +69,7 @@ TEST_CASE("BoxIntegral8_22")
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   constexpr int ndim = 8;
   quad::Volume<double, ndim> vol(lows, highs);
-  quad::Cuhre<double, ndim> cuhre(0, nullptr, 0, 0, 1);
+  quad::Cuhre<double, ndim> cuhre;
   BoxIntegral8_22 integrand;
 
   std::string id = "BoxIntegral8_22";

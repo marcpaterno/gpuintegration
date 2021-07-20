@@ -36,15 +36,13 @@ namespace quad {
   
     //ADD DEFAULT CONSTRUCTOR
     
-    Cuhre(int pargc,
-          char** pargv,
+    Cuhre(/*int pargc,
+          char** pargv,*/
           int key = 0,
           int verbose = 0,
           int numDevices = 1)
     {
       // QuadDebug(cudaDeviceReset());
-      argc = pargc;
-      argv = pargv;
       KEY = key;
       VERBOSE = verbose;
       this->numDevices = numDevices;

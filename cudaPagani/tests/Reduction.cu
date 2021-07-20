@@ -51,10 +51,10 @@ TEST_CASE("Constant Positive Value Function")
   int heuristicID = 0;
   double epsrel = 1.0e-3;
   double epsabs = 1.0e-12;
-  int key = 0;
-  int verbose = 0;
-  int numDevices = 1;
-  Cuhre<double, 2> cuhre(0, nullptr, key, verbose, numDevices);
+  //int key = 0;
+  //int verbose = 0;
+  //int numDevices = 1;
+  Cuhre<double, 2> cuhre;
   cuhreResult res = cuhre.integrate<PTest>(integrand, epsrel, epsabs);
 
   double integral = res.estimate;

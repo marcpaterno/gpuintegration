@@ -1,14 +1,14 @@
 #include <chrono>
 #include <cmath>
-
-#include "function.cuh"
-#include "quad/quad.h"
-#include "quad/util/cudaUtil.h"
 #include <iomanip>
 
-#include "quad/GPUquad/Cuhre.cuh"
-#include "quad/GPUquad/Interp2D.cuh"
-#include "quad/util/Volume.cuh"
+#include "function.cuh"
+#include "cudaPagani/quad/quad.h"
+#include "cudaPagani/quad/util/cudaUtil.h"
+
+#include "cudaPagani/quad/GPUquad/Cuhre.cuh"
+#include "cudaPagani/quad/GPUquad/Interp2D.cuh"
+#include "cudaPagani/quad/util/Volume.cuh"
 
 using namespace quad;
 using std::chrono::duration;
@@ -16,50 +16,13 @@ using std::chrono::high_resolution_clock;
 
 constexpr double EPSABS = 1.0e-40;
 
-/*__global__ void
-testKernel(Interp2D<double> tau){
-        printf("tau:%f\n", tau(.13, 2.1));
-}*/
-
 int
 main(int argc, char** argv)
 {
-  // Initialize command line
-  CommandLineArgs args(argc, argv);
-  bool g_verbose = args.CheckCmdLineFlag("v");
-
-  // Print usage
-  if (args.CheckCmdLineFlag("help")) {
-    printf("%s "
-           "[--e=<relative-error>] "
-           "[--verbose=<0/1>] "
-           "\n",
-           argv[0]);
-    exit(0);
-  }
-
   TYPE epsrel = 2.560e-09;
-  if (args.CheckCmdLineFlag("e")) {
-    args.GetCmdLineArgument("e", epsrel);
-  }
-  // Verbose output
-  int verbose = 0;
-  if (args.CheckCmdLineFlag("verbose")) {
-    args.GetCmdLineArgument("verbose", verbose);
-  }
-
-  // Num Devices
-  int numDevices = 1;
-  if (args.CheckCmdLineFlag("N")) {
-    args.GetCmdLineArgument("N", numDevices);
-  }
-
-  // Initialize device
-  QuadDebugExit(args.DeviceInit());
-
   constexpr int ndim = 8;
 
-  Cuhre<TYPE, ndim> cuhre(argc, argv, 0, verbose, numDevices);
+  Cuhre<TYPE, ndim> cuhre;
   BoxIntegral8_22 integrand;
   int _final = 1;
   int outfileVerbosity = 0;
@@ -69,12 +32,6 @@ main(int argc, char** argv)
   double lows[ndim] = {0., 0., 0., 0., 0., 0., 0., 0.};
   Volume<double, ndim> vol(lows, highs);
   double true_value = 1495369.283757217694;
-
-  // size_t rows = 22;
-  // size_t cols = 5;
-  // Interp2D<double> tau(cInterpC, cInterpR, tau_arr, cols, rows);
-  // double gsl_val = 0.;
-  // testKernel<<<1,1>>>(tau);
 
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
