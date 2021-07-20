@@ -6,7 +6,7 @@
 #include "cudaPagani/quad/quad.h"
 #include "cudaPagani/quad/util/cudaUtil.h"
 
-#include "cudaPagani/quad/GPUquad/Cuhre.cuh"
+#include "cudaPagani/quad/GPUquad/Pagani.cuh"
 #include "cudaPagani/quad/GPUquad/Interp2D.cuh"
 #include "cudaPagani/quad/util/Volume.cuh"
 
@@ -22,7 +22,7 @@ main(int argc, char** argv)
   TYPE epsrel = 2.560e-09;
   constexpr int ndim = 8;
 
-  Pagani<TYPE, ndim> cuhre;
+  Pagani<TYPE, ndim> pagani;
   BoxIntegral8_22 integrand;
   int _final = 1;
   int outfileVerbosity = 0;
@@ -36,7 +36,7 @@ main(int argc, char** argv)
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   auto t0 = std::chrono::high_resolution_clock::now();
-  cuhreResult result = cuhre.integrate<BoxIntegral8_22>(
+  cuhreResult result = pagani.integrate<BoxIntegral8_22>(
     integrand, epsrel, EPSABS, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 

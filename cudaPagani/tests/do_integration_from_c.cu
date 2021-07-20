@@ -2,7 +2,7 @@ extern "C" {
 #include "tests/do_integration_from_c.h"
 }
 
-#include "cudaPagani/quad/GPUquad/Cuhre.cuh"
+#include "cudaPagani/quad/GPUquad/Pagani.cuh"
 
 extern "C" {
 

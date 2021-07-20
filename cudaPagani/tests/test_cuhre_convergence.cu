@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
-#include "cudaPagani//quad/GPUquad/Cuhre.cuh"
-#include "cudaPagani//quad/quad.h" // for cuhreResult
+#include "cudaPagani/quad/GPUquad/Pagani.cuh"
+#include "cudaPagani/quad/quad.h" // for cuhreResult
 #include "catch2/catch.hpp"
 
 //#include "fun6.cuh"
