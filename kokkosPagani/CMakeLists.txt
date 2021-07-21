@@ -12,7 +12,7 @@ include_directories(externals)
 add_subdirectory(demos)
 
 add_executable(pagani main.cpp)
-target_compile_options(pagani PRIVATE "-O2" "-DCUSTOM" "-arch=sm_70" "--expt-relaxed-constexpr")
+target_compile_options(pagani PRIVATE "-O2" "-DCUSTOM" "-arch=sm_70" "--expt-relaxed-constexpr" "-std=c++17")
 target_link_libraries(pagani Kokkos::kokkos Kokkos::kokkoskernels)
 
 add_subdirectory(tests)
