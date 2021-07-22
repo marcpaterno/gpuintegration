@@ -1,5 +1,5 @@
-#ifndef GPUQUADINTERP1D_H
-#define GPUQUADINTERP1D_H
+#ifndef GPUQUADINTERP2D_H
+#define GPUQUADINTERP2D_H
 
 #include "quad.h"
 #include "util/str_to_doubles.hh"
@@ -11,7 +11,7 @@
     interpT is z for the values at the row/col coordinates
 */
 
-typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+//typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 
 namespace quad {
 
@@ -36,10 +36,6 @@ class Interp2D {
         interpT = ViewDouble("interpT", _cols*_rows);
         interpC = ViewDouble("interpC", _cols);
         interpR = ViewDouble("interpR", _rows);
-        
-        //deep_copy(interpC, xs);
-        //deep_copy(interpR, ys);
-        //deep_copy(interpT, zs);
     }
     
     template <size_t M, size_t N>
@@ -97,10 +93,6 @@ class Interp2D {
       interpC = ViewDouble("interpC", _cols);
       interpR = ViewDouble("interpC", _rows);
       
-      //HostVectorDouble x("x", _cols);
-      //HostVectorDouble y("x", _rows);
-      //HostVectorDouble z("x", _cols*_rows);
-      
       Kokkos::parallel_for(
         "Copy_from_stdArray", _cols*_rows, [=,*this] __host__ __device__ (const int64_t index) {
           if(index < _rows){
@@ -123,32 +115,6 @@ class Interp2D {
         return true;
       return false;
     }
-
-    /*friend std::istream&
-    operator>>(std::istream& is, Interp1D& interp)
-    {
-      assert(is.good());
-      std::string buffer;
-      std::getline(is, buffer);
-      std::vector<double> xs = str_to_doubles(buffer);
-      std::getline(is, buffer);
-      std::vector<double> zs = str_to_doubles(buffer);
-
-      cudaMallocManaged((void**)&(*&interp), sizeof(Interp1D));
-      cudaDeviceSynchronize();
-
-      interp._cols = xs.size();
-
-      cudaMallocManaged((void**)&interp.interpC, sizeof(double) * xs.size());
-      cudaDeviceSynchronize();
-      cudaMallocManaged((void**)&interp.interpT, sizeof(double) * zs.size());
-      cudaDeviceSynchronize();
-
-      memcpy(interp.interpC.data(), xs.data(), sizeof(double) * xs.size());
-      memcpy(interp.interpT.data(), zs.data(), sizeof(double) * zs.size());
-
-      return is;
-    }*/
     
     __device__ void
     FindNeighbourIndices(const double val,

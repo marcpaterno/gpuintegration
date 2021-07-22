@@ -10,7 +10,7 @@
     interpT is the value list at the respective coordinates
 */
 
-typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+//typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 
 namespace quad {
 
@@ -36,9 +36,6 @@ class Interp1D {
         
         deep_copy(interpC, xs);
         deep_copy(interpT, ys);
-        
-        //interpT = xs;
-        //interpC = ys;
     }
     
     template <size_t M>
@@ -102,41 +99,7 @@ class Interp1D {
         return true;
       return false;
     }
-
-    /*friend std::istream&
-    operator>>(std::istream& is, Interp1D& interp)
-    {
-      assert(is.good());
-      std::string buffer;
-      std::getline(is, buffer);
-      std::vector<double> xs = str_to_doubles(buffer);
-      std::getline(is, buffer);
-      std::vector<double> zs = str_to_doubles(buffer);
-
-      cudaMallocManaged((void**)&(*&interp), sizeof(Interp1D));
-      cudaDeviceSynchronize();
-
-      interp._cols = xs.size();
-
-      cudaMallocManaged((void**)&interp.interpC, sizeof(double) * xs.size());
-      cudaDeviceSynchronize();
-      cudaMallocManaged((void**)&interp.interpT, sizeof(double) * zs.size());
-      cudaDeviceSynchronize();
-
-      memcpy(interp.interpC.data(), xs.data(), sizeof(double) * xs.size());
-      memcpy(interp.interpT.data(), zs.data(), sizeof(double) * zs.size());
-
-      return is;
-    }*/
-
-    /*Interp1D(const Interp1D& source)
-    {   
-      Alloc(source._cols);
-      interpT = source.interpT;
-      interpC = source.interpC;
-      _cols = source._cols;
-    }*/
-
+    
     __device__ void
     FindNeighbourIndices(const double val,
                          ViewDouble arr,

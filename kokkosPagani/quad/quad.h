@@ -76,7 +76,7 @@ typedef Kokkos::View<int*, Kokkos::Serial> HostVectorInt;
 typedef Kokkos::View<double*, Kokkos::Serial> HostVectorDouble;
 typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
 //-------------------------------------------------------------------------------
-
+typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 struct cuhreResult {
 
   cuhreResult()

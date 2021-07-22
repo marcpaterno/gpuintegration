@@ -958,7 +958,11 @@ public:
                       const Structures<double>& constMem,
                       Volume<T, NDIM>* vol = nullptr)
   {
-    Kokkos::View<IntegT*, Kokkos::CudaSpace> d_integrand("d_integrand", 1);
+   
+    Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> d_integrand("d_integrand", 1); //seems bad to just let them object be captured
+    d_integrand(0) = _integrand;
+    //h_integrand(0) = _integrand;
+    //Kokkos::deep_copy(d_integrand, h_integrand);
     ViewVectorDouble _generators("generators", NDIM * fEvalPerRegion);
     //printf("About to compute generators\n");
     ComputeGenerators<NDIM>(_generators, fEvalPerRegion, constMem);
