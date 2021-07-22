@@ -11,48 +11,35 @@
     interpT is z for the values at the row/col coordinates
 */
 
+typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+
 namespace quad {
 
 class Interp2D {
   public:
-  
-    /*Interp2D(const Interp2D& source)
-    {
-
-      _cols = source._cols;
-      _rows = source._rows;
-      
-      interpT = ViewVectorDouble("interpT", _cols*_rows);
-      interpC = ViewVectorDouble("interpC", _cols);
-      interpR = ViewVectorDouble("interpC", _rows);
-      
-      deep_copy(interpT, source.interpT);
-      deep_copy(interpR, source.interpR);
-      deep_copy(interpC, source.interpC);
-    }*/
-  
-  
+    __host__ __device__
     Interp2D()
     {}
     
-    ViewVectorDouble interpT;
-    ViewVectorDouble interpR;
-    ViewVectorDouble interpC;
+    ViewDouble interpT;
+    ViewDouble interpR;
+    ViewDouble interpC;
     
     size_t _cols, _rows;
+    
     
     Interp2D(HostVectorDouble xs, HostVectorDouble ys, HostVectorDouble zs){
         assert(xs.extent(0) * ys.extent(0) == zs.extent(0));
         _cols = xs.extent(0);
         _rows = ys.extent(0);
         
-        interpT = ViewVectorDouble("interpT", _cols*_rows);
-        interpC = ViewVectorDouble("interpC", _cols);
-        interpR = ViewVectorDouble("interpR", _rows);
+        interpT = ViewDouble("interpT", _cols*_rows);
+        interpC = ViewDouble("interpC", _cols);
+        interpR = ViewDouble("interpR", _rows);
         
-        deep_copy(interpC, xs);
-        deep_copy(interpR, ys);
-        deep_copy(interpT, zs);
+        //deep_copy(interpC, xs);
+        //deep_copy(interpR, ys);
+        //deep_copy(interpT, zs);
     }
     
     template <size_t M, size_t N>
@@ -75,13 +62,13 @@ class Interp2D {
       _cols = cols;
       _rows = rows;
       
-      interpT = ViewVectorDouble("interpT", _cols*_rows);
-      interpC = ViewVectorDouble("interpC", _cols);
-      interpR = ViewVectorDouble("interpR", _rows);
+      interpT = ViewDouble("interpT", _cols*_rows);
+      interpC = ViewDouble("interpC", _cols);
+      interpR = ViewDouble("interpR", _rows);
       
-      ViewVectorDouble::HostMirror x = Kokkos::create_mirror(interpC);
-      ViewVectorDouble::HostMirror y = Kokkos::create_mirror(interpR);
-      ViewVectorDouble::HostMirror z = Kokkos::create_mirror(interpT);
+      ViewDouble::HostMirror x = Kokkos::create_mirror(interpC);
+      ViewDouble::HostMirror y = Kokkos::create_mirror(interpR);
+      ViewDouble::HostMirror z = Kokkos::create_mirror(interpT);
       
       for(size_t i = 0; i < _cols*_rows; ++i){
         if(i < _cols)  
@@ -106,9 +93,9 @@ class Interp2D {
       _cols = M;
       _rows = N;
       
-      interpT = ViewVectorDouble("interpT", _cols*_rows);
-      interpC = ViewVectorDouble("interpC", _cols);
-      interpR = ViewVectorDouble("interpC", _rows);
+      interpT = ViewDouble("interpT", _cols*_rows);
+      interpC = ViewDouble("interpC", _cols);
+      interpR = ViewDouble("interpC", _rows);
       
       //HostVectorDouble x("x", _cols);
       //HostVectorDouble y("x", _rows);
@@ -128,7 +115,7 @@ class Interp2D {
 
     __device__ bool
     AreNeighbors(const double val,
-                 ViewVectorDouble arr,
+                 ViewDouble arr,
                  const size_t leftIndex,
                  const size_t RightIndex) const
     {
@@ -165,7 +152,7 @@ class Interp2D {
     
     __device__ void
     FindNeighbourIndices(const double val,
-                         ViewVectorDouble arr,
+                         ViewDouble arr,
                          const size_t size,
                          size_t& leftI,
                          size_t& rightI) const

@@ -10,16 +10,19 @@
     interpT is the value list at the respective coordinates
 */
 
+typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+
 namespace quad {
 
 class Interp1D {
   public:
-  
+    
+    __host__ __device__
     Interp1D()
     {}
     
-    ViewVectorDouble interpT;
-    ViewVectorDouble interpC;
+    ViewDouble interpT;
+    ViewDouble interpC;
 
     size_t _cols;
     
@@ -28,8 +31,8 @@ class Interp1D {
         assert(xs.extent(0) == ys.extent(0));
         _cols = xs.extent(0);
         
-        interpT = ViewVectorDouble("interpT", _cols);
-        interpC = ViewVectorDouble("interpC", _cols);
+        interpT = ViewDouble("interpT", _cols);
+        interpC = ViewDouble("interpC", _cols);
         
         deep_copy(interpC, xs);
         deep_copy(interpT, ys);
@@ -54,13 +57,11 @@ class Interp1D {
     AllocateAndSet(double* xs, double* zs, size_t cols)
     {
       _cols = cols;
-      interpT = ViewVectorDouble("interpT", _cols);
-      interpC = ViewVectorDouble("interpC", _cols);
+      interpT = ViewDouble("interpT", _cols);
+      interpC = ViewDouble("interpC", _cols);
       
-      //HostVectorDouble x("x", _cols);
-      //HostVectorDouble y("x", _cols);
-      ViewVectorDouble::HostMirror x = Kokkos::create_mirror(interpC);
-      ViewVectorDouble::HostMirror y = Kokkos::create_mirror(interpT);
+      ViewDouble::HostMirror x = Kokkos::create_mirror(interpC);
+      ViewDouble::HostMirror y = Kokkos::create_mirror(interpT);
       
       for(size_t i = 0; i < _cols; ++i){
         x[i] = xs[i];  
@@ -69,12 +70,6 @@ class Interp1D {
       
       Kokkos::deep_copy(interpC, x);
       Kokkos::deep_copy(interpT, y);
-      
-      /*Kokkos::parallel_for(
-        "Copy_from_stdArray", _cols, [=,*this] __host__ __device__ (const int64_t index) {
-          interpT(index) = zs[index];
-          interpC(index) = xs[index];
-        });*/
     }
     
     
@@ -83,8 +78,8 @@ class Interp1D {
     AllocateAndSet(std::array<double, M> const& xs, std::array<double, M> const& zs)
     {
       _cols = M;
-      interpT = ViewVectorDouble("interpT", _cols);
-      interpC = ViewVectorDouble("interpC", _cols);
+      interpT = ViewDouble("interpT", _cols);
+      interpC = ViewDouble("interpC", _cols);
       
       HostVectorDouble x("x", _cols);
       HostVectorDouble y("x", _cols);
@@ -99,7 +94,7 @@ class Interp1D {
     
     __device__ bool
     AreNeighbors(const double val,
-                 ViewVectorDouble arr,
+                 ViewDouble arr,
                  const size_t leftIndex,
                  const size_t RightIndex) const
     {
@@ -144,7 +139,7 @@ class Interp1D {
 
     __device__ void
     FindNeighbourIndices(const double val,
-                         ViewVectorDouble arr,
+                         ViewDouble arr,
                          const size_t size,
                          size_t& leftI,
                          size_t& rightI) const

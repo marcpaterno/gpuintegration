@@ -6,12 +6,16 @@
 #include <array>
 #include <math.h> 
 
+typedef Kokkos::View<quad::Interp1D*, Kokkos::CudaUVMSpace> ViewVectorInterp1D;
+
 TEST_CASE("Initialization from std::array"){
     const size_t s = 9;
     std::array<double, s> xs = {1., 2., 3., 4., 5., 6, 7., 8., 9.};
     std::array<double, s> ys = {2., 4., 8., 16., 32., 64., 128., 256., 512.};
     
     quad::Interp1D interpolator(xs, ys); 
+    ViewVectorInterp1D object("Interp1D view", 1);
+    object(0) = interpolator;
     
     SECTION("Values propertly set on the device"){
         double sum_x = 0.;
@@ -20,14 +24,14 @@ TEST_CASE("Initialization from std::array"){
         Kokkos::parallel_reduce(
             "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpC(index);
+                valueToUpdate += object(0).interpC(index);
             },
         sum_x);
 
         Kokkos::parallel_reduce(
             "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpT(index);
+                valueToUpdate += object(0).interpT(index);
             },
         sum_y);
         
@@ -42,8 +46,8 @@ TEST_CASE("Initialization from C-style array"){
     double ys[9] = {2., 4., 8., 16., 32., 64., 128., 256., 512.};
     
     quad::Interp1D interpolator(xs, ys, s); 
-    
-    
+    ViewVectorInterp1D object("Interp1D view", 1);
+    object(0) = interpolator;
     
     SECTION("Values propertly set on the device"){
         double sum_x = 0.;
@@ -51,14 +55,14 @@ TEST_CASE("Initialization from C-style array"){
         Kokkos::parallel_reduce(
             "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpC(index);
+                valueToUpdate += object(0).interpC(index);
             },
         sum_x);
 
         Kokkos::parallel_reduce(
             "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpT(index);
+                valueToUpdate += object(0).interpT(index);
             },
         sum_y);
         
@@ -78,21 +82,22 @@ TEST_CASE("Initialization from Kokkos View"){
     }
    
     quad::Interp1D interpolator(xs, ys); 
-    
+    ViewVectorInterp1D object("Interp1D view", 1);
+    object(0) = interpolator;
     
     double sum_x = 0.;
     double sum_y = 0.;
     Kokkos::parallel_reduce(
         "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpC(index);
+                valueToUpdate +=  object(0).interpC(index);
             },
         sum_x);
 
         Kokkos::parallel_reduce(
             "Reduce", s,
             KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += interpolator.interpT(index);
+                valueToUpdate +=  object(0).interpT(index);
             },
         sum_y);
         
@@ -116,7 +121,9 @@ TEST_CASE("Interp1D exact at knots"){
     
     //instantiate interpolator, it's views reside on the device
     quad::Interp1D interpolator(xs, ys); 
-
+    ViewVectorInterp1D object("Interp1D view", 1);
+    object(0) = interpolator;
+    
     //prepare the values that we will interpolate on
     ViewVectorDouble input("input", s);
     ViewVectorDouble::HostMirror hostInput = Kokkos::create_mirror_view(input);
@@ -139,7 +146,7 @@ TEST_CASE("Interp1D exact at knots"){
         mainKernelPolicy,
             [=] __device__(const member_type team_member) {
                 for(size_t i=0 ; i < s; i++)
-                    results(i) = interpolator(input(i));
+                    results(i) = object(0)(input(i));
             });
             
     Kokkos::deep_copy(hostResults, results);
@@ -160,7 +167,9 @@ TEST_CASE("Interp1D on quadratic")
   };
   Transform(ys);
   quad::Interp1D interpolator(xs, ys);
-
+  ViewVectorInterp1D object("Interp1D view", 1);
+  object(0) = interpolator;
+   
   ViewVectorDouble results("results", 1);
   ViewVectorDouble::HostMirror hostResults = Kokkos::create_mirror_view(results);
  
@@ -174,7 +183,7 @@ TEST_CASE("Interp1D on quadratic")
         mainKernelPolicy,
             [=] __device__(const member_type team_member) {
                 for(size_t i=0 ; i < s; i++)
-                    results(i) = interpolator(input);
+                    results(i) = object(0)(input);
             });
             
   Kokkos::deep_copy(hostResults, results);          

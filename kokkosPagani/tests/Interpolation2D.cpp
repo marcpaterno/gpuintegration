@@ -5,7 +5,9 @@
 #include <array>
 #include <math.h> 
 
-double Evaluate(quad::Interp2D f, double inputX, double inputY){
+typedef Kokkos::View<quad::Interp2D*, Kokkos::CudaUVMSpace> ViewVectorInterp2D;
+
+double Evaluate(ViewVectorInterp2D f, double inputX, double inputY){
     ViewVectorDouble results("results", 1);
     ViewVectorDouble::HostMirror hostResults = Kokkos::create_mirror_view(results);
         
@@ -13,7 +15,7 @@ double Evaluate(quad::Interp2D f, double inputX, double inputY){
     Kokkos::parallel_for(
         "Copy_from_stdArray", 
         numInterpolations, [=] __device__ (const int64_t index) {
-            results(0) = f(inputX, inputY);
+            results(0) = f(0)(inputX, inputY);
         });
     Kokkos::deep_copy(hostResults, results);
     return hostResults(0);
@@ -53,6 +55,8 @@ TEST_CASE("clamp interface works"){
     }
     
     quad::Interp2D f(xs, ys, zs);
+    ViewVectorInterp2D object("Interp2D view", 1);
+    object(0) = f;
     
     SECTION("interpolation works")
     {
@@ -60,7 +64,7 @@ TEST_CASE("clamp interface works"){
         double y = 4.5;
         double true_result = 56.75;
         
-        double hostRes = Evaluate(f, x, y); 
+        double hostRes = Evaluate(object, x, y); 
         CHECK(hostRes == true_result);
     }
     
@@ -118,12 +122,15 @@ TEST_CASE("Interp2D exact at knots")
   }
 
   quad::Interp2D f(xs, ys, zs);
+  ViewVectorInterp2D object("Interp2D", 1);
+  object(0) = f;
+  
     for (std::size_t i = 0; i != nx; ++i) {
         double x = xs[i];
         for (std::size_t j = 0; j != ny; ++j) {
             double y = ys[j];
             CHECK(zs[j * nx + i] == fxy(x, y));
-            double interpResult = Evaluate(f, x, y);
+            double interpResult = Evaluate(object, x, y);
             CHECK(zs[j * nx + i] == interpResult);
         }
     }
@@ -148,9 +155,12 @@ TEST_CASE("Interp2D on bilinear")
     }
   }
 
-  quad::Interp2D f(xs, ys, zs);
 
-  double interpResult = Evaluate(f, 2.5, 1.5);
+  quad::Interp2D f(xs, ys, zs);
+  ViewVectorInterp2D object("Interp2D", 1);
+  object(0) = f;
+   
+  double interpResult = Evaluate(object, 2.5, 1.5);
   CHECK(interpResult == 4.5);
 }
 
