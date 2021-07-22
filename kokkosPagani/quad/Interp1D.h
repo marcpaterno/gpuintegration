@@ -59,8 +59,8 @@ class Interp1D {
       
       //HostVectorDouble x("x", _cols);
       //HostVectorDouble y("x", _cols);
-      Kokkos::View<double*>::HostMirror x = Kokkos::create_mirror(interpC);
-      Kokkos::View<double*>::HostMirror y = Kokkos::create_mirror(interpT);
+      ViewVectorDouble::HostMirror x = Kokkos::create_mirror(interpC);
+      ViewVectorDouble::HostMirror y = Kokkos::create_mirror(interpT);
       
       for(size_t i = 0; i < _cols; ++i){
         x[i] = xs[i];  

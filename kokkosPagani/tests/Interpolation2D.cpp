@@ -2,7 +2,6 @@
 #include "catch2/catch.hpp"
 
 #include "Interp2D.h"
-//#include "quad.h"
 #include <array>
 #include <math.h> 
 
