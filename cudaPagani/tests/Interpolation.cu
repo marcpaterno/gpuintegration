@@ -14,7 +14,7 @@ make_from_file(char const* filename)
                 "Type must be default constructable");
   char const* basedir = std::getenv("PAGANI_DIR");
   std::string fname(basedir);
-  fname += "/cudaPagani/tests/";
+  fname += "/tests/";
   fname += filename;
   std::cout << "Filename:" << fname << std::endl;
   std::ifstream in(fname);

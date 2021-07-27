@@ -2,6 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_VOLUME_CUH
 
 #include <cstring>
+#include <array>
 
 // user must make sure to call cudaMalloc and cudaMemcpy regarding d_highs and
 // d_lows
@@ -20,6 +21,13 @@ namespace quad {
         x = 1.0;
     }
 
+    __host__ 
+    Volume(std::array<T, NDIM> l, std::array<T, NDIM> h)
+    {
+      std::memcpy(lows, l.data(), NDIM * sizeof(T));
+      std::memcpy(highs, h.data(), NDIM * sizeof(T));
+    }
+    
     __host__ __device__
     Volume(T const* l, T const* h)
     {
