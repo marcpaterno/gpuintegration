@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "quad/GPUquad/Interp2D.cuh"
+#include "cudaPagani/quad/GPUquad/Interp2D.cuh"
 
 namespace quad {
 
