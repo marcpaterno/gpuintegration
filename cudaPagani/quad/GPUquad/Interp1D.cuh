@@ -41,7 +41,7 @@ namespace quad {
       memcpy(interpT, zs.data(), sizeof(double) * M);
     }
 
-    Interp1D(double* xs, double* ys, double* zs, size_t cols)
+    Interp1D(double* xs, double* zs, size_t cols)
     {
       Alloc(cols);
       memcpy(interpC, xs, sizeof(double) * cols);
