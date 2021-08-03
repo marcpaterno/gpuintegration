@@ -1345,7 +1345,7 @@ namespace quad {
 
       numInActiveRegions = numRegions - numActiveRegions;
 
-      printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
+      //printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
