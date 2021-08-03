@@ -33,11 +33,10 @@ namespace quad {
     std::ofstream log;
 
   public:
-    // ADD DEFAULT CONSTRUCTOR
 
-    Pagani(/*int pargc,
-          char** pargv,*/
-           int key = 0,
+    // Note that this also acts as the default constructor.
+    explicit
+    Pagani(int key = 0,
            int verbose = 0,
            int numDevices = 1)
     {
@@ -49,13 +48,18 @@ namespace quad {
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
+    Pagani(Pagani const&) = delete;   // no copying
+    Pagani(Pagani&&) = delete;        // no move copy
+    Pagani& operator=(Pagani const&) = delete; // no assignment
+    Pagani& operator=(Pagani&&) = delete;      // no move assignment
+
+
     ~Pagani()
     {
       delete kernel;
       // QuadDebug(cudaDeviceReset());
     }
 
-    int const BUFSIZE = 512;
 #define TAG 0
     template <typename IntegT>
     int
