@@ -48,6 +48,16 @@ target_include_directories(BoxIntegrals PRIVATE
 )
 add_test(BoxIntegrals BoxIntegrals)
 
+add_executable(NanIntegral NanIntegral.cu)
+set_property(TARGET NanIntegral PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(NanIntegral PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(NanIntegral util ${NVTX_LIBRARY})
+target_include_directories(NanIntegral PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(NanIntegral NanIntegral)
+
 add_executable(test_volume test_volume.cu)
 target_compile_options(test_volume PRIVATE "-arch=sm_70")
 set_target_properties(test_volume PROPERTIES POSITION_INDEPENDENT_CODE ON)

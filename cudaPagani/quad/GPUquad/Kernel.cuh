@@ -1371,7 +1371,7 @@ namespace quad {
 
       numInActiveRegions = numRegions - numActiveRegions;
 
-      // printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
+      printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
@@ -2004,13 +2004,17 @@ namespace quad {
                               int iteration,
                               int* activeRegions,
                               int* subDividingDimension)
-    {
-      // if(mustFinish == true)
-      // printf("Must finish triggered\n");
+    {    
+      if(std::isnan(integral) || std::isnan(error)){
+        fail = 0;
+        return true;
+      }
+      
+      
       if ((iteration != 0 &&
            leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs)) ||
           mustFinish) {
-
+        
         integral = leaves_estimate;
         error = leaves_errorest;
         nregions += numRegions + partitionManager.NumRegionsStored();
