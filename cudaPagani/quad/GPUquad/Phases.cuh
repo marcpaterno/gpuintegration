@@ -11,6 +11,7 @@
 #include <stdio.h>
 namespace quad {
 
+  template<typename T>
   __device__ void
   cuprintf(const char* fmt, ...)
   {
@@ -26,7 +27,7 @@ namespace quad {
           int c = va_arg(args, int);
           printf("%c\n", c);
         } else if (*fmt == 'f') {
-          double d = va_arg(args, double);
+          T d = va_arg(args, T);
           printf("%f\n", d);
         }
         ++fmt;
@@ -35,11 +36,12 @@ namespace quad {
     va_end(args);
   }
 
-  __device__ __host__ double
-  ScaleValue(double val, double min, double max)
+  template<typename T>
+  __device__ __host__ T
+  ScaleValue(T val, T min, T max)
   {
     // assert that max > min
-    double range = fabs(max - min);
+    T range = fabs(max - min);
     return min + val * range;
   }
 
@@ -65,29 +67,30 @@ namespace quad {
       __syncthreads();
     }
   }
-
+    
+  template<typename T>
   __device__ bool
   ApplyHeuristic(int heuristicID,
-                 double leaves_estimate,
-                 double finished_estimate,
-                 double queued_estimate,
-                 double lastErr,
-                 double finished_errorest,
-                 double queued_errorest,
+                 T leaves_estimate,
+                 T finished_estimate,
+                 T queued_estimate,
+                 T lastErr,
+                 T finished_errorest,
+                 T queued_errorest,
                  size_t currIterRegions,
                  size_t total_nregions,
                  bool minIterReached,
-                 double parErr,
-                 double parRes,
+                 T parErr,
+                 T parRes,
                  int depth,
-                 double selfRes,
-                 double selfErr,
-                 double epsrel,
-                 double epsabs)
+                 T selfRes,
+                 T selfErr,
+                 T epsrel,
+                 T epsabs)
   {
 
-    double GlobalErrTarget = fabs(leaves_estimate) * epsrel;
-    double remainGlobalErrRoom =
+    T GlobalErrTarget = fabs(leaves_estimate) * epsrel;
+    T remainGlobalErrRoom =
       GlobalErrTarget - finished_errorest - queued_errorest;
     bool selfErrTarget = fabs(selfRes) * epsrel;
 
@@ -151,11 +154,11 @@ namespace quad {
     return verdict;
   }
 
-  template <int NDIM>
+  template <typename T, int NDIM>
   __device__ void
-  ActualCompute(double* generators,
-                double* g,
-                const Structures<double>& constMem,
+  ActualCompute(T* generators,
+                T* g,
+                const Structures<T>& constMem,
                 size_t feval_index,
                 size_t total_feval)
   {
@@ -184,14 +187,14 @@ namespace quad {
     }
   }
 
-  template <int NDIM>
+  template <typename T, int NDIM>
   __global__ void
-  ComputeGenerators(double* generators,
+  ComputeGenerators(T* generators,
                     size_t FEVAL,
-                    const Structures<double> constMem)
+                    const Structures<T> constMem)
   {
     size_t perm = 0;
-    double g[NDIM];
+    T g[NDIM];
     for (size_t dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0;
     }
@@ -199,18 +202,18 @@ namespace quad {
     size_t feval_index = perm * BLOCK_SIZE + threadIdx.x;
     // printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
     if (feval_index < FEVAL) {
-      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+      ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
     __syncthreads();
     for (perm = 1; perm < FEVAL / BLOCK_SIZE; ++perm) {
       int feval_index = perm * BLOCK_SIZE + threadIdx.x;
-      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+      ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
     __syncthreads();
     feval_index = perm * BLOCK_SIZE + threadIdx.x;
     if (feval_index < FEVAL) {
       int feval_index = perm * BLOCK_SIZE + threadIdx.x;
-      ActualCompute<NDIM>(generators, g, constMem, feval_index, FEVAL);
+      ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
     __syncthreads();
   }
@@ -282,7 +285,7 @@ namespace quad {
          int* unpolishedRegions,
          int* activeRegions,
          size_t numRegions,
-         double errThreshold)
+         T errThreshold)
   {
     size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -312,20 +315,20 @@ namespace quad {
                    T* highs,
                    int iteration,
                    int depth,
-                   double* generators)
+                   T* generators)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
-    __shared__ double Jacobian;
+    __shared__ T Jacobian;
     __shared__ int maxDim;
-    __shared__ double vol;
+    __shared__ T vol;
 
-    __shared__ double ranges[NDIM];
+    __shared__ T ranges[NDIM];
 
     if (threadIdx.x == 0) {
 
       Jacobian = 1.;
-      double maxRange = 0;
+      T maxRange = 0;
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
@@ -337,7 +340,7 @@ namespace quad {
         ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
         sRegionPool[0].div = depth;
 
-        double range = sRegionPool[0].bounds[dim].upper - lower;
+        T range = sRegionPool[0].bounds[dim].upper - lower;
         Jacobian = Jacobian * ranges[dim];
         if (range > maxRange) {
           maxDim = dim;
@@ -384,12 +387,12 @@ namespace quad {
                        T* highs,
                        int iteration,
                        int depth,
-                       double* generators)
+                       T* generators)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
 
-    INIT_REGION_POOL<IntegT, double, NDIM, blockDim>(d_integrand,
+    INIT_REGION_POOL<IntegT, T, NDIM, blockDim>(d_integrand,
                                                      dRegions,
                                                      dRegionsLength,
                                                      numRegions,

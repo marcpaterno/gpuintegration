@@ -155,7 +155,7 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
   QuadDebug(Device.AllocateMemory((void**)&generators,
                                   sizeof(double) * NDIM * numFuncEvals));
   CudaCheckError();
-  ComputeGenerators<NDIM>
+  ComputeGenerators<double, NDIM>
     <<<1, BLOCK_SIZE>>>(generators, numFuncEvals, *constMemPtr);
   CudaCheckError();
   CudaCheckError();
