@@ -76,9 +76,9 @@ namespace gpu{
 template<typename Model>
 __global__ 
 void
-Evaluate(Model* model,
-         gpu::cudaDynamicArray<double> input, //make const ref
-         size_t size,
+Evaluate(const Model* model,
+         const gpu::cudaDynamicArray<double>& input, //make const ref
+         const size_t size,
          gpu::cudaDynamicArray<double> results)
 {
   
@@ -89,7 +89,7 @@ Evaluate(Model* model,
 
 template<typename Model, size_t arraySize>
 std::array<double, arraySize>
-Compute_GPU_model(Model model, std::array<double, arraySize> input){
+Compute_GPU_model(const Model& model, const std::array<double, arraySize>& input){
     //must change name of cudaDynamicArray, it's really cudaUnifiedArray
     
     Model* ptr_to_thing_in_unified_memory = quad::cuda_copy_to_managed(model);
@@ -107,7 +107,7 @@ Compute_GPU_model(Model model, std::array<double, arraySize> input){
     return results;
 }
 
-void gpuExecute(){
+double* gpuExecute(){
     std::array<double, 10> zt_poitns = {0.156614, 0.239091, 0.3, 0.360909, 0.443386, 0.456614, 0.539091, 0.6, 0.660909, 0.743386};
     constexpr size_t arraySize = zt_poitns.size();
     std::array<double, 10> results;
@@ -118,9 +118,5 @@ void gpuExecute(){
     results = Compute_GPU_model<gpu::DV_DO_DZ_t, arraySize>(dv_do_dz_t, zt_poitns);
     for(auto i : results)
         std::cout<<i<<"\n";
+    return results.data();
 }
-
-/*TEST_CASE("GPU Model Execute")
-{
-    Execute();
-}*/

@@ -1,5 +1,3 @@
-//#define CATCH_CONFIG_MAIN
-//#include "catch2/catch.hpp"
 #include "cudaPagani/tests/model.hh"
 
 
@@ -32,12 +30,6 @@ class EZ {
       : _ezsq(omega_m, omega_l, omega_k)
     {}
 
-    /*explicit EZ(cosmosis::DataBlock& sample)
-      : EZ(sample.view<double>("cosmological_parameters", "omega_m"),
-           sample.view<double>("cosmological_parameters", "omega_lambda"),
-           sample.view<double>("cosmological_parameters", "omega_k"))
-    {}*/
-
     double
     operator()(double z) const
     {
@@ -51,17 +43,9 @@ class EZ {
 
 class DV_DO_DZ_t {
   public:
-    DV_DO_DZ_t(/*Interp1D const& da,*/ y3_cluster::EZ ezt, double h)
-      : /*_da(da),*/ _ezt(ezt), _h(h)
+    DV_DO_DZ_t(y3_cluster::EZ ezt, double h)
+      : _ezt(ezt), _h(h)
     {}
-
-    //using doubles = std::vector<double>;
-
-    /*explicit DV_DO_DZ_t(cosmosis::DataBlock& sample)
-      : _da(make_Interp1D(sample, "distances", "z", "d_a"))
-      , _ezt(y3_cluster::EZ(sample))
-      , _h(get_datablock<double>(sample, "cosmological_parameters", "h0"))
-    {}*/
 
     double
     operator()(double zt) const
@@ -82,7 +66,7 @@ class DV_DO_DZ_t {
 
 template<typename Model, size_t arraySize>
 std::array<double, arraySize>
-Compute_CPU_model(const Model& model, const std::array<double, arraySize> input){
+Compute_CPU_model(const Model& model, const std::array<double, arraySize>& input){
     
     std::array<double, arraySize> output;
     
@@ -92,7 +76,7 @@ Compute_CPU_model(const Model& model, const std::array<double, arraySize> input)
     return output;
 }
 
-void cpuExecute(){
+double* cpuExecute(){
     std::array<double, 10> zt_poitns = {0.156614, 0.239091, 0.3, 0.360909, 0.443386, 0.456614, 0.539091, 0.6, 0.660909, 0.743386};
     constexpr size_t arraySize = zt_poitns.size();
     std::array<double, 10> results;
@@ -104,8 +88,5 @@ void cpuExecute(){
     results = Compute_CPU_model<y3_cluster::DV_DO_DZ_t, arraySize>(dv_do_dz_t, zt_poitns);
     for(auto i : results)
         std::cout<<i<<"\n";
+    return results.data();
 }
-
-/*TEST_CASE("Model Execute"){
-    Execute();
-}*/

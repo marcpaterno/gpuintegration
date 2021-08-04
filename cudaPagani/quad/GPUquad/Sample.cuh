@@ -79,10 +79,10 @@ namespace quad {
                      T* g,
                      gpu::cudaArray<T, NDIM>& x,
                      T* sum,
-                     const Structures<T>& constMem,
+                     const Structures<double>& constMem,
                      T range[],
                      T* jacobian,
-                     T* generators,
+                     double* generators,
                      int FEVAL,
                      int iteration,
                      T* sdata)
@@ -114,7 +114,7 @@ namespace quad {
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     int sIndex,
-                    const Structures<T>& constMem,
+                    const Structures<double>& constMem,
                     int FEVAL,
                     int NSETS,
                     Region<NDIM> sRegionPool[],
@@ -123,7 +123,7 @@ namespace quad {
                     int* maxdim,
                     T range[],
                     T* jacobian,
-                    T* generators,
+                    double* generators,
                     int iteration)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];

@@ -156,9 +156,9 @@ namespace quad {
 
   template <typename T, int NDIM>
   __device__ void
-  ActualCompute(T* generators,
+  ActualCompute(double* generators,
                 T* g,
-                const Structures<T>& constMem,
+                const Structures<double>& constMem,
                 size_t feval_index,
                 size_t total_feval)
   {
@@ -189,9 +189,9 @@ namespace quad {
 
   template <typename T, int NDIM>
   __global__ void
-  ComputeGenerators(T* generators,
+  ComputeGenerators(double* generators,
                     size_t FEVAL,
-                    const Structures<T> constMem)
+                    const Structures<double> constMem)
   {
     size_t perm = 0;
     T g[NDIM];
@@ -306,7 +306,7 @@ namespace quad {
                    T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
-                   const Structures<T>& constMem,
+                   const Structures<double>& constMem,
                    int FEVAL,
                    int NSETS,
                    Region<NDIM> sRegionPool[],
@@ -315,7 +315,7 @@ namespace quad {
                    T* highs,
                    int iteration,
                    int depth,
-                   T* generators)
+                   double* generators)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -380,14 +380,14 @@ namespace quad {
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
-                       Structures<T> constMem,
+                       Structures<double> constMem,
                        int FEVAL,
                        int NSETS,
                        T* lows,
                        T* highs,
                        int iteration,
                        int depth,
-                       T* generators)
+                       double* generators)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];

@@ -7,6 +7,6 @@
 #include <iostream>
 #include <array>
 
-void cpuExecute();
+double* cpuExecute();
 
 #endif

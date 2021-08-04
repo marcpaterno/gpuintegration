@@ -316,14 +316,14 @@ namespace quad {
     bool phase2Ready = false;
     HostMemory<T> Host;
     DeviceMemory<T> Device;
-    Rule<T> rule;
-    Structures<T> constMem;
+    Rule<double> rule;
+    Structures<double> constMem;
     int NUM_DEVICES;
     // Debug Msg
     char msg[256];
 
     std::ostream& log;
-    T* generators = nullptr;
+    double* generators = nullptr;
 
   public:
     T weightsum, avgsum, guess, chisq, chisum, chisqsum;
@@ -2182,8 +2182,8 @@ namespace quad {
                         Volume<T, NDIM>* vol = nullptr)
     {
       QuadDebug(Device.AllocateMemory((void**)&generators,
-                                      sizeof(T) * NDIM * fEvalPerRegion));
-      ComputeGenerators<T, NDIM>
+                                      sizeof(double) * NDIM * fEvalPerRegion));
+      ComputeGenerators<double, NDIM>
         <<<1, BLOCK_SIZE>>>(generators, fEvalPerRegion, constMem);
       cudaDeviceSynchronize();
       CudaCheckError();
