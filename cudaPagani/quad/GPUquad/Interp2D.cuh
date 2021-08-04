@@ -59,13 +59,22 @@ namespace quad {
       memcpy(interpT, zs.data(), sizeof(double) * N * M);
     }
 
-    Interp2D(double* xs, double* ys, double* zs, size_t cols, size_t rows)
+    Interp2D(double const* xs,
+             double const* ys,
+             double const* zs, size_t cols, size_t rows)
     {
       Alloc(cols, rows);
       memcpy(interpR, ys, sizeof(double) * rows);
       memcpy(interpC, xs, sizeof(double) * cols);
       memcpy(interpT, zs, sizeof(double) * rows * cols);
     }
+
+    Interp2D(std::vector<double> const& xs,
+             std::vector<double> const& ys,
+             std::vector<double> const& zs) :
+      Interp2D(xs.data(), ys.data(), zs.data(),
+          xs.size(), ys.size())
+    { }
 
     template <size_t M, size_t N>
     Interp2D(std::array<double, M> xs,
