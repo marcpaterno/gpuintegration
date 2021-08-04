@@ -46,6 +46,7 @@ time_and_call(ALG const& a,
   return res.status == 0;
 }
 
+
 struct Config {
   Config(int verbosity,
          int heuristic,
@@ -77,6 +78,56 @@ PrintHeader()
   std::cout
     << "id, heuristicID, value, epsrel, epsabs, estimate, errorest, regions, "
        "status, final, lastPhase, total_time\n";
+}
+
+namespace floatIntegrands{
+
+    template <typename F, int ndim>
+    bool
+    cu_time_and_call(std::string id,
+                     F integrand,
+                     float epsrel,
+                     float true_value,
+                     char const* algname,
+                     std::ostream& outfile,
+                     Config config = Config(),
+                     quad::Volume<float, ndim>* vol = nullptr)
+    {
+      using MilliSeconds =
+        std::chrono::duration<float, std::chrono::milliseconds::period>;
+      float constexpr epsabs = 1.0e-20;
+
+      quad::Pagani<float, ndim> alg;
+
+      auto const t0 = std::chrono::high_resolution_clock::now();
+      // nvtxRangePushA("init_host_data");
+      cuhreResult const result = alg.integrate(integrand,
+                                               epsrel,
+                                               epsabs,
+                                               vol,
+                                               config.outfileVerbosity,
+                                               config._final,
+                                               config.heuristicID,
+                                               config.phase_I_type,
+                                               config.phase_2);
+      // nvtxRangePop();
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+      float const absolute_error = std::abs(result.estimate - true_value);
+      bool good = false;
+
+      if (result.status == 0 || result.status == 2) {
+        good = true;
+      }
+
+      outfile.precision(17);
+      outfile << std::fixed << std::scientific << id << "," << config.heuristicID << ","
+              << true_value << "," << epsrel << "," << epsabs << ","
+              << result.estimate << "," << result.errorest << "," << result.nregions
+              << "," << result.nFinishedRegions << "," << result.status << ","
+              << config._final << "," << result.lastPhase << "," << dt.count()
+              << std::endl;
+      return good;
+    } 
 }
 
 template <typename F, int ndim>
