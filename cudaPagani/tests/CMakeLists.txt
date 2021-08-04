@@ -1,5 +1,30 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_library(cpu_model model.cc)
+target_include_directories(cpu_model
+                           PRIVATE ${CMAKE_SOURCE_DIR}
+                                   ${CMAKE_SOURCE_DIR}/externals)
+
+add_library(gpu_model model.cu)
+set_property(TARGET gpu_model PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(gpu_model PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(gpu_model quadutil ${NVTX_LIBRARY})
+target_include_directories(gpu_model PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(test_cpu_vs_gpu test_cpu_vs_gpu.cu)
+target_link_libraries(test_cpu_vs_gpu cpu_model gpu_model)
+set_target_properties(test_cpu_vs_gpu PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET test_cpu_vs_gpu PROPERTY CUDA_ARCHITECTURES 70-real)
+target_include_directories(test_cpu_vs_gpu PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(test_cpu_vs_gpu test_cpu_vs_gpu)
+
+
 add_executable(hello hello.cu)
 set_property(TARGET hello PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(hello PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -54,7 +54,13 @@ namespace gpu {
       data = nullptr;
       N = 0;
     }
-
+    
+    cudaDynamicArray(T const* initData, size_t s)
+    {
+      Initialize(initData, s);
+    }
+    
+    //needs destructor?
     // host-only function
     void
     Initialize(T const* initData, size_t s)
@@ -63,7 +69,12 @@ namespace gpu {
       cudaMallocManaged((void**)&data, sizeof(T) * s);
       cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
     }
-
+    
+    cudaDynamicArray(size_t s)
+    {
+      N = s;
+      cudaMallocManaged((void**)&data, sizeof(T) * s);
+    }
     __host__ __device__ ~cudaDynamicArray()
     {
 #ifndef __CUDACC__
