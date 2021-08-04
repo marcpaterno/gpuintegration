@@ -66,7 +66,7 @@ class DV_DO_DZ_t_simplified {
 
 template<typename Model>
 std::vector<double>
-Compute_CPU_model(const Model& model, std::vector<double> input){
+Compute_CPU_model(const Model& model, const std::vector<double> input){
     
     std::vector<double> output;
     output.reserve(input.size());
