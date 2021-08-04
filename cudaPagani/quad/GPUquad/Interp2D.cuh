@@ -47,7 +47,7 @@ namespace quad {
       cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
       cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
     }
-    
+
     template <size_t M, size_t N>
     Interp2D(std::array<double, M> const& xs,
              std::array<double, N> const& ys,

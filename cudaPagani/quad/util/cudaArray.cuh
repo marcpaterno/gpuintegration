@@ -31,14 +31,9 @@ namespace gpu {
       return s;
     }
 
-    __host__ __device__ T&
-    operator[](std::size_t i)
-    {
-      return data[i];
-    }
+    __host__ __device__ T& operator[](std::size_t i) { return data[i]; }
 
-    __host__ __device__ T const&
-    operator[](std::size_t i) const
+    __host__ __device__ T const& operator[](std::size_t i) const
     {
       return data[i];
     }
@@ -54,13 +49,10 @@ namespace gpu {
       data = nullptr;
       N = 0;
     }
-    
-    cudaDynamicArray(T const* initData, size_t s)
-    {
-      Initialize(initData, s);
-    }
-    
-    //needs destructor?
+
+    cudaDynamicArray(T const* initData, size_t s) { Initialize(initData, s); }
+
+    // needs destructor?
     // host-only function
     void
     Initialize(T const* initData, size_t s)
@@ -69,7 +61,7 @@ namespace gpu {
       cudaMallocManaged((void**)&data, sizeof(T) * s);
       cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
     }
-    
+
     cudaDynamicArray(size_t s)
     {
       N = s;
@@ -108,17 +100,9 @@ namespace gpu {
       return *this;
     }
 
-    __host__ __device__ T&
-    operator[](std::size_t i)
-    {
-      return data[i];
-    }
+    __host__ __device__ T& operator[](std::size_t i) { return data[i]; }
 
-    __host__ __device__ T
-    operator[](std::size_t i) const
-    {
-      return data[i];
-    }
+    __host__ __device__ T operator[](std::size_t i) const { return data[i]; }
 
     T* data;
     size_t N;

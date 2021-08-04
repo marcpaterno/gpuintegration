@@ -139,7 +139,7 @@ namespace quad {
   cuda_malloc_managed(size_t size)
   {
     T* temp = nullptr;
-    auto rc = cudaMallocManaged(&temp, sizeof(T)*size);
+    auto rc = cudaMallocManaged(&temp, sizeof(T) * size);
     if (rc != cudaSuccess)
       throw std::bad_alloc();
     return temp;

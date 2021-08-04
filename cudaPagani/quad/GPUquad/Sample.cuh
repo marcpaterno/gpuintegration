@@ -16,7 +16,7 @@ namespace quad {
     return x * x;
   }
 
-  template<typename T>
+  template <typename T>
   __device__ T
   warpReduceSum(T val)
   {
@@ -27,14 +27,14 @@ namespace quad {
     val += __shfl_down_sync(0xffffffff, val, 1, 32);
     return val;
   }
-    
-  template<typename T>
+
+  template <typename T>
   __device__ T
   blockReduceSum(T val)
   {
 
     static __shared__ T shared[8]; // why was this set to 8?
-    int lane = threadIdx.x % 32; // 32 is for warp size
+    int lane = threadIdx.x % 32;   // 32 is for warp size
     int wid = threadIdx.x >> 5 /* threadIdx.x / 32  */;
 
     val = warpReduceSum(val);

@@ -108,14 +108,12 @@ namespace quad {
     HostAllocate(size_t size, int sourcePartDepth)
     {
       // printf("Started host allocation\n");
-      regions =
-        (T*)Host->AllocateMemory(&regions, sizeof(T) * size * NDIM);
-      regionsLength = (T*)Host->AllocateMemory(
-        &regionsLength, sizeof(T) * size * NDIM);
+      regions = (T*)Host->AllocateMemory(&regions, sizeof(T) * size * NDIM);
+      regionsLength =
+        (T*)Host->AllocateMemory(&regionsLength, sizeof(T) * size * NDIM);
       parentsIntegral =
         (T*)Host->AllocateMemory(&parentsIntegral, sizeof(T) * size);
-      parentsError =
-        (T*)Host->AllocateMemory(&parentsError, sizeof(T) * size);
+      parentsError = (T*)Host->AllocateMemory(&parentsError, sizeof(T) * size);
       numRegions = size;
       depth = sourcePartDepth;
       // printf("inside hostAllocate partion has size:%lu\n", numRegions);
@@ -128,8 +126,8 @@ namespace quad {
         Device->AllocateMemory((void**)&regions, sizeof(T) * size * NDIM));
       QuadDebug(Device->AllocateMemory((void**)&regionsLength,
                                        sizeof(T) * size * NDIM));
-      QuadDebug(Device->AllocateMemory((void**)&parentsIntegral,
-                                       sizeof(T) * size));
+      QuadDebug(
+        Device->AllocateMemory((void**)&parentsIntegral, sizeof(T) * size));
       QuadDebug(
         Device->AllocateMemory((void**)&parentsError, sizeof(T) * size));
       numRegions = size;
@@ -233,7 +231,7 @@ namespace quad {
         fourthPartitionsContribution += parentsEstimate;
         partionContributionsIntegral.push_back(parentsEstimate);
       }
- 
+
       wrapped_ptr = thrust::device_pointer_cast(dParentsError);
 
       for (int i = 0; i < numSplits; i++) {

@@ -10,8 +10,7 @@ TEST_CASE("Transform to Non-default Volume")
   double constexpr epsabs = 1.0e-40;
   int verbose = 0;
   int _final = 1;
-  
-  
+
   SECTION("With std::array")
   {
     GENZ_2_2D integrand;
@@ -178,5 +177,3 @@ TEST_CASE("Transform to Non-default Volume")
     CHECK(error <= res.errorest);
   }
 };
-
-

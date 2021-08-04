@@ -52,7 +52,7 @@ namespace quad {
   // delete, the display function does this now
 
   // delete, now used anymore
-  template<typename T>
+  template <typename T>
   void
   FinalDataPrint(std::stringstream& outfile,
                  std::string id,
@@ -303,10 +303,10 @@ namespace quad {
     size_t host_current_list_id;
     bool mustFinish;
     const size_t numHostPartitions = 4;
-    size_t partionSize[4]; // delete , not storing on cpu anymore
+    size_t partionSize[4];             // delete , not storing on cpu anymore
     T partionContributionsIntegral[4]; // delete, not storing on cpu
-                                            // anymore
-    T partionContributionsError[4]; // delete, not storing on cpu anymore
+                                       // anymore
+    T partionContributionsError[4];    // delete, not storing on cpu anymore
 
     size_t nextAvailRegionID; // make it a local variable to kernel fucntion, no
                               // need to bloat the class
@@ -486,7 +486,7 @@ namespace quad {
       hRegions = new T*[numHostPartitions];
       hRegionsLength = new T*[numHostPartitions];
       hParentsError = new T*[numHostPartitions]; // used only for batching
-                                                      // phase 1 execution
+                                                 // phase 1 execution
       hParentsIntegral = new T*[numHostPartitions];
 
       ConfigureMemoryUtilization();
@@ -810,27 +810,15 @@ namespace quad {
       T* h_lows = nullptr;
 
       curr_hRegionsIntegral = (T*)Host.AllocateMemory(
-        curr_hRegionsIntegral,
-        sizeof(T) *
-          iter_nregions);
-      curr_hRegionsError = (T*)Host.AllocateMemory(
-        curr_hRegionsError,
-        sizeof(T) *
-          iter_nregions);
+        curr_hRegionsIntegral, sizeof(T) * iter_nregions);
+      curr_hRegionsError =
+        (T*)Host.AllocateMemory(curr_hRegionsError, sizeof(T) * iter_nregions);
       curr_ParentsIntegral = (T*)Host.AllocateMemory(
-        curr_ParentsIntegral,
-        sizeof(T) *
-          ceil(iter_nregions /
-               2)); 
+        curr_ParentsIntegral, sizeof(T) * ceil(iter_nregions / 2));
       curr_ParentsError = (T*)Host.AllocateMemory(
-        curr_ParentsError,
-        sizeof(T) *
-          ceil(iter_nregions /
-               2)); 
-      h_highs = (T*)Host.AllocateMemory(
-        h_highs, sizeof(T) * NDIM); 
-      h_lows = (T*)Host.AllocateMemory(
-        h_lows, sizeof(T) * NDIM); 
+        curr_ParentsError, sizeof(T) * ceil(iter_nregions / 2));
+      h_highs = (T*)Host.AllocateMemory(h_highs, sizeof(T) * NDIM);
+      h_lows = (T*)Host.AllocateMemory(h_lows, sizeof(T) * NDIM);
 
       CudaCheckError();
       QuadDebug(cudaMemcpy(curr_hRegionsIntegral,
@@ -866,22 +854,18 @@ namespace quad {
                            sizeof(int) * iter_nregions,
                            cudaMemcpyDeviceToHost));
       CudaCheckError();
-      QuadDebug(cudaMemcpy(
-        h_highs, highs, sizeof(T) * NDIM, cudaMemcpyDeviceToHost));
+      QuadDebug(
+        cudaMemcpy(h_highs, highs, sizeof(T) * NDIM, cudaMemcpyDeviceToHost));
 
-      QuadDebug(cudaMemcpy(
-        h_lows, lows, sizeof(T) * NDIM, cudaMemcpyDeviceToHost));
+      QuadDebug(
+        cudaMemcpy(h_lows, lows, sizeof(T) * NDIM, cudaMemcpyDeviceToHost));
 
       CudaCheckError();
 
-      curr_hRegions = (T*)Host.AllocateMemory(
-        curr_hRegions,
-        sizeof(T) * iter_nregions *
-          NDIM);
+      curr_hRegions = (T*)Host.AllocateMemory(curr_hRegions,
+                                              sizeof(T) * iter_nregions * NDIM);
       curr_hRegionsLength = (T*)Host.AllocateMemory(
-        curr_hRegionsLength,
-        sizeof(T) * iter_nregions *
-          NDIM); 
+        curr_hRegionsLength, sizeof(T) * iter_nregions * NDIM);
       // free_bounds_needed = true;
       QuadDebug(cudaMemcpy(curr_hRegions,
                            dRegions,
@@ -925,7 +909,7 @@ namespace quad {
         }
 
         T ratio = curr_hRegionsError[regnIndex] /
-                       (epsrel * abs(curr_hRegionsIntegral[regnIndex]));
+                  (epsrel * abs(curr_hRegionsIntegral[regnIndex]));
 
         if (iter_nregions > 1)
           phase1out << std::setprecision(17) << std::scientific << iteration
@@ -944,10 +928,9 @@ namespace quad {
         numActiveRegions++;
 
         for (size_t dim = 0; dim < NDIM; dim++) {
-          T low =
-            ScaleValue(curr_hRegions[dim * iter_nregions + regnIndex],
-                       h_lows[dim],
-                       h_highs[dim]);
+          T low = ScaleValue(curr_hRegions[dim * iter_nregions + regnIndex],
+                             h_lows[dim],
+                             h_highs[dim]);
 
           T high =
             ScaleValue(curr_hRegions[dim * iter_nregions + regnIndex] +
@@ -994,7 +977,6 @@ namespace quad {
       Host.ReleaseMemory(h_lows);
     }
 
-    
     void
     Phase_II_PrintFile(T integral,
                        T error,
@@ -1345,7 +1327,7 @@ namespace quad {
 
       numInActiveRegions = numRegions - numActiveRegions;
 
-      //printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
+      // printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
@@ -1449,10 +1431,7 @@ namespace quad {
     }
 
     void
-    GetNextThreshold(T min,
-                     T max,
-                     int rightDirection,
-                     T& current)
+    GetNextThreshold(T min, T max, int rightDirection, T& current)
     {
       if (rightDirection) {
         T diff = abs(max - current);
@@ -1557,7 +1536,7 @@ namespace quad {
                lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) :
              false) :
           true;
-     
+
       secondTolastAvg = lastAvg;
       lastAvg = leaves_estimate;
       lastErr = leaves_errorest;
@@ -1579,9 +1558,8 @@ namespace quad {
       int* scannedArray = 0; // de-allocated at the end of this function
       size_t targetRegionNum = numRegions / 2;
 
-      T ErrThreshold =
-        iterErrorest / (numRegions); // starts out as avg value
-    
+      T ErrThreshold = iterErrorest / (numRegions); // starts out as avg value
+
       T lastThreshold = ErrThreshold;
       size_t numActiveRegions = numRegions;
       T iter_polished_errorest = 0.;
@@ -1595,8 +1573,7 @@ namespace quad {
         thrust::device_pointer_cast(unpolishedRegions);
       int direction = -1;
 
-      thrust::device_ptr<T> d_ptrE =
-        thrust::device_pointer_cast(dRegionsError);
+      thrust::device_ptr<T> d_ptrE = thrust::device_pointer_cast(dRegionsError);
 
       thrust::pair<typename thrust::device_vector<T>::iterator,
                    typename thrust::device_vector<T>::iterator>
@@ -1673,8 +1650,7 @@ namespace quad {
             // printf("Found acceptableThreshold:%.15e\n", acceptableThreshold);
           }
         }
-        T unpolishedPercentage =
-          (T)(numActiveRegions) / (T)numRegions;
+        T unpolishedPercentage = (T)(numActiveRegions) / (T)numRegions;
         // change that, intent is not clear should be returning directionChange
         // and have the name AdjustErrorThreshold
         directionChange =
@@ -1740,10 +1716,7 @@ namespace quad {
     }
 
     void
-    RelErrClassify(int* activeRegions,
-                   size_t nregions,
-                   T epsrel,
-                   int iteration)
+    RelErrClassify(int* activeRegions, size_t nregions, T epsrel, int iteration)
     {
       // can't use dRegionsError to store newErrs, because sibling errors are
       // accessed
@@ -1757,16 +1730,15 @@ namespace quad {
       QuadDebug(
         Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions));
       // printf("Refine Err Relerr classify %lu regions\n", numRegions);
-      RefineError<T>
-        <<<numBlocks, BLOCK_SIZE>>>(dRegionsIntegral,
-                                    dRegionsError,
-                                    dParentsIntegral,
-                                    dParentsError,
-                                    newErrs,
-                                    activeRegions,
-                                    numRegions,
-                                    epsrel,
-                                    heuristicID);
+      RefineError<T><<<numBlocks, BLOCK_SIZE>>>(dRegionsIntegral,
+                                                dRegionsError,
+                                                dParentsIntegral,
+                                                dParentsError,
+                                                newErrs,
+                                                activeRegions,
+                                                numRegions,
+                                                epsrel,
+                                                heuristicID);
 
       cudaDeviceSynchronize();
       CudaCheckError();
@@ -1944,17 +1916,16 @@ namespace quad {
                               int iteration,
                               int* activeRegions,
                               int* subDividingDimension)
-    {    
-      if(std::isnan(integral) || std::isnan(error)){
+    {
+      if (std::isnan(integral) || std::isnan(error)) {
         fail = 0;
         return true;
       }
-      
-      
+
       if ((iteration != 0 &&
            leaves_errorest <= MaxErr(leaves_estimate, epsrel, epsabs)) ||
           mustFinish) {
-        
+
         integral = leaves_estimate;
         error = leaves_errorest;
         nregions += numRegions + partitionManager.NumRegionsStored();

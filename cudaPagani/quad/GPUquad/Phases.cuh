@@ -11,7 +11,7 @@
 #include <stdio.h>
 namespace quad {
 
-  template<typename T>
+  template <typename T>
   __device__ void
   cuprintf(const char* fmt, ...)
   {
@@ -36,7 +36,7 @@ namespace quad {
     va_end(args);
   }
 
-  template<typename T>
+  template <typename T>
   __device__ __host__ T
   ScaleValue(T val, T min, T max)
   {
@@ -67,8 +67,8 @@ namespace quad {
       __syncthreads();
     }
   }
-    
-  template<typename T>
+
+  template <typename T>
   __device__ bool
   ApplyHeuristic(int heuristicID,
                  T leaves_estimate,
@@ -393,19 +393,19 @@ namespace quad {
     __shared__ GlobalBounds sBound[NDIM];
 
     INIT_REGION_POOL<IntegT, T, NDIM, blockDim>(d_integrand,
-                                                     dRegions,
-                                                     dRegionsLength,
-                                                     numRegions,
-                                                     constMem,
-                                                     FEVAL,
-                                                     NSETS,
-                                                     sRegionPool,
-                                                     sBound,
-                                                     lows,
-                                                     highs,
-                                                     iteration,
-                                                     depth,
-                                                     generators);
+                                                dRegions,
+                                                dRegionsLength,
+                                                numRegions,
+                                                constMem,
+                                                FEVAL,
+                                                NSETS,
+                                                sRegionPool,
+                                                sBound,
+                                                lows,
+                                                highs,
+                                                iteration,
+                                                depth,
+                                                generators);
 
     if (threadIdx.x == 0) {
       activeRegions[blockIdx.x] = 1;
