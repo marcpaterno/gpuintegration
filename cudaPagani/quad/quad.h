@@ -52,6 +52,7 @@ struct Structures {
   size_t* _cGeneratorCount;
 };
 
+template<typename T>
 struct cuhreResult {
 
   cuhreResult()
@@ -67,8 +68,8 @@ struct cuhreResult {
     nFinishedRegions = 0;
   };
 
-  double estimate;
-  double errorest;
+  T estimate;
+  T errorest;
   size_t neval;
   size_t nregions;
   size_t nFinishedRegions;

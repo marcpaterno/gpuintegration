@@ -37,7 +37,7 @@ namespace quad {
     free(tmp);
   }
 
-  template <size_t NDIM>
+  template <typename T, size_t NDIM>
   class Partition {
   public:
     Partition()
@@ -58,10 +58,10 @@ namespace quad {
     }
 
     void
-    ShallowCopy(double* low_bounds,
-                double* length_per_boud,
-                double* parentEstimates,
-                double* parentErrs,
+    ShallowCopy(T* low_bounds,
+                T* length_per_boud,
+                T* parentEstimates,
+                T* parentErrs,
                 size_t size,
                 int depthReached)
     {
@@ -76,7 +76,7 @@ namespace quad {
     }
 
     void
-    DeepCopyHostToDevice(Partition<NDIM> source)
+    DeepCopyHostToDevice(Partition<T, NDIM> source)
     {
       numRegions = source.numRegions;
       depth = source.depth;
@@ -84,22 +84,22 @@ namespace quad {
       // iteration\n", depth);
       QuadDebug(cudaMemcpy(regions,
                            source.regions,
-                           sizeof(double) * source.numRegions * NDIM,
+                           sizeof(T) * source.numRegions * NDIM,
                            cudaMemcpyHostToDevice));
       CudaCheckError();
       QuadDebug(cudaMemcpy(regionsLength,
                            source.regionsLength,
-                           sizeof(double) * source.numRegions * NDIM,
+                           sizeof(T) * source.numRegions * NDIM,
                            cudaMemcpyHostToDevice));
       CudaCheckError();
       QuadDebug(cudaMemcpy(parentsIntegral,
                            source.parentsIntegral,
-                           sizeof(double) * source.numRegions,
+                           sizeof(T) * source.numRegions,
                            cudaMemcpyHostToDevice));
       CudaCheckError();
       QuadDebug(cudaMemcpy(parentsError,
                            source.parentsError,
-                           sizeof(double) * source.numRegions,
+                           sizeof(T) * source.numRegions,
                            cudaMemcpyHostToDevice));
       CudaCheckError();
     }
@@ -109,13 +109,13 @@ namespace quad {
     {
       // printf("Started host allocation\n");
       regions =
-        (double*)Host->AllocateMemory(&regions, sizeof(double) * size * NDIM);
-      regionsLength = (double*)Host->AllocateMemory(
-        &regionsLength, sizeof(double) * size * NDIM);
+        (T*)Host->AllocateMemory(&regions, sizeof(T) * size * NDIM);
+      regionsLength = (T*)Host->AllocateMemory(
+        &regionsLength, sizeof(T) * size * NDIM);
       parentsIntegral =
-        (double*)Host->AllocateMemory(&parentsIntegral, sizeof(double) * size);
+        (T*)Host->AllocateMemory(&parentsIntegral, sizeof(T) * size);
       parentsError =
-        (double*)Host->AllocateMemory(&parentsError, sizeof(double) * size);
+        (T*)Host->AllocateMemory(&parentsError, sizeof(T) * size);
       numRegions = size;
       depth = sourcePartDepth;
       // printf("inside hostAllocate partion has size:%lu\n", numRegions);
@@ -125,41 +125,41 @@ namespace quad {
     DeviceAllocate(size_t size)
     {
       QuadDebug(
-        Device->AllocateMemory((void**)&regions, sizeof(double) * size * NDIM));
+        Device->AllocateMemory((void**)&regions, sizeof(T) * size * NDIM));
       QuadDebug(Device->AllocateMemory((void**)&regionsLength,
-                                       sizeof(double) * size * NDIM));
+                                       sizeof(T) * size * NDIM));
       QuadDebug(Device->AllocateMemory((void**)&parentsIntegral,
-                                       sizeof(double) * size));
+                                       sizeof(T) * size));
       QuadDebug(
-        Device->AllocateMemory((void**)&parentsError, sizeof(double) * size));
+        Device->AllocateMemory((void**)&parentsError, sizeof(T) * size));
       numRegions = size;
     }
 
-    double* regions;
-    double* regionsLength;
-    double* parentsIntegral;
-    double* parentsError;
+    T* regions;
+    T* regionsLength;
+    T* parentsIntegral;
+    T* parentsError;
     int depth;
 
-    HostMemory<double>* Host;
-    DeviceMemory<double>* Device;
+    HostMemory<T>* Host;
+    DeviceMemory<T>* Device;
 
     size_t numRegions;
   };
 
-  template <size_t NDIM>
+  template <typename T, size_t NDIM>
   class PartitionManager {
   public:
-    HostMemory<double>* Host;
-    DeviceMemory<double>* Device;
+    HostMemory<T>* Host;
+    DeviceMemory<T>* Device;
 
-    double queued_reg_estimate;
-    double queued_reg_errorest;
+    T queued_reg_estimate;
+    T queued_reg_errorest;
 
-    std::vector<Partition<NDIM>> partitions;
+    std::vector<Partition<T, NDIM>> partitions;
     std::vector<size_t> partitionSizes;
-    std::vector<double> partionContributionsIntegral;
-    std::vector<double> partionContributionsError;
+    std::vector<T> partionContributionsIntegral;
+    std::vector<T> partionContributionsError;
     size_t numPartitions;
     const size_t numSplits = 4;
 
@@ -195,7 +195,7 @@ namespace quad {
     }
 
     void
-    Init(HostMemory<double>* host, DeviceMemory<double>* device)
+    Init(HostMemory<T>* host, DeviceMemory<T>* device)
     {
       Host = host;
       Device = device;
@@ -216,26 +216,24 @@ namespace quad {
     }
 
     void
-    SetPartitionContributions(double* dParentsIntegral, double* dParentsError)
+    SetPartitionContributions(T* dParentsIntegral, T* dParentsError)
     {
       // i don't like i+numPartitions indexing
-      thrust::device_ptr<double> wrapped_ptr;
+      thrust::device_ptr<T> wrapped_ptr;
       wrapped_ptr = thrust::device_pointer_cast(dParentsIntegral);
-      double fourthPartitionsContribution = 0.;
+      T fourthPartitionsContribution = 0.;
 
       for (int i = 0; i < numSplits; i++) {
         size_t partionNumParents = partitionSizes[i + numPartitions] / 2;
         size_t parentsProcessed = partitionRunSum(i) / 2;
-        // printf("Setting partition %i parents from %lu to %lu\n",  i,
-        // parentsProcessed, parentsProcessed + partionNumParents);
-        double parentsEstimate =
+
+        T parentsEstimate =
           thrust::reduce(wrapped_ptr + parentsProcessed,
                          wrapped_ptr + parentsProcessed + partionNumParents);
         fourthPartitionsContribution += parentsEstimate;
         partionContributionsIntegral.push_back(parentsEstimate);
       }
-      // printf("Saved Four Partitions with cummulative estimate of %.20f\n",
-      // fourthPartitionsContribution);
+ 
       wrapped_ptr = thrust::device_pointer_cast(dParentsError);
 
       for (int i = 0; i < numSplits; i++) {
@@ -245,15 +243,6 @@ namespace quad {
           thrust::reduce(wrapped_ptr + parentsProcessed,
                          wrapped_ptr + parentsProcessed + partionNumParents));
       }
-
-      /*for(int i=0; i<numPartitions + numSplits; i++)
-      {
-              printf("Contributions %i/%lu %.17e +- %e size:%lu %f\n", i,
-      numPartitions+ numSplits, partionContributionsIntegral[i],
-      partionContributionsError[i], partitionSizes[i],
-      partionContributionsError[i]/MaxErr(partionContributionsIntegral[i], 1.024000e-10,
-      1.0e-40));
-      }*/
     }
 
     void
@@ -286,17 +275,8 @@ namespace quad {
     void
     SetpartitionSizess(size_t size)
     {
-      // printf("Inside set partition size numPartitions:%lu size:%lu\n",
-      // numPartitions, size);
       const size_t numNewPartitions = numSplits;
       assert(!(size % 2));
-      // this sets four partitions, each of which must be of even size
-      // the paritions dont' need to be equal to each other
-
-      /*auto isOdd = [](size_t num)->bool
-      {
-              return num % 2;
-      };*/
 
       size_t extra = size % numNewPartitions; // extra=2
       size_t floor_quarter_size =
@@ -307,52 +287,16 @@ namespace quad {
         partitionSizes.push_back(floor_quarter_size);
       partitionSizes[numNewPartitions + numPartitions - 1] += extra;
 
-      // printf("splitting %lu four ways, extra:%lu floor_quarter_size:%lu\n",
-      // size, extra,floor_quarter_size);
-      /*if(extra == 0 && !isOdd(floor_quarter_size))
-      {
-              printf("A\n");
-              for(int i=0; i< numNewPartitions; i++){
-                      //partitionSizes[numPartitions +i] = floor_quarter_size;
-                      //printf("About to pushback A %lu\n", floor_quarter_size);
-                      partitionSizes.push_back(floor_quarter_size);
-              }
-      }
-      else if(extra == 0 && isOdd(floor_quarter_size) == true)
-      {
-              printf("B\n");
-              for(int i=0; i<numNewPartitions; i++){
-                      partitionSizes.push_back((size-numNewPartitions)/numNewPartitions);
-              }
-              //printf("About to add %lu regions to partition %i ->%lu\n",
-      numNewPartitions, numNewPartitions+partitionSizes[numPartitions +
-      numNewPartitions-1], numPartitions + numNewPartitions-1);
-              partitionSizes[numPartitions + numNewPartitions-1] +=
-      numNewPartitions;
-      }
-      else if(extra != 0)
-      {
-              printf("C\n");
-              //extra can only be 0 or 2 if we divide size by 4 and guarantee
-      size is even for(int i=0; i<numNewPartitions; i++){
-                      //partitionSizes[numPartitions+ i] = floor_quarter_size;
-                      //printf("About to pushback C %lu\n", floor_quarter_size);
-                      partitionSizes.push_back((size-extra)/numNewPartitions);
-              }
-              partitionSizes[numPartitions + numNewPartitions-1] +=  2;
-      }
-      */
       for (int i = 0; i < numPartitions + numNewPartitions; i++) {
         assert(partitionSizes[i] % 2 == 0);
         if (partitionSizes[i] % 2 != 0)
           printf("error, uneven partition size\n");
-        // printf("p%i:%lu\n", i, partitionSizes[i]);
       }
     }
 
     void
-    DeepCopyDeviceToHost(Partition<NDIM>& destPartition,
-                         Partition<NDIM> sourcePartition,
+    DeepCopyDeviceToHost(Partition<T, NDIM>& destPartition,
+                         Partition<T, NDIM> sourcePartition,
                          size_t sourceRegionsFirstIndex)
     {
 
@@ -369,7 +313,7 @@ namespace quad {
         QuadDebug(cudaMemcpy(
           destPartition.regions + dim * destPartition.numRegions,
           sourcePartition.regions + dimStartIndex + sourceRegionsFirstIndex,
-          sizeof(double) * numPairsInPartition,
+          sizeof(T) * numPairsInPartition,
           cudaMemcpyDeviceToHost));
         CudaCheckError();
 
@@ -378,7 +322,7 @@ namespace quad {
                        destPartition.numRegions / 2,
                      sourcePartition.regions + dimStartIndex +
                        sourceRegionsFirstIndex + sourcePartition.numRegions / 2,
-                     sizeof(double) * numPairsInPartition,
+                     sizeof(T) * numPairsInPartition,
                      cudaMemcpyDeviceToHost));
 
         CudaCheckError();
@@ -386,7 +330,7 @@ namespace quad {
                                dim * destPartition.numRegions,
                              sourcePartition.regionsLength + dimStartIndex +
                                sourceRegionsFirstIndex,
-                             sizeof(double) * numPairsInPartition,
+                             sizeof(T) * numPairsInPartition,
                              cudaMemcpyDeviceToHost));
         CudaCheckError();
 
@@ -395,7 +339,7 @@ namespace quad {
             destPartition.numRegions / 2,
           sourcePartition.regionsLength + dimStartIndex +
             sourceRegionsFirstIndex + sourcePartition.numRegions / 2,
-          sizeof(double) * numPairsInPartition,
+          sizeof(T) * numPairsInPartition,
           cudaMemcpyDeviceToHost));
         CudaCheckError();
       }
@@ -403,40 +347,36 @@ namespace quad {
       QuadDebug(
         cudaMemcpy(destPartition.parentsIntegral,
                    sourcePartition.parentsIntegral + sourceRegionsFirstIndex,
-                   sizeof(double) * numPairsInPartition,
+                   sizeof(T) * numPairsInPartition,
                    cudaMemcpyDeviceToHost));
 
       QuadDebug(
         cudaMemcpy(destPartition.parentsIntegral + numPairsInPartition,
                    sourcePartition.parentsIntegral + sourceRegionsFirstIndex,
-                   sizeof(double) * numPairsInPartition,
+                   sizeof(T) * numPairsInPartition,
                    cudaMemcpyDeviceToHost));
 
       QuadDebug(
         cudaMemcpy(destPartition.parentsError,
                    sourcePartition.parentsError + sourceRegionsFirstIndex,
-                   sizeof(double) * numPairsInPartition,
+                   sizeof(T) * numPairsInPartition,
                    cudaMemcpyDeviceToHost));
 
       QuadDebug(
         cudaMemcpy(destPartition.parentsError + numPairsInPartition,
                    sourcePartition.parentsError + sourceRegionsFirstIndex,
-                   sizeof(double) * numPairsInPartition,
+                   sizeof(T) * numPairsInPartition,
                    cudaMemcpyDeviceToHost));
       CudaCheckError();
     }
 
     void
-    StoreRegionsInHost(Partition<NDIM>& sourcePartition)
+    StoreRegionsInHost(Partition<T, NDIM>& sourcePartition)
     {
-      // printf("storing %lu regions in host with %lu current partitions \n",
-      // sourcePartition.numRegions, numPartitions);
       if (sourcePartition.numRegions == 0) {
         return;
       }
 
-      /*printf("Saving %lu regions into four partitions\n",
-             sourcePartition.numRegions);*/
       int numNewPartitions =
         4; // always expand by four partitions, we can change this later
       SetpartitionSizess(sourcePartition.numRegions);
@@ -444,27 +384,18 @@ namespace quad {
                                 sourcePartition.parentsError);
 
       CudaCheckError();
-      // Host.ReleaseMemory(curr_hRegions);
-      // Host.ReleaseMemory(curr_hRegionsLength);
 
       for (int partitionID = 0; partitionID < numNewPartitions; partitionID++) {
-        Partition<NDIM> temp;
+        Partition<T, NDIM> temp;
         partitions.push_back(temp);
         partitions[partitionID + numPartitions].HostAllocate(
           partitionSizes[partitionID + numPartitions], sourcePartition.depth);
-        // printf("after allocating %i new partition\n",partitionID);
-        // printf("added partitions have depth%i\n", partitions[partitionID +
-        // numPartitions].depth);
       }
 
       CudaCheckError();
 
       size_t startRegionIndex = 0;
       for (int partitionID = 0; partitionID < numNewPartitions; partitionID++) {
-        // printf("About to do DeepCopyDeviceToHost numPartitions:%lu
-        // partitionSize:%lu sourceSize:%lu\n", numPartitions,
-        // partitions[partitionID + numPartitions].numRegions,
-        // sourcePartition.numRegions);
         DeepCopyDeviceToHost(partitions[partitionID + numPartitions],
                              sourcePartition,
                              startRegionIndex);
@@ -479,8 +410,8 @@ namespace quad {
     }
 
     void
-    SetDeviceRegionsFromHost(Partition<NDIM>& destPartition,
-                             Partition<NDIM> sourcePartition)
+    SetDeviceRegionsFromHost(Partition<T, NDIM>& destPartition,
+                             Partition<T, NDIM> sourcePartition)
     {
       destPartition.DeviceAllocate(sourcePartition.numRegions);
       CudaCheckError();
@@ -490,7 +421,7 @@ namespace quad {
     }
 
     void
-    LoadNextActivePartition(Partition<NDIM>& wrapper)
+    LoadNextActivePartition(Partition<T, NDIM>& wrapper)
     {
       StoreRegionsInHost(
         wrapper); // 1. save current progress in the form of four partitions
@@ -509,10 +440,7 @@ namespace quad {
         // partionContributionsIntegral[i], partionContributionsError[i] );
       }
 
-      /*printf("Loading partition with %e +- %e errorest\n",
-             partionContributionsIntegral[maxErrID],
-             partionContributionsError[maxErrID]);*/
-      Partition<NDIM> priorityP =
+      Partition<T, NDIM> priorityP =
         partitions[maxErrID]; // 3. get a pointer to that host partition
       // printf("PRIORITY p depth %i partition index:%lu\n", priorityP.depth,
       // maxErrID);

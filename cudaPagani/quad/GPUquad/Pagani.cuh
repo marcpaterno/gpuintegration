@@ -64,7 +64,7 @@ namespace quad {
     template <typename IntegT>
     int
     ExecutePhaseI(IntegT* d_integrand,
-                  cuhreResult& res,
+                  cuhreResult<T>& res,
                   Volume<T, NDIM>* volume,
                   const int phase1type)
     {
@@ -91,7 +91,7 @@ namespace quad {
     }
 
     template <typename IntegT>
-    cuhreResult
+    cuhreResult<T>
     integrate(IntegT integrand,
               T epsrel,
               T epsabs,
@@ -102,7 +102,7 @@ namespace quad {
               int phase1type = 0,
               bool phase2 = false)
     {
-      cuhreResult res;
+      cuhreResult<T> res;
 
       this->epsrel = epsrel;
       this->epsabs = epsabs;

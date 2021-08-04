@@ -263,7 +263,7 @@ namespace quad {
     T* lows;
 
     Region<NDIM>* gRegionPool;
-    PartitionManager<NDIM> partitionManager;
+    PartitionManager<T, NDIM> partitionManager;
     int depthBeingProcessed;
 
     std::stringstream
