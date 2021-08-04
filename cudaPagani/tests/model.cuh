@@ -6,7 +6,8 @@
 #include <iomanip>
 #include <iostream>
 #include <array>
+#include <vector>
 
-double* gpuExecute();
+std::vector<double> gpuExecute();
 
 #endif

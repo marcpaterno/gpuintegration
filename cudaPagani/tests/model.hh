@@ -6,7 +6,8 @@
 #include <iomanip>
 #include <iostream>
 #include <array>
+#include <vector>
 
-double* cpuExecute();
+std::vector<double> cpuExecute();
 
 #endif
