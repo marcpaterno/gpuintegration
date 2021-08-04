@@ -24,10 +24,10 @@ main()
 
   Config configuration;
   configuration.outfileVerbosity = 0;
-  configuration.heuristicID = 4;
+  configuration.heuristicID = 0;
 
   PrintHeader();
-  while (cu_time_and_call<Gauss9D, ndim>("pdc_f1_depth",
+  while (cu_time_and_call<Gauss9D, ndim>("Gauss9D",
                                          integrand,
                                          epsrel,
                                          true_value,

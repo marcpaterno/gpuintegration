@@ -45,6 +45,15 @@ target_include_directories(Gauss9D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(Gauss9Dfloat Gauss9Dfloat.cu)
+target_compile_options(Gauss9Dfloat PRIVATE "-arch=sm_70")
+set_target_properties(Gauss9Dfloat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Gauss9Dfloat util ${NVTX_LIBRARY})
+target_include_directories(Gauss9Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(absCosSum5Dplus1 absCosSum5Dplus1.cu)
 target_compile_options(absCosSum5Dplus1 PRIVATE "-arch=sm_70")
 set_target_properties(absCosSum5Dplus1 PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -109,13 +118,20 @@ target_include_directories(Genz3_8DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-
-
 add_executable(Genz4_5DGPU Genz4_5D.cu)
 target_compile_options(Genz4_5DGPU PRIVATE "-arch=sm_70")
 set_target_properties(Genz4_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(Genz4_5DGPU util ${NVTX_LIBRARY}) 
 target_include_directories(Genz4_5DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(Genz4_5Dfloat Genz4_5Dfloat.cu)
+target_compile_options(Genz4_5Dfloat PRIVATE "-arch=sm_70")
+set_target_properties(Genz4_5Dfloat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz4_5Dfloat util ${NVTX_LIBRARY}) 
+target_include_directories(Genz4_5Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
@@ -129,6 +145,14 @@ target_include_directories(Genz4_8DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(Genz4_8Dfloat Genz4_8Dfloat.cu)
+target_compile_options(Genz4_8Dfloat PRIVATE "-arch=sm_70")
+set_target_properties(Genz4_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz4_8Dfloat util ${NVTX_LIBRARY})
+target_include_directories(Genz4_8Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
 
 add_executable(Genz5_2DGPU Genz5_2D.cu)
 target_compile_options(Genz5_2DGPU PRIVATE "-arch=sm_70")
@@ -176,12 +200,30 @@ target_include_directories(Genz6_6DGPU PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(Genz6_6Dfloat Genz6_6Dfloat.cu)
+target_compile_options(Genz6_6Dfloat PRIVATE "-arch=sm_70")
+set_target_properties(Genz6_6Dfloat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz6_6Dfloat util ${NVTX_LIBRARY})
+target_include_directories(Genz6_6Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(Genz1_8DGPU Genz1_8D.cu)
 target_compile_options(Genz1_8DGPU PRIVATE "-lineinfo")
 set_property(TARGET Genz1_8DGPU PROPERTY CUDA_ARCHITECTURES 70-real)
 set_target_properties(Genz1_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(Genz1_8DGPU util ${NVTX_LIBRARY})
 target_include_directories(Genz1_8DGPU PRIVATE
+  ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(Genz1_8Dfloat Genz1_8Dfloat.cu)
+target_compile_options(Genz1_8Dfloat PRIVATE "-lineinfo")
+set_property(TARGET Genz1_8Dfloat PROPERTY CUDA_ARCHITECTURES 70-real)
+set_target_properties(Genz1_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(Genz1_8Dfloat util ${NVTX_LIBRARY})
+target_include_directories(Genz1_8Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
