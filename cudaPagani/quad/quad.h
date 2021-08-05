@@ -52,7 +52,7 @@ struct Structures {
   size_t* _cGeneratorCount;
 };
 
-template<typename T>
+template <typename T>
 struct cuhreResult {
 
   cuhreResult()

@@ -1680,8 +1680,8 @@ public:
     // printf("Sigma:%a\n", (sigma)(scaled_Rmis, lnM, zt));
     // printf("int_zo_zt:%a\n", (int_zo_zt)(zo_low_, zo_high_, zt));
     // printf("[%i](%i) %f, %f, %f, %f, %f, %f, %f, %.20f\n", blockIdx.x,
-    // threadIdx.x, lo, lc, lt, zt, lnM, rmis, theta, val); printf("val:%.20f\n",
-    // val);
+    // threadIdx.x, lo, lc, lt, zt, lnM, rmis, theta, val);
+    // printf("val:%.20f\n", val);
     return val;
   }
 };
