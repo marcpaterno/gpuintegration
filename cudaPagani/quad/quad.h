@@ -162,7 +162,7 @@ struct PhaseII_output {
 };
 
 class RegionList : public Managed {
-  // Deriving from “Managed” allows pass-by-reference
+  // Deriving from "Managed" allows pass-by-reference
 public:
   RegionList()
   {
