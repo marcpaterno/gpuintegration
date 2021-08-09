@@ -106,7 +106,9 @@ add_test(RegionSampling RegionSampling)
 
 add_executable(FourthDividedDifference FourthDividedDifference.cu)
 target_compile_options(FourthDividedDifference PRIVATE "-arch=sm_70")
-set_target_properties(FourthDividedDifference PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(FourthDividedDifference PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_ARCHITECTURES 70-real)
 target_link_libraries(FourthDividedDifference util ${NVTX_LIBRARY})
 target_include_directories(FourthDividedDifference PRIVATE
   ${CMAKE_SOURCE_DIR}

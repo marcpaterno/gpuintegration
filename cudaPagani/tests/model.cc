@@ -1,5 +1,7 @@
 #include "cudaPagani/tests/model.hh"
 
+#include <cmath>
+
 namespace y3_cluster {
 
   class EZ_sq_simplified {

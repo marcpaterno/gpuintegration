@@ -67,6 +67,7 @@ namespace gpu {
       cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
     }
 
+    explicit
     cudaDynamicArray(size_t s)
     {
       N = s;

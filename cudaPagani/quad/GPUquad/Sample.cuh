@@ -44,7 +44,7 @@ namespace quad {
     __syncthreads(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
-    val = (threadIdx.x<blockDim.x> > 5) ? shared[lane] : 0;
+    val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0;
 
     if (wid == 0)
       val = warpReduceSum(val); // Final reduce within first warp

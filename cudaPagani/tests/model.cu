@@ -77,13 +77,24 @@ namespace gpu {
 template <typename Model>
 __global__ void
 Evaluate(const Model* model,
-         const gpu::cudaDynamicArray<double> input, // make const ref
+         const gpu::cudaDynamicArray<double> input,
          const size_t size,
          double* results)
 {
-  for (size_t i = 0; i < size; i++) {
-    results[i] = (*model)(input[i]);
+  size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t n_threads = blockDim.x * gridDim.x;
+
+  // Loop over the part of the array this is handled in 
+  // conviently-sized blocks.
+  size_t i = 0;
+  for ( /*already initialized*/ ; i*n_threads < size; ++i) {
+    auto idx = tid + i * n_threads;
+    results[idx] = (*model)(input[idx]);
   }
+ 
+  // Clean up the rest of the range.
+  auto idx = tid +i * n_threads;
+  if (idx < size) results[idx] = (*model)(input[idx]);
 }
 
 template <typename Model>
@@ -91,13 +102,14 @@ std::vector<double>
 Compute_GPU_model(const Model& model, const std::vector<double>& input)
 {
   // must change name of cudaDynamicArray, it's really cudaUnifiedArray
-
   Model* ptr_to_thing_in_unified_memory = quad::cuda_copy_to_managed(model);
   gpu::cudaDynamicArray<double> unified_input(input.data(), input.size());
 
   double* unified_output = quad::cuda_malloc_managed<double>(input.size());
 
-  Evaluate<Model><<<1, 1>>>(ptr_to_thing_in_unified_memory,
+  // TODO: How do we pick a good number of threads to run? Good number of
+  // blocks? What would make the testing most robust?
+  Evaluate<Model><<<2, 3>>>(ptr_to_thing_in_unified_memory,
                             unified_input,
                             input.size(),
                             unified_output);
