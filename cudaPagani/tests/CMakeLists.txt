@@ -1,5 +1,26 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(CuhrePointsEvaluation CuhrePointsEvaluation.cu)
+set_target_properties(CuhrePointsEvaluation PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET CuhrePointsEvaluation PROPERTY CUDA_ARCHITECTURES 70-real)
+target_include_directories(CuhrePointsEvaluation PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(CuhrePointsEvaluation CuhrePointsEvaluation)
+
+add_executable(cudaUnifiedArray cudaUnifiedArray.cu)
+target_link_libraries(cudaUnifiedArray cpu_model gpu_model)
+set_target_properties(cudaUnifiedArray PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET cudaUnifiedArray PROPERTY CUDA_ARCHITECTURES 70-real)
+target_include_directories(cudaUnifiedArray PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(cudaUnifiedArray cudaUnifiedArray)
+
+
+
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model
                            PRIVATE ${CMAKE_SOURCE_DIR}

@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using TYPE = double;
 
@@ -23,6 +24,14 @@ __constant__ TYPE errcoeff[] = {5, 1, 5};
 // Utilities
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
+
+class VerboseResults{
+	public:
+		std::vector<std::vector<double>> funcEvaluationPoints;
+		std::vector<double> results;
+		size_t numFuncEvals = 0;
+		size_t NDIM = 0;
+};
 
 template <typename T>
 struct Structures {
@@ -97,6 +106,7 @@ public:
   void*
   operator new(size_t len)
   {
+    printf("Managed operator new invoked\n");
     void* ptr;
     cudaMallocManaged(&ptr, len);
     cudaDeviceSynchronize();

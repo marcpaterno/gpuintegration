@@ -1436,9 +1436,11 @@ namespace quad {
       if (rightDirection) {
         T diff = abs(max - current);
         current += diff * .5f;
+        //printf("right direction diff:%.15e min:%.15e max:%.15e\n", diff, min, max);
       } else {
         T diff = abs(min - current);
         current -= diff * .5f;
+        //printf("left direction diff:%.15e min:%.15e max:%.15e\n", diff, min, max);
       }
     }
 
@@ -1453,8 +1455,8 @@ namespace quad {
                          T& maxThreshold,
                          int& numDirectionChanges)
     {
-      // printf("adjusting threshold with min max:%15e, %.15e\n", minThreshold,
-      // maxThreshold);
+       //printf("adjusting threshold with min max:%.15e, %.15e\n", minThreshold,
+       //maxThreshold);
       int priorDirection = currentDirection;
       if (ErrorestMarkedFinished > MaxErrorestToAllowedToFinish ||
           percentRegionsToKeep < .5) {
@@ -1487,8 +1489,8 @@ namespace quad {
                          currentDirection,
                          threshold); // the flag was priorly set to zero
       }
-      // printf("new from within adjustment min max:%15e, %.15e\n",
-      // minThreshold, maxThreshold);
+       //printf("new from within adjustment min max:%.15e, %.15e\n",
+       //minThreshold, maxThreshold);
       return currentDirection != priorDirection &&
              priorDirection != -1; // return whether there is a direction change
     }
@@ -1545,7 +1547,7 @@ namespace quad {
                                Device.GetAmountFreeMem() &&
                              !estimateHasConverged))
         return;
-      // printf("Will attempt Filtering\n");
+      //printf("Will attempt Filtering at iter:%i with %lu regions estimateHasConverged:%i\n", iteration, numRegions, estimateHasConverged);
       T targetError = abs(leaves_estimate) * epsrel;
       size_t numThreads = BLOCK_SIZE;
 
@@ -1603,7 +1605,7 @@ namespace quad {
               MaxPercentOfErrorBudget; // if we are doing a lot of back and
                                        // forth, we must relax the requirements
         }
-
+        //printf("threshold:%.15f\n", ErrThreshold);
         numActiveRegions = 0;
         Filter<<<numBlocks, numThreads>>>(dRegionsError,
                                           unpolishedRegions,
@@ -1615,8 +1617,8 @@ namespace quad {
 
         numActiveRegions = ComputeNumUnPolishedRegions(
           d_ptr, unpolishedRegions, nullptr, scannedArray, numRegions);
-        // printf("number active regions:%lu with potential threshold %.15e\n",
-        // numActiveRegions, ErrThreshold);
+        // printf("number active regions:%lu with potential threshold %.15e current regions:%lu target:%lu\n",
+        // numActiveRegions, ErrThreshold, numRegions, targetRegionNum);
         if (numActiveRegions <= targetRegionNum) {
 
           wrapped_mask = thrust::device_pointer_cast(unpolishedRegions);
@@ -1643,7 +1645,7 @@ namespace quad {
                numDirectionChanges == maxDirectionChanges)) {
             integral += iter_polished_estimate;
             error += iter_polished_errorest;
-            // printf("Found it %.15f +- %.15f\n", integral, error);
+            //printf("Found it %.15f +- %.15f\n", integral, error);
             break;
           } else if (iter_polished_errorest <= .95 * (targetError - error)) {
             acceptableThreshold = ErrThreshold;
@@ -2139,7 +2141,81 @@ namespace quad {
       QuadDebug(cudaFree(activeRegions));
       QuadDebug(cudaFree(subDividingDimension));
     }
-
+	
+	
+	template<typename IntegT>
+	void EvaluateAtCuhrePoints(IntegT* d_integrand, VerboseResults& resultsObj, Volume<T, NDIM>* vol = nullptr){
+		
+		size_t numRegions = 1;
+		size_t numBlocks = numRegions;
+		size_t numThreads = BLOCK_SIZE;
+		double epsrel = 1.e-3;
+		double epsabs = 1.e-22;
+		
+		double* funcEvals = quad::cuda_malloc_managed<double>(NDIM*rule.GET_FEVAL());
+		double* results = quad::cuda_malloc_managed<double>(rule.GET_FEVAL());
+		
+		QuadDebug(Device.AllocateMemory((void**)&generators,
+                                      sizeof(double) * NDIM * fEvalPerRegion));
+		ComputeGenerators<double, NDIM><<<1, BLOCK_SIZE>>>(generators, fEvalPerRegion, constMem);
+		cudaDeviceSynchronize();
+		CudaCheckError();
+		AllocVolArrays(vol);
+		
+		int iteration = 0;
+		dRegionsError = nullptr, dRegionsIntegral = nullptr;
+		int *activeRegions = nullptr, *subDividingDimension = nullptr;
+		
+		IterationAllocations(dRegionsIntegral,
+							dRegionsError,
+							dParentsIntegral,
+                            dParentsError,
+                            activeRegions,
+                            subDividingDimension,
+                            iteration);
+		
+		gEvaluateAtCuhrePoints<IntegT, T, NDIM, BLOCK_SIZE>
+        <<<numBlocks, numThreads>>>(
+          d_integrand,
+          dRegions,
+          dRegionsLength,
+          numRegions,
+          dRegionsIntegral,
+          dRegionsError,
+          activeRegions,
+          subDividingDimension,
+          epsrel,
+          epsabs,
+          constMem,
+          rule.GET_FEVAL(),
+          rule.GET_NSETS(),
+          lows,
+          highs,
+          iteration,
+          depthBeingProcessed,
+          generators,
+		  results,
+		  funcEvals);
+		  
+		  cudaDeviceSynchronize();
+		  
+		  resultsObj.numFuncEvals = rule.GET_FEVAL();
+		  resultsObj.results.reserve(rule.GET_FEVAL());
+		  
+		  for(int i=0; i< rule.GET_FEVAL(); ++i){
+			resultsObj.results[i] = results[i];
+		  }
+		  
+		  for(int i=0; i< rule.GET_FEVAL(); ++i){
+			std::vector<double> evalPoints;
+			for(int dim = 0; dim < NDIM; ++dim){
+				evalPoints.push_back(funcEvals[i*NDIM+dim]);
+			}
+			resultsObj.funcEvaluationPoints.push_back(evalPoints);
+		 }		  
+		  
+	}
+	
     template <typename IntegT>
     bool
     IntegrateFirstPhase(IntegT* d_integrand,

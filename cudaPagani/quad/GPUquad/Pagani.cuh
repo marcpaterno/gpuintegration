@@ -84,7 +84,20 @@ namespace quad {
       memcpy(d_integrand, &integrand, sizeof(IntegT));
       return d_integrand;
     }
-
+	
+	template<typename IntegT>
+	VerboseResults
+	EvaluateAtCuhrePoints(IntegT integrand, Volume<T, NDIM>* volume = nullptr){
+		IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
+		CudaCheckError();
+		kernel->GenerateInitialRegions();
+		VerboseResults resultsObj;
+		resultsObj.NDIM = NDIM;
+		kernel->EvaluateAtCuhrePoints(d_integrand, resultsObj, volume);
+		
+		return resultsObj;
+	}
+	
     template <typename IntegT>
     cuhreResult<T>
     integrate(IntegT integrand,

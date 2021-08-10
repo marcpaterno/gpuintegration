@@ -2,6 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
 #include <cstring>
+#include "cudaPagani/quad/quad.h"
 
 namespace gpu {
   template <typename T, std::size_t s>
@@ -47,19 +48,36 @@ namespace gpu {
   };
 
   template <typename T>
-  class cudaDynamicArray {
+  class cudaDynamicArray{
   public:
+    __host__ __device__
+    cudaDynamicArray(const cudaDynamicArray& a){
+        #ifndef __CUDA_ARCH__
+            N = a.N;
+            cudaMallocManaged((void**)&data, sizeof(T) * a.N);
+            memcpy(data, a.data, sizeof(T) * a.N);
+        #else
+            //can't instantiate on device and then access on host
+            N = a.N;
+            data = new T[a.N];
+            memcpy(data, a.data, sizeof(T) * a.N);
+        #endif
+    }
+    
+    __host__ __device__
     cudaDynamicArray()
     {
       data = nullptr;
       N = 0;
     }
-
-    cudaDynamicArray(T const* initData, size_t s) { Initialize(initData, s); }
-
-    // needs destructor?
-    // host-only function
-    void
+    
+    //make everything host device
+    
+    cudaDynamicArray(T const* initData, size_t s) { 
+        Initialize(initData, s); 
+    }
+    
+    void    
     Initialize(T const* initData, size_t s)
     {
       N = s;
@@ -67,6 +85,13 @@ namespace gpu {
       cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
     }
 
+    void
+    Reserve(size_t s)
+    {
+      N = s;
+      cudaMallocManaged((void**)&data, sizeof(T) * s);
+    }
+    
     explicit
     cudaDynamicArray(size_t s)
     {
@@ -98,13 +123,13 @@ namespace gpu {
       return N;
     }
 
-    cudaDynamicArray&
+    /*cudaDynamicArray&
     operator=(const cudaDynamicArray& source)
     {
       cudaMallocManaged((void**)&data, sizeof(T) * source.size());
       cudaMemcpy(data, source.data, sizeof(T) * N, cudaMemcpyHostToDevice);
       return *this;
-    }
+    }*/
 
     __host__ __device__ T&
     operator[](std::size_t i)

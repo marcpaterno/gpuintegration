@@ -299,7 +299,79 @@ namespace quad {
                             // polishedRegions)
     }
   }
+	
+	
+	template <typename IntegT, typename T, int NDIM, int blockDim>
+	__device__ void
+	verboseINIT_REGION_POOL(IntegT* d_integrand,
+                    T* dRegions,
+                    T* dRegionsLength,
+                    size_t numRegions,
+                    const Structures<double>& constMem,
+                    int FEVAL,
+                    int NSETS,
+                    Region<NDIM> sRegionPool[],
+                    GlobalBounds sBound[],
+                    T* lows,
+                    T* highs,
+                    int iteration,
+                    int depth,
+                    double* generators,
+					double* results,
+					double* funcEvals)
+	{
+		size_t index = blockIdx.x;
+		__shared__ T Jacobian;
+		__shared__ int maxDim;
+		__shared__ T vol;
 
+		__shared__ T ranges[NDIM];
+
+		if (threadIdx.x == 0) {
+
+		  Jacobian = 1.;
+		  T maxRange = 0;
+		  for (int dim = 0; dim < NDIM; ++dim) {
+			T lower = dRegions[dim * numRegions + index];
+			sRegionPool[0].bounds[dim].lower = lower;
+			sRegionPool[0].bounds[dim].upper =
+			  lower + dRegionsLength[dim * numRegions + index];
+
+			sBound[dim].unScaledLower = lows[dim];
+			sBound[dim].unScaledUpper = highs[dim];
+			ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
+			sRegionPool[0].div = depth;
+
+			T range = sRegionPool[0].bounds[dim].upper - lower;
+			Jacobian = Jacobian * ranges[dim];
+			if (range > maxRange) {
+			  maxDim = dim;
+			  maxRange = range;
+			}
+		  }
+
+		  vol = ldexp(1., -depth);
+		}
+
+    __syncthreads();
+    verboseSampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
+                                                 0,
+                                                 constMem,
+                                                 FEVAL,
+                                                 NSETS,
+                                                 sRegionPool,
+                                                 sBound,
+                                                 &vol,
+                                                 &maxDim,
+                                                 ranges,
+                                                 &Jacobian,
+                                                 generators,
+                                                 iteration,
+												 results,
+												 funcEvals);
+    __syncthreads();
+  }
+	
   template <typename IntegT, typename T, int NDIM, int blockDim>
   __device__ void
   INIT_REGION_POOL(IntegT* d_integrand,
@@ -414,6 +486,50 @@ namespace quad {
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
     }
   }
+
+
+template <typename IntegT, typename T, int NDIM, int blockDim>
+  __global__ void
+  gEvaluateAtCuhrePoints(IntegT* d_integrand,
+                       T* dRegions,
+                       T* dRegionsLength,
+                       size_t numRegions,
+                       T* dRegionsIntegral,
+                       T* dRegionsError,
+                       int* activeRegions,
+                       int* subDividingDimension,
+                       T epsrel,
+                       T epsabs,
+                       Structures<double> constMem,
+                       int FEVAL,
+                       int NSETS,
+                       T* lows,
+                       T* highs,
+                       int iteration,
+                       int depth,
+                       double* generators,
+					   double* results,
+					   double* funcEvals){
+		__shared__ Region<NDIM> sRegionPool[1];
+		__shared__ GlobalBounds sBound[NDIM];
+
+		verboseINIT_REGION_POOL<IntegT, T, NDIM, blockDim>(d_integrand,
+                                                dRegions,
+                                                dRegionsLength,
+                                                numRegions,
+                                                constMem,
+                                                FEVAL,
+                                                NSETS,
+                                                sRegionPool,
+                                                sBound,
+                                                lows,
+                                                highs,
+                                                iteration,
+                                                depth,
+                                                generators,
+												results,
+												funcEvals);				   
+	}
 
   __device__ size_t
   GetSiblingIndex(size_t numRegions)
