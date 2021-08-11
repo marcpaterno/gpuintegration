@@ -638,7 +638,7 @@ vegas(IntegT integrand,
       int titer,
       int itmax,
       int skip,
-      quad::Volume<double, ndim>* vol = nullptr)
+      quad::Volume<double, ndim>* vol)
 {
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
   double regn[2 * MXDIM + 1];
@@ -963,7 +963,7 @@ integrate(IntegT integrand,
           int totalIters = 15,
           int adjustIters = 15,
           int skipIters = 5,
-          quad::Volume<double, NDIM>* volume = nullptr)
+          quad::Volume<double, NDIM>* volume)
 {
   IntegrationResult result;
   int fcode = -1; // test that it's really not being used anywhere
@@ -1007,7 +1007,7 @@ simple_integrate(IntegT integrand,
                  int totalIters = 15,
                  int adjustIters = 15,
                  int skipIters = 5,
-                 quad::Volume<double, NDIM>* volume = nullptr)
+                 quad::Volume<double, NDIM>* volume)
 {
   IntegrationResult result;
   int fcode = -1; // test that it's really not being used anywhere
