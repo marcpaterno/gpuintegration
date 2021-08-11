@@ -5,33 +5,42 @@ down the code by 2x
 
 chunksize needs to be tuned based on the ncalls. For now hardwired using a switch statement
 
+
+nvcc -O2 -DCUSTOM -o vegas vegas_mcubes.cu -arch=sm_70
 OR
-nvcc -O2 -DCURAND -o vegas_mcubes vegas_mcubes.cu -arch=sm_70
+nvcc -O2 -DCURAND -o vegas vegas_mcubes.cu -arch=sm_70
 
 example run command
 
-nvprof ./vegas_mcubes 0 6 0.0  10.0  2.0E+09  10, 5, 0
+nvprof ./vegas 0 6 0.0  10.0  1.0E+09  10, 0, 0
+
+nvprof  ./vegas 1 9 -1.0  1.0  1.0E+07 15 10 10
+
+nvprof ./vegas 2 2 -1.0 1.0  1.0E+09 1 0 0
 
 Last three arguments are: total iterations, iteration
 
 */
-
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <curand_kernel.h>
 #include <stdint.h>
 #include <ctime>
+#include <iostream>
 
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
-#define ALPH 1.5
+#define ALPH 1.5 //commented out by Ioannis in order to match python vegas default of .5
+//#define ALPH 0.5
 #define NDMX  500
 #define MXDIM 20
 
 #define NDMX1 NDMX+1
 #define MXDIM1 MXDIM+1
 #define PI 3.14159265358979323846
+#include "xorshift.cu"
 
 #define IMAX(a,b) \
     ({ __typeof__ (a) _a = (a); \
@@ -54,48 +63,21 @@ Last three arguments are: total iterations, iteration
 }
 
 
-// define a new function and update function specification at the end 
+#include "func.cuh"
 
-__inline__ __device__ double BoxIntegral8_22(double x[], int ndim){
- 
-    double s = 22;
-    double sum = 0;
-    for(int i=0; i<ndim; i++){
-        sum += pow(x[i], 2); 
-    }
-	return pow(sum, s / 2);
-  
+int verbosity =0;
+
+ using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+
+template<typename T>
+void PrintArray(T* array, int size, std::string label){
+    printf("Will try to print v:%i\n", verbosity);
+    if(verbosity == 0)
+        return;
+    for(int i=0; i< size; i++)
+        std::cout<<label<<"["<<i<<"]:"<<array[i]<<"\n";
 }
-
-
-__inline__ __device__  double func1(double *xx, int ndim) {
-	// 6 d function
-	double t = 0.0;
-	for (int j = 1; j <= ndim; j++) {
-		t += xx[j];
-	}
-	return sin(t);
-}
-
-
-__inline__ __device__ double func2(double x[], int ndim) {
-	// gaussian function
-	double sigma = 0.01;
-	double tsum0 = 0.0; double k;
-	double tsum1, tsum2;
-	int j;
-	k = sigma * sqrt(2.0 * M_PI);
-	k = pow(k, ndim);
-	k = 1.0 / k;
-	for (j = 1; j <= ndim; j++) {
-		tsum0 += (x[j]) * (x[j]);
-	}
-	tsum1 = tsum0 / (2 * sigma * sigma);
-	tsum2 = exp(-tsum1);
-	return (tsum2 * k);
-}
-
-
 
 __inline__ __device__
 double warpReduceSum(double val) {
@@ -116,7 +98,8 @@ double blockReduceSum(double val) {
 
 	val = warpReduceSum(val);     // Each warp performs partial reduction
 
-	if (lane == 0) shared[wid] = val; // Write reduced value to shared memory
+	if (lane == 0) 
+        shared[wid] = val; // Write reduced value to shared memory
 
 	__syncthreads();              // Wait for all partial reductions
 
@@ -127,8 +110,6 @@ double blockReduceSum(double val) {
 
 	return val;
 }
-
-
 
 __inline__ __device__  void get_indx(int ms, int *da, int ND, int NINTV) {
 	int dp[MXDIM];
@@ -177,7 +158,6 @@ __inline__ __device__  void get_indxT(int mc, int *da, int nd, int ng, double sc
 
 }
 
-
 __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
                              double *result_dev, double xnd, double *xi,
                              double *d, double *dx, double *regn, int ncubes,
@@ -215,8 +195,8 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 	//if(tx == 30 && blockIdx.x == 6771) printf("here m is %d\n", m);
 
 	if (m < totalNumThreads) {
-		if (m == totalNumThreads - 1) chunkSize = LastChunk + 1;
-		//if(tx == 30 && blockIdx.x == 6771) printf("here m is %d\n", m);
+		if (m == totalNumThreads - 1) 
+            chunkSize = LastChunk + 1;
 		seed = seed_init + m * chunkSize;
 #ifdef CURAND
 		curandState localState;
@@ -226,7 +206,6 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 		get_indx(m * chunkSize, &kg[1], ndim, ng);
 		for (int t = 0; t < chunkSize; t++) {
 			fb = f2b = 0.0;
-			//get_indx(m * chunkSize + t, &kg[1], ndim, ng);
 
 			for ( k = 1; k <= npg; k++) {
 				wgt = xjac;
@@ -253,12 +232,9 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 					}
 
 					x[j] = regn[j] + rc * dx[j];
-
+                    
 					wgt *= xo * xnd;
-
-
 				}
-				//double tmp = func[1](x, ndim);
 				double tmp;
 
 				switch (fcode) {
@@ -268,17 +244,98 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 				case 1:
 					tmp = (*func2)(x, ndim);
 					break;
-				/*case 2:
+				case 2:
 					tmp = (*func3)(x, ndim);
-					break;	*/				
-                 case 2: 
+					break;			
+                case 3:
                     tmp = (*BoxIntegral8_22)(x, ndim);
+                    break;
+                case 4:
+                    tmp = (*GENZ1_8D)(x, ndim);
+                    break;
+                case 5:
+                    tmp = (*GENZ2_2D)(x, ndim);
+                    break;
+                case 6:
+                    tmp = (*GENZ2_6D)(x, ndim);
+                    break;
+                case 7:
+                    tmp = (*GENZ3_3D)(x, ndim);
+                    break;
+                case 8:
+                    tmp = (*GENZ4_5D)(x, ndim);
+                    break;
+                case 9:
+                    tmp = (*GENZ5_8D)(x, ndim);
+                    break;
+                case 10:
+                    tmp = (*BoxIntegral8_15)(x, ndim);
+                    break;
+                case 11:
+                    tmp = (*GENZ6_6D)(x, ndim);
+                    break;
+                case 12:
+                    tmp = (*GENZ4_8D)(x, ndim);
+                    break;
+                case 13:
+                    tmp = (*GENZ3_8D)(x, ndim);
+                    break;
+                case 14:
+                    tmp = sqsum(x, ndim);
+                    break;
+                case 15:
+                    tmp = sumsqroot(x, ndim);
+                    break;
+                case 16:
+                    tmp = prodones(x, ndim);
+                    break;
+                case 17:
+                    tmp = prodexp(x, ndim);
+                    break;
+                case 18:
+                    tmp = prodcub(x, ndim);
+                    break;
+                case 19:
+                    tmp = prodx(x, ndim);
+                    break;
+                case 20:
+                    tmp = sumfifj(x, ndim);
+                    break;
+                case 21:
+                    tmp = sumfonefj(x, ndim);
+                    break;
+                case 22:
+                    tmp = hellekalek(x, ndim);
+                    break;
+                case 23:
+                    tmp = roosarnoldone(x, ndim);
+                    break;
+                case 24:
+                    tmp = roosarnoldtwo(x, ndim);
+                    break;
+                case 25:
+                    tmp = roosarnoldthree(x, ndim);
+                    break;
+                case 26:
+                    tmp = rst(x, ndim);
+                    break;
+                case 27:
+                    tmp = sobolprod(x, ndim);
+                    break;
+                case 28:
+                    tmp = oscill(x, ndim);
+                    break;
+                case 29:
+                    tmp = prpeak(x, ndim);
+                    break;
+                case 30:
+                    tmp = sum(x, ndim);
+                    break;
 				default:
 					tmp = (*func2)(x, ndim);
 					break;
 				}
-
-//        tmp = (*func2)(x, ndim);
+                
 				f = wgt * tmp;
 				f2 = f * f;
 
@@ -287,7 +344,8 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 #pragma unroll 2
 				for ( j = 1; j <= ndim; j++) {
 					atomicAdd(&d[ia[j]*MXDIM1 + j], fabs(f));
-					//d[ia[j]*MXDIM1 + j] += f2;
+					//if(j == 1 && ia[j] == 1)
+                    //    printf("For bin %i adding to index %i the value of %.8f x:%f, %f, %f\n", ia[j], ia[j]*MXDIM1 + j, fabs(f), x[1], x[2], x[3]);
 				}
 
 			}  // end of npg loop
@@ -308,20 +366,12 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 		fbg  = blockReduceSum(fbg);
 		f2bg = blockReduceSum(f2bg);
 
-
 		if (tx == 0) {
 			atomicAdd(&result_dev[0], fbg);
 			atomicAdd(&result_dev[1], f2bg);
-			//if(iter==10) printf("ti is %e, tsi is %e\n",result_dev[0], result_dev[1]);
-
 		}
-
-
 	} // end of subcube if
-
 }
-
-
 
 __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg,
                               double *result_dev, double xnd, double *xi,
@@ -358,11 +408,9 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 	double x[MXDIM + 1];
 	int k, j;
 	double fbg, f2bg;
-	//if(tx == 30 && blockIdx.x == 6771) printf("here m is %d\n", m);
 
 	if (m < totalNumThreads) {
 		if (m == totalNumThreads - 1) chunkSize = LastChunk + 1;
-		//if(tx == 30 && blockIdx.x == 6771) printf("here m is %d\n", m);
 		seed = seed_init + m * chunkSize;
 #ifdef CURAND
 		curandState localState;
@@ -398,15 +446,13 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 						rc = (xn - iaj) * xo;
 					}
 
-					//x[j] = regn[j] + rc * dx[j];
-
 					x[j] = regn[1] + rc * dx[1];
 
 					wgt *= xo * xnd;
 
 
 				}
-				//double tmp = func[1](x, ndim);
+
 				double tmp;
 
 				switch (fcode) {
@@ -416,19 +462,102 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 				case 1:
 					tmp = (*func2)(x, ndim);
 					break;
-                 case 2: 
-                    tmp = (*BoxIntegral8_22)(x, ndim);
-				/*case 2:
+				case 2:
 					tmp = (*func3)(x, ndim);
-					break;*/					
+					break;			
+                case 3:
+                    
+                    tmp = (*BoxIntegral8_22)(x, ndim);
+                    break;
+                case 4:
+                    tmp = (*GENZ1_8D)(x, ndim);
+                    break;
+                case 5:
+                    tmp = (*GENZ2_2D)(x, ndim);
+                    break;
+                case 6:
+                    tmp = (*GENZ2_6D)(x, ndim);
+                    break;
+                case 7:
+                    tmp = (*GENZ3_3D)(x, ndim);
+                    break;
+                case 8:
+                    tmp = (*GENZ4_5D)(x, ndim);
+                    break;
+                case 9:
+                    tmp = (*GENZ5_8D)(x, ndim);
+                    break;
+                case 10:
+                    tmp = (*BoxIntegral8_15)(x, ndim);
+                    break;
+                case 11:
+                    tmp = (*GENZ6_6D)(x, ndim);
+                    break;
+                case 12:
+                    tmp = (*GENZ4_8D)(x, ndim);
+                    break;
+                case 13:
+                    tmp = (*GENZ3_8D)(x, ndim);
+                    break;
+                case 14:
+                    tmp = wgt * sqsum(x, ndim);
+                    break;
+                case 15:
+                    tmp = wgt * sumsqroot(x, ndim);
+                    break;
+                case 16:
+                    tmp = wgt * prodones(x, ndim);
+                    break;
+                case 17:
+                    tmp = wgt * prodexp(x, ndim);
+                    break;
+                case 18:
+                    tmp = wgt * prodcub(x, ndim);
+                    break;
+                case 19:
+                    tmp = wgt * prodx(x, ndim);
+                    break;
+                case 20:
+                    tmp = wgt * sumfifj(x, ndim);
+                    break;
+                case 21:
+                    tmp = wgt * sumfonefj(x, ndim);
+                    break;
+                case 22:
+                    tmp = wgt * hellekalek(x, ndim);
+                    break;
+                case 23:
+                    tmp = wgt * roosarnoldone(x, ndim);
+                    break;
+                case 24:
+                    tmp = wgt * roosarnoldtwo(x, ndim);
+                    break;
+                case 25:
+                    tmp = wgt * roosarnoldthree(x, ndim);
+                    break;
+                case 26:
+                    tmp = wgt * rst(x, ndim);
+                    break;
+                case 27:
+                    tmp = wgt * sobolprod(x, ndim);
+                    break;
+                case 28:
+                    tmp = wgt * oscill(x, ndim);
+                    break;
+                case 29:
+                    tmp = wgt * prpeak(x, ndim);
+                    break;
+                case 30:
+                    tmp = wgt * sum(x, ndim);
+                    break;
 				default:
 					tmp = (*func2)(x, ndim);
 					break;
 				}
-
-//        tmp = (*func2)(x, ndim);
-				f = wgt * tmp;
-				f2 = f * f;
+            
+                
+				f = wgt * tmp; //is this f(x)/p(x)?
+				f2 = f * f; //this is (f(x)/p(x))^2 in equation 2.
 
 				fb += f;
 				f2b += f2;
@@ -437,8 +566,8 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 			}  // end of npg loop
 
 			f2b = sqrt(f2b * npg);
-			f2b = (f2b - fb) * (f2b + fb);
-
+            f2b = (f2b - fb) * (f2b + fb); //this is equivalent to s^(2) - (s^(1))^2  
+            
 			fbg += fb;
 			f2bg += f2b;
 
@@ -456,51 +585,65 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 		if (tx == 0) {
 			atomicAdd(&result_dev[0], fbg);
 			atomicAdd(&result_dev[1], f2bg);
-			//if(iter==10) printf("ti is %e, tsi is %e\n",result_dev[0], result_dev[1]);
-
 		}
+        
+        
 
 
 	} // end of subcube if
 
 }
 
-
-
-
-
-
-
-void rebin(double rc, int nd, double r[], double xin[], double xi[])
-
-{
-
+void rebin(double rc, int nd, double r[], double xin[], double xi[]){
+    
+    
+    //--------------------------------
+    //Assumptions
+    //dr is the remaining distance to cover in the axis that still needs to be assigned to bins
+    //xin is the length we have already assigned
+    //what is r?
+    //--------------------------------
+    
 	int i, k = 0;
 	double dr = 0.0, xn = 0.0, xo = 0.0;
+    
 	for (i = 1; i < nd; i++) {
-		while (rc > dr)
+        
+        //printf("BIN:%i\n", i);
+        //printf("\tEvaluating rc>dr :%i\n", rc > dr);
+        
+		while (rc > dr){
 			dr += r[++k];
-		if (k > 1) xo = xi[k - 1];
+            //printf("\tsetting dr:%f r[%i]:%f\n", dr, k, r[k]);
+        }
+        
+		if (k > 1) 
+            xo = xi[k - 1];
+        
+        //printf("\tSetting xn to %f\n", xi[k]);
+        //printf("\tSetting dr to %f\n", dr);
+        //printf("\txo:%.8f\n", xo);
+        //printf("\tr[%i]:%.8f\n", k, r[k]);
+        
 		xn = xi[k];
 		dr -= rc;
+        
+        //printf("\tSetting xin[%i] to %f\n", i, xn - (xn - xo) * dr / r[k]);
+        
 		xin[i] = xn - (xn - xo) * dr / r[k];
+        
 	}
 
-	for (i = 1; i < nd; i++) xi[i] = xin[i];
+	for (i = 1; i < nd; i++) 
+        xi[i] = xin[i];
 	xi[nd] = 1.0;
 
 }
 
-
-
-
-
 void vegas(double regn[], int ndim, int fcode,
            double ncall, double *tgral, double *sd,
            double *chi2a, int titer, int itmax, int skip)
-
 {
-
 	int i, it, j, k, nd, ndo, ng, npg, ncubes;
 	double calls, dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
 
@@ -520,46 +663,41 @@ void vegas(double regn[], int ndim, int fcode,
 
 
 // code works only  for (2 * ng - NDMX) >= 0)
-
+	
 	ndo = 1;
-	for (j = 1; j <= ndim; j++) xi[j * NDMX1 + 1] = 1.0;
+	for (j = 1; j <= ndim; j++) 
+        xi[j * NDMX1 + 1] = 1.0;
 	si = swgt = schi = 0.0;
 	nd = NDMX;
 	ng = 1;
-	ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim);
-	for (k = 1, i = 1; i < ndim; i++) k *= ng;
+	ng = (int)pow(ncall / 2.0 /*+ 0.25*/, 1.0 / ndim); //why do we add .25?
+	for (k = 1, i = 1; i < ndim; i++) 
+        k *= ng;
 	double sci = 1.0 / k;
 	double sc = k;
 	k *= ng;
 	ncubes = k;
 	npg = IMAX(ncall / k, 2);
 	calls = (double)npg * (double)k;
+    //printf("actual number of calls:%f\n", calls);
 	dxg = 1.0 / ng;
 	double ing = dxg;
-	for (dv2g = 1, i = 1; i <= ndim; i++) dv2g *= dxg;
+	for (dv2g = 1, i = 1; i <= ndim; i++) 
+        dv2g *= dxg;
 	dv2g = (calls * dv2g * calls * dv2g) / npg / npg / (npg - 1.0);
 	xnd = nd;
 	dxg *= xnd;
 	xjac = 1.0 / calls;
 	for (j = 1; j <= ndim; j++) {
 		dx[j] = regn[j + ndim] - regn[j];
-		//printf("%e, %e\n", dx[j], xjac);
 		xjac *= dx[j];
 	}
 
-
-
-	for (i = 1; i <= IMAX(nd, ndo); i++) r[i] = 1.0;
-	for (j = 1; j <= ndim; j++) rebin(ndo / xnd, nd, r, xin, &xi[j * NDMX1]);
+	for (i = 1; i <= IMAX(nd, ndo); i++) 
+        r[i] = 1.0;
+	for (j = 1; j <= ndim; j++) 
+        rebin(ndo / xnd, nd, r, xin, &xi[j * NDMX1]);
 	ndo = nd;
-
-  // for (int k=0; k < NDMX1; k++) {
-  // 	printf("k = %d     xi =  %e\n", k, xi[NDMX1+k]);
-  // }
-
-	printf("ng, npg, ncubes, xjac, %d, %d, %12d, %e\n", ng, npg, ncubes, xjac);
-
-
 
 
 
@@ -573,9 +711,6 @@ void vegas(double regn[], int ndim, int fcode,
 	cudaMalloc((void**)&xi_dev, sizeof(double) * (MXDIM + 1) * (NDMX + 1)); cudaCheckError();
 	cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1)); cudaCheckError();
 	cudaMalloc((void**)&ia_dev, sizeof(int) * (MXDIM + 1)); cudaCheckError();
-
-
-
 
 	cudaMemcpy( dx_dev, dx, sizeof(double) * (MXDIM + 1), cudaMemcpyHostToDevice) ; cudaCheckError();
 	cudaMemcpy( x_dev, x, sizeof(double) * (MXDIM + 1), cudaMemcpyHostToDevice) ; cudaCheckError();
@@ -596,10 +731,11 @@ void vegas(double regn[], int ndim, int fcode,
 		chunkSize = 2048;
 		break;		
 	default:
-		chunkSize = 32;
+		//chunkSize = 2048;
+        chunkSize = 32;
+        //chunkSize = 1;
 		break;
 	}
-
 
 	uint32_t totalNumThreads = (uint32_t) ((ncubes + chunkSize - 1) / chunkSize);
 	uint32_t totalCubes = totalNumThreads * chunkSize;
@@ -607,38 +743,45 @@ void vegas(double regn[], int ndim, int fcode,
 	int LastChunk = chunkSize - extra;
 	uint32_t nBlocks = ((uint32_t) (((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
 	uint32_t nThreads = BLOCK_DIM_X;
-	printf("ncubes %d nBlocks %d nThreads %d totalNumThreads %d totalCubes %d extra  %d LastChunk %d\n",
-	       ncubes, nBlocks, nThreads, totalNumThreads, totalCubes, extra, LastChunk);
-
-	printf("the number of evaluation will be %e\n", calls);
+    
+    std::cout<<"ncubes:"<<ncubes<<"\n";
+    std::cout<<"npg:"<<npg<<"\n";
+    std::cout<<"npg*ncubes*chunkSize:"<<npg*ncubes*chunkSize<<"\n";
+    std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
 	for (it = 1; it <= itmax; it++) {
 
 		ti = tsi = 0.0;
 		for (j = 1; j <= ndim; j++) {
 			for (i = 1; i <= nd; i++) d[i * MXDIM1 + j] = 0.0;
 		}
-
-
-		cudaMemcpy( xi_dev, xi, sizeof(double) * (MXDIM + 1) * (NDMX + 1), cudaMemcpyHostToDevice) ; cudaCheckError();
-		cudaMemset(d_dev, 0, sizeof(double) * (NDMX + 1) * (MXDIM + 1));
+        
+		cudaMemcpy( xi_dev, xi, sizeof(double) * (MXDIM + 1) * (NDMX + 1), cudaMemcpyHostToDevice) ; cudaCheckError();	//bin bounds
+		cudaMemset(d_dev, 0, sizeof(double) * (NDMX + 1) * (MXDIM + 1));	//bin contributions
 		cudaMemset(result_dev, 0, 2 * sizeof(double));
-
+        //std::cout<<"Launchign with "<<nBlocks<<","<<nThreads<<std::endl;
+        
+        std::cout<<"---------------------------------------\n";
+        //PrintArray<double>(xi, (MXDIM + 1) * (NDMX + 1), "xi");
+        
 		vegas_kernel <<< nBlocks, nThreads>>>(ng, ndim, npg, xjac, dxg, result_dev, xnd,
 		                                      xi_dev, d_dev, dx_dev, regn_dev, ncubes, it, sc,
 		                                      sci,  ing, chunkSize, totalNumThreads,
 		                                      LastChunk, fcode);
 
 
-		cudaMemcpy(xi, xi_dev, sizeof(double) * (MXDIM + 1) * (NDMX + 1), cudaMemcpyDeviceToHost); cudaCheckError();
-		cudaMemcpy( d, d_dev,  sizeof(double) * (NDMX + 1) * (MXDIM + 1), cudaMemcpyDeviceToHost) ; cudaCheckError();
+		cudaMemcpy(xi, xi_dev, sizeof(double) * (MXDIM + 1) * (NDMX + 1), cudaMemcpyDeviceToHost); cudaCheckError();	//is this necessary? the kernel doesn't change xi_dev
+		cudaMemcpy( d, d_dev,  sizeof(double) * (NDMX + 1) * (MXDIM + 1), cudaMemcpyDeviceToHost) ; cudaCheckError();	//we do need to the contributions for the rebinning
 
 		cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
+        
+        //PrintArray<double> (d, (MXDIM + 1) * (NDMX + 1), "d");
 
 		//printf("ti is %f", ti);
 		ti  = result[0];
 		tsi = result[1];
+   
 		tsi *= dv2g;
-		printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
+		//printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
 
 		if (it > skip) {
 			wgt = 1.0 / tsi;
@@ -650,40 +793,75 @@ void vegas(double regn[], int ndim, int fcode,
 			if (*chi2a < 0.0) *chi2a = 0.0;
 			*sd = sqrt(1.0 / swgt);
 			tsi = sqrt(tsi);
-			//printf("it %d\n", it);
-			printf("%5d   %14.7g+/-%9.2g  %9.2g\n", it, *tgral, *sd, *chi2a);
+			printf("%5d,   %14.7g, -%9.2g,  %9.2g\n", it, *tgral, *sd, *chi2a);
 		}
-		//printf("%3d   %e  %e\n", it, ti, tsi);
-
-
-
+        
+        std::cout<<"Rebining Process\n";
+        
 		for (j = 1; j <= ndim; j++) {
-			xo = d[1 * MXDIM1 + j];
-			xn = d[2 * MXDIM1 + j];
-			d[1 * MXDIM1 + j] = (xo + xn) / 2.0;
-			dt[j] = d[1 * MXDIM1 + j];
+            
+			xo = d[1 * MXDIM1 + j]; //bin 1 of dim j, and bin 2 just below           
+			xn = d[2 * MXDIM1 + j];                                     
+            
+            //printf("Contribution of bin 1:%.8f\n", xo);
+            //printf("Contribution of bin 2:%.8f\n", xn);
+            
+			d[1 * MXDIM1 + j] = (xo + xn) / 2.0;                        
+            //printf("Storing their average in the spot of contribution for bin 1\n");
+            
+			dt[j] = d[1 * MXDIM1 + j];       //set dt sum to contribution of bin 1                           
+            
+            
+            //printf("Going through %i bins starting at the second one (i:2)\n", nd);
 			for (i = 2; i < nd; i++) {
-				rc = xo + xn;
-				xo = xn;
-				xn = d[(i + 1) * MXDIM1 + j];
-				d[i * MXDIM1 + j] = (rc + xn) / 3.0;
-				dt[j] += d[i * MXDIM1 + j];
+                //rc is the contribution of the first and last bin? why?
+				rc = xo + xn;                                           
+                
+				xo = xn;                                                
+                
+				xn = d[(i + 1) * MXDIM1 + j];                           
+                
+                //printf("Contribution of bin A:%.8f\n", xo);
+                //printf("contribution of bin B:%.8f\n", xn);
+                
+				d[i * MXDIM1 + j] = (rc + xn) / 3.0;                    
+                //printf("updating with new three way average the contribution of bin %i\n", i);
+                
+                
+				dt[j] += d[i * MXDIM1 + j];                                
+                
+                
 			}
-			d[nd * MXDIM1 + j] = (xo + xn) / 2.0;
-			dt[j] += d[nd * MXDIM1 + j];
-			//printf("iter, j, dtj:    %d    %d      %e\n", it, j, dt[j]);
+            
+            //do bin nd last
+			d[nd * MXDIM1 + j] = (xo + xn) / 2.0;                      
+            
+			dt[j] += d[nd * MXDIM1 + j];                                
+            
 		}
-
+        
+        //printf("DIM: after summation\n");
+        //for(int j = 0; j < (MXDIM + 1) * (NDMX + 1); j++)
+        //    printf("d[%i]:%.8f\n", j, d[j]);
+        
 		for (j = 1; j <= ndim; j++) {
-			if (dt[j] > 0.0) {
+			//printf("Checking if dt[%i] is greater than 0:%.8f\n", j, dt[j]);
+            if (dt[j] > 0.0) {  //enter if there is any contribution only
 				rc = 0.0;
+                //printf("Setting rc to zero\n");
 				for (i = 1; i <= nd; i++) {
 					//if (d[i * MXDIM1 + j] < TINY) d[i * MXDIM1 + j] = TINY;
-					r[i] = pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /
-					           (log(dt[j]) - log(d[i * MXDIM1 + j])), ALPH);
-					rc += r[i];
+                    //printf("Setting r[%i] to %f\n", i, pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /(log(dt[j]) - log(d[i * MXDIM1 + j])), ALPH));
+                               
+					r[i] = pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /(log(dt[j]) - log(d[i * MXDIM1 + j])), ALPH);
+                    //r[i] = pow((d[i * MXDIM1 + j] / dt[j] - 1.) /(log(d[i * MXDIM1 + j])-log(dt[j])), ALPH);
+                    //printf("Incrementing rc by r[%i]:%f -> rc:%f\n", i, r[i], rc+r[i]);           
+					rc += r[i]; //rc is it the total number of sub-increments
+                    //printf("r[%i]:%.8f\n", i, r[i]);        //is r[i] the new weight of each bin (instead of the number of sub-increments?
 				}
-
+                
+                
+                //printf("Calling rebin rc/xnd:%.8f xnd:%.8f rc:%.8f\n", rc/xnd, xnd, rc);
 				rebin(rc / xnd, nd, r, xin, &xi[j * NDMX1]);
 			}
 
@@ -700,7 +878,7 @@ void vegas(double regn[], int ndim, int fcode,
 		ti = tsi = 0.0;
 
 		cudaMemset(result_dev, 0, 2 * sizeof(double));
-
+        
 		vegas_kernelF <<< nBlocks, nThreads>>>(ng, ndim, npg, xjac, dxg, result_dev, xnd,
 		                                       xi_dev, d_dev, dx_dev, regn_dev, ncubes, it, sc,
 		                                       sci,  ing, chunkSize, totalNumThreads,
@@ -712,8 +890,8 @@ void vegas(double regn[], int ndim, int fcode,
 		//printf("ti is %f", ti);
 		ti  = result[0];
 		tsi = result[1];
-		tsi *= dv2g;
-		printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
+		tsi *= dv2g; //is dv2g 1/(M-1)?
+		//printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
 
 		wgt = 1.0 / tsi;
 		si += wgt * ti;
@@ -750,14 +928,7 @@ void vegas(double regn[], int ndim, int fcode,
 
 }
 
-
-
-
-
-
-
 int main(int argc, char **argv)
-
 {
 
 	if (argc < 9) {
@@ -769,6 +940,7 @@ int main(int argc, char **argv)
 		        "****************************************\n");
 		exit(-1);
 	}
+    
 	int  j;
 	double avgi, chi2a, sd;
 	double regn[2 * MXDIM + 1];
@@ -781,24 +953,37 @@ int main(int argc, char **argv)
 	int titer = atoi(argv[6]);
 	int itmax = atoi(argv[7]);
 	int skip = atoi(argv[8]);
-
+    verbosity = atoi(argv[9]);
+    
+    std::cout<<"Ncall:"<<ncall<<"\n";
+    std::cout<<"verbosity:"<<verbosity<<"\n";
+    auto t0 = std::chrono::high_resolution_clock::now();
 	avgi = sd = chi2a = 0.0;
+    
 	for (j = 1; j <= ndim; j++) {
 		regn[j] = LL;
 		regn[j + ndim] = UL;
 	}
 
-
+    
 	vegas(regn, ndim, fcode, ncall, &avgi, &sd, &chi2a, titer, itmax, skip);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
-	printf("Number of iterations performed: %d\n", itmax);
+	//printf("Number of iterations performed: %d\n", itmax);
 
-	printf("Integral, Standard Dev., Chi-sq. = %.18f %.20f% 12.6f\n",
-
-	       avgi, sd, chi2a);
-
-
-
+	//printf("Integral, Standard Dev., Chi-sq. = %.18f %.20f% 12.6f\n",avgi, sd, chi2a);
+    std::cout.precision(15);
+    std::cout << fcode << ","
+            << std::scientific << avgi << "," 
+             << std::scientific << sd << "," 
+             << titer << "," 
+             << itmax << "," 
+             << skip << "," 
+             << ncall << ","
+             << chi2a << ","
+             << dt.count() << "\n";
+    
+    printf("Absolute error %.15e\n", abs(1.084656084656085e-02 - avgi));
 	return 0;
 
 }

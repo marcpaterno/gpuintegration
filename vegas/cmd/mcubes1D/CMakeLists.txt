@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(mcubes VERSION 0.0.1 LANGUAGES CXX CUDA C)
+project(mcubes1D VERSION 0.0.1 LANGUAGES CXX CUDA C)
 enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
@@ -18,13 +18,17 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_ARCHITECTURES 75)
 
-include_directories(AFTER ${CMAKE_SOURCE_DIR} ${VEGAS_DIR})
+include_directories(AFTER ${CMAKE_SOURCE_DIR})
 
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 
-#add_executable(SinSum6D SinSum6D.cu)
-#target_compile_options(SinSum6D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
-#set_target_properties(SinSum6D PROPERTIES POSITION_INDEPENDENT_CODE ON)
-#target_include_directories(SinSum6D PRIVATE ${CMAKE_SOURCE_DIR})
+add_executable(vegas1D vegas_mcubes_1D.cu)
+target_compile_options(vegas1D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
+set_target_properties(vegas1D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vegas1D PRIVATE ${CMAKE_SOURCE_DIR})
 
-add_subdirectory(demos)
+
+add_executable(vegas1Dcustom vegas_mcubes_1D.cu)
+target_compile_options(vegas1Dcustom PRIVATE "-arch=sm_70" "-O2" "-DCUSTOM")
+set_target_properties(vegas1Dcustom PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vegas1Dcustom PRIVATE ${CMAKE_SOURCE_DIR})
