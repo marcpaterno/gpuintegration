@@ -1,3 +1,6 @@
+#ifndef VEGAS_VEGAS_T_CUH
+#define VEGAS_VEGAS_T_CUH
+
 /*
 
 code works for gaussian and sin using switch statement. device pointerr/template
@@ -22,9 +25,10 @@ nvprof ./vegas 2 2 -1.0 1.0  1.0E+09 1 0 0
 Last three arguments are: total iterations, iteration
 
 */
-#include "vegas/util/Volume.cuh"
-#include "vegas/util/cudaApply.cuh"
-#include "vegas/util/cudaArray.cuh"
+#include "cudaPagani/quad/util/Volume.cuh"
+#include "cudaPagani/quad/util/cudaApply.cuh"
+#include "cudaPagani/quad/util/cudaArray.cuh"
+#include "cudaPagani/quad/quad.h"
 #include "vegas/util/func.cuh"
 #include "vegas/util/util.cuh"
 #include <chrono>
@@ -75,7 +79,7 @@ Last three arguments are: total iterations, iteration
     }                                                                          \
   }
 
-int verbosity = 0;
+//int verbosity = 0;
 
 using MilliSeconds =
   std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -109,9 +113,9 @@ template <typename T>
 void
 PrintArray(T* array, int size, std::string label)
 {
-  printf("Will try to print v:%i\n", verbosity);
-  if (verbosity == 0)
-    return;
+  //printf("Will try to print v:%i\n", verbosity);
+  //if (verbosity == 0)
+  // return;
   for (int i = 0; i < size; i++)
     std::cout << label << "[" << i << "]:" << array[i] << "\n";
 }
@@ -236,7 +240,8 @@ vegas_kernel(IntegT* d_integrand,
   uint32_t p = one << expi;
 #endif
 
-  unsigned long long seed /*, seed_init*/;
+
+  
   // seed_init = (iter) * ncubes;
   // seed_init = clock64();
 
@@ -254,12 +259,15 @@ vegas_kernel(IntegT* d_integrand,
   if (m < totalNumThreads) {
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
-    seed = seed_init +
-           m * chunkSize; // threads threads have a different seed each time,
+
+    unsigned long long seed = seed_init+m*chunkSize;
+#ifdef CURAND
+    
+    // threads threads have a different seed each time,
                           // CURAND documentation says not to do that, also need
                           // unique sequence number for each thread
-#ifdef CURAND
-    curandState localState;
+    
+curandState localState;
     curand_init(seed, 0, 0, &localState);
     // curand_init(seed, m, 0, &localState);
 #endif
@@ -474,7 +482,7 @@ vegas_kernelF(IntegT* d_integrand,
   uint32_t p = one << expi;
 #endif
 
-  unsigned long long seed /*, seed_init*/;
+  
   // seed_init = (iter) * ncubes;
 
   int m = blockIdx.x * blockDim.x + threadIdx.x;
@@ -490,8 +498,8 @@ vegas_kernelF(IntegT* d_integrand,
   if (m < totalNumThreads) {
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
-    seed = seed_init + m * chunkSize;
 #ifdef CURAND
+    unsigned long long seed = seed_init+m*chunkSize;
     curandState localState;
     curand_init(seed, 0, 0, &localState);
 #endif
@@ -638,7 +646,7 @@ vegas(IntegT integrand,
       int titer,
       int itmax,
       int skip,
-      quad::Volume<double, ndim>* vol)
+      quad::Volume<double, ndim> const* vol)
 {
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
   double regn[2 * MXDIM + 1];
@@ -835,8 +843,8 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      if (verbosity == 1)
-        printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
+      //if (verbosity == 1)
+      // printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
     }
 
     for (j = 1; j <= ndim; j++) {
@@ -932,8 +940,8 @@ vegas(IntegT integrand,
     tsi = sqrt(tsi);
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     // printf("it %d\n", it);
-    if (verbosity == 1)
-      printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
+    //if (verbosity == 1)
+    //  printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
     // printf("%3d   %e  %e\n", it, ti, tsi);
 
   } // end of iterations
@@ -954,20 +962,20 @@ vegas(IntegT integrand,
 }
 
 template <typename IntegT, int NDIM>
-IntegrationResult
-integrate(IntegT integrand,
+cuhreResult<double>
+integrate(IntegT ig,
           int ndim,
           double epsrel,
           double epsabs,
           double ncall,
-          int totalIters = 15,
+          quad::Volume<double, NDIM> const* volume,
+	  int totalIters = 15,
           int adjustIters = 15,
-          int skipIters = 5,
-          quad::Volume<double, NDIM>* volume)
+          int skipIters = 5)
 {
-  IntegrationResult result;
+  cuhreResult<double> result;
   int fcode = -1; // test that it's really not being used anywhere
-  vegas<IntegT, NDIM>(integrand,
+  vegas<IntegT, NDIM>(ig,
                       epsrel,
                       epsabs,
                       fcode,
@@ -998,18 +1006,18 @@ AdjustParams(double& ncall, int& totalIters)
 }
 
 template <typename IntegT, int NDIM>
-IntegrationResult
+cuhreResult<double>
 simple_integrate(IntegT integrand,
                  int ndim,
                  double epsrel,
                  double epsabs,
                  double ncall,
+                 quad::Volume<double, NDIM> const* volume,
                  int totalIters = 15,
                  int adjustIters = 15,
-                 int skipIters = 5,
-                 quad::Volume<double, NDIM>* volume)
+                 int skipIters = 5)
 {
-  IntegrationResult result;
+  cuhreResult<double> result;
   int fcode = -1; // test that it's really not being used anywhere
 
   do {
@@ -1036,3 +1044,5 @@ simple_integrate(IntegT integrand,
 
   return result;
 }
+
+#endif

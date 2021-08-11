@@ -86,6 +86,7 @@ struct cuhreResult {
   int lastPhase;
   // size_t activeRegions;    // is not currently being set
   size_t phase2_failedblocks; // is not currently being set
+  double chi_sq = 0.;
 };
 
 struct Result {

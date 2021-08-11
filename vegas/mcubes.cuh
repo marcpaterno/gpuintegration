@@ -1,7 +1,10 @@
 #ifndef GPUINTEGRATION_VEGAS_MCUBES_CUH
 #define GPUINTEGRATION_VEGAS_MCUBES_CUH
 
+#include "cubacpp/arity.hh"
 #include "vegas/util/util.cuh"
+#include "vegas/vegasT.cuh"
+#include "cudaPagani/quad/quad.h"
 
 namespace quad {
   struct mcubes {
@@ -11,29 +14,29 @@ namespace quad {
     int skip_iters = 5;
 
     template <typename F>
-    IntegrationResult integrate(F&& f, double epsabs, double epsrel);
+    cuhreResult<double> integrate(F const& f, double epsabs, double epsrel, quad::Volume<double, cubacpp::arity<F>()> const* pvol);
   };
 }
 
 
 template <typename F>
-IntegrationResult
+cuhreResult<double>
 quad::mcubes::integrate(
   F const& f,
   double epsabs,
   double epsrel,
-  quad::Volume<double, y3_cluster::arity<F>::value> const* pvol)
+  quad::Volume<double, cubacpp::arity<F>()> const* pvol)
 {
-  constexpr std::size_t ndim = y3_cluster::arity<F>::value;
+  constexpr std::size_t ndim = cubacpp::arity<F>();
   return simple_integrate<F, ndim>(f,
                                    ndim,
                                    epsrel,
                                    epsabs,
                                    static_cast<double>(maxcalls),
+				   pvol,
                                    total_iters,
                                    adjust_iters,
-                                   skip_iters,
-                                   pvol);
+                                   skip_iters);
 }
 
 #endif

@@ -755,7 +755,7 @@ namespace quad {
     }
 
     void
-    Phase_I_PrintFile(Volume<T, NDIM>* vol,
+    Phase_I_PrintFile(Volume<T, NDIM> const* vol,
                       size_t iter_nregions,
                       int* activeRegions,
                       T leaves_estimate,
@@ -1692,7 +1692,7 @@ namespace quad {
     }
 
     void
-    AllocVolArrays(Volume<T, NDIM>* vol)
+    AllocVolArrays(Volume<T, NDIM> const* vol)
     {
       /*
         this is invoked by IntegateFirstPhase and doesn't need to called by user
@@ -1958,7 +1958,7 @@ namespace quad {
                         T*& dParentsIntegral,
                         T*& dParentsError,
                         int iteration,
-                        Volume<T, NDIM>* vol,
+                        Volume<T, NDIM> const* vol,
                         int last_iteration = 0)
     {
       size_t numThreads = BLOCK_SIZE;
@@ -2226,7 +2226,7 @@ namespace quad {
                         size_t& nregions,
                         size_t& nFinishedRegions,
                         size_t& neval,
-                        Volume<T, NDIM>* vol = nullptr)
+                        Volume<T, NDIM> const* vol = nullptr)
     {
       QuadDebug(Device.AllocateMemory((void**)&generators,
                                       sizeof(double) * NDIM * fEvalPerRegion));

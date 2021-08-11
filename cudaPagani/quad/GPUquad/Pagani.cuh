@@ -60,7 +60,7 @@ namespace quad {
     int
     ExecutePhaseI(IntegT* d_integrand,
                   cuhreResult<T>& res,
-                  Volume<T, NDIM>* volume,
+                  Volume<T, NDIM> const* volume,
                   const int phase1type)
     {
 
@@ -103,7 +103,7 @@ namespace quad {
     integrate(IntegT integrand,
               T epsrel,
               T epsabs,
-              Volume<T, NDIM>* volume = nullptr,
+              Volume<T, NDIM> const* volume = nullptr,
               int verbosity = 0,
               int Final = 0,
               int heuristicID = 0,

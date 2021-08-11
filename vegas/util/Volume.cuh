@@ -7,7 +7,7 @@
 // user must make sure to call cudaMalloc and cudaMemcpy regarding d_highs and
 // d_lows
 
-namespace quad {
+namespace detail {
   template <typename T, int NDIM>
   struct Volume {
 

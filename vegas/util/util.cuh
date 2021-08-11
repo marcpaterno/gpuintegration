@@ -1,5 +1,5 @@
-#ifndef UTIL_CUH
-#define UTIL_CUH
+#ifndef VEGAS_UTIL_UTIL_CUH
+#define VEGAS_UTIL_UTIL_CUH
 
 #include <cstring>
 #include <iostream>
@@ -51,161 +51,25 @@
     return buffer;
   }
   
-  /*
-  namespace gpu {
-  template <typename T, std::size_t s>
-  class cudaArray {
+namespace VEGAS_namespace{  
+  class Managed {
   public:
+    void*
+    operator new(size_t len)
+    {
+      void* ptr;
+      cudaMallocManaged(&ptr, len);
+      cudaDeviceSynchronize();
+      return ptr;
+    }
+
     void
-    Initialize(T const* initData)
+    operator delete(void* ptr)
     {
-      std::memcpy(data, initData, sizeof(T) * s);
+      cudaDeviceSynchronize();
+      cudaFree(ptr);
     }
-
-    __host__ __device__ const T*
-    begin() const
-    {
-      return &data[0];
-    }
-
-    __host__ __device__ const T*
-    end() const
-    {
-      return (&data[0] + s);
-    }
-
-    __host__ __device__ constexpr std::size_t
-    size() const
-    {
-      return s;
-    }
-
-    __host__ __device__ T&
-    operator[](std::size_t i)
-    {
-      return data[i];
-    }
-
-    __host__ __device__ T const&
-    operator[](std::size_t i) const
-    {
-      return data[i];
-    }
-
-    T data[s];
   };
-
-  template <typename T>
-  class cudaDynamicArray {
-  public:
-    cudaDynamicArray()
-    {
-      data = nullptr;
-      N = 0;
-    }
-
-    // host-only function
-    void
-    Initialize(T const* initData, size_t s)
-    {
-      N = s;
-      cudaMallocManaged((void**)&data, sizeof(T) * s);
-      cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
-    }
-
-    __host__ __device__ ~cudaDynamicArray()
-    {
-#ifndef __CUDACC__
-      cudaFree(data);
-#endif
-    }
-
-    __host__ __device__ const T*
-    begin() const
-    {
-      return &data[0];
-    }
-
-    __host__ __device__ const T*
-    end() const
-    {
-      return (&data[0] + N);
-    }
-
-    __host__ __device__ constexpr std::size_t
-    size() const
-    {
-      return N;
-    }
-
-    cudaDynamicArray&
-    operator=(const cudaDynamicArray& source)
-    {
-      cudaMallocManaged((void**)&data, sizeof(T) * source.size());
-      cudaMemcpy(data, source.data, sizeof(T) * N, cudaMemcpyHostToDevice);
-      return *this;
-    }
-
-    __host__ __device__ T&
-    operator[](std::size_t i)
-    {
-      return data[i];
-    }
-
-    __host__ __device__ T
-    operator[](std::size_t i) const
-    {
-      return data[i];
-    }
-
-    T* data;
-    size_t N;
-  }; // cudaDynamicArray
-
-};*/
-  
-  
-class Managed {
-public:
-  void*
-  operator new(size_t len)
-  {
-    void* ptr;
-    cudaMallocManaged(&ptr, len);
-    cudaDeviceSynchronize();
-    return ptr;
-  }
-
-  void
-  operator delete(void* ptr)
-  {
-    cudaDeviceSynchronize();
-    cudaFree(ptr);
-  }
-};
-
-/*
-namespace gpu {
-
-  namespace detail {
-    template <class F, size_t N, std::size_t... I>
-    __device__ double
-    apply_impl(F&& f,
-               gpu::cudaArray<double, N> const& data,
-               std::index_sequence<I...>)
-    {
-      return f(data[I]...);
-    };
-  }
-
-  template <class F, size_t N>
-  __device__ double
-  // Unsure if we need to pass 'f' by value, for GPU execution
-  apply(F&& f, gpu::cudaArray<double, N> const& data)
-  {
-    return detail::apply_impl(
-      std::forward<F>(f), data, std::make_index_sequence<N>());
-  }
-}*/
+}
 
 #endif

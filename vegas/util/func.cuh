@@ -1,3 +1,6 @@
+#ifndef VEGAS_UTIL_FUNC_CUH
+#define VEGAS_UTIL_FUNC_CUH
+
 // define a new function and update function specification at the end 
 #define PI 3.14159265358979323844
 
@@ -374,3 +377,4 @@ double roosarnoldtwo(double* rx, int dim)
 	return value;
 }
 
+#endif
