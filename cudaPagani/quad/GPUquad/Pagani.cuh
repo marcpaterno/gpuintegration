@@ -6,9 +6,6 @@
 
 #include "cudaPagani/quad/GPUquad/Kernel.cuh"
 #include "cudaPagani/quad/util/Volume.cuh"
-#include <chrono>
-#include <map>
-#include <stdio.h>
 
 namespace quad {
 #if TIMING_DEBUG == 1
