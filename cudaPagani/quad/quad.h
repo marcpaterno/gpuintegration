@@ -12,7 +12,6 @@
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "cudaPagani/quad/util/cuhreResult.cuh"
@@ -63,31 +62,32 @@ struct Structures {
 
 /*template <typename T>
 struct cuhreResult {
-
-  cuhreResult()
-  {
-    estimate = 0.;
-    errorest = 0.;
-    neval = 0.;
-    nregions = 0.;
-    status = 0.;
-    // activeRegions = 0.;
-    phase2_failedblocks = 0.;
-    lastPhase = 0;
-    nFinishedRegions = 0;
-  };
-
-  T estimate;
-  T errorest;
-  size_t neval;
-  size_t nregions;
-  size_t nFinishedRegions;
-  int status;
-  int lastPhase;
+  T estimate {};
+  T errorest {};
+  size_t neval = 0;
+  size_t nregions = 0;
+  size_t nFinishedRegions = 0;
+  int status = -1;
+  int lastPhase = 0;
   // size_t activeRegions;    // is not currently being set
-  size_t phase2_failedblocks; // is not currently being set
+  size_t phase2_failedblocks = 0; // is not currently being set
   double chi_sq = 0.;
 };*/
+
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, cuhreResult<T> const& r) {
+  os << r.estimate << ' '
+    << r.errorest << ' '
+    << r.neval << ' '
+    << r.nregions << ' '
+    << r.nFinishedRegions << ' '
+    << r.status << ' '
+    << r.lastPhase << ' '
+    << r.phase2_failedblocks << ' '
+    << r.chi_sq;
+  return os;
+}
 
 struct Result {
   double avg, err;
