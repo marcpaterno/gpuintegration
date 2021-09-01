@@ -1533,7 +1533,8 @@ namespace quad {
                                  // move below when used by Filter
       estimateHasConverged =
         estimateHasConverged == false ?
-          (iteration >= 2 ?
+	//(iteration >= 2 ?
+	(iteration >= 10 ?
              sigDigitsSame(
                lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) :
              false) :
@@ -1543,10 +1544,19 @@ namespace quad {
       lastAvg = leaves_estimate;
       lastErr = leaves_errorest;
 
-      if (phase2 == true || (GetGPUMemNeededForNextIteration_CallBeforeSplit() <
+      /*if (phase2 == true || (GetGPUMemNeededForNextIteration_CallBeforeSplit() <
                                Device.GetAmountFreeMem() &&
                              !estimateHasConverged))
+			     return;*/
+      double mem_need_have_ratio = (double)GetGPUMemNeededForNextIteration_CallBeforeSplit()/((double)Device.GetAmountFreeMem());
+      bool enoughMemForNextIter = mem_need_have_ratio < 1.;
+      
+      if(enoughMemForNextIter && !estimateHasConverged)//don't filter if we haven't converged and we have enough mem
         return;
+      
+      if(mem_need_have_ratio < .1)
+	return;
+      
       //printf("Will attempt Filtering at iter:%i with %lu regions estimateHasConverged:%i\n", iteration, numRegions, estimateHasConverged);
       T targetError = abs(leaves_estimate) * epsrel;
       size_t numThreads = BLOCK_SIZE;
@@ -1605,7 +1615,7 @@ namespace quad {
               MaxPercentOfErrorBudget; // if we are doing a lot of back and
                                        // forth, we must relax the requirements
         }
-        //printf("threshold:%.15f\n", ErrThreshold);
+        //printf("trying threshold:%.15f\n", ErrThreshold);
         numActiveRegions = 0;
         Filter<<<numBlocks, numThreads>>>(dRegionsError,
                                           unpolishedRegions,
@@ -2038,9 +2048,9 @@ namespace quad {
                                activeRegions);
       integral += iter_finished_estimate;
       error += iter_finished_errorest;
-      // printf("%i, %.15f, %.15f, %.15f, %.15f numRegions:%lu\n", iteration,
-      // leaves_estimate, leaves_errorest, iter_estimate, iter_errorest,
-      // numRegions); printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),
+      printf("%i, %.15f, %.15f, %.15f, %.15f numRegions:%lu\n", iteration,
+       leaves_estimate, leaves_errorest, iter_estimate, iter_errorest,
+	     numRegions); //printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),
       // numRegions:%lu\n", iteration, iter_estimate, iter_errorest,
       // iter_estimate, iter_errorest, numRegions);
       // printf("-----------------------\n");
