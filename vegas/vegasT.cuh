@@ -25,6 +25,7 @@ nvprof ./vegas 2 2 -1.0 1.0  1.0E+09 1 0 0
 Last three arguments are: total iterations, iteration
 
 */
+
 #include "cudaPagani/quad/util/Volume.cuh"
 #include "cudaPagani/quad/util/cudaApply.cuh"
 #include "cudaPagani/quad/util/cudaArray.cuh"
@@ -40,6 +41,8 @@ Last three arguments are: total iterations, iteration
 #include <stdio.h>
 #include <stdlib.h>
 
+
+#define TINY 1.0e-100
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 #define ALPH                                                                   \
@@ -241,7 +244,7 @@ vegas_kernel(IntegT* d_integrand,
 #endif
 
 
-  
+  unsigned long long seed;
   // seed_init = (iter) * ncubes;
   // seed_init = clock64();
 
@@ -254,20 +257,18 @@ vegas_kernel(IntegT* d_integrand,
   double x[MXDIM + 1];
   int k, j;
   double fbg, f2bg;
-  // if(tx == 30 && blockIdx.x == 6771) printf("here m is %d\n", m);
-
+  
   if (m < totalNumThreads) {
+    //if(threadIdx.x == 0 && blockIdx.x == 0)
+    //printf("total calls:%lu\n", totalNumThreads*chunkSize*npg);
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
-
-    unsigned long long seed = seed_init+m*chunkSize;
-#ifdef CURAND
-    
-    // threads threads have a different seed each time,
+    seed = seed_init + m*chunkSize;// threads threads have a different seed each time,
                           // CURAND documentation says not to do that, also need
                           // unique sequence number for each thread
-    
-curandState localState;
+     
+#ifdef CURAND
+    curandState localState;
     curand_init(seed, 0, 0, &localState);
     // curand_init(seed, m, 0, &localState);
 #endif
@@ -275,10 +276,10 @@ curandState localState;
     get_indx(m * chunkSize, &kg[1], ndim, ng);
     for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
-
+      
       for (k = 1; k <= npg; k++) {
         wgt = xjac;
-
+	
         for (j = 1; j <= ndim; j++) {
 #ifdef CUSTOM
           temp = a * seed + c;
@@ -290,8 +291,12 @@ curandState localState;
 #endif
 
           xn = (kg[j] - ran00) * dxg + 1.0;
+	  if(m == 0)
+	    printf("threadID:%i kg[%i]:%i chunk:%i/%i npg:%i\n", m, j, kg[j], t, chunkSize, k);
+	  //if(threadIdx.x == 0 && blockIdx.x == 0)
+	  //  printf("block %i kg[%i]:%i chunk:%i/%i npg:%i\n", blockIdx.x, j, kg[j], t, chunkSize, k);
           ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
-
+	  
           if (ia[j] > 1) {
             xo = xi[j * NDMX1 + ia[j]] - xi[j * NDMX1 + ia[j] - 1];
             rc = xi[j * NDMX1 + ia[j] - 1] + (xn - ia[j]) * xo;
@@ -302,133 +307,43 @@ curandState localState;
 
           x[j] = regn[j] + rc * dx[j];
 
-          wgt *= xo * xnd;
+          wgt *= xo * xnd; //xnd is number of bins, xo is the length of the bin, xjac is 1/num_calls
         }
 
-        gpu::cudaArray<double, ndim> xx;
+        gpu::cudaArray<double, ndim> xx;//don't need to create it each time
         for (int i = 0; i < ndim; i++) {
           xx[i] = x[i + 1];
         }
 
         double tmp;
         tmp = gpu::apply(*d_integrand, xx);
-        /*switch (fcode) {
-        case 0:
-                tmp = (*func1)(x, ndim);
-                break;
-        case 1:
-                tmp = (*func2)(x, ndim);
-                break;
-        case 2:
-                tmp = (*func3)(x, ndim);
-                break;
-case 3:
-tmp = (*BoxIntegral8_22)(x, ndim);
-break;
-case 4:
-tmp = (*GENZ1_8D)(x, ndim);
-break;
-case 5:
-tmp = (*GENZ2_2D)(x, ndim);
-break;
-case 6:
-tmp = (*GENZ2_6D)(x, ndim);
-break;
-case 7:
-tmp = (*GENZ3_3D)(x, ndim);
-break;
-case 8:
-tmp = (*GENZ4_5D)(x, ndim);
-break;
-case 9:
-tmp = (*GENZ5_8D)(x, ndim);
-break;
-case 10:
-tmp = (*BoxIntegral8_15)(x, ndim);
-break;
-case 11:
-tmp = (*GENZ6_6D)(x, ndim);
-break;
-case 12:
-tmp = (*GENZ4_8D)(x, ndim);
-break;
-case 13:
-tmp = (*GENZ3_8D)(x, ndim);
-break;
-case 14:
-tmp = sqsum(x, ndim);
-break;
-case 15:
-tmp = sumsqroot(x, ndim);
-break;
-case 16:
-tmp = prodones(x, ndim);
-break;
-case 17:
-tmp = prodexp(x, ndim);
-break;
-case 18:
-tmp = prodcub(x, ndim);
-break;
-case 19:
-tmp = prodx(x, ndim);
-break;
-case 20:
-tmp = sumfifj(x, ndim);
-break;
-case 21:
-tmp = sumfonefj(x, ndim);
-break;
-case 22:
-tmp = hellekalek(x, ndim);
-break;
-case 23:
-tmp = roosarnoldone(x, ndim);
-break;
-case 24:
-tmp = roosarnoldtwo(x, ndim);
-break;
-case 25:
-tmp = roosarnoldthree(x, ndim);
-break;
-case 26:
-tmp = rst(x, ndim);
-break;
-case 27:
-tmp = sobolprod(x, ndim);
-break;
-case 28:
-tmp = oscill(x, ndim);
-break;
-case 29:
-tmp = prpeak(x, ndim);
-break;
-case 30:
-tmp = sum(x, ndim);
-break;
-        default:
-                tmp = (*func2)(x, ndim);
-                break;
-        }*/
 
-        f = wgt * tmp;
-        f2 = f * f;
+	f = wgt * tmp; 
+	//computing S^(1)
+        f2 = f * f;    //computing S^(2) //square temp*xo*xnd? (we leave xjac which is 1/num_calls outside, it won't get square so we don't have to make up for it)
 
         fb += f;
         f2b += f2;
+
 #pragma unroll 2
+
         for (j = 1; j <= ndim; j++) {
           atomicAdd(&d[ia[j] * MXDIM1 + j], fabs(f));
         }
 
       } // end of npg loop
-
-      f2b = sqrt(f2b * npg);
+      
+      f2b = sqrt(f2b * npg); //some times f2b becomes exactly zero, other times its equal to fb
       f2b = (f2b - fb) * (f2b + fb);
+      
+      if (f2b <= 0.0){ 
+	f2b=TINY;
+	
+      }
 
       fbg += fb;
       f2bg += f2b;
-
+      
       for (int k = ndim; k >= 1; k--) {
         kg[k] %= ng;
         if (++kg[k] != 1)
@@ -439,7 +354,7 @@ break;
 
     fbg = blockReduceSum(fbg);
     f2bg = blockReduceSum(f2bg);
-
+      
     if (tx == 0) {
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
@@ -482,7 +397,7 @@ vegas_kernelF(IntegT* d_integrand,
   uint32_t p = one << expi;
 #endif
 
-  
+  unsigned long long seed;
   // seed_init = (iter) * ncubes;
 
   int m = blockIdx.x * blockDim.x + threadIdx.x;
@@ -498,8 +413,8 @@ vegas_kernelF(IntegT* d_integrand,
   if (m < totalNumThreads) {
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
+    seed = seed_init + m * chunkSize;
 #ifdef CURAND
-    unsigned long long seed = seed_init+m*chunkSize;
     curandState localState;
     curand_init(seed, 0, 0, &localState);
 #endif
@@ -554,7 +469,7 @@ vegas_kernelF(IntegT* d_integrand,
 
       f2b = sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb); // this is equivalent to s^(2) - (s^(1))^2
-
+      //if (f2b <= 0.0) f2b=TINY;
       fbg += fb;
       f2bg += f2b;
 
@@ -591,15 +506,17 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
   double dr = 0.0, xn = 0.0, xo = 0.0;
 
   for (i = 1; i < nd; i++) {
+    //printf("rebininning bin %i dr:%.15e\n", i, dr);
     while (rc > dr) {
       dr += r[++k];
+      //printf("dr:%.15e\n", dr);
     }
-
+    //printf("dr is set to %.15e k:%i\n", dr, k);
     if (k > 1)
       xo = xi[k - 1];
-
-    xn = xi[k];
-    dr -= rc;
+    //printf("xo:%.15e\n", xo);
+    xn = xi[k];//printf("xn:%.15e\n", xn);
+    dr -= rc;//printf("setting dr to %.15e by subtracting rc:%.15e\n", dr, rc);
 
     xin[i] = xn - (xn - xo) * dr / r[k];
   }
@@ -648,9 +565,12 @@ vegas(IntegT integrand,
       int skip,
       quad::Volume<double, ndim> const* vol)
 {
+  ncall /= 100;
+  //printf("Entered vegas\n");
+  printf("ncall:%f\n", ncall);
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
   double regn[2 * MXDIM + 1];
-
+  
   for (int j = 1; j <= ndim; j++) {
     regn[j] = vol->lows[j - 1];
     regn[j + ndim] = vol->highs[j - 1];
@@ -676,9 +596,10 @@ vegas(IntegT integrand,
   // code works only  for (2 * ng - NDMX) >= 0)
 
   ndo = 1;
-  for (j = 1; j <= ndim; j++)
+  for (j = 1; j <= ndim; j++){
     xi[j * NDMX1 + 1] = 1.0;
-  si = swgt = schi = 0.0;
+  }
+    si = swgt = schi = 0.0;
   nd = NDMX;
   ng = 1;
   ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
@@ -708,8 +629,10 @@ vegas(IntegT integrand,
 
   for (i = 1; i <= IMAX(nd, ndo); i++)
     r[i] = 1.0;
-  for (j = 1; j <= ndim; j++)
+  for (j = 1; j <= ndim; j++){
+    //printf("rebining for dim:%i at xi[%i]\n", j, j*NDMX1);
     rebin(ndo / xnd, nd, r, xin, &xi[j * NDMX1]);
+  }
   ndo = nd;
 
   double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev, *result_dev;
@@ -756,7 +679,7 @@ vegas(IntegT integrand,
       chunkSize = 2048;
       break;
     default:
-      chunkSize = 2048;
+      chunkSize = 32;
       break;
   }
 
@@ -768,12 +691,15 @@ vegas(IntegT integrand,
     ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
   uint32_t nThreads = BLOCK_DIM_X;
 
-  // std::cout<<"ng:"<<ng<<"\n";
-  // std::cout<<"ncubes:"<<ncubes<<"\n";
-  // std::cout<<"npg:"<<npg<<"\n";
-  // std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
-  // std::cout<<"totalCubes:"<<totalCubes<<"\n";
-  // std::cout<<"chunkSize:"<<chunkSize<<"\n";
+  std::cout<<"ng:"<<ng<<"\n";
+   std::cout<<"ncubes:"<<ncubes<<"\n";
+   std::cout<<"ncall:"<<ncall<<"\n";
+   std::cout<<"k:"<<k<<"\n";
+   std::cout<<"npg:"<<npg<<"\n";
+   std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
+   std::cout<<"totalCubes:"<<totalCubes<<"\n";
+   std::cout<<"chunkSize:"<<chunkSize<<"\n";
+   printf("status:%i\n", *status);
 
   for (it = 1; it <= itmax && (*status) == 1; it++) {
 
@@ -791,7 +717,8 @@ vegas(IntegT integrand,
     cudaMemset(
       d_dev, 0, sizeof(double) * (NDMX + 1) * (MXDIM + 1)); // bin contributions
     cudaMemset(result_dev, 0, 2 * sizeof(double));
-
+    //printf("calling vegas_kernel at iteration %i\n", it);
+    printf("number of intervals ng:%i\n", ng);
     vegas_kernel<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
@@ -813,7 +740,7 @@ vegas(IntegT integrand,
                                                       LastChunk,
                                                       fcode,
                                                       time(NULL));
-
+    
     cudaMemcpy(xi,
                xi_dev,
                sizeof(double) * (MXDIM + 1) * (NDMX + 1),
@@ -830,7 +757,7 @@ vegas(IntegT integrand,
     tsi = result[1];
 
     tsi *= dv2g;
-
+    printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
     if (it > skip) {
       wgt = 1.0 / tsi;
       si += wgt * ti;
@@ -843,10 +770,13 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      //if (verbosity == 1)
-      // printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
+       printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
     }
-
+    
+    //for(int i=1; i<(NDMX + 1) * (MXDIM + 1); ++i)
+    //  printf("xi_iter%i, %i, %.15e, %.15e\n", it, i, xi[i], d[i]);
+    
+    
     for (j = 1; j <= ndim; j++) {
 
       xo = d[1 * MXDIM1 + j]; // bin 1 of dim j, and bin 2 just below
@@ -874,14 +804,22 @@ vegas(IntegT integrand,
       if (dt[j] > 0.0) { // enter if there is any contribution only
         rc = 0.0;
         for (i = 1; i <= nd; i++) {
+	  //if(d[i*MXDIM1+j]<TINY)d[i*MXDIM1+j]=TINY;
+	  //added by Ioannis based on vegasBook.c
           r[i] = pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /
                        (log(dt[j]) - log(d[i * MXDIM1 + j])),
                      ALPH);
           rc += r[i]; // rc is it the total number of sub-increments
+	  //printf("r_array %i, %i, %i, %.15e\n", it, i, j, r[i]);
         }
+	//printf("doing dim;%i bin:%i\n", j, i);
         rebin(rc / xnd, nd, r, xin, &xi[j * NDMX1]);
       }
     }
+ 
+    //for(int i=1; i<(NDMX + 1) * (MXDIM + 1); ++i)
+    //  printf("postRebin%i, %i, %.15e\n", it, i, xi[i]);
+    
 
   } // end of iterations
 
@@ -896,8 +834,9 @@ vegas(IntegT integrand,
   for (it = itmax + 1; it <= titer && (*status); it++) {
 
     ti = tsi = 0.0;
-
+    
     cudaMemset(result_dev, 0, 2 * sizeof(double));
+    //printf("About to execute no adjustment kernel\n");
     vegas_kernelF<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                        ng,
                                                        npg,
@@ -921,12 +860,12 @@ vegas(IntegT integrand,
                                                        time(NULL));
 
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-
+    //printf("Done with vegas_kernelF\n");
     // printf("ti is %f", ti);
     ti = result[0];
     tsi = result[1];
     tsi *= dv2g; // is dv2g 1/(M-1)?
-    // printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
+    printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
 
     wgt = 1.0 / tsi;
     si += wgt * ti;
@@ -941,7 +880,7 @@ vegas(IntegT integrand,
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     // printf("it %d\n", it);
     //if (verbosity == 1)
-    //  printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
+      printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
     // printf("%3d   %e  %e\n", it, ti, tsi);
 
   } // end of iterations
@@ -974,6 +913,7 @@ integrate(IntegT ig,
           int skipIters = 5)
 {
   cuhreResult<double> result;
+  result.status = 1;
   int fcode = -1; // test that it's really not being used anywhere
   vegas<IntegT, NDIM>(ig,
                       epsrel,
@@ -1017,9 +957,16 @@ simple_integrate(IntegT integrand,
                  int adjustIters = 15,
                  int skipIters = 5)
 {
+  printf("Simple_integrate\n");
   cuhreResult<double> result;
+  result.status = 1;
+  //printf("Status upon cuhreResult creation:%i\n", result.status);
   int fcode = -1; // test that it's really not being used anywhere
 
+  for(int i=0; i< NDIM; ++i)
+    printf("vol[%i]:(%f,%f)\n", i, volume->lows[i], volume->highs[i]);
+  
+  printf("called simple_integrationw ith epsrel:%f, epsabs:%f, ncall:%f, totalIters:%i, adjustIters:%i, skipIters:%i\n", epsrel, epsabs, ncall, totalIters, adjustIters, skipIters);
   do {
     vegas<IntegT, NDIM>(integrand,
                         epsrel,
