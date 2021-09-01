@@ -94,7 +94,7 @@ namespace quad {
       }
     }
 
-    __device__ bool
+    __host__ __device__ bool
     AreNeighbors(const double val,
                  double* arr,
                  const size_t leftIndex,
@@ -136,7 +136,7 @@ namespace quad {
       return is;
     }
 
-    __device__ void
+    __device__ __host__ void
     FindNeighbourIndices(const double val,
                          double* arr,
                          const size_t size,
@@ -163,7 +163,7 @@ namespace quad {
       }
     }
 
-    __device__ double
+    __device__ __host__ double
     operator()(double x, double y) const
     {
       // y1, y2, x1, x2, are the indices of where to find the four neighbouring
@@ -195,25 +195,25 @@ namespace quad {
       return f_x_y;
     }
 
-    __device__ double
+    __device__ __host__ double
     min_x() const
     {
       return interpC[0];
     }
 
-    __device__ double
+    __device__ __host__ double
     max_x() const
     {
       return interpC[_cols - 1];
     }
 
-    __device__ double
+    __device__ __host__ double
     min_y() const
     {
       return interpR[0];
     }
 
-    __device__ double
+    __device__ __host__ double
     max_y() const
     {
       return interpR[_rows - 1];
@@ -226,13 +226,13 @@ namespace quad {
       return (v < lo) ? lo : (hi < v) ? hi : v;
     }
 
-    __device__ double
+    __device__ __host__ double
     eval(double x, double y) const
     {
       return this->operator()(x, y);
     };
 
-    __device__ double
+    __device__ __host__ double
     clamp(double x, double y) const
     {
       return eval(do_clamp(x, min_x(), max_x()), do_clamp(y, min_y(), max_y()));

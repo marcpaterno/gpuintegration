@@ -48,7 +48,7 @@ namespace quad {
       memcpy(interpT, zs, sizeof(double) * cols);
     }
 
-    __device__ bool
+    __device__ __host__ bool
     AreNeighbors(const double val,
                  double* arr,
                  const size_t leftIndex,
@@ -93,7 +93,7 @@ namespace quad {
       _cols = source._cols;
     }
 
-    __device__ void
+    __device__ __host__ void
     FindNeighbourIndices(const double val,
                          double* arr,
                          const size_t size,
@@ -121,7 +121,7 @@ namespace quad {
       }
     }
 
-    __device__ double
+    __device__ __host__ double
     operator()(double x) const
     {
       size_t x0_index = 0, x1_index = 0;
@@ -134,32 +134,32 @@ namespace quad {
       return y;
     }
 
-    __device__ double
+    __device__ __host__ double
     min_x() const
     {
       return interpC[0];
     }
 
-    __device__ double
+    __device__ __host__ double
     max_x() const
     {
       return interpC[_cols - 1];
     }
 
-    __device__ double
+    __device__ __host__ double
     do_clamp(double v, double lo, double hi) const
     {
       assert(!(hi < lo));
       return (v < lo) ? lo : (hi < v) ? hi : v;
     }
 
-    __device__ double
+    __device__ __host__ double
     eval(double x) const
     {
       return this->operator()(x);
     };
 
-    __device__ double
+    __device__ __host__ double
     clamp(double x) const
     {
       return eval(do_clamp(x, min_x(), max_x()));
