@@ -15,7 +15,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include "cudaPagani/quad/util/cuhreResult.cuh"
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
@@ -61,7 +61,7 @@ struct Structures {
   size_t* _cGeneratorCount;
 };
 
-template <typename T>
+/*template <typename T>
 struct cuhreResult {
 
   cuhreResult()
@@ -87,7 +87,7 @@ struct cuhreResult {
   // size_t activeRegions;    // is not currently being set
   size_t phase2_failedblocks; // is not currently being set
   double chi_sq = 0.;
-};
+};*/
 
 struct Result {
   double avg, err;

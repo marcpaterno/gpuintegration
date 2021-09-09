@@ -1,5 +1,5 @@
-#ifndef GPUINTEGRATION_VEGAS_MCUBES_CUH
-#define GPUINTEGRATION_VEGAS_MCUBES_CUH
+#ifndef VEGAS_NRC_CUH
+#define VEGAS_NRC_CUH
 
 #include "cubacpp/arity.hh"
 #include "vegas/util/util.cuh"
@@ -29,7 +29,7 @@ quad::vegasNRC::integrate(
   double epsrel,
   quad::Volume<double, cubacpp::arity<F>()> const* pvol)
 {
-  printf("calling vegasNRC::integrate with epsrel:%.15e, epsabs:%.15e\n", epsrel, epsabs);
+  printf("calling vegasNRC.cuh::integrate with epsrel:%.15e, epsabs:%.15e\n", epsrel, epsabs);
   constexpr std::size_t ndim = cubacpp::arity<F>();
   return vegas_book_integrate<F, ndim>(f, ndim, epsrel, epsabs, static_cast<unsigned long>(maxcalls), pvol, total_iters);
 }
