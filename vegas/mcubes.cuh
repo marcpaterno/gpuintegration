@@ -11,9 +11,9 @@ namespace quad {
   struct mcubes {
     //long long int maxcalls = 10 * 1000 * 1000ULL;
     long long int maxcalls = 1000 * 1000ULL;
-    int total_iters = 15;
-    int adjust_iters = 10;
-    int skip_iters = 5;
+    int total_iters = 70;
+    int adjust_iters = 20;
+    int skip_iters = 0;
 
     template <typename F>
     cuhreResult<double> integrate(F const& f, double epsabs, double epsrel, quad::Volume<double, cubacpp::arity<F>()> const* pvol);
@@ -29,6 +29,7 @@ quad::mcubes::integrate(
   quad::Volume<double, cubacpp::arity<F>()> const* pvol)
 {
   printf("calling mcubes::integrate with epsrel:%.15e, epsabs:%.15e\n", epsrel, epsabs);
+  std::cout<<" quad::mcubes::integrate maxcalls:"<<maxcalls<<"\n";
   constexpr std::size_t ndim = cubacpp::arity<F>();
   return cuda_mcubes::simple_integrate<F, ndim>(f,
                                    ndim,
