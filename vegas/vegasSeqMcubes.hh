@@ -22,7 +22,8 @@ struct VegasSEQmcubes{
   cubacpp::integration_result integrate(F f, double epsrel, double epsabs) const;
   
   //unsigned long ncall = 500000000;
-  unsigned long ncall = 1000000;
+  //unsigned long maxcalls = 1000000;
+  long long int maxcalls = 1000000;
   int itmx = 6;
     
   template<typename F>
@@ -35,24 +36,25 @@ cubacpp::integration_result VegasSEQmcubes::integrate(F f, double epsrel, double
   auto highs = vol.highs();
 
   quad::Volume<double, cubacpp::arity<F>()> volume(lows.data, highs.data);
-  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, ncall, &volume, itmx);
+  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, static_cast<long long int>(maxcalls), &volume, itmx);
   return {res.estimate, res.errorest, -1., static_cast<long long>(res.neval), static_cast<int>(res.nregions), static_cast<int>(res.status)};
 }
 
 template<typename F>
 cubacpp::integration_result VegasSEQmcubes::integrate(F f, double epsrel, double epsabs) const{
-
+  printf("Invoking from input of cubacpp::Volume\n");
+  std::cout<<"ncall:"<<maxcalls<<"\n";
   quad::Volume<double, cubacpp::arity<F>()> volume;
-  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, ncall, &volume, itmx);
+  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, static_cast<long long int>(maxcalls), &volume, itmx);
   return {res.estimate, res.errorest, -1., static_cast<long long>(res.neval), static_cast<int>(res.nregions), static_cast<int>(res.status)};
 }
 
 template<typename F>
 cuhreResult<double> VegasSEQmcubes::integrate(F f, double epsrel, double epsabs, quad::Volume<double, cubacpp::arity<F>()>const*  vol) const{
   printf("Invoking from input of quad::Volume\n");
-  std::cout<<"ncall:"<<ncall<<"\n";
-  std::cout<<"itmx:"<<itmx<<"\n";
-  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, ncall, vol, itmx);
+  std::cout<<"ncall:"<<maxcalls<<"\n";
+  //std::cout<<"itmx:"<<itmx<<"\n";
+  cuhreResult<double> res = seq_mcubes_integrate(f, cubacpp::arity<F>(), epsrel, epsabs, static_cast<long long int>(maxcalls), vol, itmx);
   return res;
 }
 
