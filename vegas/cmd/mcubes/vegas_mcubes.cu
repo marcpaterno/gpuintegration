@@ -446,11 +446,10 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 						rc = (xn - iaj) * xo;
 					}
 
-					x[j] = regn[1] + rc * dx[1];
+					//x[j] = regn[1] + rc * dx[1]; //not sure why it was like this
+					x[j] = regn[j] + rc * dx[j];
 
 					wgt *= xo * xnd;
-
-
 				}
 
 				double tmp;
