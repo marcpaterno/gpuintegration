@@ -297,7 +297,7 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
            unsigned long ncall, int itmx, int nprn, double *tgral, double *sd,
            double *chi2a)
 {
-  std::ofstream xi_outfile;
+  /*std::ofstream xi_outfile;
   xi_outfile.open("mseq_xi.csv");
   xi_outfile <<"iter, dim, binID, left, right, contribution\n"; 
       
@@ -308,8 +308,8 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
   
   std::ofstream intervals_outfile;
   intervals_outfile.open("mcubes_intervals.csv");
-  intervals_outfile<<"iter, kg1, kg2, kg3, kg4, kg5, kg6\n";
-
+  intervals_outfile<<"iter, kg1, kg2, kg3, kg4, kg5, kg6\n";*/
+  std::cout<<"ncall:"<<ncall<<"\n";
   static int i, it, j, k, nd, ndo, ng, npg, ia[MXDIM + 1], kg[MXDIM + 1];
   static double calls, dv2g, dxg, f, f2, f2b, fb, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
   static double d[NDMX + 1][MXDIM + 1], di[NDMX + 1][MXDIM + 1], dt[MXDIM + 1],
@@ -329,7 +329,6 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
   ng = 1;
 
   ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim);
-  std::cout<<"ng:"<<ng<<"\n";
 
   for (k = 1, i = 1; i <= ndim; i++) 
 	  k *= ng;
@@ -341,11 +340,11 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
   dv2g = SQR(calls * dv2g) / npg / npg / (npg - 1.0);
   xnd = nd;
   dxg *= xnd;
-  std::cout<<"dxg*xnd:"<<dxg<<"\n";
+  //std::cout<<"dxg*xnd:"<<dxg<<"\n";
   xjac = 1.0 / calls;
   for (j = 1; j <= ndim; j++) {
     dx[j] = regn[j + ndim] - regn[j];
-    printf("setting dx (dim range) %e, %e\n", dx[j], xjac);
+    //printf("setting dx (dim range) %e, %e\n", dx[j], xjac);
     xjac *= dx[j];
   }
 
@@ -356,12 +355,12 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
   ndo = nd;
   
 
-  printf("ng, npg, dv2g, xjac, %d, %d, %e, %e\n", ng, npg, dv2g, xjac);
+  //printf("ng, npg, dv2g, xjac, %d, %d, %e, %e\n", ng, npg, dv2g, xjac);
   
   double ran00;
   int ncubes = pow(ng, ndim);
   
-  std::cout<<"ndim:"<<ndim<<"\n";
+  /*std::cout<<"ndim:"<<ndim<<"\n";
   std::cout<<"calls:"<<calls<<"\n";
   std::cout<<"ncall:"<<ncall<<"\n";
   std::cout<<"MXDIM:"<<MXDIM<<"\n";
@@ -370,7 +369,7 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
   std::cout<<"npg:"<<npg<<"\n";
   std::cout<<"ncubes:"<<ncubes<<"\n";
   std::cout<<"dxg:"<<dxg<<"\n";
-  std::cout<<"xjac:"<<xjac<<"\n";
+  std::cout<<"xjac:"<<xjac<<"\n";*/
   
   for (it = 1; it <= itmx; it++) {
     ti = tsi = 0.0; //variables for aggregation sum of f and f^2 in all the subcubes
@@ -425,23 +424,24 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
           xx[dim]=x[dim+1];
         //printf("array %f, %f, %f, %f, %f, %f\n", xx[0], xx[1], xx[2], xx[3], xx[4], xx[5]);
         double tmp = std::apply(integrand, xx);
-        //std::cout<<"called std::apply\n";
+
         f = wgt * tmp;
-       if(OUTPUT == 3){
+       
+       /*if(OUTPUT == 3){
             intervals_outfile<<it<<",";
             for(int dim = 1; dim <= ndim; dim++)
                 intervals_outfile<<kg[dim]<<",";
             intervals_outfile<<",";
             intervals_outfile<<f<<"\n";
-        }
+        }*/
             
         //std::cout << "it:" << it << " ncube:" << m << " npg" << k << " f:" << f << " tmp:"<< tmp<<  "\n";
         
-        if(OUTPUT <= 3){
+        /*if(OUTPUT <= 3){
             eval_outfile << it << "," << m << "," << k << "," << xx[0] << ","
                 << xx[1] << "," << xx[2] << "," << xx[3] << "," << xx[4] << ","
                 << xx[5] << "," << tmp << "," << f << "\n";
-        }
+        }*/
         
         f2 = f * f;
         fb += f;
@@ -464,14 +464,14 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
     //calculating the integral in this part
     //"iter, dim, dim_binID, global_binID, left, right, contribution, damped_contr\n";
       //xi[MXDIM + 1][NDMX + 1]
-	if(OUTPUT <= 3){
+	/*if(OUTPUT <= 3){
 		for(int dim=1; dim< MXDIM+1; dim++)
 			for(int bin=1; bin<NDMX+1; bin++){
 			xi_outfile << it << ", " << dim << "," << bin << ","  
 				<< -1 << xi[dim][bin-1] << "," << xi[dim][bin] << ","
 				<< d[bin][dim] << "," << "-1\n";
 			}
-	}
+	}*/
     
     tsi *= dv2g;
     wgt = 1.0 / tsi;
@@ -487,11 +487,10 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
     *sd = sqrt(1.0 / swgt);
     tsi = sqrt(tsi);
 
-     printf("%s %3d : integral = %14.7g +/-  %9.2g\n",
+    /* printf("%s %3d : integral = %14.7g +/-  %9.2g\n",
             " iteration no.", it, ti, tsi);
      printf("%s integral =%14.7g+/-%9.2g chi**2/IT n = %9.2g\n",
-            " all iterations:  ", *tgral, *sd, *chi2a);
-
+            " all iterations:  ", *tgral, *sd, *chi2a);*/
 
     //adjusting the intervals 
     for (j = 1; j <= ndim; j++) {
@@ -522,8 +521,8 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
 
     }   
   }
-    xi_outfile.close();
-    eval_outfile.close();
+    //xi_outfile.close();
+    //eval_outfile.close();
 }
 
 template<typename IntegT, int NDIM>
@@ -557,16 +556,15 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   for (j = 1; j <= ndim; j++) {
     regn[j] = volume->lows[j-1];
     regn[j + ndim] = volume->highs[j-1];
-    printf("vol[%i]:(%f,%f)\n", j, regn[j], regn[j + ndim]);
+    //printf("vol[%i]:(%f,%f)\n", j, regn[j], regn[j + ndim]);
     
   }
 
   init = -1;
   //calling the vegas function to calculate the integral and adjusting the intervals
   vegas_mcubes<IntegT, NDIM>(integrand, regn, NDIM, init, ncall, itmx, nprn, &avgi, &sd, &chi2a);
-  printf("Number of iterations performed: %d\n", itmx);
-  printf("Integral, Standard Dev., Chi-sq. = %12.6f %12.6f% 12.6f\n",
-	 avgi, sd, chi2a);
+  //printf("Number of iterations performed: %d\n", itmx);
+  //printf("Integral, Standard Dev., Chi-sq. = %12.6f %12.6f% 12.6f\n", avgi, sd, chi2a);
   // init = 1;
   // vegas(regn,ndim,fxn,init,ncall,itmax,nprn,&avgi,&sd,&chi2a);
   // printf("Additional iterations performed: %d \n",itmx);
@@ -574,10 +572,11 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   // avgi,sd,chi2a);
 
   //free_vector(regn,1,20);
-  printf("Normal completion\n");
+  //printf("Normal completion\n");
   result.estimate = static_cast<double>(avgi);
   result.errorest = static_cast<double>(sd);
   result.chi_sq = static_cast<double>(chi2a);
+  result.status = sd/abs(avgi) <= epsrel || sd <= epsabs ? 0 : 1;
   return result;
 }
 #undef NRANSI
