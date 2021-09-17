@@ -185,34 +185,6 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
     printf("Block %i thread %u get_indx ms:%u found index\n", blockIdx.x, threadIdx.x, ms);*/
 }
 
-// the two functions below are unused
-__inline__ __device__ void
-get_indxN(int mc, int* da, int nd, int ng, double scc, double scic, double ing)
-{
-  int kgt;
-  for (int j = 0; j < nd - 1; j++) {
-    kgt = mc * scic;
-    mc = mc - kgt * scc;
-    scic = scic * ng;
-    scc = scc * ing;
-    da[j] = kgt + 1;
-  }
-  da[nd - 1] = mc + 1;
-}
-
-__inline__ __device__ void
-get_indxT(int mc, int* da, int nd, int ng, double scc, double scic, double ing)
-{
-  int kgt;
-  for (int j = 0; j < nd - 1; j++) {
-    kgt = mc * scic;
-    mc = mc - kgt * scc;
-    scic = scic * ng;
-    scc = scc * ing;
-    da[j] = kgt + 1;
-  }
-  da[nd - 1] = mc + 1;
-}
 
 template <int ndim>
 __inline__ __device__
@@ -302,12 +274,23 @@ Process_npg_samples(IntegT* d_integrand,
 
 template <typename IntegT, int ndim>
 __inline__ __device__
-void Process_chunks(IntegT* d_integrand, int chunkSize, int ng, int npg, curandState* localState, double dxg, double xnd, double xjac, const double* const regn, const double* const dx, const double* const xi, const uint32_t* const kg, const int* ia, const double* x, double& wgt, double* d, double& fbg, double& f2bg){
+void Process_chunks(IntegT* d_integrand, 
+                int chunkSize, int ng, int npg, 
+                curandState* localState, 
+                double dxg, double xnd, double xjac, 
+                const double* const regn, const double* const dx, const double* const xi, 
+                uint32_t* const kg, 
+                int* const ia,  
+                double* const x, 
+                double& wgt, 
+                double* d, 
+                double& fbg, 
+                double& f2bg){
     
     for (int t = 0; t < chunkSize; t++) {
       double fb = 0., f2b = 0.0;
       
-      Process_npg_samples(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b);
+      Process_npg_samples<IntegT, ndim>(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b);
 
       f2b = sqrt(f2b * npg); //some times f2b becomes exactly zero, other times its equal to fb
       f2b = (f2b - fb) * (f2b + fb);
@@ -361,17 +344,6 @@ vegas_kernel(IntegT* d_integrand,
   constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
-#ifdef CUSTOM
-  uint64_t temp;
-  uint32_t a = 1103515245;
-  uint32_t c = 12345;
-  uint32_t one, expi;
-  one = 1;
-  expi = 31;
-  uint32_t p = one << expi;
-#endif
-
-
   unsigned long long seed;
    //seed_init *= (iter) * ncubes;
   // seed_init = clock64();
@@ -407,7 +379,9 @@ vegas_kernel(IntegT* d_integrand,
 #endif
     fbg = f2bg = 0.0;
     get_indx(m * chunkSize, &kg[1], ndim, ng);
-    for (int t = 0; t < chunkSize; t++) {
+    
+    Process_chunks<IntegT, ndim>(d_integrand, chunkSize, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg);
+    /*for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
       
       for (k = 1; k <= npg; k++) {
@@ -488,6 +462,7 @@ vegas_kernel(IntegT* d_integrand,
       //if(blockIdx.x > 9000)
       //  printf("thread %i Done with chunk %i\n", m, t); 
     } // end of chunk for loop
+    */
 
     fbg = blockReduceSum(fbg);
     f2bg = blockReduceSum(f2bg);
