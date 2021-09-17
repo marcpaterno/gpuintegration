@@ -351,33 +351,22 @@ vegas_kernel(IntegT* d_integrand,
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
 
-  double fb, f2b, wgt, xn, xo, rc, f, f2;
-  //int kg[MXDIM + 1];
+  double /*fb, f2b,*/ wgt/*, xn, xo, rc, f, f2*/;
   uint32_t kg[mxdim_p1];
   int ia[mxdim_p1];
   double x[mxdim_p1];
-  int k, j;
-  double fbg, f2bg;
+  //int k, j;
+  double fbg = 0., f2bg = 0.;
   
   if (m < totalNumThreads) {
       
-    //if(blockIdx.x > 8554)
-    //    printf("thread %u is in block:%u\n", m, blockIdx.x);
-    //if(threadIdx.x == 0 && blockIdx.x == 0)
-    //printf("total calls:%lu\n", totalNumThreads*chunkSize*npg);
-    int orig_chunkSize = chunkSize;
+    //int orig_chunkSize = chunkSize;
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
-    
-    //seed = seed_init + m*chunkSize;// threads threads have a different seed each time,
-                          // CURAND documentation says not to do that, also need
-                          // unique sequence number for each thread
      
-#ifdef CURAND
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
-#endif
-    fbg = f2bg = 0.0;
+
     get_indx(m * chunkSize, &kg[1], ndim, ng);
     
     Process_chunks<IntegT, ndim>(d_integrand, chunkSize, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg);
