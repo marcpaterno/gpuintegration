@@ -14,6 +14,15 @@
 	int status = 1;
   };
 
+
+  template <typename T>
+  void
+  PrintArray(T* array, int size, std::string label)
+  {
+    for (int i = 0; i < size; i++)
+      std::cout << label << "[" << i << "]:" << array[i] << "\n";
+  }
+
   template <class T>
   T*
   cuda_malloc_managed(size_t size)

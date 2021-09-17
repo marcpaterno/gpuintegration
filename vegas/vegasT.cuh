@@ -34,6 +34,8 @@ Last three arguments are: total iterations, iteration
 #include "cudaPagani/quad/quad.h"
 #include "vegas/util/func.cuh"
 #include "vegas/util/util.cuh"
+#include "vegas/util/vegas_utils.cuh"
+#include "vegas/util/verbose_utils.cuh"
 #include <chrono>
 #include <ctime>
 #include <curand_kernel.h>
@@ -49,13 +51,33 @@ Last three arguments are: total iterations, iteration
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 //#define ALPH 1.5 // commented out by Ioannis in order to match python vegas default of .5
-#define ALPH 0.5
-#define NDMX 500
-#define MXDIM 20
+//#define ALPH 0.5
+//#define NDMX 500
+//#define MXDIM 20
 
-#define NDMX1 NDMX + 1
-#define MXDIM1 MXDIM + 1
+//#define NDMX1 NDMX + 1
+//#define MXDIM1 MXDIM + 1
 //#define PI 3.14159265358979323846
+
+
+
+class Internal_Vegas_Params{
+        static constexpr int NDMX = 500;
+        static constexpr int MXDIM = 20;
+        static constexpr double ALPH = 0.5;
+    
+    public:
+        
+        __host__ __device__ static constexpr int get_NDMX(){return NDMX;}
+   
+        __host__ __device__ static constexpr int get_NDMX_p1(){return NDMX+1;}
+       
+        __host__ __device__ static constexpr  double get_ALPH(){return ALPH;}
+       
+        __host__ __device__ static constexpr  int get_MXDIM(){return MXDIM;}
+        
+        constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
+};
 
 #define IMAX(a, b)                                                             \
   ({                                                                           \
@@ -88,52 +110,8 @@ Last three arguments are: total iterations, iteration
 
 namespace cuda_mcubes{
 
-
-
 using MilliSeconds =
   std::chrono::duration<double, std::chrono::milliseconds::period>;
-
-std::ofstream GetOutFileVar(std::string filename){
-  std::ofstream myfile;
-  myfile.open (filename.c_str());
-  return myfile;
-}
-
-__inline__ bool
-PrecisionAchieved(double estimate,
-                  double errorest,
-                  double epsrel,
-                  double epsabs)
-{
-  if (std::abs(errorest / estimate) <= epsrel || errorest <= epsabs) {
-    return true;
-  } else
-    return false;
-}
-
-__inline__ int
-GetStatus(double estimate,
-          double errorest,
-          int iteration,
-          double epsrel,
-          double epsabs)
-{
-  if (PrecisionAchieved(estimate, errorest, epsrel, epsabs) && iteration >= 5) {
-    return 0;
-  } else
-    return 1;
-}
-
-template <typename T>
-void
-PrintArray(T* array, int size, std::string label)
-{
-  //printf("Will try to print v:%i\n", verbosity);
-  //if (verbosity == 0)
-  // return;
-  for (int i = 0; i < size; i++)
-    std::cout << label << "[" << i << "]:" << array[i] << "\n";
-}
 
 __inline__ __device__ double
 warpReduceSum(double val)
@@ -174,7 +152,7 @@ __inline__ __device__ void
 get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
 {
     //called like :    get_indx(m * chunkSize, &kg[1], ndim, ng);
-  uint32_t dp[MXDIM];
+  uint32_t dp[Internal_Vegas_Params::get_MXDIM()];
   uint32_t j, t0, t1;
   uint32_t m = ms;
   dp[0] = 1;
@@ -205,7 +183,6 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
   
   /*if(blockIdx.x > 8554)
     printf("Block %i thread %u get_indx ms:%u found index\n", blockIdx.x, threadIdx.x, ms);*/
-
 }
 
 // the two functions below are unused
@@ -239,8 +216,15 @@ get_indxT(int mc, int* da, int nd, int ng, double scc, double scic, double ing)
 
 template <int ndim>
 __inline__ __device__
-void Setup_Integrand_Eval(curandState* localState, double xnd, double dxg, const double* const xi,  const double* const regn, const double* const dx, const uint32_t* const kg, int* const ia, double* const x, double& wgt)
+void Setup_Integrand_Eval(curandState* localState, 
+                            double xnd, double dxg, 
+                            const double* const xi, const double* const regn, const double* const dx, 
+                            const uint32_t* const kg, 
+                            int* const ia, 
+                            double* const x, 
+                            double& wgt)
 {
+    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     /*
         input: 
             dim: dimension being processed
@@ -260,13 +244,13 @@ void Setup_Integrand_Eval(curandState* localState, double xnd, double dxg, const
 
           const double xn = (kg[j] - ran00) * dxg + 1.0;
           double rc = 0., xo = 0.;
-          ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
+          ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
           if (ia[j] > 1) {
-            xo = xi[j * NDMX1 + ia[j]] - xi[j * NDMX1 + ia[j] - 1];
-            rc = xi[j * NDMX1 + ia[j] - 1] + (xn - ia[j]) * xo;
+            xo = xi[j * ndmx + 1 + ia[j]] - xi[j * ndmx + 1 + ia[j] - 1];
+            rc = xi[j * ndmx + 1 + ia[j] - 1] + (xn - ia[j]) * xo;
           } else {
-            xo = xi[j * NDMX1 + ia[j]];
+            xo = xi[j * ndmx + 1 + ia[j]];
             rc = (xn - ia[j]) * xo;
           }
 
@@ -277,7 +261,19 @@ void Setup_Integrand_Eval(curandState* localState, double xnd, double dxg, const
 
 template <typename IntegT, int ndim>
 __device__ void
-Process_npg_samples(IntegT* d_integrand, int npg, double xnd, double xjac, curandState* localState, double dxg, const double* const regn, const double* const dx, const double* const xi, const uint32_t* const kg, int* const ia, double* const x, double& wgt, double* d, double& fb, double& f2b){
+Process_npg_samples(IntegT* d_integrand, 
+                        int npg, 
+                        double xnd, double xjac, 
+                        curandState* localState, 
+                        double dxg, 
+                        const double* const regn, const double* const dx, const double* const xi, 
+                        const uint32_t* const kg, 
+                        int* const ia, 
+                        double* const x, 
+                        double& wgt, 
+                        double* d, 
+                        double& fb, 
+                        double& f2b){
     
       for (int k = 1; k <= npg; k++) {
           
@@ -298,7 +294,7 @@ Process_npg_samples(IntegT* d_integrand, int npg, double xnd, double xjac, curan
 
 #pragma unroll 2
         for (int j = 1; j <= ndim; j++) {
-          atomicAdd(&d[ia[j] * MXDIM1 + j], fabs(f));
+          atomicAdd(&d[ia[j] * Internal_Vegas_Params::get_MXDIM() + 1 + j], fabs(f));
         }
 
       }
@@ -360,6 +356,11 @@ vegas_kernel(IntegT* d_integrand,
 			 int* intervals*/)
 {
 
+  constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+  //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
+  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+
 #ifdef CUSTOM
   uint64_t temp;
   uint32_t a = 1103515245;
@@ -380,9 +381,9 @@ vegas_kernel(IntegT* d_integrand,
 
   double fb, f2b, wgt, xn, xo, rc, f, f2;
   //int kg[MXDIM + 1];
-  uint32_t kg[MXDIM + 1];
-  int ia[MXDIM + 1];
-  double x[MXDIM + 1];
+  uint32_t kg[mxdim_p1];
+  int ia[mxdim_p1];
+  double x[mxdim_p1];
   int k, j;
   double fbg, f2bg;
   
@@ -424,13 +425,13 @@ vegas_kernel(IntegT* d_integrand,
 #endif
 
           xn = (kg[j] - ran00) * dxg + 1.0;
-          ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
+          ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
           if (ia[j] > 1) {
-            xo = xi[j * NDMX1 + ia[j]] - xi[j * NDMX1 + ia[j] - 1];
-            rc = xi[j * NDMX1 + ia[j] - 1] + (xn - ia[j]) * xo;
+            xo = xi[j * ndmx + 1 + ia[j]] - xi[j * ndmx + 1 + ia[j] - 1];
+            rc = xi[j * ndmx + 1 + ia[j] - 1] + (xn - ia[j]) * xo;
           } else {
-            xo = xi[j * NDMX1 + ia[j]];
+            xo = xi[j * ndmx + 1 + ia[j]];
             rc = (xn - ia[j]) * xo;
           }
 
@@ -464,7 +465,7 @@ vegas_kernel(IntegT* d_integrand,
 #pragma unroll 2
 
         for (j = 1; j <= ndim; j++) {
-          atomicAdd(&d[ia[j] * MXDIM1 + j], fabs(f));
+          atomicAdd(&d[ia[j] * mxdim + 1 + j], fabs(f));
         }
 
       } // end of npg loop
@@ -524,6 +525,11 @@ vegas_kernelF(IntegT* d_integrand,
               unsigned int seed_init)
 {
 
+  constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+  //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
+  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+
 #ifdef CUSTOM
   uint64_t temp;
   uint32_t a = 1103515245;
@@ -541,9 +547,9 @@ vegas_kernelF(IntegT* d_integrand,
   int tx = threadIdx.x;
 
   double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
-  uint32_t kg[MXDIM + 1];
+  uint32_t kg[mxdim_p1];
   int iaj;
-  double x[MXDIM + 1];
+  double x[mxdim_p1];
   int k, j;
   double fbg, f2bg;
 
@@ -584,15 +590,15 @@ vegas_kernelF(IntegT* d_integrand,
 #endif
         
           xn = (kg[j] - ran00) * dxg + 1.0;
-          iaj = IMAX(IMIN((int)(xn), NDMX), 1);
+          iaj = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
 
 	  
 	  if (iaj > 1) {
-            xo = xi[j * NDMX1 + iaj] - xi[j * NDMX1 + iaj - 1];
-            rc = xi[j * NDMX1 + iaj - 1] + (xn - iaj) * xo;
+            xo = xi[j * ndmx + 1 + iaj] - xi[j * ndmx + 1 + iaj - 1];
+            rc = xi[j * ndmx + 1 + iaj - 1] + (xn - iaj) * xo;
           } else {
-            xo = xi[j * NDMX1 + iaj];
+            xo = xi[j * ndmx + 1 + iaj];
             rc = (xn - iaj) * xo;
           }
 
@@ -681,48 +687,12 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
   xi[nd] = 1.0;
 }
 
-double
-GetTrueValue(int fcode)
-{
-  if (fcode == 0)
-    return -49.165073;
-  else if (fcode == 1)
-    return 1.0;
-  else if (fcode == 4)
-    return (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) *
-           sin(3.) * sin(7. / 2.) * sin(4.) * (sin(37. / 2.) - sin(35. / 2.));
-  else if (fcode == 9)
-    return 2.425217625641885e-06;
-  else if (fcode == 10)
-    return 8879.851175413485;
-  else if (fcode == 11)
-    return 1.5477367885091207413e8;
-  else if (fcode == 12)
-    return 6.383802190004379e-10;
-  else if (fcode == 13)
-    return 2.2751965817917756076e-10;
-  return 0.;
-}
-
-__inline__
-int GetChunkSize(const double ncall){
-    double small = 1.e7;
-    double large = 8.e9;
-    
-    if(ncall < small)
-        return 32;
-    else if(ncall <= large)
-        return 2048; 
-    else
-        return 4096;  
-}
-
 template <typename IntegT, int ndim>
 void
 vegas(IntegT integrand,
       double epsrel,
       double epsabs,
-      /*double regn[]*/ int fcode,
+      int fcode,
       double ncall,
       double* tgral,
       double* sd,
@@ -740,8 +710,14 @@ vegas(IntegT integrand,
 
   //outfile_fevals <<"iter, threadID, chunk , sampleID, dim1, dim2, dim3, dim4, dim5, dim6, f\n";
   //outfile_intervals << "iter, dim1_int, dim2_int, dim3_int, dim4_int, dim5_int, dim6_int, f\n";
+  
+  constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+  constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
+  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+  
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
-  double regn[2 * MXDIM + 1];
+  double regn[2 * mxdim + 1];
   
   for (int j = 1; j <= ndim; j++) {
     regn[j] = vol->lows[j - 1];
@@ -755,25 +731,26 @@ vegas(IntegT integrand,
   double result[2];
   double *d, *dt, *dx, *r, *x, *xi, *xin;
   int* ia;
-
-  d = (double*)malloc(sizeof(double) * (NDMX + 1) * (MXDIM + 1));
-  dt = (double*)malloc(sizeof(double) * (MXDIM + 1));
-  dx = (double*)malloc(sizeof(double) * (MXDIM + 1));
-  r = (double*)malloc(sizeof(double) * (NDMX + 1));
-  x = (double*)malloc(sizeof(double) * (MXDIM + 1));
-  xi = (double*)malloc(sizeof(double) * (MXDIM + 1) * (NDMX + 1));
-  xin = (double*)malloc(sizeof(double) * (NDMX + 1));
-  ia = (int*)malloc(sizeof(int) * (MXDIM + 1));
+    
+  d = (double*)malloc(sizeof(double) * (ndmx_p1) * (mxdim_p1));
+  dt = (double*)malloc(sizeof(double) * (mxdim_p1));
+  dx = (double*)malloc(sizeof(double) * (mxdim_p1));
+  r = (double*)malloc(sizeof(double) * (ndmx_p1));
+  x = (double*)malloc(sizeof(double) * (mxdim_p1));
+  xi = (double*)malloc(sizeof(double) * (mxdim_p1) * (ndmx_p1));
+  xin = (double*)malloc(sizeof(double) * (ndmx_p1));
+  ia = (int*)malloc(sizeof(int) * (mxdim_p1));
 
   // code works only  for (2 * ng - NDMX) >= 0)
 
 
   ndo = 1;
   for (j = 1; j <= ndim; j++){
-    xi[j * NDMX1 + 1] = 1.0;
+    //xi[j * NDMX1 + 1] = 1.0;    //this is weird I think it translates to xi[j*NDMX + 1 + 1] not xi[j*(NDMX+1) + 1], could we have bugs because of it?
+    xi[j * ndmx + 1 + 1] = 1.0; 
   }
     si = swgt = schi = 0.0;
-  nd = NDMX;
+  nd = ndmx;
   ng = 1;
   ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
   for (k = 1, i = 1; i < ndim; i++) {
@@ -803,7 +780,7 @@ vegas(IntegT integrand,
   for (i = 1; i <= IMAX(nd, ndo); i++)
     r[i] = 1.0;
   for (j = 1; j <= ndim; j++){
-    rebin(ndo / xnd, nd, r, xin, &xi[j * NDMX1]);
+    rebin(ndo / xnd, nd, r, xin, &xi[j * ndmx + 1]);
   }
   ndo = nd;
 
@@ -812,28 +789,28 @@ vegas(IntegT integrand,
 
   cudaMalloc((void**)&result_dev, sizeof(double) * 2);
   cudaCheckError();
-  cudaMalloc((void**)&d_dev, sizeof(double) * (NDMX + 1) * (MXDIM + 1));
+  cudaMalloc((void**)&d_dev, sizeof(double) * (ndmx_p1) * (mxdim_p1));
   cudaCheckError();
-  cudaMalloc((void**)&dx_dev, sizeof(double) * (MXDIM + 1));
+  cudaMalloc((void**)&dx_dev, sizeof(double) * (mxdim_p1));
   cudaCheckError();
-  cudaMalloc((void**)&x_dev, sizeof(double) * (MXDIM + 1));
+  cudaMalloc((void**)&x_dev, sizeof(double) * (mxdim_p1));
   cudaCheckError();
-  cudaMalloc((void**)&xi_dev, sizeof(double) * (MXDIM + 1) * (NDMX + 1));
+  cudaMalloc((void**)&xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1));
   cudaCheckError();
   cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1));
   cudaCheckError();
-  cudaMalloc((void**)&ia_dev, sizeof(int) * (MXDIM + 1));
+  cudaMalloc((void**)&ia_dev, sizeof(int) * (mxdim_p1));
   cudaCheckError();
 
-  cudaMemcpy(dx_dev, dx, sizeof(double) * (MXDIM + 1), cudaMemcpyHostToDevice);
+  cudaMemcpy(dx_dev, dx, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
   cudaCheckError();
-  cudaMemcpy(x_dev, x, sizeof(double) * (MXDIM + 1), cudaMemcpyHostToDevice);
+  cudaMemcpy(x_dev, x, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
   cudaCheckError();
   cudaMemcpy(
     regn_dev, regn, sizeof(double) * ((ndim * 2) + 1), cudaMemcpyHostToDevice);
   cudaCheckError();
 
-  cudaMemset(ia_dev, 0, sizeof(int) * (MXDIM + 1));
+  cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
   int chunkSize = GetChunkSize(ncall);
 
@@ -892,16 +869,16 @@ vegas(IntegT integrand,
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
       for (i = 1; i <= nd; i++)
-        d[i * MXDIM1 + j] = 0.0;
+        d[i * mxdim + 1 + j] = 0.0;
     }
 
     cudaMemcpy(xi_dev,
                xi,
-               sizeof(double) * (MXDIM + 1) * (NDMX + 1),
+               sizeof(double) * (mxdim_p1) * (ndmx_p1),
                cudaMemcpyHostToDevice);
     cudaCheckError(); // bin bounds
     cudaMemset(
-      d_dev, 0, sizeof(double) * (NDMX + 1) * (MXDIM + 1)); // bin contributions
+      d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1)); // bin contributions
     cudaMemset(result_dev, 0, 2 * sizeof(double));
     //printf("executing vegas_kernel\n");
     //std::cout<<"seed_init "<<time(0) << "\n";
@@ -935,13 +912,13 @@ vegas(IntegT integrand,
     
     cudaMemcpy(xi,
                xi_dev,
-               sizeof(double) * (MXDIM + 1) * (NDMX + 1),
+               sizeof(double) * (mxdim_p1) * (ndmx_p1),
                cudaMemcpyDeviceToHost);
     cudaCheckError(); 
 
     cudaMemcpy(d,
                d_dev,
-               sizeof(double) * (NDMX + 1) * (MXDIM + 1),
+               sizeof(double) * (ndmx_p1) * (mxdim_p1),
                cudaMemcpyDeviceToHost);
     cudaCheckError(); // we do need to the contributions for the rebinning
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
@@ -1031,39 +1008,39 @@ vegas(IntegT integrand,
      
     for (j = 1; j <= ndim; j++) {
 
-      xo = d[1 * MXDIM1 + j]; // bin 1 of dim j, and bin 2 just below
-      xn = d[2 * MXDIM1 + j];
+      xo = d[1 * mxdim+1 + j]; // bin 1 of dim j, and bin 2 just below
+      xn = d[2 * mxdim+1 + j];
 
-      d[1 * MXDIM1 + j] = (xo + xn) / 2.0;
-      dt[j] = d[1 * MXDIM1 + j]; // set dt sum to contribution of bin 1
+      d[1 * mxdim+1 + j] = (xo + xn) / 2.0;
+      dt[j] = d[1 * mxdim+1 + j]; // set dt sum to contribution of bin 1
 
       for (i = 2; i < nd; i++) {
         // rc is the contribution of the first and last bin? why?
         rc = xo + xn;
         xo = xn;
-        xn = d[(i + 1) * MXDIM1 + j];
-        d[i * MXDIM1 + j] = (rc + xn) / 3.0;
-        dt[j] += d[i * MXDIM1 + j];
+        xn = d[(i + 1) * mxdim+1 + j];
+        d[i * mxdim+1 + j] = (rc + xn) / 3.0;
+        dt[j] += d[i * mxdim+1 + j];
       }
 
       // do bin nd last
-      d[nd * MXDIM1 + j] = (xo + xn) / 2.0;
+      d[nd * mxdim+1 + j] = (xo + xn) / 2.0;
 
-      dt[j] += d[nd * MXDIM1 + j];
+      dt[j] += d[nd * mxdim+1 + j];
     }
 
     for (j = 1; j <= ndim; j++) {
       if (dt[j] > 0.0) { // enter if there is any contribution only
         rc = 0.0;
         for (i = 1; i <= nd; i++) {
-			if(d[i*MXDIM1+j]<TINY)d[i*MXDIM1+j]=TINY;
+			if(d[i*mxdim+1+j]<TINY)d[i*mxdim+1+j]=TINY;
 			//added by Ioannis based on vegasBook.c
-          r[i] = pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /
-                       (log(dt[j]) - log(d[i * MXDIM1 + j])),
-                     ALPH);
+          r[i] = pow((1.0 - d[i * mxdim+1 + j] / dt[j]) /
+                       (log(dt[j]) - log(d[i * mxdim+1 + j])),
+                       Internal_Vegas_Params::get_ALPH());
           rc += r[i]; // rc is it the total number of sub-increments
         }
-        rebin(rc / xnd, nd, r, xin, &xi[j * NDMX1]);
+        rebin(rc / xnd, nd, r, xin, &xi[j * ndmx + 1]);
       }
     }
 
@@ -1075,7 +1052,7 @@ vegas(IntegT integrand,
 
   cudaMemcpy(xi_dev,
              xi,
-             sizeof(double) * (MXDIM + 1) * (NDMX + 1),
+             sizeof(double) * (mxdim_p1) * (ndmx_p1),
              cudaMemcpyHostToDevice);
   cudaCheckError();
 
@@ -1190,20 +1167,6 @@ integrate(IntegT ig,
   return result;
 }
 
-bool
-AdjustParams(double& ncall, int& totalIters)
-{
-  if (ncall >= 6e9 && totalIters >= 100)
-    return false;
-  else if (ncall >= 6e9) {
-    totalIters += 10;
-    return true;
-  } else {
-    ncall += 1e9;
-    return true;
-  }
-}
-
 template <typename IntegT, int NDIM>
 cuhreResult<double>
 simple_integrate(IntegT integrand,
@@ -1216,10 +1179,8 @@ simple_integrate(IntegT integrand,
                  int adjustIters = 15,
                  int skipIters = 5)
 {
-  //printf("Simple_integrate\n");
   cuhreResult<double> result;
   result.status = 1;
-  //printf("Status upon cuhreResult creation:%i\n", result.status);
   int fcode = -1; // test that it's really not being used anywhere
 
   //for(int i=0; i< NDIM; ++i)
