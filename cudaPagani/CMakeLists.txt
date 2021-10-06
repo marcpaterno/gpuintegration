@@ -17,6 +17,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+if (NOT DEFINED PAGANI_TARGET_ARCH)
+	MESSAGE(FATAL_ERROR "You must specify -DPAGANI_TARGET_ARCH=<arch> to generate code for the right GPU, e.g. '=70-real' for V100")
+endif()
+
 include_directories(AFTER ${CMAKE_SOURCE_DIR} ${PAGANI_DIR} externals)
 
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib

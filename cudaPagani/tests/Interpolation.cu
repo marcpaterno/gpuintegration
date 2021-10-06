@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 template <class M>
 M
@@ -13,8 +14,12 @@ make_from_file(char const* filename)
   static_assert(std::is_default_constructible<M>::value,
                 "Type must be default constructable");
   char const* basedir = std::getenv("PAGANI_DIR");
+  if (basedir == nullptr) {
+	  std::string msg("You must define PAGANI_DIR before running this test\n");
+	  throw std::runtime_error(msg);
+  }
   std::string fname(basedir);
-  fname += "/tests/";
+  fname += "/cudaPagani/tests/";
   fname += filename;
   std::cout << "Filename:" << fname << std::endl;
   std::ifstream in(fname);
