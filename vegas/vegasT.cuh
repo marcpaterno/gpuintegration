@@ -64,7 +64,7 @@ Last three arguments are: total iterations, iteration
 class Internal_Vegas_Params{
         static constexpr int NDMX = 500;
         static constexpr int MXDIM = 20;
-        static constexpr double ALPH = 0.5;
+        static constexpr double ALPH = 1.5;
     
     public:
         
@@ -197,6 +197,7 @@ void Setup_Integrand_Eval(curandState* localState,
                             double& wgt)
 {
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
     /*
         input: 
             dim: dimension being processed
@@ -210,19 +211,17 @@ void Setup_Integrand_Eval(curandState* localState,
     
     for (int j = 1; j <= ndim; j++) {
             
-#ifdef CURAND
           const double ran00 = curand_uniform_double(localState);
-#endif
-
+          
           const double xn = (kg[j] - ran00) * dxg + 1.0;
           double rc = 0., xo = 0.;
           ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
           if (ia[j] > 1) {
-            xo = xi[j * ndmx + 1 + ia[j]] - xi[j * ndmx + 1 + ia[j] - 1];
-            rc = xi[j * ndmx + 1 + ia[j] - 1] + (xn - ia[j]) * xo;
+            xo = xi[j * ndmx1 + ia[j]] - xi[j * ndmx1 + ia[j] - 1];
+            rc = xi[j * ndmx1 + ia[j] - 1] + (xn - ia[j]) * xo;
           } else {
-            xo = xi[j * ndmx + 1 + ia[j]];
+            xo = xi[j * ndmx1 + ia[j]];
             rc = (xn - ia[j]) * xo;
           }
 
@@ -246,7 +245,7 @@ Process_npg_samples(IntegT* d_integrand,
                         double* d, 
                         double& fb, 
                         double& f2b){
-    
+      constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
       for (int k = 1; k <= npg; k++) {
           
         double wgt = xjac;
@@ -266,7 +265,7 @@ Process_npg_samples(IntegT* d_integrand,
 
 #pragma unroll 2
         for (int j = 1; j <= ndim; j++) {
-          atomicAdd(&d[ia[j] * Internal_Vegas_Params::get_MXDIM() + 1 + j], fabs(f));
+          atomicAdd(&d[ia[j] * mxdim_p1 + j], fabs(f));
         }
 
       }
@@ -295,9 +294,9 @@ void Process_chunks(IntegT* d_integrand,
       f2b = sqrt(f2b * npg); //some times f2b becomes exactly zero, other times its equal to fb
       f2b = (f2b - fb) * (f2b + fb);
       
-      if (f2b <= 0.0){ 
+      /*if (f2b <= 0.0){ 
         f2b=TINY;
-      }
+      }*/
 
       fbg += fb;
       f2bg += f2b;
@@ -333,34 +332,24 @@ vegas_kernel(IntegT* d_integrand,
              uint32_t totalNumThreads,
              int LastChunk,
              int fcode,
-             unsigned int seed_init/*,
-             double* evals,
-             double* evalPoints,
-			 int* intervals*/)
+             unsigned int seed_init)
 {
 
-  constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+  //constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-
-  unsigned long long seed;
-   //seed_init *= (iter) * ncubes;
-  // seed_init = clock64();
   
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
 
-  double /*fb, f2b,*/ wgt/*, xn, xo, rc, f, f2*/;
+  double wgt;
   uint32_t kg[mxdim_p1];
   int ia[mxdim_p1];
   double x[mxdim_p1];
-  //int k, j;
   double fbg = 0., f2bg = 0.;
   
   if (m < totalNumThreads) {
-      
-    //int orig_chunkSize = chunkSize;
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
      
@@ -370,6 +359,8 @@ vegas_kernel(IntegT* d_integrand,
     get_indx(m * chunkSize, &kg[1], ndim, ng);
     
     Process_chunks<IntegT, ndim>(d_integrand, chunkSize, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg);
+    
+    
     /*for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
       
@@ -464,6 +455,9 @@ vegas_kernel(IntegT* d_integrand,
   } // end of subcube if
 }
 
+
+
+
 template <typename IntegT, int ndim>
 __global__ void
 vegas_kernelF(IntegT* d_integrand,
@@ -490,8 +484,8 @@ vegas_kernelF(IntegT* d_integrand,
 {
 
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-  //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
+  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
 #ifdef CUSTOM
@@ -504,7 +498,7 @@ vegas_kernelF(IntegT* d_integrand,
   uint32_t p = one << expi;
 #endif
 
-  unsigned long long seed;
+  //unsigned long long seed;
   // seed_init = (iter) * ncubes;
 
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
@@ -525,13 +519,11 @@ vegas_kernelF(IntegT* d_integrand,
       chunkSize = LastChunk + 1;
   
     //seed = seed_init + m * chunkSize;
-#ifdef CURAND
     
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
     //if(m == 0)
     //  printf("vegas_kernelF seed_init:%u\n", seed_init);
-#endif
 
     fbg = f2bg = 0.0;
     get_indx(m * chunkSize, &kg[1], ndim, ng);
@@ -543,31 +535,23 @@ vegas_kernelF(IntegT* d_integrand,
         wgt = xjac;
 
         for (j = 1; j <= ndim; j++) {
-#ifdef CUSTOM
-          temp = a * seed + c;
-          seed = temp & (p - 1);
-          ran00 = (double)seed / (double)p;
-#endif
-#ifdef CURAND
+
           ran00 = curand_uniform_double(&localState);
-	  
-#endif
-        
+	          
           xn = (kg[j] - ran00) * dxg + 1.0;
           iaj = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
 
 	  
-	  if (iaj > 1) {
-            xo = xi[j * ndmx + 1 + iaj] - xi[j * ndmx + 1 + iaj - 1];
-            rc = xi[j * ndmx + 1 + iaj - 1] + (xn - iaj) * xo;
+	  if (iaj > 1) {          
+            xo = xi[j * ndmx_p1 + iaj] - xi[j * ndmx_p1 + iaj - 1];
+            rc = xi[j * ndmx_p1 + iaj - 1] + (xn - iaj) * xo;
           } else {
-            xo = xi[j * ndmx + 1 + iaj];
+            xo = xi[j * ndmx_p1 + iaj];
             rc = (xn - iaj) * xo;
           }
 
           x[j] = regn[j] + rc * dx[j];
-
           wgt *= xo * xnd;
         }
         
@@ -590,8 +574,8 @@ vegas_kernelF(IntegT* d_integrand,
       f2b = sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb); // this is equivalent to s^(2) - (s^(1))^2
       
-      if (f2b <= 0.0) 
-          f2b=TINY;
+      //if (f2b <= 0.0) 
+      //    f2b=TINY;
       
       fbg += fb;
       f2bg += f2b;
@@ -677,11 +661,11 @@ vegas(IntegT integrand,
   
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
   
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
-  double regn[2 * mxdim + 1];
+  double regn[2 * mxdim_p1];
   
   for (int j = 1; j <= ndim; j++) {
     regn[j] = vol->lows[j - 1];
@@ -711,7 +695,7 @@ vegas(IntegT integrand,
   ndo = 1;
   for (j = 1; j <= ndim; j++){
     //xi[j * NDMX1 + 1] = 1.0;    //this is weird I think it translates to xi[j*NDMX + 1 + 1] not xi[j*(NDMX+1) + 1], could we have bugs because of it?
-    xi[j * ndmx + 1 + 1] = 1.0; 
+    xi[j * ndmx_p1 + 1] = 1.0;  //this index is the first for each bin for each dimension
   }
     si = swgt = schi = 0.0;
   nd = ndmx;
@@ -744,8 +728,11 @@ vegas(IntegT integrand,
   for (i = 1; i <= IMAX(nd, ndo); i++)
     r[i] = 1.0;
   for (j = 1; j <= ndim; j++){
-    rebin(ndo / xnd, nd, r, xin, &xi[j * ndmx + 1]);
+    rebin(ndo / xnd, nd, r, xin, &xi[j * ndmx_p1]);
   }
+  
+  //for(int i=0; i< ndmx_p1*mxdim_p1; i++)
+   //   printf("xi[%i]:%f\n", i, xi[i]);
   ndo = nd;
 
   double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev, *result_dev;
@@ -833,7 +820,7 @@ vegas(IntegT integrand,
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
       for (i = 1; i <= nd; i++)
-        d[i * mxdim + 1 + j] = 0.0;
+        d[i * mxdim_p1 + j] = 0.0;
     }
 
     cudaMemcpy(xi_dev,
@@ -844,9 +831,7 @@ vegas(IntegT integrand,
     cudaMemset(
       d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1)); // bin contributions
     cudaMemset(result_dev, 0, 2 * sizeof(double));
-    //printf("executing vegas_kernel\n");
-    //std::cout<<"seed_init "<<time(0) << "\n";
-    //std::cout<<"nBlocks:"<<nBlocks<<", nThreads:"<<nThreads<<", totalNumThreads:"<<totalNumThreads<<"\n";
+
     vegas_kernel<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
@@ -867,10 +852,7 @@ vegas(IntegT integrand,
                                                       totalNumThreads,
                                                       LastChunk,
                                                       fcode,
-                                                      time(0)/it/*,
-                                                      evals,
-                                                      eval_points,
-													  intervals*/);
+                                                      /*time(0)/*/it);
     
     
     
@@ -953,7 +935,7 @@ vegas(IntegT integrand,
     tsi = result[1];
 
     tsi *= dv2g;
-    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    //printf("adj iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
     
     if (it > skip) {
       wgt = 1.0 / tsi;
@@ -967,44 +949,44 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
+      //printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
     }
      
     for (j = 1; j <= ndim; j++) {
 
-      xo = d[1 * mxdim+1 + j]; // bin 1 of dim j, and bin 2 just below
-      xn = d[2 * mxdim+1 + j];
+      xo = d[1 * mxdim_p1 + j]; // bin 1 of dim j
+      xn = d[2 * mxdim_p1 + j]; //bin 2 of dim j 
 
-      d[1 * mxdim+1 + j] = (xo + xn) / 2.0;
-      dt[j] = d[1 * mxdim+1 + j]; // set dt sum to contribution of bin 1
+      d[1 * mxdim_p1 + j] = (xo + xn) / 2.0;
+      dt[j] = d[1 * mxdim_p1 + j]; // set dt sum to contribution of bin 1
 
       for (i = 2; i < nd; i++) {
         // rc is the contribution of the first and last bin? why?
         rc = xo + xn;
         xo = xn;
-        xn = d[(i + 1) * mxdim+1 + j];
-        d[i * mxdim+1 + j] = (rc + xn) / 3.0;
-        dt[j] += d[i * mxdim+1 + j];
+        xn = d[(i + 1) * mxdim_p1 + j];
+        d[i * mxdim_p1 + j] = (rc + xn) / 3.0;
+        dt[j] += d[i * mxdim_p1 + j];
       }
 
       // do bin nd last
-      d[nd * mxdim+1 + j] = (xo + xn) / 2.0;
+      d[nd * mxdim_p1 + j] = (xo + xn) / 2.0;
 
-      dt[j] += d[nd * mxdim+1 + j];
+      dt[j] += d[nd * mxdim_p1 + j];
     }
 
     for (j = 1; j <= ndim; j++) {
       if (dt[j] > 0.0) { // enter if there is any contribution only
         rc = 0.0;
         for (i = 1; i <= nd; i++) {
-			if(d[i*mxdim+1+j]<TINY)d[i*mxdim+1+j]=TINY;
+			//if(d[i*mxdim+1+j]<TINY)d[i*mxdim+1+j]=TINY;
 			//added by Ioannis based on vegasBook.c
-          r[i] = pow((1.0 - d[i * mxdim+1 + j] / dt[j]) /
-                       (log(dt[j]) - log(d[i * mxdim+1 + j])),
+          r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
+                       (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
           rc += r[i]; // rc is it the total number of sub-increments
         }
-        rebin(rc / xnd, nd, r, xin, &xi[j * ndmx + 1]);
+        rebin(rc / xnd, nd, r, xin, &xi[j * ndmx_p1]);
       }
     }
 
@@ -1020,16 +1002,10 @@ vegas(IntegT integrand,
              cudaMemcpyHostToDevice);
   cudaCheckError();
 
-  for (it = itmax + 1; it <= titer && (*status); it++) {
-    //printf("starting iteration\n");
-    
+  for (it = itmax + 1; it <= titer && (*status); it++) {    
     ti = tsi = 0.0;
-    
     cudaMemset(result_dev, 0, 2 * sizeof(double));
-    //std::cout<<"from host vegas_kernelF total num threads:"<< totalNumThreads << "\n";
-    //printf("executing vegas_kernelF\n");
-    //std::cout<<"seed_init "<<time(0) << "\n";
-
+    
     vegas_kernelF<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                        ng,
                                                        npg,
@@ -1053,12 +1029,11 @@ vegas(IntegT integrand,
                                                        time(0)/it);
 
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-    //printf("Done with vegas_kernelF\n");
     
     ti = result[0];
     tsi = result[1];
     tsi *= dv2g; // is dv2g 1/(M-1)?
-    printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
+    //printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
 
     wgt = 1.0 / tsi;
     si += wgt * ti;
@@ -1075,7 +1050,7 @@ vegas(IntegT integrand,
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     // printf("it %d\n", it);
     //if (verbosity == 1)
-    //  printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
+      //printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
     // printf("%3d   %e  %e\n", it, ti, tsi);
     //printf("done with iteration post processing\n");
   } // end of iterations
@@ -1087,6 +1062,8 @@ vegas(IntegT integrand,
   free(ia);
   free(x);
   free(xi);
+  free(xin);
+  free(r);
 
   cudaFree(d_dev);
   cudaFree(dx_dev);
@@ -1094,7 +1071,8 @@ vegas(IntegT integrand,
   cudaFree(x_dev);
   cudaFree(xi_dev);
   cudaFree(regn_dev);
-  
+  cudaFree(result_dev);
+  cudaFree(d_integrand);
   //outfile_fevals.close();
   //outfile_intervals.close();
 }
@@ -1127,7 +1105,6 @@ integrate(IntegT ig,
                       adjustIters,
                       skipIters,
                       volume);
-  //std::cout<<"status:"<<result.status<<"\n";
   return result;
 }
 

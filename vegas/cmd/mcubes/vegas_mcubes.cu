@@ -12,7 +12,7 @@ nvcc -O2 -DCURAND -o vegas vegas_mcubes.cu -arch=sm_70
 
 example run command
 
-nvprof ./vegas 0 6 0.0  10.0  1.0E+09  10, 0, 0
+nvprof ./vegas 0 6 0.0  10.0  2.0E+09  10, 0, 0
 
 nvprof  ./vegas 1 9 -1.0  1.0  1.0E+07 15 10 10
 
@@ -40,7 +40,7 @@ Last three arguments are: total iterations, iteration
 #define NDMX1 NDMX+1
 #define MXDIM1 MXDIM+1
 #define PI 3.14159265358979323846
-#include "xorshift.cu"
+//#include "xorshift.cu"
 
 #define IMAX(a,b) \
     ({ __typeof__ (a) _a = (a); \
@@ -224,10 +224,10 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 					ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
 
 					if (ia[j] > 1) {
-						xo = xi[j * NDMX1 + ia[j]] - xi[j * NDMX1 + ia[j] - 1];
-						rc = xi[j * NDMX1 + ia[j] - 1] + (xn - ia[j]) * xo;
+						xo = xi[j * (NDMX1) + ia[j]] - xi[j * (NDMX1) + ia[j] - 1];
+						rc = xi[j * (NDMX1) + ia[j] - 1] + (xn - ia[j]) * xo;
 					} else {
-						xo = xi[j * NDMX1 + ia[j]];
+						xo = xi[j * (NDMX1) + ia[j]];
 						rc = (xn - ia[j]) * xo;
 					}
 
@@ -343,9 +343,9 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 				f2b += f2;
 #pragma unroll 2
 				for ( j = 1; j <= ndim; j++) {
-					atomicAdd(&d[ia[j]*MXDIM1 + j], fabs(f));
+					atomicAdd(&d[ia[j]*(MXDIM1) + j], fabs(f));
 					//if(j == 1 && ia[j] == 1)
-                    //    printf("For bin %i adding to index %i the value of %.8f x:%f, %f, %f\n", ia[j], ia[j]*MXDIM1 + j, fabs(f), x[1], x[2], x[3]);
+                    //    printf("For bin %i adding to index %i the value of %.8f x:%f, %f, %f\n", ia[j], ia[j]*(MXDIM1) + j, fabs(f), x[1], x[2], x[3]);
 				}
 
 			}  // end of npg loop
@@ -439,10 +439,10 @@ __global__ void vegas_kernelF(int ng, int ndim, int npg, double xjac, double dxg
 					iaj = IMAX(IMIN((int)(xn), NDMX), 1);
 
 					if (iaj > 1) {
-						xo = xi[j * NDMX1 + iaj] - xi[j * NDMX1 + iaj - 1];
-						rc = xi[j * NDMX1 + iaj - 1] + (xn - iaj) * xo;
+						xo = xi[j * (NDMX1) + iaj] - xi[j * (NDMX1) + iaj - 1];
+						rc = xi[j * (NDMX1) + iaj - 1] + (xn - iaj) * xo;
 					} else {
-						xo = xi[j * NDMX1 + iaj];
+						xo = xi[j * (NDMX1) + iaj];
 						rc = (xn - iaj) * xo;
 					}
 
@@ -643,6 +643,7 @@ void vegas(double regn[], int ndim, int fcode,
            double ncall, double *tgral, double *sd,
            double *chi2a, int titer, int itmax, int skip)
 {
+  //printf("inside vegas\n");
 	int i, it, j, k, nd, ndo, ng, npg, ncubes;
 	double calls, dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
 
@@ -665,11 +666,11 @@ void vegas(double regn[], int ndim, int fcode,
 	
 	ndo = 1;
 	for (j = 1; j <= ndim; j++) 
-        xi[j * NDMX1 + 1] = 1.0;
+        xi[j * (NDMX1) + 1] = 1.0;
 	si = swgt = schi = 0.0;
 	nd = NDMX;
 	ng = 1;
-	ng = (int)pow(ncall / 2.0 /*+ 0.25*/, 1.0 / ndim); //why do we add .25?
+	ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); //why do we add .25?
 	for (k = 1, i = 1; i < ndim; i++) 
         k *= ng;
 	double sci = 1.0 / k;
@@ -695,14 +696,15 @@ void vegas(double regn[], int ndim, int fcode,
 	for (i = 1; i <= IMAX(nd, ndo); i++) 
         r[i] = 1.0;
 	for (j = 1; j <= ndim; j++) 
-        rebin(ndo / xnd, nd, r, xin, &xi[j * NDMX1]);
+        rebin(ndo / xnd, nd, r, xin, &xi[j * (NDMX1)]);
 	ndo = nd;
 
 
 
 	double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev,  *result_dev;
 	int *ia_dev;
-
+    
+	//printf("About to do many cudaMallocs\n");
 	cudaMalloc((void**)&result_dev, sizeof(double) * 2); cudaCheckError();
 	cudaMalloc((void**)&d_dev, sizeof(double) * (NDMX + 1) * (MXDIM + 1)); cudaCheckError();
 	cudaMalloc((void**)&dx_dev, sizeof(double) * (MXDIM + 1)); cudaCheckError();
@@ -743,15 +745,15 @@ void vegas(double regn[], int ndim, int fcode,
 	uint32_t nBlocks = ((uint32_t) (((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
 	uint32_t nThreads = BLOCK_DIM_X;
     
-    std::cout<<"ncubes:"<<ncubes<<"\n";
-    std::cout<<"npg:"<<npg<<"\n";
-    std::cout<<"npg*ncubes*chunkSize:"<<npg*ncubes*chunkSize<<"\n";
-    std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
+	//std::cout<<"ncubes:"<<ncubes<<"\n";
+	//std::cout<<"npg:"<<npg<<"\n";
+	//std::cout<<"npg*ncubes*chunkSize:"<<npg*ncubes*chunkSize<<"\n";
+	//std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
 	for (it = 1; it <= itmax; it++) {
 
 		ti = tsi = 0.0;
 		for (j = 1; j <= ndim; j++) {
-			for (i = 1; i <= nd; i++) d[i * MXDIM1 + j] = 0.0;
+			for (i = 1; i <= nd; i++) d[i * (MXDIM1) + j] = 0.0;
 		}
         
 		cudaMemcpy( xi_dev, xi, sizeof(double) * (MXDIM + 1) * (NDMX + 1), cudaMemcpyHostToDevice) ; cudaCheckError();	//bin bounds
@@ -759,7 +761,7 @@ void vegas(double regn[], int ndim, int fcode,
 		cudaMemset(result_dev, 0, 2 * sizeof(double));
         //std::cout<<"Launchign with "<<nBlocks<<","<<nThreads<<std::endl;
         
-        std::cout<<"---------------------------------------\n";
+        //std::cout<<"---------------------------------------\n";
         //PrintArray<double>(xi, (MXDIM + 1) * (NDMX + 1), "xi");
         
 		vegas_kernel <<< nBlocks, nThreads>>>(ng, ndim, npg, xjac, dxg, result_dev, xnd,
@@ -780,7 +782,7 @@ void vegas(double regn[], int ndim, int fcode,
 		tsi = result[1];
    
 		tsi *= dv2g;
-		//printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
+		printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
 
 		if (it > skip) {
 			wgt = 1.0 / tsi;
@@ -795,20 +797,20 @@ void vegas(double regn[], int ndim, int fcode,
 			printf("%5d,   %14.7g, -%9.2g,  %9.2g\n", it, *tgral, *sd, *chi2a);
 		}
         
-        std::cout<<"Rebining Process\n";
+		//std::cout<<"Rebining Process\n";
         
 		for (j = 1; j <= ndim; j++) {
             
-			xo = d[1 * MXDIM1 + j]; //bin 1 of dim j, and bin 2 just below           
-			xn = d[2 * MXDIM1 + j];                                     
+			xo = d[1 * (MXDIM1) + j]; //bin 1 of dim j, and bin 2 just below           
+			xn = d[2 * (MXDIM1) + j];                                     
             
             //printf("Contribution of bin 1:%.8f\n", xo);
             //printf("Contribution of bin 2:%.8f\n", xn);
             
-			d[1 * MXDIM1 + j] = (xo + xn) / 2.0;                        
+			d[1 * (MXDIM1) + j] = (xo + xn) / 2.0;                        
             //printf("Storing their average in the spot of contribution for bin 1\n");
             
-			dt[j] = d[1 * MXDIM1 + j];       //set dt sum to contribution of bin 1                           
+			dt[j] = d[1 * (MXDIM1) + j];       //set dt sum to contribution of bin 1                           
             
             
             //printf("Going through %i bins starting at the second one (i:2)\n", nd);
@@ -818,24 +820,24 @@ void vegas(double regn[], int ndim, int fcode,
                 
 				xo = xn;                                                
                 
-				xn = d[(i + 1) * MXDIM1 + j];                           
+				xn = d[(i + 1) * (MXDIM1) + j];                           
                 
                 //printf("Contribution of bin A:%.8f\n", xo);
                 //printf("contribution of bin B:%.8f\n", xn);
                 
-				d[i * MXDIM1 + j] = (rc + xn) / 3.0;                    
+				d[i * (MXDIM1) + j] = (rc + xn) / 3.0;                    
                 //printf("updating with new three way average the contribution of bin %i\n", i);
                 
                 
-				dt[j] += d[i * MXDIM1 + j];                                
+				dt[j] += d[i * (MXDIM1) + j];                                
                 
                 
 			}
             
             //do bin nd last
-			d[nd * MXDIM1 + j] = (xo + xn) / 2.0;                      
+			d[nd * (MXDIM1) + j] = (xo + xn) / 2.0;                      
             
-			dt[j] += d[nd * MXDIM1 + j];                                
+			dt[j] += d[nd * (MXDIM1) + j];                                
             
 		}
         
@@ -849,11 +851,11 @@ void vegas(double regn[], int ndim, int fcode,
 				rc = 0.0;
                 //printf("Setting rc to zero\n");
 				for (i = 1; i <= nd; i++) {
-					//if (d[i * MXDIM1 + j] < TINY) d[i * MXDIM1 + j] = TINY;
-                    //printf("Setting r[%i] to %f\n", i, pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /(log(dt[j]) - log(d[i * MXDIM1 + j])), ALPH));
+					//if (d[i * (MXDIM1) + j] < TINY) d[i * (MXDIM1) + j] = TINY;
+                    //printf("Setting r[%i] to %f\n", i, pow((1.0 - d[i * (MXDIM1) + j] / dt[j]) /(log(dt[j]) - log(d[i * (MXDIM1) + j])), ALPH));
                                
-					r[i] = pow((1.0 - d[i * MXDIM1 + j] / dt[j]) /(log(dt[j]) - log(d[i * MXDIM1 + j])), ALPH);
-                    //r[i] = pow((d[i * MXDIM1 + j] / dt[j] - 1.) /(log(d[i * MXDIM1 + j])-log(dt[j])), ALPH);
+					r[i] = pow((1.0 - d[i * (MXDIM1) + j] / dt[j]) /(log(dt[j]) - log(d[i * (MXDIM1) + j])), ALPH);
+                    //r[i] = pow((d[i * (MXDIM1) + j] / dt[j] - 1.) /(log(d[i * (MXDIM1) + j])-log(dt[j])), ALPH);
                     //printf("Incrementing rc by r[%i]:%f -> rc:%f\n", i, r[i], rc+r[i]);           
 					rc += r[i]; //rc is it the total number of sub-increments
                     //printf("r[%i]:%.8f\n", i, r[i]);        //is r[i] the new weight of each bin (instead of the number of sub-increments?
@@ -861,7 +863,7 @@ void vegas(double regn[], int ndim, int fcode,
                 
                 
                 //printf("Calling rebin rc/xnd:%.8f xnd:%.8f rc:%.8f\n", rc/xnd, xnd, rc);
-				rebin(rc / xnd, nd, r, xin, &xi[j * NDMX1]);
+				rebin(rc / xnd, nd, r, xin, &xi[j * (NDMX1)]);
 			}
 
 		}
@@ -890,7 +892,7 @@ void vegas(double regn[], int ndim, int fcode,
 		ti  = result[0];
 		tsi = result[1];
 		tsi *= dv2g; //is dv2g 1/(M-1)?
-		//printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
+		printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
 
 		wgt = 1.0 / tsi;
 		si += wgt * ti;
@@ -940,22 +942,22 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
     
-	int  j;
-	double avgi, chi2a, sd;
-	double regn[2 * MXDIM + 1];
+    int  j;
+    double avgi, chi2a, sd;
+    double regn[2 * MXDIM + 1];
 
-	int fcode = atoi(argv[1]);
-	int ndim = atoi(argv[2]);
-	float LL = atof(argv[3]);
-	float UL = atof(argv[4]);
-	double ncall = atof(argv[5]);
-	int titer = atoi(argv[6]);
-	int itmax = atoi(argv[7]);
-	int skip = atoi(argv[8]);
-    verbosity = atoi(argv[9]);
+    int fcode = atoi(argv[1]);
+    int ndim = atoi(argv[2]);
+    float LL = atof(argv[3]);
+    float UL = atof(argv[4]);
+    double ncall = atof(argv[5]);
+    int titer = atoi(argv[6]);
+    int itmax = atoi(argv[7]);
+    int skip = atoi(argv[8]);
+    //verbosity = atoi(argv[9]);
     
-    std::cout<<"Ncall:"<<ncall<<"\n";
-    std::cout<<"verbosity:"<<verbosity<<"\n";
+    //std::cout<<"Ncall:"<<ncall<<"\n";
+    //std::cout<<"verbosity:"<<verbosity<<"\n";
     auto t0 = std::chrono::high_resolution_clock::now();
 	avgi = sd = chi2a = 0.0;
     
@@ -982,7 +984,7 @@ int main(int argc, char **argv)
              << chi2a << ","
              << dt.count() << "\n";
     
-    printf("Absolute error %.15e\n", abs(1.084656084656085e-02 - avgi));
+    //printf("Absolute error %.15e\n", abs(1.084656084656085e-02 - avgi));
 	return 0;
 
 }

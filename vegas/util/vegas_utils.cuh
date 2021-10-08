@@ -3,6 +3,8 @@
 
 
 
+
+
 __inline__ bool
 PrecisionAchieved(double estimate,
                   double errorest,
@@ -33,7 +35,7 @@ int GetChunkSize(const double ncall){
     double small = 1.e7;
     double large = 8.e9;
     
-    if(ncall < small)
+    if(ncall <= small)
         return 32;
     else if(ncall <= large)
         return 2048; 
@@ -50,14 +52,19 @@ int GetChunkSize(const double ncall){
 bool
 AdjustParams(double& ncall, int& totalIters)
 {
-  if (ncall >= 6e9 && totalIters >= 100)
+  if (ncall >= 8.e9 && totalIters >= 100){
     return false;
-  else if (ncall >= 6e9) {
+  }
+  else if (ncall >= 8.e9) {
     totalIters += 10;
     return true;
-  } else {
-    ncall += 1e9;
+  } else if (ncall >= 1.e9){
+        ncall += 1.e9;
     return true;
+  }
+  else{
+    ncall *= 10.;
+    return true;  
   }
 }
 

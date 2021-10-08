@@ -1,5 +1,8 @@
-#include "vegas/util/Volume.cuh"
 #include "vegas/vegasT.cuh"
+#include "vegas/demos/demo_utils.cuh"
+#include <chrono>
+#include <iostream>
+#include <string>
 
 class SinSum6D {
 public:
@@ -13,17 +16,17 @@ public:
 int
 main(int argc, char** argv)
 {
-  double epsrel = 1e-3;
-  double epsabs = 1e-20;
+  double epsrel = 1.e-3;
+  double epsabs = 1.e-20;
 
   constexpr int ndim = 6;
-  double ncall = 4.0e9;
-  int titer = 20;
+  double ncall = 2.0e9;
+  int titer = 50;
   int itmax = 0;
   int skip = 0;
-  verbosity = 0;
+  VegasParams params(ncall, titer, itmax, skip);
 
-  // double avgi, chi2a, sd;
+  double true_value = -49.165073;
   std::cout << "id, estimate, std, chi, iters, adj_iters, skip_iters, ncall, "
                "time, abserr, relerr\n";
 
@@ -31,19 +34,27 @@ main(int argc, char** argv)
   double highs[] = {10., 10., 10., 10., 10., 10.};
   quad::Volume<double, ndim> volume(lows, highs);
   SinSum6D integrand;
-
-  auto res = integrate<SinSum6D, ndim>(
-    integrand, ndim, epsrel, epsabs, ncall, titer, itmax, skip, &volume);
-
+  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
+    
+  auto t0 = std::chrono::high_resolution_clock::now();
+  auto res = cuda_mcubes::integrate<SinSum6D, ndim>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    
   std::cout.precision(15);
-  std::cout << std::scientific << res.estimate << "," << std::scientific
-            << res.errorest << "," << res.chi_sq << "," << res.status << "\n";
-
-  res = simple_integrate<SinSum6D, ndim>(
-    integrand, ndim, epsrel, epsabs, ncall, titer, itmax, skip, &volume);
-
-  std::cout.precision(15);
-  std::cout << std::scientific << res.estimate << "," << std::scientific
-            << res.errorest << "," << res.chi_sq << "," << res.status << "\n";
+  std::cout << "SinSum6D" << "," 
+            << epsrel << ","
+            << std::scientific << true_value << "," 
+            << std::scientific << res.estimate << "," 
+            << std::scientific << res.errorest << "," 
+            << res.chi_sq << "," 
+            << params.t_iter <<","
+            << params.num_adjust_iters << ","
+            << params.num_skip_iters << ","
+            << params.ncall <<","
+            << res.neval <<","
+            << dt.count() << ","
+            << res.status << "\n";
+  
+  
   return 0;
 }

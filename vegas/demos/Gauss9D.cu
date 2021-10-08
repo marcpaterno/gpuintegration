@@ -1,5 +1,8 @@
-#include "vegas/util/Volume.cuh"
 #include "vegas/vegasT.cuh"
+#include "vegas/demos/demo_utils.cuh"
+#include <chrono>
+#include <iostream>
+#include <string>
 
 class Gauss9D {
 public:
@@ -24,42 +27,41 @@ public:
 int
 main(int argc, char** argv)
 {
-  double epsrel = 1e-3;
-  double epsabs = 1e-20;
-
-  // double regn[2 * MXDIM + 1];
-
-  // int fcode = 0;
+  double epsrel = 1.e-3;
+  double epsrel_min = 1e-9;
   constexpr int ndim = 9;
-  // float LL = 0.;
-  // float UL = 10.;
-  double ncall = 1.0e8;
-  int titer = 20;
+  double epsabs = 1.e-20;
+  double ncall = 1.0e7;
+  int titer = 15;
   int itmax = 10;
-  int skip = 0;
-  verbosity = 0;
+  int skip = 10;
+  double true_value = 1.;
+  VegasParams params(ncall, titer, itmax, skip);
 
-  // double avgi, chi2a, sd;
   std::cout << "id, estimate, std, chi, iters, adj_iters, skip_iters, ncall, "
                "time, abserr, relerr\n";
 
   double lows[] = {-1., -1., -1., -1., -1., -1., -1., -1., -1.};
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
+  
   Gauss9D integrand;
-
-  auto res = integrate<Gauss9D, ndim>(
-    integrand, ndim, epsrel, epsabs, ncall, titer, itmax, skip, &volume);
-
+      
+  /*while(mcubes_time_and_call<Gauss9D, ndim>
+    (integrand, epsrel, true_value, "Gauss9D", params, &volume) == true && epsrel >= epsrel_min){
+        epsrel /= 5.;
+    }*/
+using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
+    
+  auto t0 = std::chrono::high_resolution_clock::now();
+  auto res = cuda_mcubes::integrate<Gauss9D, ndim>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    
   std::cout.precision(15);
-  std::cout << std::scientific << res.estimate << "," << std::scientific
-            << res.errorest << "," << res.chi_sq << "," << res.status << "\n";
-
-  res = simple_integrate<Gauss9D, ndim>(
-    integrand, ndim, epsrel, epsabs, ncall, titer, itmax, skip, &volume);
-
-  std::cout.precision(15);
-  std::cout << std::scientific << res.estimate << "," << std::scientific
-            << res.errorest << "," << res.chi_sq << "," << res.status << "\n";
+  std::cout << "Gauss9D" << "," 
+            << std::scientific << true_value << "," 
+            << std::scientific << res.estimate << "," 
+            << std::scientific << res.errorest << "," 
+            << dt.count() << "\n";
   return 0;
 }
