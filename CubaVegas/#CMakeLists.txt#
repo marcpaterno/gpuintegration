@@ -1,0 +1,6 @@
+add_executable(SinSum6Dcpu SinSum6D.cc)
+target_include_directories(SinSum6Dcpu PRIVATE
+  ${CUBA_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}
+)
+target_link_libraries(SinSum6Dcpu PRIVATE ${CUBA_LIBRARIES})

@@ -935,7 +935,7 @@ vegas(IntegT integrand,
     tsi = result[1];
 
     tsi *= dv2g;
-    //printf("adj iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    printf("adj iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
     
     if (it > skip) {
       wgt = 1.0 / tsi;
@@ -1050,7 +1050,7 @@ vegas(IntegT integrand,
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     // printf("it %d\n", it);
     //if (verbosity == 1)
-      //printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
+    printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
     // printf("%3d   %e  %e\n", it, ti, tsi);
     //printf("done with iteration post processing\n");
   } // end of iterations
