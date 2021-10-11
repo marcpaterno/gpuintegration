@@ -39,7 +39,6 @@ Last three arguments are: total iterations, iteration
 
 #define NDMX1 NDMX+1
 #define MXDIM1 MXDIM+1
-//#define PI 3.14159265358979323846
 #include "xorshift.cu"
 
 #define IMAX(a,b) \

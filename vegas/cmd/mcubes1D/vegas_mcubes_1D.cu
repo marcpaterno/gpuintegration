@@ -36,7 +36,6 @@ Last three arguments are: total iterations, iteration
 #define MXDIM1 MXDIM+1
 //#define SCALE 1.0E+10
 #define SCALE 1.0E-200
-#define PI 3.14159265358979323846
 
 #define IMAX(a,b) \
     ({ __typeof__ (a) _a = (a); \
