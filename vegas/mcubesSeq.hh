@@ -482,7 +482,7 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   //declaring the variables
   cuhreResult<double> result;
   int init, j/*, ncall*/, nprn;
-  double avgi, chi2a, sd, xoff;
+  double avgi, chi2a, sd;
   double *regn;
   init = -1;
   
@@ -498,7 +498,6 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   
   //initializing the variables and the arrays
   ndim = NDIM;
-  xoff = 0;
   //ncall = 1000;
   //itmax = 10;
   nprn = -1;

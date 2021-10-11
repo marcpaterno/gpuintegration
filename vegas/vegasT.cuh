@@ -36,6 +36,7 @@ Last three arguments are: total iterations, iteration
 #include "vegas/util/util.cuh"
 #include "vegas/util/vegas_utils.cuh"
 #include "vegas/util/verbose_utils.cuh"
+#include "vegas/seqCodesDefs.hh"
 #include <chrono>
 #include <ctime>
 #include <curand_kernel.h>
@@ -51,33 +52,23 @@ Last three arguments are: total iterations, iteration
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
-class Internal_Vegas_Params{
-        static constexpr int NDMX = 500;
-        static constexpr int MXDIM = 20;
-        static constexpr double ALPH = 0.5;
+class Internal_Vegas_Params {
+  static const int ndmx = 500;
+  static const int mxdim = 20;
+  static constexpr double alph = 1.5;
     
     public:
         
-        __host__ __device__ static constexpr int get_NDMX(){return NDMX;}
+        __host__ __device__ static constexpr int get_NDMX(){return ndmx;}
    
-        __host__ __device__ static constexpr int get_NDMX_p1(){return NDMX+1;}
+        __host__ __device__ static constexpr int get_NDMX_p1(){return ndmx+1;}
        
-        __host__ __device__ static constexpr  double get_ALPH(){return ALPH;}
+        __host__ __device__ static constexpr  double get_ALPH(){return alph;}
        
-        __host__ __device__ static constexpr  int get_MXDIM(){return MXDIM;}
+        __host__ __device__ static constexpr  int get_MXDIM(){return mxdim;}
         
-        constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
+        constexpr __host__ __device__ static int get_MXDIM_p1(){return mxdim+1;}
 };
-
-template <typename T, typename U>
-std::common_type_t<T,U> IMAX(T a, U b) {
-  return (a > b) ? a : b;
-}
-
-template <typename T, typename U>
-std::common_type_t<T, U> IMIN(T a, U b) {
-  return (a < b) ? a : b;
-}
 
 // Macro for checking cuda errors following a cuda launch or api call
 #define cudaCheckError()                                                       \
@@ -166,7 +157,7 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
   }
   
   /*if(blockIdx.x > 8554)
-    printf("Block %i thread %u get_indx ms:%u found index\n", blockIdx.x, threadIdx.x, ms);*/
+   // printf("Block %i thread %u get_indx ms:%u found index\n", blockIdx.x, threadIdx.x, ms);*/
 }
 
 
@@ -323,13 +314,13 @@ vegas_kernel(IntegT* d_integrand,
 			 int* intervals*/)
 {
 
-  constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+  //constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
+  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
-  unsigned long long seed;
-   //seed_init *= (iter) * ncubes;
+  //unsigned long long seed;
+  //seed_init *= (iter) * ncubes;
   // seed_init = clock64();
   
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
@@ -475,7 +466,6 @@ vegas_kernelF(IntegT* d_integrand,
 
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   //constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
 #ifdef CUSTOM
@@ -487,9 +477,6 @@ vegas_kernelF(IntegT* d_integrand,
   expi = 31;
   uint32_t p = one << expi;
 #endif
-
-  unsigned long long seed;
-  // seed_init = (iter) * ncubes;
 
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
@@ -508,13 +495,10 @@ vegas_kernelF(IntegT* d_integrand,
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
   
-    //seed = seed_init + m * chunkSize;
 #ifdef CURAND
     
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
-    //if(m == 0)
-    //  printf("vegas_kernelF seed_init:%u\n", seed_init);
 #endif
 
     fbg = f2bg = 0.0;
@@ -661,11 +645,10 @@ vegas(IntegT integrand,
   
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
   
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
-  double regn[2 * mxdim + 1];
+  double regn[2 * mxdim_p1];
   
   for (int j = 1; j <= ndim; j++) {
     regn[j] = vol->lows[j - 1];
@@ -812,7 +795,8 @@ vegas(IntegT integrand,
   for(int i=0; i< numPoints; ++i)
 	  intervals[i]= -1.;*/
   //printf("itmax:%i\n", itmax);
-  
+
+  constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   for (it = 1; it <= itmax && (*status) == 1; it++) {
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
@@ -854,8 +838,8 @@ vegas(IntegT integrand,
                                                       time(0)/it/*,
                                                       evals,
                                                       eval_points,
-													  intervals*/);
-    
+                                                      intervals*/);
+   
     
     
     cudaMemcpy(xi,
@@ -870,69 +854,7 @@ vegas(IntegT integrand,
                cudaMemcpyDeviceToHost);
     cudaCheckError(); // we do need to the contributions for the rebinning
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-    
-    
-	/*if(OUTFILEVAR == 2 || OUTFILEVAR == 3){
-	
-		for(int threadID = 0; threadID < totalNumThreads; threadID++){        
-        
-			int ThreadChunkSize = threadID == (totalNumThreads -1 )? LastChunk+1 : chunkSize;
-            
-			for(int chunk = 0; chunk < ThreadChunkSize; chunk ++){
-				for(int sampleID = 1; sampleID <= npg; sampleID++){
-                    
-					size_t func_eval_index = threadID*chunkSize*npg + chunk*npg + (sampleID-1);
-					outfile_fevals.precision(10);
-					outfile_fevals << it <<","
-                                << threadID << ","
-                                << chunk << ","
-                                << sampleID << ",";
-                    
-					for(int dim = 0; dim < ndim; dim++){
-                        
-						size_t dim_sample_point_index = func_eval_index*ndim + dim;
-						outfile_fevals << std::scientific 
-                            << eval_points[dim_sample_point_index] << ",";            
-					}
-					outfile_fevals << std::scientific << evals[func_eval_index] <<"\n";
-				}
-			}
-			//printf("Done with thread %i/%i\n", threadID, totalNumThreads);
-		}
-    }*/
-	
-    /*if(OUTFILEVAR == 3){
-        
-		for(int threadID = 0; threadID < totalNumThreads; threadID++){
-            
-			int ThreadChunkSize = threadID == (totalNumThreads -1 )? LastChunk+1 : chunkSize;
-            
-			for(int chunk = 0; chunk < ThreadChunkSize; chunk ++){
-				for(int sampleID = 1; sampleID <= npg; sampleID++){
-                    
-					size_t func_eval_index = threadID*chunkSize*npg + chunk*npg + (sampleID-1);
-                    outfile_intervals << it << ",";                
-					for(int dim = 0; dim < ndim; dim++){
-						size_t dim_sample_point_index = func_eval_index*ndim + dim;
-						outfile_intervals << intervals[dim_sample_point_index] << ",";            
-					}
-					outfile_intervals.precision(10);
-					outfile_intervals << std::scientific << evals[func_eval_index] <<"\n";
-				}
-			}
-		}	
-	}
-    //printf("Done with iter output\n");
-    
-    //reset
-    for(int i=0; i< numFunctionEvaluations; ++i){
-        evals[i] = -1.;
-    }
       
-    for(int i=0; i< numFunctionEvaluations*ndim; ++i){
-        eval_points[i]= -1.;
-    }*/
-    
     ti = result[0];
     tsi = result[1];
 
@@ -951,7 +873,6 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
     }
      
     for (j = 1; j <= ndim; j++) {
@@ -1042,7 +963,7 @@ vegas(IntegT integrand,
     ti = result[0];
     tsi = result[1];
     tsi *= dv2g; // is dv2g 1/(M-1)?
-    printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
+    //printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
 
     wgt = 1.0 / tsi;
     si += wgt * ti;
@@ -1154,7 +1075,7 @@ simple_integrate(IntegT integrand,
         << ncall << ","
         << result.status << "\n";*/
    // break;
-   printf("done with %e for epsrel %e status:%i\n", ncall, epsrel, result.status);
+   // printf("done with %e for epsrel %e status:%i\n", ncall, epsrel, result.status);
   } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
   return result;

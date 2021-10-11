@@ -150,7 +150,6 @@ namespace NRC{
     static float d[NDMX+1][MXDIM+1],di[NDMX+1][MXDIM+1],dt[MXDIM+1],
       dx[MXDIM+1], r[NDMX+1],x[MXDIM+1],xi[MXDIM+1][NDMX+1],xin[NDMX+1];
     static double schi,si,swgt;
-    float ran00 ; 
     if (init <= 0) {
       mds=ndo=1;
       for (j=1;j<=ndim;j++) xi[j][1]=1.0;
@@ -234,7 +233,6 @@ namespace NRC{
             //printf("entered npg for loop\n");
             wgt=xjac;
             for (j=1;j<=ndim;j++) {
-                //ran00 = (float)rand()/RAND_MAX;
 
                 xn=(kg[j]-NRC::ran2(&idum))*dxg+1.0;
           

@@ -35,16 +35,19 @@ float xoff;
 #define RNMX (1.0-EPS)
 
 template <typename T, typename U>
+__host__ __device__
 std::common_type_t<T,U> IMAX(T a, U b) {
   return (a > b) ? a : b;
 }
 
 template <typename T, typename U>
+__host__ __device__
 std::common_type_t<T, U> IMIN(T a, U b) {
   return (a < b) ? a : b;
 }
 
 template <typename T>
+__host__ __device__
 T SQR(T a) {
   return a * a;
 }
