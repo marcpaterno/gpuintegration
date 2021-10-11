@@ -2,7 +2,6 @@
 #define VEGAS_UTIL_FUNC_CUH
 
 // define a new function and update function specification at the end 
-#define PI 3.14159265358979323844
 
 __inline__ __device__  double func1(double *xx, int ndim) {
 	// 6 d function
@@ -161,9 +160,9 @@ double GENZ3_8D(double *x, double dim){
 __inline__ __device__
 double roosarnoldthree(double* rx, int dim)
 {
-	double value = 1./sqrtf(powf(PI*PI/8., (double)dim)-1.);
+	double value = 1./sqrtf(powf(M_PI*M_PI/8., (double)dim)-1.);
 	for (int i = 1; i <= dim; i++){
-		value *= (PI/2.*sinf(PI*rx[i])-1.);
+		value *= (M_PI/2.*sinf(M_PI*rx[i])-1.);
 	}
 	return value;
 }
@@ -196,13 +195,13 @@ double sobolprod(double* rx, int dim)
 __inline__ __device__
 double oscill(double* rx, int dim)
 {
-	double value = 2.*PI;
+	double value = 2.*M_PI;
 	double p = 1.;
 	for (int i = 1; i <= dim; i++){
 		value += rx[i];
 		p *= sinf(0.5);
 	}
-	value = cos(value)-pow(2., (double)dim)*cosf(2.*PI+0.5*(double)dim)*p;
+	value = cos(value)-pow(2., (double)dim)*cosf(2.*M_PI+0.5*(double)dim)*p;
 	return value;
 }
 

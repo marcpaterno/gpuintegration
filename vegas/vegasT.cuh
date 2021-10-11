@@ -50,16 +50,6 @@ Last three arguments are: total iterations, iteration
 #define TINY 1.0e-30
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
-//#define ALPH 1.5 // commented out by Ioannis in order to match python vegas default of .5
-//#define ALPH 0.5
-//#define NDMX 500
-//#define MXDIM 20
-
-//#define NDMX1 NDMX + 1
-//#define MXDIM1 MXDIM + 1
-//#define PI 3.14159265358979323846
-
-
 
 class Internal_Vegas_Params{
         static constexpr int NDMX = 500;
@@ -79,19 +69,15 @@ class Internal_Vegas_Params{
         constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
 };
 
-#define IMAX(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a > _b ? _a : _b;                                                         \
-  })
+template <typename T, typename U>
+std::common_type_t<T,U> IMAX(T a, U b) {
+  return (a > b) ? a : b;
+}
 
-#define IMIN(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a < _b ? _a : _b;                                                         \
-  })
+template <typename T, typename U>
+std::common_type_t<T, U> IMIN(T a, U b) {
+  return (a < b) ? a : b;
+}
 
 // Macro for checking cuda errors following a cuda launch or api call
 #define cudaCheckError()                                                       \
@@ -105,8 +91,6 @@ class Internal_Vegas_Params{
       exit(EXIT_FAILURE);                                                      \
     }                                                                          \
   }
-
-//int verbosity = 0;
 
 namespace cuda_mcubes{
 
