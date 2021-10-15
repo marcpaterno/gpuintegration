@@ -26,6 +26,8 @@ Last three arguments are: total iterations, iteration
 
 */
 
+__device__ long idum = -1;
+
 #define OUTFILEVAR 0
 
 #include "cudaPagani/quad/util/Volume.cuh"
@@ -46,10 +48,14 @@ Last three arguments are: total iterations, iteration
 #include <stdlib.h>
 #include <string>
 #include <fstream>
+#include <assert.h> 
+#include <inttypes.h>
 
 #define TINY 1.0e-30
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
+
+#define TRUE_VAL 
 //#define ALPH 1.5 // commented out by Ioannis in order to match python vegas default of .5
 //#define ALPH 0.5
 //#define NDMX 500
@@ -58,8 +64,6 @@ Last three arguments are: total iterations, iteration
 //#define NDMX1 NDMX + 1
 //#define MXDIM1 MXDIM + 1
 //#define PI 3.14159265358979323846
-
-
 
 class Internal_Vegas_Params{
         static constexpr int NDMX = 500;
@@ -79,43 +83,77 @@ class Internal_Vegas_Params{
         constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
 };
 
-#define IMAX(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a > _b ? _a : _b;                                                         \
-  })
-
-#define IMIN(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a < _b ? _a : _b;                                                         \
-  })
-
-// Macro for checking cuda errors following a cuda launch or api call
-#define cudaCheckError()                                                       \
-  {                                                                            \
-    cudaError_t e = cudaGetLastError();                                        \
-    if (e != cudaSuccess) {                                                    \
-      printf("Cuda failure %s:%d: '%s'\n",                                     \
-             __FILE__,                                                         \
-             __LINE__,                                                         \
-             cudaGetErrorString(e));                                           \
-      exit(EXIT_FAILURE);                                                      \
-    }                                                                          \
-  }
-
 //int verbosity = 0;
 
 namespace cuda_mcubes{
 
-using MilliSeconds =
-  std::chrono::duration<double, std::chrono::milliseconds::period>;
+//using MilliSeconds =
+ // std::chrono::duration<double, std::chrono::milliseconds::period>;
+
+
+
+#define NR_END 1
+#define IM1 2147483563
+#define IM2 2147483399
+#define AM (1.0/IM1)
+#define IMM1 (IM1-1)
+#define IA1 40014
+#define IA2 40692
+#define IQ1 53668
+#define IQ2 52774
+#define IR1 12211
+#define IR2 3791
+#define NTAB 32
+#define NDIV (1+IMM1/NTAB)
+#define EPS 1.2e-7
+#define RNMX (1.0-EPS)
+#define PI 3.14159265358979323846
+
+__device__
+double ran2(long *idum)
+{
+	int j;
+	long k;
+	static long idum2 = 123456789;
+	static long iy = 0;
+	static long iv[NTAB];
+	double temp;
+
+	if (*idum <= 0) {
+		if (-(*idum) < 1) *idum = 1;
+		else *idum = -(*idum);
+		idum2 = (*idum);
+		for (j = NTAB + 7; j >= 0; j--) {
+			k = (*idum) / IQ1;
+			*idum = IA1 * (*idum - k * IQ1) - k * IR1;
+			if (*idum < 0) *idum += IM1;
+			if (j < NTAB) iv[j] = *idum;
+		}
+		iy = iv[0];
+	}
+	k = (*idum) / IQ1;
+	*idum = IA1 * (*idum - k * IQ1) - k * IR1;
+	if (*idum < 0) *idum += IM1;
+	k = idum2 / IQ2;
+	idum2 = IA2 * (idum2 - k * IQ2) - k * IR2;
+	if (idum2 < 0) idum2 += IM2;
+	j = iy / NDIV;
+	iy = iv[j] - idum2;
+	iv[j] = *idum;
+	if (iy < 1) iy += IMM1;
+	if ((temp = AM * iy) > RNMX) return RNMX;
+	else return temp;
+}
+
 
 __inline__ __device__ double
 warpReduceSum(double val)
 {
+    
+    //could there be an issue if block has fewer than 32 threads running?
+    //at least with 1 thread and warpReduceSm commneted out, we still ahve chi-sq issues and 
+    //worse absolute error
+    
   val += __shfl_down_sync(0xffffffff, val, 16, WARP_SIZE);
   val += __shfl_down_sync(0xffffffff, val, 8, WARP_SIZE);
   val += __shfl_down_sync(0xffffffff, val, 4, WARP_SIZE);
@@ -133,7 +171,7 @@ blockReduceSum(double val)
   int wid = threadIdx.x / warpSize;
 
   val = warpReduceSum(val); // Each warp performs partial reduction
-
+  
   if (lane == 0)
     shared[wid] = val; // Write reduced value to shared memory
 
@@ -142,13 +180,16 @@ blockReduceSum(double val)
   // read from shared memory only if that warp existed
   val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : 0;
 
-  if (wid == 0)
+  if (wid == 0){
     val = warpReduceSum(val); // Final reduce within first warp
+    // printf("[%i] final reduction for block warp %i reduction:%.15e\n", blockIdx.x, threadIdx.x, val);
+  }
   __syncthreads(); //added by Ioannis due to cuda-memcheck racecheck reporting race between read/write
   return val;
 }
 
-__inline__ __device__ void
+
+__inline__ __device__ __host__ void
 get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
 {
     //called like :    get_indx(m * chunkSize, &kg[1], ndim, ng);
@@ -186,6 +227,24 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
 }
 
 
+void Test_get_indx(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, int it,  std::ofstream& interval_myfile){
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    
+    if(it == 1)
+		interval_myfile<<"m, kg[1], kg[2], kg[3], it\n";
+	
+    for(uint32_t m = 0; m < totalNumThreads; m++){
+        uint32_t kg[mxdim_p1];
+        get_indx(m , &kg[1], ndim, ng);
+        
+        interval_myfile<<m<<",";
+            for(int ii = 1; ii<= ndim; ii++)
+                interval_myfile<<kg[ii]<<",";
+            interval_myfile<<it<<"\n";
+    }
+}
+
+
 template <int ndim>
 __inline__ __device__
 void Setup_Integrand_Eval(curandState* localState, 
@@ -194,10 +253,31 @@ void Setup_Integrand_Eval(curandState* localState,
                             const uint32_t* const kg, 
                             int* const ia, 
                             double* const x, 
-                            double& wgt)
+                            double& wgt,
+                            uint32_t& _seed,
+                            uint64_t& temp,
+                            int npg,
+                            int chunkID,
+                            int sampleID,
+                            double* randoms = nullptr)
 {
+    
+#ifdef CUSTOM
+	//uint64_t temp;
+	uint32_t a = 1103515245;
+	uint32_t c = 12345;
+	uint32_t one, expi;
+	one = 1;
+	expi = 31;
+	uint32_t p = one << expi;
+    //uint32_t seed;
+    //double ran00;
+#endif
+    
+    double _ran00 = 0.;
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
+    //long idum = (-1);
     /*
         input: 
             dim: dimension being processed
@@ -209,23 +289,39 @@ void Setup_Integrand_Eval(curandState* localState,
             double weight
     */
     
-    for (int j = 1; j <= ndim; j++) {
-            
+    for (int j = 1; j <= ndim; j++) {          
           const double ran00 = curand_uniform_double(localState);
-          
-          const double xn = (kg[j] - ran00) * dxg + 1.0;
+          //const double ran00 = ran2(&idum);
+ #ifdef CUSTOM
+          	temp =  a * _seed + c;
+
+            _seed = temp & (p - 1);
+            _ran00 = (double) _seed / (double) p ;
+			
+
+#endif
+          size_t m = blockIdx.x * blockDim.x + threadIdx.x;
+          size_t nums_per_chunk = npg*ndim;
+          size_t nums_per_sample = ndim;
+          //both chunkSize and sampleID should start at the same index to not be confusing
+          //TODO: change indexing
+          size_t index = chunkID*nums_per_chunk + nums_per_sample*(sampleID-1) + j-1;
+          randoms[index] = _ran00;
+          if(j == 1 && sampleID == 1 && chunkID == 0)
+				printf("gpu ran00:%.15e writting at index:%lu\n", _ran00, index);
+          const double xn = (kg[j] - _ran00) * dxg + 1.0;
           double rc = 0., xo = 0.;
           ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
-	  
+                
           if (ia[j] > 1) {
-            xo = xi[j * ndmx1 + ia[j]] - xi[j * ndmx1 + ia[j] - 1];
-            rc = xi[j * ndmx1 + ia[j] - 1] + (xn - ia[j]) * xo;
+            xo = (xi[j * ndmx1 + ia[j]]) - (xi[j * ndmx1 + ia[j] - 1]); //bin length
+            rc = (xi[j * ndmx1 + ia[j] - 1]) + (xn - ia[j]) * xo; //scaling ran00 to bin bounds
           } else {
-            xo = xi[j * ndmx1 + ia[j]];
+            xo = (xi[j * ndmx1 + ia[j]]);
             rc = (xn - ia[j]) * xo;
           }
 
-          x[j] = regn[j] + rc * dx[j];
+          x[j] = regn[j] + rc * (dx[j]);
           wgt *= xo * xnd; //xnd is number of bins, xo is the length of the bin, xjac is 1/num_calls
         }
 }
@@ -244,28 +340,38 @@ Process_npg_samples(IntegT* d_integrand,
                         double& wgt, 
                         double* d, 
                         double& fb, 
-                        double& f2b){
+                        double& f2b,
+                        uint32_t& _seed,
+                        uint64_t& temp,
+                        int chunkID,
+                        double* randoms = nullptr,
+                        double* funcevals = nullptr){
       constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+
       for (int k = 1; k <= npg; k++) {
           
         double wgt = xjac;
-        Setup_Integrand_Eval<ndim>(localState, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt);
+        Setup_Integrand_Eval<ndim>(localState, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt, _seed, temp, npg, chunkID, k, randoms);
         
         gpu::cudaArray<double, ndim> xx;             
         for (int i = 0; i < ndim; i++) {
           xx[i] = x[i + 1];                       
         }
-
+        
         double tmp = gpu::apply(*d_integrand, xx);
         double f = wgt * tmp;     
+        
+        size_t m = blockIdx.x * blockDim.x + threadIdx.x;
+        size_t nums_evals_per_chunk = npg;
+        size_t index = chunkID*nums_evals_per_chunk + (k-1);
+        funcevals[index] = f;
         double f2 = f * f;
-
         fb += f;
         f2b += f2;
 
 #pragma unroll 2
         for (int j = 1; j <= ndim; j++) {
-          atomicAdd(&d[ia[j] * mxdim_p1 + j], fabs(f));
+          atomicAdd(&d[ia[j] * mxdim_p1 + j], /*fabs(f)*/f2);
         }
 
       }
@@ -284,19 +390,24 @@ void Process_chunks(IntegT* d_integrand,
                 double& wgt, 
                 double* d, 
                 double& fbg, 
-                double& f2bg){
+                double& f2bg,
+                double* randoms = nullptr,
+                double* funcevals = nullptr){
+    
+    uint32_t _seed = 0;
+    uint64_t temp;
     
     for (int t = 0; t < chunkSize; t++) {
-      double fb = 0., f2b = 0.0;
+      double fb = 0., f2b = 0.0;    //init to zero for each interval processed by thread
       
-      Process_npg_samples<IntegT, ndim>(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b);
-
-      f2b = sqrt(f2b * npg); //some times f2b becomes exactly zero, other times its equal to fb
+      Process_npg_samples<IntegT, ndim>(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b, _seed, temp, t, randoms, funcevals);
+			
+      f2b = sqrt(f2b * npg); 
       f2b = (f2b - fb) * (f2b + fb);
       
-      /*if (f2b <= 0.0){ 
+      if (f2b <= 0.0){ 
         f2b=TINY;
-      }*/
+      }
 
       fbg += fb;
       f2bg += f2b;
@@ -307,7 +418,6 @@ void Process_chunks(IntegT* d_integrand,
           break;
       }
     } 
-    
 }
 
 template <typename IntegT, int ndim>
@@ -332,7 +442,9 @@ vegas_kernel(IntegT* d_integrand,
              uint32_t totalNumThreads,
              int LastChunk,
              int fcode,
-             unsigned int seed_init)
+             unsigned int seed_init,
+             double* randoms = nullptr,
+             double* funcevals = nullptr)
 {
 
   //constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
@@ -341,7 +453,7 @@ vegas_kernel(IntegT* d_integrand,
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
   
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
-  int tx = threadIdx.x;
+  uint32_t tx = threadIdx.x;
 
   double wgt;
   uint32_t kg[mxdim_p1];
@@ -350,113 +462,26 @@ vegas_kernel(IntegT* d_integrand,
   double fbg = 0., f2bg = 0.;
   
   if (m < totalNumThreads) {
-    if (m == totalNumThreads - 1)
-      chunkSize = LastChunk + 1;
-     
+    //if (m == totalNumThreads - 1)
+    //  chunkSize = LastChunk + 1;
+    printf("chunkSize:%i\n", chunkSize);
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
 
     get_indx(m * chunkSize, &kg[1], ndim, ng);
     
-    Process_chunks<IntegT, ndim>(d_integrand, chunkSize, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg);
-    
-    
-    /*for (int t = 0; t < chunkSize; t++) {
-      fb = f2b = 0.0;
-      
-      for (k = 1; k <= npg; k++) {
-        wgt = xjac;
-	
-        for (j = 1; j <= ndim; j++) {
+    Process_chunks<IntegT, ndim>(d_integrand, chunkSize, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg, randoms, funcevals);
+  }
+  
+  //fbg = blockReduceSum(fbg);
+  //f2bg = blockReduceSum(f2bg);
             
-#ifdef CUSTOM
-          temp = a * seed + c;
-          seed = temp & (p - 1);
-          ran00 = (double)seed / (double)p;
-#endif
-#ifdef CURAND
-          const double ran00 = curand_uniform_double(&localState);
-#endif
-
-          xn = (kg[j] - ran00) * dxg + 1.0;
-          ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
-	  
-          if (ia[j] > 1) {
-            xo = xi[j * ndmx + 1 + ia[j]] - xi[j * ndmx + 1 + ia[j] - 1];
-            rc = xi[j * ndmx + 1 + ia[j] - 1] + (xn - ia[j]) * xo;
-          } else {
-            xo = xi[j * ndmx + 1 + ia[j]];
-            rc = (xn - ia[j]) * xo;
-          }
-
-          x[j] = regn[j] + rc * dx[j];
-          wgt *= xo * xnd; //xnd is number of bins, xo is the length of the bin, xjac is 1/num_calls
-        }
-
-        gpu::cudaArray<double, ndim> xx;//don't need to create it each time
-        //size_t index = m*orig_chunkSize*npg + t*npg + (k-1);
-        
-        for (int i = 0; i < ndim; i++) {
-          xx[i] = x[i + 1];
-                    
-          //evalPoints[index*ndim + i] = xx[i];
-	  //intervals[index*ndim+ i] = kg[i+1];      
-        }
-
-	double tmp;
-        tmp = gpu::apply(*d_integrand, xx);
-
-        f = wgt * tmp; 
-        
-        
-        //evals[index] = f;
-        //computing S^(1)
-        f2 = f * f;    //computing S^(2) //square temp*xo*xnd? (we leave xjac which is 1/num_calls outside, it won't get square so we don't have to make up for it)
-
-        fb += f;
-        f2b += f2;
-
-#pragma unroll 2
-
-        for (j = 1; j <= ndim; j++) {
-          atomicAdd(&d[ia[j] * mxdim + 1 + j], fabs(f));
-        }
-
-      } // end of npg loop
-      
-      f2b = sqrt(f2b * npg); //some times f2b becomes exactly zero, other times its equal to fb
-      f2b = (f2b - fb) * (f2b + fb);
-      
-      if (f2b <= 0.0){ 
-        f2b=TINY;
-      }
-
-      fbg += fb;
-      f2bg += f2b;
-      
-      for (int k = ndim; k >= 1; k--) {
-        kg[k] %= ng;
-        if (++kg[k] != 1)
-          break;
-      }
-      //if(blockIdx.x > 9000)
-      //  printf("thread %i Done with chunk %i\n", m, t); 
-    } // end of chunk for loop
-    */
-
-    fbg = blockReduceSum(fbg);
-    f2bg = blockReduceSum(f2bg);
-      
-    if (tx == 0) {
-      //printf("Block %i done\n", blockIdx.x);
+  if (tx == 0) {
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
-    }
-  } // end of subcube if
+  }
+   // end of subcube if
 }
-
-
-
 
 template <typename IntegT, int ndim>
 __global__ void
@@ -509,12 +534,10 @@ vegas_kernelF(IntegT* d_integrand,
   int iaj;
   double x[mxdim_p1];
   int k, j;
-  double fbg, f2bg;
-
-
+  double fbg = 0., f2bg = 0.;
+  long idum = (-1);
   if (m < totalNumThreads) {
-      
-    
+          
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk + 1;
   
@@ -536,8 +559,8 @@ vegas_kernelF(IntegT* d_integrand,
 
         for (j = 1; j <= ndim; j++) {
 
-          ran00 = curand_uniform_double(&localState);
-	          
+          //ran00 = curand_uniform_double(&localState);
+          ran00 = ran2(&idum);
           xn = (kg[j] - ran00) * dxg + 1.0;
           iaj = IMAX(IMIN((int)(xn), ndmx), 1);
 	  
@@ -563,8 +586,8 @@ vegas_kernelF(IntegT* d_integrand,
            
         tmp = gpu::apply(*d_integrand, xx);
                 
-        f = wgt * tmp; // is this f(x)/p(x)?
-        f2 = f * f;    // this is (f(x)/p(x))^2 in equation 2.
+        f = wgt * tmp; 
+        f2 = f * f;    
         
         fb += f;
         f2b += f2;
@@ -574,8 +597,8 @@ vegas_kernelF(IntegT* d_integrand,
       f2b = sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb); // this is equivalent to s^(2) - (s^(1))^2
       
-      //if (f2b <= 0.0) 
-      //    f2b=TINY;
+      if (f2b <= 0.0) 
+          f2b=TINY;
       
       fbg += fb;
       f2bg += f2b;
@@ -587,9 +610,11 @@ vegas_kernelF(IntegT* d_integrand,
       }
 
     } // end of chunk for loop
-
-    fbg = blockReduceSum(fbg);
-    f2bg = blockReduceSum(f2bg);
+    
+  }
+  
+    //fbg = blockReduceSum(fbg);
+    //f2bg = blockReduceSum(f2bg);
 
     if (tx == 0) {
       //printf("Block %i done\n", blockIdx.x);
@@ -597,35 +622,24 @@ vegas_kernelF(IntegT* d_integrand,
       atomicAdd(&result_dev[1], f2bg);
     }
 
-  } // end of subcube if
+   // end of subcube if
 }
 
 __inline__
 void
 rebin(double rc, int nd, double r[], double xin[], double xi[])
 {
-
-  //--------------------------------
-  // Assumptions
-  // dr is the remaining distance to cover in the axis that still needs to be
-  // assigned to bins xin is the length we have already assigned what is r?
-  //--------------------------------
-
   int i, k = 0;
   double dr = 0.0, xn = 0.0, xo = 0.0;
 
   for (i = 1; i < nd; i++) {
-    //printf("rebininning bin %i dr:%.15e\n", i, dr);
     while (rc > dr) {
       dr += r[++k];
-      //printf("dr:%.15e\n", dr);
     }
-    //printf("dr is set to %.15e k:%i\n", dr, k);
     if (k > 1)
       xo = xi[k - 1];
-    //printf("xo:%.15e\n", xo);
-    xn = xi[k];//printf("xn:%.15e\n", xn);
-    dr -= rc;//printf("setting dr to %.15e by subtracting rc:%.15e\n", dr, rc);
+    xn = xi[k];
+    dr -= rc;
 
     xin[i] = xn - (xn - xo) * dr / r[k];
   }
@@ -633,6 +647,93 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
   for (i = 1; i < nd; i++)
     xi[i] = xin[i];
   xi[nd] = 1.0;
+  
+	// for (i=1;i<=nd;i++) printf("xi[%i]: %.10e\n", i, xi[i]);
+	// printf("---------------------\n");
+}
+
+void PrintBins(int iter, double* xi, double* d, int ndim, std::ofstream& outfile){
+    int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
+    int ndmx = Internal_Vegas_Params::get_NDMX();
+    int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    
+    if(iter == 1){
+        outfile << "iter, dim, bin, bin_length, left, right, contribution\n";
+    }
+    
+    if(iter <= 2){
+        for(int dim = 1; dim <= ndim; dim++)
+            for(int bin = 1; bin <= ndmx; bin++){
+                
+                double bin_length = xi[dim * ndmx1 + bin] - xi[dim * ndmx1 + bin -1];
+                double left = xi[dim * ndmx1 + bin -1];
+                double right = xi[dim * ndmx1 + bin];
+                double contribution = d[bin * mxdim_p1 + dim];
+                outfile << iter << "," 
+                    << dim << ","
+                    << bin << ","
+                    << bin_length << "," 
+                    << left << "," 
+                    << right << "," 
+                    << contribution << "\n";
+            }
+    }
+}
+
+void PrintRandomNums(double* randoms, int it, int ncubes, int npg, int ndim, std::ofstream& outfile){
+    
+    size_t nums_per_cube = npg*ndim;
+    size_t nums_per_sample = ndim;
+    
+    if(it > 2)
+        return;
+    else{
+        
+        std::cout<<"expecting total random numbers:"<<ncubes*npg*ndim<<"\n";
+        for(int cube = 0; cube < ncubes; cube++)
+            for(int sample = 1; sample <= npg; sample++)
+                for(int dim = 1; dim <= ndim; dim++){
+                    
+                    size_t index = cube*nums_per_cube + nums_per_sample*(sample-1) + dim-1;
+     
+                    
+                    outfile << it << ","
+                        << cube << ","
+                        << cube << "," //same as chunk for single threaded
+                        << sample << ","
+                        << dim << ","
+                        << randoms[index] << "\n";
+				
+					if(sample == 1 && cube == 0 && dim == 1)
+						printf("cpu ran00:%.15e reading from index:%lu\n", randoms[index], index);
+				}
+	} 
+}
+
+void PrintFuncEvals(double* funcevals, int it, int ncubes, int npg, int ndim, std::ofstream& outfile){
+    
+    size_t nums_per_cube = npg*ndim;
+    size_t nums_per_sample = ndim;
+    
+    if(it > 2)
+        return;
+    else{
+        
+        std::cout<<"expecting total random numbers:"<<ncubes*npg*ndim<<"\n";
+        for(int cube = 0; cube < ncubes; cube++)
+            for(int sample = 1; sample <= npg; sample++){
+                
+                size_t nums_evals_per_chunk = npg;
+                size_t index = cube*nums_evals_per_chunk + (sample-1);               
+                outfile << it << ","
+                        << cube << ","
+                        << cube << "," //same as chunk for single threaded
+                        << sample << ","
+                        << funcevals[index] << "\n";
+            }
+            
+            
+    } 
 }
 
 template <typename IntegT, int ndim>
@@ -651,14 +752,29 @@ vegas(IntegT integrand,
       int skip,
       quad::Volume<double, ndim> const* vol)
 {
-  //printf("EXECUTING VEGAS\n");  
-  //std::ofstream outfile_fevals = GetOutFileVar("pmcubes_eval.csv");
-  //std::ofstream outfile_intervals = GetOutFileVar("pmcubes_intervals.csv");
-
-
-  //outfile_fevals <<"iter, threadID, chunk , sampleID, dim1, dim2, dim3, dim4, dim5, dim6, f\n";
-  //outfile_intervals << "iter, dim1_int, dim2_int, dim3_int, dim4_int, dim5_int, dim6_int, f\n";
+    
+  std::ofstream myfile_bin_bounds;
+  myfile_bin_bounds.open ("pmcubes_bin_bounds_custom.csv");
+  myfile_bin_bounds << "it, cube, chunk, sample, dim, ran00\n";   
+    
+  std::ofstream myfile_randoms;
+  myfile_randoms.open ("pmcubes_random_nums_custom.csv");
+  myfile_randoms << "it, cube, chunk, sample, dim, ran00\n";
   
+  std::ofstream myfile_funcevals;
+  myfile_funcevals.open ("pmcubes_funcevals_custom.csv");
+  myfile_funcevals << "it, cube, chunk, sample, funceval\n";
+  
+  std::ofstream interval_myfile;
+  interval_myfile.open ("pmcubes_intevals_custom.csv");
+  
+  std::ofstream iterations_myfile;
+  iterations_myfile.open ("mcubes_iters_custom.csv");
+  iterations_myfile<<"it, estimate, errorest, chi_sq, iter_estimate, iter_errorest\n";
+  iterations_myfile.precision(15);
+  
+  auto t0 = std::chrono::high_resolution_clock::now();
+
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
   //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
@@ -694,22 +810,27 @@ vegas(IntegT integrand,
 
   ndo = 1;
   for (j = 1; j <= ndim; j++){
-    //xi[j * NDMX1 + 1] = 1.0;    //this is weird I think it translates to xi[j*NDMX + 1 + 1] not xi[j*(NDMX+1) + 1], could we have bugs because of it?
     xi[j * ndmx_p1 + 1] = 1.0;  //this index is the first for each bin for each dimension
   }
-    si = swgt = schi = 0.0;
+    
+  si = swgt = schi = 0.0;
   nd = ndmx;
   ng = 1;
   ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
   for (k = 1, i = 1; i < ndim; i++) {
-
     k *= ng;
   }
-  double sci = 1.0 / k;
-  double sc = k;
+  
+  double sci = 1.0 / k;  //I dont' think that's used anywhere
+  double sc = k;         //I dont' think that's used either
   k *= ng;
+  
   ncubes = k;
+  
   npg = IMAX(ncall / k, 2);
+  assert(npg == Compute_samples_per_cube(ncall, ncubes)); //to replace line directly above
+  assert(ncubes == ComputeNcubes(ncall, ndim)); //to replace line directly above
+
   calls = (double)npg * (double)k;
   dxg = 1.0 / ng;
   
@@ -731,8 +852,6 @@ vegas(IntegT integrand,
     rebin(ndo / xnd, nd, r, xin, &xi[j * ndmx_p1]);
   }
   
-  //for(int i=0; i< ndmx_p1*mxdim_p1; i++)
-   //   printf("xi[%i]:%f\n", i, xi[i]);
   ndo = nd;
 
   double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev, *result_dev;
@@ -763,60 +882,44 @@ vegas(IntegT integrand,
 
   cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
-  int chunkSize = GetChunkSize(ncall);
+  //int chunkSize = GetChunkSize(ncall);
+  int chunkSize = ncubes;
 
-  /*switch (fcode) {
-    case 0:
-      chunkSize = 2048;
-      break;
-    case 1:
-      chunkSize = 32;
-      break;
-    case 2:
-      chunkSize = 2048;
-      break;
-    case 4:
-      chunkSize = 2048;
-      break;
-    default:
-      chunkSize = 32;
-      break;
-  }*/
-
+  uint32_t _totalNumThreads = (static_cast<uint32_t>(ncubes) % chunkSize) == 0 ? 
+    (uint32_t)((ncubes) / chunkSize) : 
+    (uint32_t)((ncubes) / chunkSize + 1);
+       
   uint32_t totalNumThreads = (uint32_t)((ncubes + chunkSize - 1) / chunkSize);
+  assert(_totalNumThreads == totalNumThreads);
   uint32_t totalCubes = totalNumThreads * chunkSize;
   int extra = totalCubes - ncubes;
   int LastChunk = chunkSize - extra;
-  uint32_t nBlocks =
+  /*uint32_t nBlocks =
     ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
-  uint32_t nThreads = BLOCK_DIM_X;
-
-  /*std::cout<<"ng:"<<ng<<"\n";
+  uint32_t nThreads = BLOCK_DIM_X;*/
+   uint32_t nBlocks = 1;
+  uint32_t nThreads = 1;
+  
+  Kernel_Params kernel_params(ncall, chunkSize, ndim);  //to be used in the future to simplify code
+  
+  std::cout<<"ng:"<<ng<<"\n";
   std::cout<<"ncubes:"<<ncubes<<"\n";
   std::cout<<"ncall:"<<ncall<<"\n";
   std::cout<<"k:"<<k<<"\n";
   std::cout<<"npg:"<<npg<<"\n";
   std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
+  std::cout<<"_totalNumThreads:"<<_totalNumThreads<<"\n";
   std::cout<<"totalCubes:"<<totalCubes<<"\n";
-  std::cout<<"chunkSize:"<<chunkSize<<"\n";*/
-   
-  /*size_t numFunctionEvaluations =   chunkSize*npg*(totalNumThreads-1) + (LastChunk+1)*npg;
-  size_t numPoints = numFunctionEvaluations * (size_t)ndim;
-	
-  int* intervals = quad::cuda_malloc_managed<int>(numPoints);	
-  double* evals = quad::cuda_malloc_managed<double>(numFunctionEvaluations);
-  double* eval_points = quad::cuda_malloc_managed<double>(numPoints);
-  
-  cudaCheckError();
-  for(int i=0; i< numFunctionEvaluations; ++i)
-	  evals[i] = -1.;
-  for(int i=0; i< numPoints; ++i)
-	  eval_points[i]= -1.;
-  for(int i=0; i< numPoints; ++i)
-	  intervals[i]= -1.;*/
-  //printf("itmax:%i\n", itmax);
-  
-  for (it = 1; it <= itmax && (*status) == 1; it++) {
+  std::cout<<"chunkSize:"<<chunkSize<<"\n";
+  std::cout<<"dv2g:"<<dv2g<<"\n";
+  std::cout<<"extra:"<<extra<<"\n";
+  std::cout<<"LastChunk:"<<LastChunk<<"\n";
+  std::cout<<"-------------------\n";
+     
+  double* randoms = cuda_malloc_managed<double>(totalNumThreads*chunkSize*npg*ndim);
+  double* funcevals = cuda_malloc_managed<double>(totalNumThreads*chunkSize*npg);
+
+  for (it = 1; it <= itmax /*&& (*status) == 1*/; it++) {
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
       for (i = 1; i <= nd; i++)
@@ -831,7 +934,16 @@ vegas(IntegT integrand,
     cudaMemset(
       d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1)); // bin contributions
     cudaMemset(result_dev, 0, 2 * sizeof(double));
+      
+    using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>; 
+    
+    MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+    unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);
+    
+    //Test_get_indx(ndim, ng, ncubes, chunkSize, it, interval_myfile);
+    
 
+    
     vegas_kernel<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
@@ -852,7 +964,10 @@ vegas(IntegT integrand,
                                                       totalNumThreads,
                                                       LastChunk,
                                                       fcode,
-                                                      /*time(0)/*/it);
+                                                      /*time(NULL)/it*/
+                                                      seed+it,
+                                                      randoms,
+                                                      funcevals);
     
     
     
@@ -866,102 +981,55 @@ vegas(IntegT integrand,
                d_dev,
                sizeof(double) * (ndmx_p1) * (mxdim_p1),
                cudaMemcpyDeviceToHost);
+               
+               
     cudaCheckError(); // we do need to the contributions for the rebinning
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-    
-    
-	/*if(OUTFILEVAR == 2 || OUTFILEVAR == 3){
-	
-		for(int threadID = 0; threadID < totalNumThreads; threadID++){        
-        
-			int ThreadChunkSize = threadID == (totalNumThreads -1 )? LastChunk+1 : chunkSize;
-            
-			for(int chunk = 0; chunk < ThreadChunkSize; chunk ++){
-				for(int sampleID = 1; sampleID <= npg; sampleID++){
-                    
-					size_t func_eval_index = threadID*chunkSize*npg + chunk*npg + (sampleID-1);
-					outfile_fevals.precision(10);
-					outfile_fevals << it <<","
-                                << threadID << ","
-                                << chunk << ","
-                                << sampleID << ",";
-                    
-					for(int dim = 0; dim < ndim; dim++){
-                        
-						size_t dim_sample_point_index = func_eval_index*ndim + dim;
-						outfile_fevals << std::scientific 
-                            << eval_points[dim_sample_point_index] << ",";            
-					}
-					outfile_fevals << std::scientific << evals[func_eval_index] <<"\n";
-				}
-			}
-			//printf("Done with thread %i/%i\n", threadID, totalNumThreads);
-		}
-    }*/
-	
-    /*if(OUTFILEVAR == 3){
-        
-		for(int threadID = 0; threadID < totalNumThreads; threadID++){
-            
-			int ThreadChunkSize = threadID == (totalNumThreads -1 )? LastChunk+1 : chunkSize;
-            
-			for(int chunk = 0; chunk < ThreadChunkSize; chunk ++){
-				for(int sampleID = 1; sampleID <= npg; sampleID++){
-                    
-					size_t func_eval_index = threadID*chunkSize*npg + chunk*npg + (sampleID-1);
-                    outfile_intervals << it << ",";                
-					for(int dim = 0; dim < ndim; dim++){
-						size_t dim_sample_point_index = func_eval_index*ndim + dim;
-						outfile_intervals << intervals[dim_sample_point_index] << ",";            
-					}
-					outfile_intervals.precision(10);
-					outfile_intervals << std::scientific << evals[func_eval_index] <<"\n";
-				}
-			}
-		}	
-	}
-    //printf("Done with iter output\n");
-    
-    //reset
-    for(int i=0; i< numFunctionEvaluations; ++i){
-        evals[i] = -1.;
-    }
-      
-    for(int i=0; i< numFunctionEvaluations*ndim; ++i){
-        eval_points[i]= -1.;
-    }*/
     
     ti = result[0];
     tsi = result[1];
 
     tsi *= dv2g;
-    printf("adj iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    //printf("-------------------------------------------\n");
+    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    
     
     if (it > skip) {
-      wgt = 1.0 / tsi;
-      si += wgt * ti;
-      schi += wgt * ti * ti;
-      swgt += wgt;
-      *tgral = si / swgt;
-      *chi2a = (schi - si * (*tgral)) / (it - 0.9999);
+      wgt = 1.0 / tsi;         
+      si += wgt * ti;               
+      schi += wgt * ti * ti;        
+      swgt += wgt;                  
+      *tgral = si / swgt;          
+      *chi2a = (schi - si * (*tgral)) / (static_cast<double>(it) - 0.9999);
       if (*chi2a < 0.0)
         *chi2a = 0.0;
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      //printf("%5d,%.4e,%.4e,%9.2g\n", it, *tgral, *sd, *chi2a);
+      printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
+      //printf("-------------------------------------------\n");
+       
     }
-     
+    
+    iterations_myfile << it     << ","
+                    << *tgral   << ","
+                    << *sd      << ","
+                    << *chi2a   << "," 
+                    << ti       << ","
+                    << tsi      << "\n";
+                    
+    PrintBins(it, xi, d, ndim, myfile_bin_bounds);
+    PrintRandomNums(randoms, it, ncubes, npg, ndim, myfile_randoms);   
+    PrintFuncEvals(funcevals, it, ncubes, npg, ndim, myfile_funcevals);
+    // if(it > 1)  
+       {   
     for (j = 1; j <= ndim; j++) {
-
       xo = d[1 * mxdim_p1 + j]; // bin 1 of dim j
-      xn = d[2 * mxdim_p1 + j]; //bin 2 of dim j 
-
+      xn = d[2 * mxdim_p1 + j];  //bin 2 of dim j 
       d[1 * mxdim_p1 + j] = (xo + xn) / 2.0;
       dt[j] = d[1 * mxdim_p1 + j]; // set dt sum to contribution of bin 1
 
       for (i = 2; i < nd; i++) {
-        // rc is the contribution of the first and last bin? why?
         rc = xo + xn;
         xo = xn;
         xn = d[(i + 1) * mxdim_p1 + j];
@@ -969,8 +1037,8 @@ vegas(IntegT integrand,
         dt[j] += d[i * mxdim_p1 + j];
       }
 
-      // do bin nd last
-      d[nd * mxdim_p1 + j] = (xo + xn) / 2.0;
+     
+      d[nd * mxdim_p1 + j] = (xo + xn) / 2.0;  // do bin nd last
 
       dt[j] += d[nd * mxdim_p1 + j];
     }
@@ -979,19 +1047,17 @@ vegas(IntegT integrand,
       if (dt[j] > 0.0) { // enter if there is any contribution only
         rc = 0.0;
         for (i = 1; i <= nd; i++) {
-			//if(d[i*mxdim+1+j]<TINY)d[i*mxdim+1+j]=TINY;
-			//added by Ioannis based on vegasBook.c
+			if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;    
           r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                        (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
           rc += r[i]; // rc is it the total number of sub-increments
         }
-        rebin(rc / xnd, nd, r, xin, &xi[j * ndmx_p1]);
+        rebin(rc / xnd, nd, r, xin, &xi[j * ndmx_p1]);  //first bin of each dimension is at a diff index
       }
     }
-
     
-
+  }
   } // end of iterations
 
   //  Start of iterations without adjustment
@@ -1002,10 +1068,14 @@ vegas(IntegT integrand,
              cudaMemcpyHostToDevice);
   cudaCheckError();
 
-  for (it = itmax + 1; it <= titer && (*status); it++) {    
+  for (it = itmax + 1; it <= titer /*&& (*status)*/; it++) {    
     ti = tsi = 0.0;
     cudaMemset(result_dev, 0, 2 * sizeof(double));
     
+    using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>; 
+    MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+    unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);
+    //std::cout<<"seed:"<<seed<<"\n";
     vegas_kernelF<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
                                                        ng,
                                                        npg,
@@ -1026,36 +1096,43 @@ vegas(IntegT integrand,
                                                        totalNumThreads,
                                                        LastChunk,
                                                        fcode,
-                                                       time(0)/it);
+                                                       /*time(0)/it,*/
+                                                       /*seed*/it);
 
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
     
     ti = result[0];
     tsi = result[1];
-    tsi *= dv2g; // is dv2g 1/(M-1)?
-    //printf("iter %d  integ = %.15e   std = %.15e\n", it, ti, sqrt(tsi));
-
-    wgt = 1.0 / tsi;
-    si += wgt * ti;
-    schi += wgt * ti * ti;
-    swgt += wgt;
-    *tgral = si / swgt;
-    *chi2a = (schi - si * (*tgral)) / (it - 0.9999);
-    
-    if (*chi2a < 0.0)
-      *chi2a = 0.0;
-  
-    *sd = sqrt(1.0 / swgt);
-    tsi = sqrt(tsi);
+    tsi *= dv2g;
+    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+        
+        
+	wgt = 1.0 / tsi;       
+	si += wgt * ti;         
+	schi += wgt * ti * ti;  
+	swgt += wgt;            
+	*tgral = si / swgt;    
+       
+	*chi2a = (schi - si * (*tgral)) / (it - 0.9999); 
+	if (*chi2a < 0.0) *chi2a = 0.0;
+	*sd = sqrt(1.0 / swgt);
+	tsi = sqrt(tsi);
+        
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-    // printf("it %d\n", it);
-    //if (verbosity == 1)
-    printf("%5d,%14.7g,%.8e,%9.2g\n", it, *tgral, *sd, *chi2a);
-    // printf("%3d   %e  %e\n", it, ti, tsi);
-    //printf("done with iteration post processing\n");
+
+    iterations_myfile << it     << ","
+                    << *tgral   << ","
+                    << *sd      << ","
+                    << *chi2a   << "," 
+                    << ti       << ","
+                    << tsi      << "\n";    
+    printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
   } // end of iterations
-    
-  //std::cout<<"vegas:"<<*status<<"\n";
+      
+  interval_myfile.close();
+  myfile_bin_bounds.close();
+  iterations_myfile.close();
+  
   free(d);
   free(dt);
   free(dx);
@@ -1073,6 +1150,7 @@ vegas(IntegT integrand,
   cudaFree(regn_dev);
   cudaFree(result_dev);
   cudaFree(d_integrand);
+  cudaFree(randoms);
   //outfile_fevals.close();
   //outfile_intervals.close();
 }
@@ -1089,6 +1167,7 @@ integrate(IntegT ig,
           int adjustIters = 15,
           int skipIters = 5)
 {
+    
   cuhreResult<double> result;
   result.status = 1;
   int fcode = -1; // test that it's really not being used anywhere
@@ -1120,6 +1199,7 @@ simple_integrate(IntegT integrand,
                  int adjustIters = 15,
                  int skipIters = 5)
 {
+    
   cuhreResult<double> result;
   result.status = 1;
   int fcode = -1; // test that it's really not being used anywhere

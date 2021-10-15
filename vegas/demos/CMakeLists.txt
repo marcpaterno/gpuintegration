@@ -11,11 +11,11 @@ target_compile_options(Genz1_8D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
 set_target_properties(Genz1_8D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(Genz2_6D Genz2_6D.cu)
-target_compile_options(Genz2_6D PRIVATE "-arch=sm_70" "-O2" "-DCURAND" "-lineinfo" "-g")
+target_compile_options(Genz2_6D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
 set_target_properties(Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(Genz3_3D Genz3_3D.cu)
-target_compile_options(Genz3_3D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
+target_compile_options(Genz3_3D PRIVATE "-arch=sm_70" "-O2" "-DCUSTOM" "-lineinfo" "-g")
 set_target_properties(Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(Genz3_6D Genz3_6D.cu)
@@ -53,3 +53,7 @@ set_target_properties(Genz6_2D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_executable(Genz6_6D Genz6_6D.cu)
 target_compile_options(Genz6_6D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
 set_target_properties(Genz6_6D PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_executable(smcubesGenz3_3D seqGenz3_3D.cu)
+target_compile_options(smcubesGenz3_3D PRIVATE "-arch=sm_70" "-O2")
+set_target_properties(smcubesGenz3_3D PROPERTIES POSITION_INDEPENDENT_CODE ON)

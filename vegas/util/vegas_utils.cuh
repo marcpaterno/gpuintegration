@@ -1,8 +1,76 @@
 #ifndef VEGAS_UTILS_CUH
 #define VEGAS_UTILS_CUH
 
+#define BLOCK_DIM_X 128
 
+#define IMAX(a, b)                                                             \
+  ({                                                                           \
+    __typeof__(a) _a = (a);                                                    \
+    __typeof__(b) _b = (b);                                                    \
+    _a > _b ? _a : _b;                                                         \
+  })
 
+#define IMIN(a, b)                                                             \
+  ({                                                                           \
+    __typeof__(a) _a = (a);                                                    \
+    __typeof__(b) _b = (b);                                                    \
+    _a < _b ? _a : _b;                                                         \
+  })
+
+// Macro for checking cuda errors following a cuda launch or api call
+#define cudaCheckError()                                                       \
+  {                                                                            \
+    cudaError_t e = cudaGetLastError();                                        \
+    if (e != cudaSuccess) {                                                    \
+      printf("Cuda failure %s:%d: '%s'\n",                                     \
+             __FILE__,                                                         \
+             __LINE__,                                                         \
+             cudaGetErrorString(e));                                           \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
+
+__inline__
+double ComputeNcubes(double ncall, int ndim){
+    double ncubes = 1.;
+    double intervals_per_dim = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim);
+    //std::cout<<"ncall:"<<ncall<<" intervals_per_dim:"<<intervals_per_dim<<"\n";
+    for (int dim = 1; dim <= ndim; dim++) {
+        ncubes *= intervals_per_dim;
+    }
+    
+    return ncubes;
+}
+
+__inline__
+int Compute_samples_per_cube(double ncall, double ncubes){
+    int npg = IMAX(ncall / ncubes, 2);
+    return npg; 
+}
+
+struct Kernel_Params{
+    double ncubes = 0.;
+    int npg = 0;
+    uint32_t nBlocks = 0;
+    uint32_t nThreads = 0;
+    uint32_t totalNumThreads = 0;
+    uint32_t totalCubes = 0;
+    int extra = 0; 
+    int LastChunk = 0; //how many chunks for the last thread
+    
+    Kernel_Params(double ncall, int chunkSize, int ndim){
+        ncubes = ComputeNcubes(ncall, ndim);
+        npg = Compute_samples_per_cube(ncall, ncubes);
+    
+        totalNumThreads = (uint32_t)((ncubes + chunkSize - 1) / chunkSize);
+        totalCubes = totalNumThreads * chunkSize;
+        extra = totalCubes - ncubes;
+        LastChunk = chunkSize - extra;
+        nBlocks =
+            ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
+        nThreads = BLOCK_DIM_X;
+    }
+};
 
 
 __inline__ bool
