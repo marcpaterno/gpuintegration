@@ -90,8 +90,6 @@ namespace cuda_mcubes{
 //using MilliSeconds =
  // std::chrono::duration<double, std::chrono::milliseconds::period>;
 
-
-
 #define NR_END 1
 #define IM1 2147483563
 #define IM2 2147483399
@@ -145,7 +143,6 @@ double ran2(long *idum)
 	else return temp;
 }
 
-
 __inline__ __device__ double
 warpReduceSum(double val)
 {
@@ -188,7 +185,6 @@ blockReduceSum(double val)
   return val;
 }
 
-
 __inline__ __device__ __host__ void
 get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
 {
@@ -226,7 +222,6 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
     printf("Block %i thread %u get_indx ms:%u found index\n", blockIdx.x, threadIdx.x, ms);*/
 }
 
-
 void Test_get_indx(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, int it,  std::ofstream& interval_myfile){
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     
@@ -243,7 +238,6 @@ void Test_get_indx(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, in
             interval_myfile<<it<<"\n";
     }
 }
-
 
 template <int ndim>
 __inline__ __device__
@@ -487,10 +481,6 @@ vegas_kernel(IntegT* d_integrand,
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
     get_indx(/*m * chunkSize*/cube_id_offset, &kg[1], ndim, ng);
-    
-    if(threadIdx.x == 31)
-        printf("m:%u/%u cube_id_offset:%i, ng:%i kg:%i, %i, %i\n", 
-            m, totalNumThreads, cube_id_offset, ng, kg[1], kg[2], kg[3]);
             
     Process_chunks<IntegT, ndim>(d_integrand, chunkSize, LastChunk, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg, cube_id_offset, randoms, funcevals);
   }
@@ -776,22 +766,22 @@ vegas(IntegT integrand,
 {
     
   std::ofstream myfile_bin_bounds;
-  myfile_bin_bounds.open ("pmcubes_bin_bounds_custom_1warp.csv");
+  myfile_bin_bounds.open ("pmcubes_bin_bounds_custom_2048chunk.csv");
   myfile_bin_bounds << "it, cube, chunk, sample, dim, ran00\n";   
     
   std::ofstream myfile_randoms;
-  myfile_randoms.open ("pmcubes_random_nums_custom_1warp.csv");
+  myfile_randoms.open ("pmcubes_random_nums_custom_2048chunk.csv");
   myfile_randoms << "it, cube, chunk, sample, dim, ran00\n";
   
   std::ofstream myfile_funcevals;
-  myfile_funcevals.open ("pmcubes_funcevals_custom_1warp.csv");
+  myfile_funcevals.open ("pmcubes_funcevals_custom_2048chunk.csv");
   myfile_funcevals << "it, cube, chunk, sample, funceval\n";
   
   std::ofstream interval_myfile;
-  interval_myfile.open ("pmcubes_intevals_custom_1warp.csv");
+  interval_myfile.open ("pmcubes_intevals_custom_2048chunk.csv");
   
   std::ofstream iterations_myfile;
-  iterations_myfile.open ("pmcubes_iters_custom_1warp.csv");
+  iterations_myfile.open ("pmcubes_iters_custom_2048chunk.csv");
   iterations_myfile<<"iter, estimate, errorest, chi_sq, iter_estimate, iter_errorest\n";
   iterations_myfile.precision(15);
   
@@ -904,30 +894,29 @@ vegas(IntegT integrand,
 
   cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
-  //int chunkSize = GetChunkSize(ncall);
+  int chunkSize = 2048;//GetChunkSize(ncall);
     //to be used in the future to simplify code
   
-  int chunkSize = ncubes/32;
+  //int chunkSize = ncubes/32;
  
   uint32_t _totalNumThreads = (static_cast<uint32_t>(ncubes) % chunkSize) == 0 ? 
-    (uint32_t)((ncubes) / chunkSize) : 
-    (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead
-    (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead
-       
+    (uint32_t)((ncubes) / chunkSize) : (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead      
   uint32_t totalNumThreads = (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
   assert(_totalNumThreads == totalNumThreads);
-  uint32_t totalCubes = totalNumThreads * chunkSize;
-  int extra = ncubes - totalCubes;
-  int LastChunk = /*chunkSize -*/ extra + chunkSize;
-  /*uint32_t nBlocks =
-    ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
-  uint32_t nThreads = BLOCK_DIM_X;*/
-  uint32_t nBlocks = 1;
-  uint32_t nThreads = 32;
+  
+  uint32_t totalCubes = totalNumThreads * chunkSize;    //even-split cubes
+  int extra = ncubes - totalCubes;                      //left-over cubes
+  int LastChunk = /*chunkSize -*/ extra + chunkSize;    //last chunk of last thread
+  
+  uint32_t nBlocks =
+    ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;   //compute blocks based on chunk_size, ncubes, and block_dim_x
+  uint32_t nThreads = BLOCK_DIM_X;
+  //uint32_t nBlocks = 1;
+  //uint32_t nThreads = 32;
   
   
   std::cout.precision(15);
-  std::cout<<"ng:"<<ng<<"\n";
+  /*std::cout<<"ng:"<<ng<<"\n";
   std::cout<<"ncubes:"<<ncubes<<"\n";
   std::cout<<"ncall:"<<ncall<<"\n";
   std::cout<<"k:"<<k<<"\n";
@@ -939,12 +928,11 @@ vegas(IntegT integrand,
   std::cout<<"dv2g:"<<dv2g<<"\n";
   std::cout<<"extra:"<<extra<<"\n";
   std::cout<<"LastChunk:"<<LastChunk<<"\n";
-  std::cout<<"-------------------\n";
+  std::cout<<"-------------------\n";*/
   
   Kernel_Params kernel_params(ncall, chunkSize, ndim);   
   double* randoms = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg*ndim);
   double* funcevals = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg);
-  printf("Allocating for %u cubes\n", totalNumThreads*chunkSize+extra);
 
   for (it = 1; it <= itmax /*&& (*status) == 1*/; it++) {
     ti = tsi = 0.0;
@@ -1031,7 +1019,7 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
+      //printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
       //printf("-------------------------------------------\n");
        
     }
@@ -1046,8 +1034,7 @@ vegas(IntegT integrand,
     PrintBins(it, xi, d, ndim, myfile_bin_bounds);
     PrintRandomNums(randoms, it, ncubes, npg, ndim, myfile_randoms);   
     PrintFuncEvals(funcevals, it, ncubes, npg, ndim, myfile_funcevals);
-    // if(it > 1)  
-       {   
+
     for (j = 1; j <= ndim; j++) {
       xo = d[1 * mxdim_p1 + j]; // bin 1 of dim j
       xn = d[2 * mxdim_p1 + j];  //bin 2 of dim j 
@@ -1082,7 +1069,7 @@ vegas(IntegT integrand,
       }
     }
     
-  }
+  
   } // end of iterations
 
   //  Start of iterations without adjustment
@@ -1151,7 +1138,7 @@ vegas(IntegT integrand,
                     << *chi2a   << "," 
                     << ti       << ","
                     << tsi      << "\n";    
-    printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
+    //printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
   } // end of iterations
       
   interval_myfile.close();
@@ -1252,7 +1239,7 @@ simple_integrate(IntegT integrand,
         << ncall << ","
         << result.status << "\n";*/
    // break;
-   printf("done with %e for epsrel %e status:%i\n", ncall, epsrel, result.status);
+   //printf("done with %e for epsrel %e status:%i\n", ncall, epsrel, result.status);
   } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
   return result;
