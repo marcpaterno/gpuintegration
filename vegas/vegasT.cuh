@@ -515,14 +515,13 @@ vegas_kernelF(IntegT* d_integrand,
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
 #ifdef CUSTOM
-  uint64_t temp;
   uint32_t a = 1103515245;
   uint32_t c = 12345;
   uint32_t one, expi;
   one = 1;
   expi = 31;
   uint32_t p = one << expi;
-  uint32_t custom_seed
+  uint32_t custom_seed;
 #endif
 
   //unsigned long long seed;
@@ -532,9 +531,6 @@ vegas_kernelF(IntegT* d_integrand,
   int tx = threadIdx.x;
   size_t cube_id_offset = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize;
   
-#ifdef CUSTOM
-    custom_seed = cube_id;
-#endif
 
 #ifdef IDUM
   long idum = (-1);
@@ -548,7 +544,7 @@ vegas_kernelF(IntegT* d_integrand,
   int k, j;
   double fbg = 0., f2bg = 0.;
   if (m < totalNumThreads) {
-          
+    
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk /*+ 1*/;
   
@@ -556,21 +552,32 @@ vegas_kernelF(IntegT* d_integrand,
     
     curandState localState;
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
-    //if(m == 0)
-    //  printf("vegas_kernelF seed_init:%u\n", seed_init);
 
     fbg = f2bg = 0.0;
-    get_indx(/*m * chunkSize*/cube_id_offset, &kg[1], ndim, ng);
+    get_indx(cube_id_offset, &kg[1], ndim, ng);
        
     for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
+      
+#ifdef CUSTOM
+      uint64_t temp;
+      custom_seed = cube_id_offset + t; //custom_seed = cubeID
+#endif
 
+      
       for (k = 1; k <= npg; k++) {
         wgt = xjac;
 
         for (j = 1; j <= ndim; j++) {
 
           ran00 = curand_uniform_double(&localState);
+          
+#ifdef CUSTOM
+          temp =  a * custom_seed + c;
+          custom_seed = temp & (p - 1);
+          ran00 = (double) custom_seed / (double) p;
+#endif
+          
           //ran00 = ran2(&idum);
           xn = (kg[j] - ran00) * dxg + 1.0;
           iaj = IMAX(IMIN((int)(xn), ndmx), 1);
