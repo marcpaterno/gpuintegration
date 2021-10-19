@@ -15,7 +15,7 @@ target_compile_options(Genz2_6D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
 set_target_properties(Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(Genz3_3D Genz3_3D.cu)
-target_compile_options(Genz3_3D PRIVATE "-arch=sm_70" "-O2" "-DCUSTOM" "-lineinfo" "-g")
+target_compile_options(Genz3_3D PRIVATE "-arch=sm_70" "-O2" "-DCURAND")
 set_target_properties(Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(Genz3_6D Genz3_6D.cu)

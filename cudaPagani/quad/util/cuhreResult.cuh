@@ -1,33 +1,31 @@
 #ifndef CUHRE_RESULT_CUH
 #define CUHRE_RESULT_CUH
 
+#include <ostream>
+
 template <typename T>
 struct cuhreResult {
-
-  cuhreResult()
-  {
-    estimate = 0.;
-    errorest = 0.;
-    neval = 0.;
-    nregions = 0.;
-    status = 0.;
-    // activeRegions = 0.;
-    phase2_failedblocks = 0.;
-    lastPhase = 0;
-    nFinishedRegions = 0;
-  };
-
-  T estimate;
-  T errorest;
-  size_t neval;
-  size_t nregions;
-  size_t nFinishedRegions;
-  int status;
-  int lastPhase;
-  // size_t activeRegions;    // is not currently being set
-  size_t phase2_failedblocks; // is not currently being set
+     
+  
+  T estimate = 0.;
+  T errorest = 0.;
+  size_t neval = 0;
+  size_t nregions = 0;
+  size_t nFinishedRegions = 0;
+  int status = -1;
+  int lastPhase = -1;
+  size_t phase2_failedblocks = 0; // is not currently being set
   double chi_sq = 0.;
 };
 
+template<typename T>
+std::ostream& operator<<(std::ostream& os, cuhreResult<T> const& res){
+    os << res.estimate << ","
+       << res.errorest << ","
+       << res.nregions << ","
+       << res.chi_sq << ","
+       << res.status;
+    return os;
+}
 
 #endif

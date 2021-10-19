@@ -48,10 +48,13 @@ main(int argc, char** argv)
 
   bool success = false;
   do{
-        params.ncall = ncall;//required_ncall[expID];
-		//for(int run = 0; run < 100; run++)
+        //params.ncall = ncall;//required_ncall[expID];
+		for(int run = 0; run < 100; run++){
 			success = mcubes_time_and_call<GENZ_5_8D, ndim>
-            (integrand, epsrel, true_value, "Genz5_8D", params, &volume);
+            (integrand, epsrel, true_value, "f5 8D", params, &volume);
+            if(!success)
+                break;
+        }
         epsrel /= 5.;
   }while(epsrel >= epsrel_min && success == true); 
   return 0;

@@ -30,7 +30,7 @@ struct VegasParams{
 };
 
 void PrintHeader(){
-    std::cout << "id, intgral, estimate, std, chi, iters, adj_iters, skip_iters, ncall, neval"
+    std::cout << "id, epsrel, integral, estimate, std, chi, iters, adj_iters, skip_iters, ncall, neval,"
                "time, status\n";
 }
 
@@ -58,7 +58,9 @@ mcubes_time_and_call(F integrand,
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
       success = (res.status == 0);
       std::cout.precision(15);
-	  if(success)
+	  
+      //std::cout<<"absolute:"<<std::abs(res.estimate - correct_answer)<<"\n";
+      if(success)
 		std::cout << integralName << "," 
             << epsrel << ","
             << std::scientific << correct_answer << "," 
@@ -72,7 +74,6 @@ mcubes_time_and_call(F integrand,
             << res.neval <<","
             << dt.count() << ","
             << res.status << "\n";
-      
   }while (success == false && AdjustParams(params.ncall, params.t_iter) == true);
   
   return success;

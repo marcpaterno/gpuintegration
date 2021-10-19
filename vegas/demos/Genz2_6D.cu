@@ -50,9 +50,12 @@ main(int argc, char** argv)
   do{
         //params.ncall = required_ncall[expID];
         //params.num_adjust_iters = adjust_iters[expID];
-        
-        success = mcubes_time_and_call<GENZ_2_6D, ndim>
-            (integrand, epsrel, true_value, "Genz2_6D", params, &volume);
+        for(int run = 0; run < 100; run++){
+            success = mcubes_time_and_call<GENZ_2_6D, ndim>
+            (integrand, epsrel, true_value, "f2 6D", params, &volume);
+            if(!success)
+                break;
+            }
         epsrel /= 5.;
        // expID++;
        // params.num_adjust_iters += 5;
