@@ -10,6 +10,8 @@ std::ofstream GetOutFileVar(std::string filename){
   return myfile;
 }
 
+
+
 template<bool DEBUG_MCUBES>
 class IterDataLogger{
     std::ofstream myfile_bin_bounds;
@@ -17,28 +19,32 @@ class IterDataLogger{
     std::ofstream myfile_funcevals;
     std::ofstream interval_myfile;
     std::ofstream iterations_myfile;
-    
-    double* randoms = nullptr;
-    double* funcevals = nullptr;
-    
+
     public:
+        double* randoms = nullptr;
+        double* funcevals = nullptr;
+    
+    
         IterDataLogger(uint32_t totalNumThreads, int chunkSize, int extra, int npg, int ndim){          
             if constexpr(DEBUG_MCUBES){
                 randoms = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg*ndim);
                 funcevals = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg);
                 
-                myfile_bin_bounds.open ("pmcubes_bin_bounds_custom_2048chunk.csv");
+                myfile_bin_bounds.open ("pmcubes_bin_bounds.csv");
                 myfile_bin_bounds << "it, cube, chunk, sample, dim, ran00\n";  
+                myfile_bin_bounds.precision(15);
                 
-                myfile_randoms.open ("pmcubes_random_nums_custom_2048chunk.csv");
+                myfile_randoms.open ("pmcubes_random_nums.csv");
                 myfile_randoms << "it, cube, chunk, sample, dim, ran00\n";
+                myfile_randoms.precision(15);
                 
-                myfile_funcevals.open ("pmcubes_funcevals_custom_2048chunk.csv");
+                myfile_funcevals.open ("pmcubes_funcevals.csv");
                 myfile_funcevals << "it, cube, chunk, sample, funceval\n";
                 
-                interval_myfile.open ("pmcubes_intevals_custom_2048chunk.csv");
+                interval_myfile.open ("pmcubes_intevals.csv");
+                interval_myfile.precision(15);
                 
-                iterations_myfile.open ("pmcubes_iters_custom_2048chunk.csv");
+                iterations_myfile.open ("pmcubes_iters.csv");
                 iterations_myfile<<"iter, estimate, errorest, chi_sq, iter_estimate, iter_errorest\n";
                 iterations_myfile.precision(15);
             }
@@ -63,13 +69,13 @@ class IterDataLogger{
                 << iter_errorest      << "\n";
         }
         
-        void PrintBins(int iter, double* xi, double* d, int ndim, std::ofstream& outfile){
+        void PrintBins(int iter, double* xi, double* d, int ndim/*, std::ofstream& outfile*/){
             int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
             int ndmx = Internal_Vegas_Params::get_NDMX();
             int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
             
             if(iter == 1){
-                outfile << "iter, dim, bin, bin_length, left, right, contribution\n";
+                myfile_bin_bounds << "iter, dim, bin, bin_length, left, right, contribution\n";
             }
             
             if(iter <= 2){
@@ -80,7 +86,7 @@ class IterDataLogger{
                         double left = xi[dim * ndmx1 + bin -1];
                         double right = xi[dim * ndmx1 + bin];
                         double contribution = d[bin * mxdim_p1 + dim];
-                        outfile << iter << "," 
+                        myfile_bin_bounds << iter << "," 
                             << dim << ","
                             << bin << ","
                             << bin_length << "," 
@@ -91,7 +97,7 @@ class IterDataLogger{
             }
         }
 
-        void PrintRandomNums(double* randoms, int it, int ncubes, int npg, int ndim, std::ofstream& outfile){
+        void PrintRandomNums(int it, int ncubes, int npg, int ndim/*, std::ofstream& outfile*/){
             
             size_t nums_per_cube = npg*ndim;
             size_t nums_per_sample = ndim;
@@ -100,7 +106,6 @@ class IterDataLogger{
                 return;
             else{
                 
-                std::cout<<"expecting total random numbers:"<<ncubes*npg*ndim<<"\n";
                 for(int cube = 0; cube < ncubes; cube++)
                     for(int sample = 1; sample <= npg; sample++)
                         for(int dim = 1; dim <= ndim; dim++){
@@ -108,7 +113,7 @@ class IterDataLogger{
                             size_t index = cube*nums_per_cube + nums_per_sample*(sample-1) + dim-1;
              
                             
-                            outfile << it << ","
+                            myfile_randoms << it << ","
                                 << cube << ","
                                 << cube << "," //same as chunk for single threaded
                                 << sample << ","
@@ -119,7 +124,7 @@ class IterDataLogger{
             } 
         }
 
-        void PrintFuncEvals(double* funcevals, int it, int ncubes, int npg, int ndim, std::ofstream& outfile){
+        void PrintFuncEvals(int it, int ncubes, int npg, int ndim/*, std::ofstream& outfile*/){
             
             size_t nums_per_cube = npg*ndim;
             size_t nums_per_sample = ndim;
@@ -134,7 +139,7 @@ class IterDataLogger{
                         
                         size_t nums_evals_per_chunk = npg;
                         size_t index = cube*nums_evals_per_chunk + (sample-1);               
-                        outfile << it << ","
+                        myfile_funcevals << it << ","
                                 << cube << ","
                                 << cube << "," //same as chunk for single threaded
                                 << sample << ","

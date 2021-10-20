@@ -87,7 +87,7 @@ namespace cuda_mcubes{
 #define NDIV (1+IMM1/NTAB)
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
-#define PI 3.14159265358979323846
+//#define PI 3.14159265358979323846
 
 __device__
 double ran2(long *idum)
@@ -221,9 +221,9 @@ void Test_get_indx(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, in
     }
 }
 
-template <int ndim>
+template <int ndim, bool DEBUG_MCUBES/*, typename GeneratorType = typename::Curand_generator*/>
 __inline__ __device__
-void Setup_Integrand_Eval(curandState* localState, 
+void Setup_Integrand_Eval(curandState* localState, //replace with Generator<GeneratorType>* rand_num_generator
                             double xnd, double dxg, 
                             const double* const xi, const double* const regn, const double* const dx, 
                             const uint32_t* const kg, 
@@ -268,7 +268,7 @@ void Setup_Integrand_Eval(curandState* localState,
     */
     
     for (int j = 1; j <= ndim; j++) {          
-          const double ran00 = curand_uniform_double(localState);
+          const double ran00 = curand_uniform_double(localState); //replace with rand_num_generator();
           //const double ran00 = ran2(&idum);
         //try if constexpr here  
          
@@ -280,20 +280,27 @@ void Setup_Integrand_Eval(curandState* localState,
             _ran00 = (double) _seed / (double) p ;    
 
 #endif
-          size_t m = blockIdx.x * blockDim.x + threadIdx.x;
-          size_t nums_per_cube = npg*ndim;
-          size_t nums_per_sample = ndim;
+          //size_t m = blockIdx.x * blockDim.x + threadIdx.x;
           //both chunkSize and sampleID should start at the same index to not be confusing
           //TODO: change indexing
           //uint32_t cube_id = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize + chunkID;
-          size_t index = cube_id*nums_per_cube + nums_per_sample*(sampleID-1) + j-1;
+          
           
           //if(threadIdx.x == 31)
           //    printf("attempting thread %i cube_id:%u index:%lu\n", threadIdx.x, cube_id, index); 
           
           //if(randoms != nullptr)
+              
           //randoms[index] = ran00;
-
+            
+          if constexpr(DEBUG_MCUBES){
+            if(randoms != nullptr){
+                size_t nums_per_cube = npg*ndim;
+                size_t nums_per_sample = ndim;
+                size_t index = cube_id*nums_per_cube + nums_per_sample*(sampleID-1) + j-1;
+                randoms[index] = ran00;
+            }
+          }
           //if(threadIdx.x == 31)
           //    printf("thread %i cube_id:%u index:%lu\n", threadIdx.x, cube_id, index); 
 
@@ -314,12 +321,12 @@ void Setup_Integrand_Eval(curandState* localState,
         }
 }
 
-template <typename IntegT, int ndim>
+template <typename IntegT, int ndim, bool DEBUG_MCUBES/*, typename GeneratorType = typename::Curand_generator*/>
 __device__ void
 Process_npg_samples(IntegT* d_integrand, 
                         int npg, 
                         double xnd, double xjac, 
-                        curandState* localState, 
+                        curandState* localState, //replace with Generator<GeneratorType>* rand_num_generator
                         double dxg, 
                         const double* const regn, const double* const dx, const double* const xi, 
                         const uint32_t* const kg, 
@@ -341,7 +348,7 @@ Process_npg_samples(IntegT* d_integrand,
       for (int k = 1; k <= npg; k++) {
           
         double wgt = xjac;
-        Setup_Integrand_Eval<ndim>(localState, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt, _seed, temp, npg, chunkID, k, chunkSize, cube_id, randoms);
+        Setup_Integrand_Eval<ndim, DEBUG_MCUBES>(localState, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt, _seed, temp, npg, chunkID, k, chunkSize, cube_id, randoms);
         
         gpu::cudaArray<double, ndim> xx;             
         for (int i = 0; i < ndim; i++) {
@@ -350,11 +357,14 @@ Process_npg_samples(IntegT* d_integrand,
         
         double tmp = gpu::apply(*d_integrand, xx);
         double f = wgt * tmp;     
-        
-        size_t m = blockIdx.x * blockDim.x + threadIdx.x;
-        size_t nums_evals_per_cube = npg;
-
-        size_t index = cube_id*nums_evals_per_cube + (k-1);
+               
+        if constexpr(DEBUG_MCUBES){
+            if(funcevals != nullptr){
+                size_t nums_evals_per_cube = npg;
+                size_t index = cube_id*nums_evals_per_cube + (k-1);
+                funcevals[index] = f;
+            }
+        }
         //if(funcevals != nullptr)
         //try if constexpr here
         //funcevals[index] = f;
@@ -370,11 +380,11 @@ Process_npg_samples(IntegT* d_integrand,
       }
 }    
 
-template <typename IntegT, int ndim>
+template <typename IntegT, int ndim, bool DEBUG_MCUBES/*, typename GeneratorType = typename::Curand_generator*/>
 __inline__ __device__
 void Process_chunks(IntegT* d_integrand, 
                 int chunkSize, int lastChunk, int ng, int npg, 
-                curandState* localState, 
+                curandState* localState, //replace with Generator<GeneratorType>* rand_num_generator
                 double dxg, double xnd, double xjac, 
                 const double* const regn, const double* const dx, const double* const xi, 
                 uint32_t* const kg, 
@@ -397,7 +407,7 @@ void Process_chunks(IntegT* d_integrand,
       uint32_t _seed = cube_id;
       uint64_t temp;
             
-      Process_npg_samples<IntegT, ndim>(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b, _seed, temp, t, chunkSize, cube_id, randoms, funcevals);
+      Process_npg_samples<IntegT, ndim, DEBUG_MCUBES>(d_integrand, npg, xnd, xjac, localState, dxg, regn, dx, xi, kg, ia, x, wgt, d, fb, f2b, _seed, temp, t, chunkSize, cube_id, randoms, funcevals);
 			
       f2b = sqrt(f2b * npg); 
       f2b = (f2b - fb) * (f2b + fb);
@@ -417,7 +427,7 @@ void Process_chunks(IntegT* d_integrand,
     } 
 }
 
-template <typename IntegT, int ndim>
+template <typename IntegT, int ndim, bool DEBUG_MCUBES/*, typename GeneratorType = typename::Curand_generator*/>
 __global__ void
 vegas_kernel(IntegT* d_integrand,
              int ng,
@@ -458,18 +468,19 @@ vegas_kernel(IntegT* d_integrand,
   double x[mxdim_p1];
   double fbg = 0., f2bg = 0.;
   
-  if (m < totalNumThreads) {
+  if (m < totalNumThreads){
     
     size_t cube_id_offset = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize;
  
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk;
     
-    curandState localState;
+    //Generator<GeneratorType> rand_num_generator(seed_init);
+    curandState localState; 
     curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
     get_indx(/*m * chunkSize*/cube_id_offset, &kg[1], ndim, ng);
             
-    Process_chunks<IntegT, ndim>(d_integrand, chunkSize, LastChunk, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg, cube_id_offset, randoms, funcevals);
+    Process_chunks<IntegT, ndim, DEBUG_MCUBES>(d_integrand, chunkSize, LastChunk, ng, npg, &localState, dxg, xnd, xjac, regn, dx, xi, kg, ia, x, wgt, d, fbg, f2bg, cube_id_offset, randoms, funcevals);
   }
   
   //testing if synch is needed
@@ -484,7 +495,7 @@ vegas_kernel(IntegT* d_integrand,
    // end of subcube if
 }
 
-template <typename IntegT, int ndim>
+template <typename IntegT, int ndim/*, typename Generator = typename::Curand_generator*/>
 __global__ void
 vegas_kernelF(IntegT* d_integrand,
               int ng,
@@ -668,6 +679,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 	// printf("---------------------\n");
 }
 
+/*
 void PrintBins(int iter, double* xi, double* d, int ndim, std::ofstream& outfile){
     int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
     int ndmx = Internal_Vegas_Params::get_NDMX();
@@ -747,9 +759,9 @@ void PrintFuncEvals(double* funcevals, int it, int ncubes, int npg, int ndim, st
             
             
     } 
-}
+}*/
 
-template <typename IntegT, int ndim/*, bool DEBUG_MCUBES*/>
+template <typename IntegT, int ndim, bool DEBUG_MCUBES/*, typename GeneratorType = typename::Curand_generator*/>
 void
 vegas(IntegT integrand,
       double epsrel,
@@ -765,10 +777,10 @@ vegas(IntegT integrand,
       int skip,
       quad::Volume<double, ndim> const* vol)
 {
-  
+ 
   //Mcubes_state mcubes_state(ncall, ndim);
   //all of the ofstreams below will be removed, replaced by DataLogger
-  std::ofstream myfile_bin_bounds;
+  /*std::ofstream myfile_bin_bounds;
   myfile_bin_bounds.open ("pmcubes_bin_bounds_custom_2048chunk.csv");
   myfile_bin_bounds << "it, cube, chunk, sample, dim, ran00\n";   
     
@@ -786,7 +798,7 @@ vegas(IntegT integrand,
   std::ofstream iterations_myfile;
   iterations_myfile.open ("pmcubes_iters_custom_2048chunk.csv");
   iterations_myfile<<"iter, estimate, errorest, chi_sq, iter_estimate, iter_errorest\n";
-  iterations_myfile.precision(15);
+  iterations_myfile.precision(15);*/
   
   auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -848,8 +860,8 @@ vegas(IntegT integrand,
   ncubes = k;
   
   npg = IMAX(ncall / k, 2);
-  assert(npg == Compute_samples_per_cube(ncall, ncubes)); //to replace line directly above
-  assert(ncubes == ComputeNcubes(ncall, ndim)); //to replace line directly above
+  //assert(npg == Compute_samples_per_cube(ncall, ncubes)); //to replace line directly above
+  //assert(ncubes == ComputeNcubes(ncall, ndim)); //to replace line directly above
 
   calls = (double)npg * (double)k;
   dxg = 1.0 / ng;
@@ -907,10 +919,9 @@ vegas(IntegT integrand,
   
   //int chunkSize = ncubes/32;
  
-  uint32_t _totalNumThreads = (static_cast<uint32_t>(ncubes) % chunkSize) == 0 ? 
-    (uint32_t)((ncubes) / chunkSize) : (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead      
+  //uint32_t _totalNumThreads = (static_cast<uint32_t>(ncubes) % chunkSize) == 0 ? (uint32_t)((ncubes) / chunkSize) : (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead      
   uint32_t totalNumThreads = (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
-  assert(_totalNumThreads == totalNumThreads);
+  //assert(_totalNumThreads == totalNumThreads);
   
   uint32_t totalCubes = totalNumThreads * chunkSize;    //even-split cubes
   int extra = ncubes - totalCubes;                      //left-over cubes
@@ -923,7 +934,7 @@ vegas(IntegT integrand,
   //uint32_t nThreads = 32;
   
   
-  std::cout.precision(15);
+  //std::cout.precision(15);
   /*std::cout<<"ng:"<<ng<<"\n";
   std::cout<<"ncubes:"<<ncubes<<"\n";
   std::cout<<"ncall:"<<ncall<<"\n";
@@ -938,11 +949,14 @@ vegas(IntegT integrand,
   std::cout<<"LastChunk:"<<LastChunk<<"\n";
   std::cout<<"-------------------\n";*/
   
-  Kernel_Params kernel_params(ncall, chunkSize, ndim);   
-  double* randoms = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg*ndim);
-  double* funcevals = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg);
-
+  //Kernel_Params kernel_params(ncall, chunkSize, ndim);   
+  //double* randoms = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg*ndim);
+  //double* funcevals = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg);
+  //double* randoms = nullptr;
+  //double* funcevals = nullptr;
   //IterDataLogger<DEBUG_MCUBES> datalogger;  
+  IterDataLogger<DEBUG_MCUBES> data_collector(totalNumThreads, chunkSize, extra, npg, ndim);
+  
   for (it = 1; it <= itmax && (*status) == 1; it++) {
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
@@ -966,7 +980,7 @@ vegas(IntegT integrand,
     
     //Test_get_indx(ndim, ng, ncubes, chunkSize, it, interval_myfile);
 
-    vegas_kernel<IntegT, ndim><<<nBlocks, nThreads>>>(d_integrand,
+    vegas_kernel<IntegT, ndim, DEBUG_MCUBES><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
                                                       xjac,
@@ -988,8 +1002,8 @@ vegas(IntegT integrand,
                                                       fcode,
                                                       /*time(NULL)/it*/
                                                       seed+it,
-                                                      randoms,  //datalogger.randoms
-                                                      funcevals); //datalogger.funcevals
+                                                      data_collector.randoms,  //datalogger.randoms
+                                                      data_collector.funcevals); //datalogger.funcevals
     
     
     
@@ -1033,12 +1047,18 @@ vegas(IntegT integrand,
        
     }
     
-    iterations_myfile << it     << ","
+    if constexpr (DEBUG_MCUBES == true){
+        data_collector.PrintBins(it, xi, d, ndim);
+        data_collector.PrintRandomNums(it, ncubes, npg, ndim);   
+        data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
+    }
+    /*iterations_myfile << it     << ","
                     << *tgral   << ","
                     << *sd      << ","
                     << *chi2a   << "," 
                     << ti       << ","
-                    << tsi      << "\n";
+                    << tsi      << "\n";*/
     //replace above with PrintIterResults(it, *tgral, *sd, ti, tsi);     
     
     //PrintBins(it, xi, d, ndim, myfile_bin_bounds);
@@ -1142,21 +1162,28 @@ vegas(IntegT integrand,
 	tsi = sqrt(tsi);
         
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-
-    iterations_myfile << it     << ","
+    
+    if constexpr(DEBUG_MCUBES){
+        data_collector.PrintBins(it, xi, d, ndim);
+        //data_collector.PrintRandomNums(randoms, it, ncubes, npg, ndim, myfile_randoms);   
+        //data_collector.PrintFuncEvals(funcevals, it, ncubes, npg, ndim);
+        data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
+    }
+    /*iterations_myfile << it     << ","
                     << *tgral   << ","
                     << *sd      << ","
                     << *chi2a   << "," 
                     << ti       << ","
-                    << tsi      << "\n";    
+                    << tsi      << "\n";*/
+                    
     //printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
   } // end of iterations
       
-  interval_myfile.close();
+  /*interval_myfile.close();
   myfile_bin_bounds.close();
   iterations_myfile.close();
   myfile_randoms.close();
-  myfile_funcevals.close();
+  myfile_funcevals.close();*/
   
   free(d);
   free(dt);
@@ -1176,13 +1203,13 @@ vegas(IntegT integrand,
   cudaFree(result_dev);
   cudaFree(d_integrand);
   
-  cudaFree(randoms);
-  cudaFree(funcevals);
+  //cudaFree(randoms);
+  //cudaFree(funcevals);
   //outfile_fevals.close();
   //outfile_intervals.close();
 }
 
-template <typename IntegT, int NDIM>
+template <typename IntegT, int NDIM, bool DEBUG_MCUBES>
 cuhreResult<double>
 integrate(IntegT ig,
           int ndim,
@@ -1198,7 +1225,7 @@ integrate(IntegT ig,
   cuhreResult<double> result;
   result.status = 1;
   int fcode = -1; // test that it's really not being used anywhere
-  vegas<IntegT, NDIM>(ig,
+  vegas<IntegT, NDIM, DEBUG_MCUBES>(ig,
                       epsrel,
                       epsabs,
                       fcode,
@@ -1214,7 +1241,7 @@ integrate(IntegT ig,
   return result;
 }
 
-template <typename IntegT, int NDIM>
+template <typename IntegT, int NDIM, bool DEBUG_MCUBES>
 cuhreResult<double>
 simple_integrate(IntegT integrand,
                  int ndim,
@@ -1236,7 +1263,7 @@ simple_integrate(IntegT integrand,
   
   //printf("called simple_integrationw ith epsrel:%f, epsabs:%f, ncall:%f, totalIters:%i, adjustIters:%i, skipIters:%i\n", epsrel, epsabs, ncall, totalIters, adjustIters, skipIters);
   do {
-    vegas<IntegT, NDIM>(integrand,
+    vegas<IntegT, NDIM, DEBUG_MCUBES>(integrand,
                         epsrel,
                         epsabs,
                         fcode,
