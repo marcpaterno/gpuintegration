@@ -1,8 +1,6 @@
 #include "vegas/vegasT.cuh"
 #include "vegas/demos/demo_utils.cuh"
-#include <chrono>
-#include <iostream>
-#include <string>
+#include "math.h"
 
 class Gauss9D {
 public:
@@ -20,7 +18,7 @@ public:
     double sum = pow(x, 2) + pow(y, 2) + pow(z, 2) + pow(k, 2) + pow(l, 2) +
                  pow(m, 2) + pow(n, 2) + pow(o, 2) + pow(p, 2);
     return exp(-1 * sum / (2 * pow(0.01, 2))) *
-           (1 / pow(sqrt(2 * PI) * 0.01, 9));
+           (1 / pow(sqrt(2 * M_PI) * 0.01, 9));
   }
 };
 

@@ -448,6 +448,7 @@ vegas_kernelF(IntegT* d_integrand,
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
+
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
   size_t cube_id_offset = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize;
@@ -464,6 +465,7 @@ vegas_kernelF(IntegT* d_integrand,
       chunkSize = LastChunk /*+ 1*/;
   
     Random_num_generator<GeneratorType> rand_num_generator(seed_init);
+
 
     fbg = f2bg = 0.0;
     get_indx(cube_id_offset, &kg[1], ndim, ng);
@@ -857,6 +859,7 @@ vegas(IntegT integrand,
                                                       data_collector.funcevals);
     
 
+
     
     
     cudaMemcpy(xi,
@@ -873,7 +876,7 @@ vegas(IntegT integrand,
                
     cudaCheckError(); // we do need to the contributions for the rebinning
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-    
+
     ti = result[0];
     tsi = result[1];
 
@@ -995,6 +998,7 @@ vegas(IntegT integrand,
 	if (*chi2a < 0.0) *chi2a = 0.0;
 	*sd = sqrt(1.0 / swgt);
 	tsi = sqrt(tsi);
+
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     
     if constexpr(DEBUG_MCUBES){
@@ -1074,10 +1078,6 @@ simple_integrate(IntegT integrand,
   result.status = 1;
   int fcode = -1; // test that it's really not being used anywhere
 
-  //for(int i=0; i< NDIM; ++i)
-   // printf("vol[%i]:(%f,%f)\n", i, volume->lows[i], volume->highs[i]);
-  
-  //printf("called simple_integrationw ith epsrel:%f, epsabs:%f, ncall:%f, totalIters:%i, adjustIters:%i, skipIters:%i\n", epsrel, epsabs, ncall, totalIters, adjustIters, skipIters);
   do {
     vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(integrand,
                         epsrel,
@@ -1092,7 +1092,6 @@ simple_integrate(IntegT integrand,
                         adjustIters,
                         skipIters,
                         volume);
-
   } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
   return result;
