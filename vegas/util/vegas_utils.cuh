@@ -1,21 +1,9 @@
 #ifndef VEGAS_UTILS_CUH
 #define VEGAS_UTILS_CUH
 
+#include "vegas/seqCodesDefs.hh"
+
 #define BLOCK_DIM_X 128
-
-#define IMAX(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a > _b ? _a : _b;                                                         \
-  })
-
-#define IMIN(a, b)                                                             \
-  ({                                                                           \
-    __typeof__(a) _a = (a);                                                    \
-    __typeof__(b) _b = (b);                                                    \
-    _a < _b ? _a : _b;                                                         \
-  })
 
 // Macro for checking cuda errors following a cuda launch or api call
 #define cudaCheckError()                                                       \
@@ -241,21 +229,21 @@ namespace mcubes{
 }
 
 class Internal_Vegas_Params{
-        static constexpr int NDMX = 500;
-        static constexpr int MXDIM = 20;
-        static constexpr double ALPH = 1.5;
+        static constexpr int ndmx = 500;
+        static constexpr int mxdim = 20;
+        static constexpr double alph = 1.5;
     
     public:
         
-        __host__ __device__ static constexpr int get_NDMX(){return NDMX;}
+        __host__ __device__ static constexpr int get_NDMX(){return ndmx;}
    
-        __host__ __device__ static constexpr int get_NDMX_p1(){return NDMX+1;}
+        __host__ __device__ static constexpr int get_NDMX_p1(){return ndmx+1;}
        
-        __host__ __device__ static constexpr  double get_ALPH(){return ALPH;}
+        __host__ __device__ static constexpr  double get_ALPH(){return alph;}
        
-        __host__ __device__ static constexpr  int get_MXDIM(){return MXDIM;}
+        __host__ __device__ static constexpr  int get_MXDIM(){return mxdim;}
         
-        constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
+        constexpr __host__ __device__ static int get_MXDIM_p1(){return mxdim+1;}
 };
 
 __inline__

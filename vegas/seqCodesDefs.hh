@@ -34,7 +34,7 @@ float xoff;
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
 
-/*template <typename T, typename U>
+template <typename T, typename U>
 __host__ __device__
 std::common_type_t<T,U> IMAX(T a, U b) {
   return (a > b) ? a : b;
@@ -44,9 +44,9 @@ template <typename T, typename U>
 __host__ __device__
 std::common_type_t<T, U> IMIN(T a, U b) {
   return (a < b) ? a : b;
-}*/
+}
 
-
+/*
 #define IMAX(a, b)                                                             \
   ({                                                                           \
     __typeof__(a) _a = (a);                                                    \
@@ -60,7 +60,7 @@ std::common_type_t<T, U> IMIN(T a, U b) {
     __typeof__(b) _b = (b);                                                    \
     _a < _b ? _a : _b;                                                         \
   })
-
+*/
 template <typename T>
 __host__ __device__
 T SQR(T a) {
