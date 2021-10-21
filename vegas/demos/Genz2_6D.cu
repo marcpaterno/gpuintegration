@@ -42,14 +42,10 @@ main(int argc, char** argv)
   GENZ_2_6D integrand;
   
   PrintHeader();
-  //std::array<double, 10> required_ncall = {1.e8, 1.e8, 1.e8, 1.e8, 1.e8, 2.e9, 2.e9, 2.e9, 2.e9, 2.e9};
-  std::array<double, 10> required_ncall = {1.e6, 1.e7, 1.e8, 1.e9, 2.e9, 3.e9, 4.e9, 5.e9, 2.e9, 2.e9};
-  std::array<double, 10> adjust_iters = {40,40, 40, 40, 40, 40, 40, 40, 40, 40};
   bool success = false;
   size_t expID = 0;
   do{
-        //params.ncall = required_ncall[expID];
-        //params.num_adjust_iters = adjust_iters[expID];
+        params.ncall = ncall;
         for(int run = 0; run < 100; run++){
             success = mcubes_time_and_call<GENZ_2_6D, ndim>
             (integrand, epsrel, true_value, "f2 6D", params, &volume);

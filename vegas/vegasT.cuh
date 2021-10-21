@@ -26,7 +26,7 @@ Last three arguments are: total iterations, iteration
 
 */
 
-__device__ long idum = -1;
+//__device__ long idum = -1;
 
 #define OUTFILEVAR 0
 
