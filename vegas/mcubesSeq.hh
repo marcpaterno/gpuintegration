@@ -28,57 +28,8 @@ adjusting the intervals
 #include <iostream>
 #include <tuple>
 #define OUTPUT 3
-//#include "nr.h"
-//#include "nrutil.h"
 
-/*
-#define ALPH 1.5
-#define NDMX 500
-//#define NDMX 50
-#define MXDIM 10
-#define TINY 1.0e-30
-
-extern long idum;
-int iternumber = 0;
-
-long idum = (-1);      // for ranno 
-
-int ndim;       // for fxn 
-double xoff;
-
-
-
-#define NR_END 1
-#define IM1 2147483563
-#define IM2 2147483399
-#define AM (1.0/IM1)
-#define IMM1 (IM1-1)
-#define IA1 40014
-#define IA2 40692
-#define IQ1 53668
-#define IQ2 52774
-#define IR1 12211
-#define IR2 3791
-#define NTAB 32
-#define NDIV (1+IMM1/NTAB)
-#define EPS 1.2e-7
-#define RNMX (1.0-EPS)
-#define PI 3.14159265358979323846
-*/
-  
-/*static int imaxarg1, imaxarg2;
-#define IMAX(a,b) (imaxarg1=(a),imaxarg2=(b),(imaxarg1) > (imaxarg2) ?\
-		   (imaxarg1) : (imaxarg2))
-
-static int iminarg1, iminarg2;
-#define IMIN(a,b) (iminarg1=(a),iminarg2=(b),(iminarg1) < (iminarg2) ?\
-		   (iminarg1) : (iminarg2))
-
-static double sqrarg;
-#define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
-*/
-
-
+ 
 /* receives the array and the size and returns the revers of the array for type string
    used for reading and writing files*/
 void reverse_bytes(void *data, size_t size)
@@ -531,7 +482,7 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   //declaring the variables
   cuhreResult<double> result;
   int init, j/*, ncall*/, nprn;
-  double avgi, chi2a, sd, xoff;
+  double avgi, chi2a, sd;
   double *regn;
   init = -1;
   
@@ -547,7 +498,6 @@ cuhreResult<double> seq_mcubes_integrate(IntegT integrand, int ndim, double epsr
   
   //initializing the variables and the arrays
   ndim = NDIM;
-  xoff = 0;
   //ncall = 1000;
   //itmax = 10;
   nprn = -1;

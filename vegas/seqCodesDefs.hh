@@ -1,6 +1,8 @@
 #ifndef SEQ_CODES_DEFS_HH
 #define SEQ_CODES_DEFS_HH
 
+#include <type_traits>
+
 //#define ALPH 1.5
 #define ALPH 0.5
 #define NDMX 500
@@ -31,18 +33,24 @@ float xoff;
 #define NDIV (1+IMM1/NTAB)
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
-#define PI 3.14159265358979323846
 
-static int imaxarg1, imaxarg2;
-#define IMAX(a,b) (imaxarg1=(a),imaxarg2=(b),(imaxarg1) > (imaxarg2) ?\
-		   (imaxarg1) : (imaxarg2))
+template <typename T, typename U>
+__host__ __device__
+std::common_type_t<T,U> IMAX(T a, U b) {
+  return (a > b) ? a : b;
+}
 
-static int iminarg1, iminarg2;
-#define IMIN(a,b) (iminarg1=(a),iminarg2=(b),(iminarg1) < (iminarg2) ?\
-		   (iminarg1) : (iminarg2))
+template <typename T, typename U>
+__host__ __device__
+std::common_type_t<T, U> IMIN(T a, U b) {
+  return (a < b) ? a : b;
+}
 
-static float sqrarg;
-#define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
+template <typename T>
+__host__ __device__
+T SQR(T a) {
+  return a * a;
+}
 
 
   bool

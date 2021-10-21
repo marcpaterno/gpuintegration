@@ -38,6 +38,7 @@ __device__ long idum = -1;
 #include "vegas/util/util.cuh"
 #include "vegas/util/vegas_utils.cuh"
 #include "vegas/util/verbose_utils.cuh"
+#include "vegas/seqCodesDefs.hh"
 #include <chrono>
 #include <ctime>
 #include <curand_kernel.h>
@@ -55,22 +56,20 @@ __device__ long idum = -1;
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
-#define TRUE_VAL 
-//#define ALPH 1.5 // commented out by Ioannis in order to match python vegas default of .5
-//#define ALPH 0.5
-//#define NDMX 500
-//#define MXDIM 20
-
-//#define NDMX1 NDMX + 1
-//#define MXDIM1 MXDIM + 1
-//#define PI 3.14159265358979323846
-
-//int verbosity = 0;
+// Macro for checking cuda errors following a cuda launch or api call
+#define cudaCheckError()                                                       \
+  {                                                                            \
+    cudaError_t e = cudaGetLastError();                                        \
+    if (e != cudaSuccess) {                                                    \
+      printf("Cuda failure %s:%d: '%s'\n",                                     \
+             __FILE__,                                                         \
+             __LINE__,                                                         \
+             cudaGetErrorString(e));                                           \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
 
 namespace cuda_mcubes{
-
-//using MilliSeconds =
- // std::chrono::duration<double, std::chrono::milliseconds::period>;
 
 #define NR_END 1
 #define IM1 2147483563
@@ -87,7 +86,6 @@ namespace cuda_mcubes{
 #define NDIV (1+IMM1/NTAB)
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
-//#define PI 3.14159265358979323846
 
 __device__
 double ran2(long *idum)
@@ -387,12 +385,9 @@ vegas_kernel(IntegT* d_integrand,
              double* randoms = nullptr,
              double* funcevals = nullptr)
 {
-
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-  
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   uint32_t tx = threadIdx.x;
-
   double wgt;
   uint32_t kg[mxdim_p1];
   int ia[mxdim_p1];
@@ -451,33 +446,12 @@ vegas_kernelF(IntegT* d_integrand,
 
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-
-/*
-#ifdef CUSTOM
-  uint32_t a = 1103515245;
-  uint32_t c = 12345;
-  uint32_t one, expi;
-  one = 1;
-  expi = 31;
-  uint32_t p = one << expi;
-  uint32_t custom_seed;
-#endif
-*/
-  //unsigned long long seed;
-  // seed_init = (iter) * ncubes;
 
   uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
   int tx = threadIdx.x;
   size_t cube_id_offset = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize;
   
-/*
-#ifdef IDUM
-  long idum = (-1);
-#endif
-*/
-
   double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
   uint32_t kg[mxdim_p1];
   int iaj;
@@ -489,11 +463,7 @@ vegas_kernelF(IntegT* d_integrand,
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk /*+ 1*/;
   
-    //seed = seed_init + m * chunkSize;
-    
     Random_num_generator<GeneratorType> rand_num_generator(seed_init);
-    //curandState localState;
-    //curand_init(seed_init, blockIdx.x, threadIdx.x, &localState);
 
     fbg = f2bg = 0.0;
     get_indx(cube_id_offset, &kg[1], ndim, ng);
@@ -501,12 +471,6 @@ vegas_kernelF(IntegT* d_integrand,
     for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
  
-/* 
-#ifdef CUSTOM
-      uint64_t temp;
-      custom_seed = cube_id_offset + t; //custom_seed = cubeID
-#endif
-*/
       //if constexpr(mcubes::is_same<GeneratorType, Custom_generato>())
       if constexpr (mcubes::TypeChecker<GeneratorType, Custom_generator>::is_custom_generator()){
         rand_num_generator->SetSeed(cube_id_offset + t);
@@ -517,17 +481,7 @@ vegas_kernelF(IntegT* d_integrand,
 
         for (j = 1; j <= ndim; j++) {
 
-          //ran00 = curand_uniform_double(&localState);
           ran00 = rand_num_generator();
-/*          
-#ifdef CUSTOM
-          temp =  a * custom_seed + c;
-          custom_seed = temp & (p - 1);
-          ran00 = (double) custom_seed / (double) p;
-#endif
-*/
-          
-          //ran00 = ran2(&idum);
           xn = (kg[j] - ran00) * dxg + 1.0;
           iaj = IMAX(IMIN((int)(xn), ndmx), 1);
         
@@ -722,7 +676,6 @@ vegas(IntegT integrand,
 
   constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
   constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-  //constexpr int mxdim = Internal_Vegas_Params::get_MXDIM();
   constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
   
   IntegT* d_integrand = cuda_copy_to_managed(integrand);
@@ -856,12 +809,6 @@ vegas(IntegT integrand,
   std::cout<<"LastChunk:"<<LastChunk<<"\n";
   std::cout<<"-------------------\n";*/
   
-  //Kernel_Params kernel_params(ncall, chunkSize, ndim);   
-  //double* randoms = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg*ndim);
-  //double* funcevals = cuda_malloc_managed<double>((totalNumThreads*chunkSize+extra)*npg);
-  //double* randoms = nullptr;
-  //double* funcevals = nullptr;
-  //IterDataLogger<DEBUG_MCUBES> datalogger;  
   IterDataLogger<DEBUG_MCUBES> data_collector(totalNumThreads, chunkSize, extra, npg, ndim);
   
   for (it = 1; it <= itmax && (*status) == 1; it++) {
@@ -885,8 +832,6 @@ vegas(IntegT integrand,
     MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
     unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);
     
-    //Test_get_indx(ndim, ng, ncubes, chunkSize, it, interval_myfile);
-
     vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
@@ -908,9 +853,10 @@ vegas(IntegT integrand,
                                                       LastChunk,
                                                       fcode,
                                                       seed+it,
-                                                      data_collector.randoms,  //datalogger.randoms
-                                                      data_collector.funcevals); //datalogger.funcevals
+                                                      data_collector.randoms, 
+                                                      data_collector.funcevals);
     
+
     
     
     cudaMemcpy(xi,
@@ -947,9 +893,6 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      //printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
-      //printf("-------------------------------------------\n");
-       
     }
     
     if constexpr (DEBUG_MCUBES == true){
@@ -1052,7 +995,6 @@ vegas(IntegT integrand,
 	if (*chi2a < 0.0) *chi2a = 0.0;
 	*sd = sqrt(1.0 / swgt);
 	tsi = sqrt(tsi);
-        
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
     
     if constexpr(DEBUG_MCUBES){
@@ -1150,12 +1092,7 @@ simple_integrate(IntegT integrand,
                         adjustIters,
                         skipIters,
                         volume);
-    /*std::cout << std::scientific << result.estimate << ","
-        << std::scientific << result.errorest << ","
-        << ncall << ","
-        << result.status << "\n";*/
-   // break;
-   //printf("done with %e for epsrel %e status:%i\n", ncall, epsrel, result.status);
+
   } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
   return result;
