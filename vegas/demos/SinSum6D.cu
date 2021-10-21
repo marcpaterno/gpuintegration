@@ -36,8 +36,9 @@ main(int argc, char** argv)
   SinSum6D integrand;
   using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
     
+  constexpr bool MCUBES_DEBUG = false;  
   auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = cuda_mcubes::integrate<SinSum6D, ndim>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  auto res = cuda_mcubes::integrate<SinSum6D, ndim, MCUBES_DEBUG>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     
   std::cout.precision(15);

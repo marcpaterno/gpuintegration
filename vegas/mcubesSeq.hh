@@ -26,7 +26,7 @@ adjusting the intervals
 #include <fstream>
 #include <string>
 #include <iostream>
-
+#include <tuple>
 #define OUTPUT 3
 //#include "nr.h"
 //#include "nrutil.h"

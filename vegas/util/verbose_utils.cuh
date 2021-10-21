@@ -10,8 +10,6 @@ std::ofstream GetOutFileVar(std::string filename){
   return myfile;
 }
 
-
-
 template<bool DEBUG_MCUBES>
 class IterDataLogger{
     std::ofstream myfile_bin_bounds;
@@ -69,7 +67,7 @@ class IterDataLogger{
                 << iter_errorest      << "\n";
         }
         
-        void PrintBins(int iter, double* xi, double* d, int ndim/*, std::ofstream& outfile*/){
+        void PrintBins(int iter, double* xi, double* d, int ndim){
             int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
             int ndmx = Internal_Vegas_Params::get_NDMX();
             int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
@@ -84,6 +82,8 @@ class IterDataLogger{
                         
                         double bin_length = xi[dim * ndmx1 + bin] - xi[dim * ndmx1 + bin -1];
                         double left = xi[dim * ndmx1 + bin -1];
+                        if(bin == 1)
+                            left = 0.;
                         double right = xi[dim * ndmx1 + bin];
                         double contribution = d[bin * mxdim_p1 + dim];
                         myfile_bin_bounds << iter << "," 
@@ -97,7 +97,7 @@ class IterDataLogger{
             }
         }
 
-        void PrintRandomNums(int it, int ncubes, int npg, int ndim/*, std::ofstream& outfile*/){
+        void PrintRandomNums(int it, int ncubes, int npg, int ndim){
             
             size_t nums_per_cube = npg*ndim;
             size_t nums_per_sample = ndim;
@@ -124,7 +124,7 @@ class IterDataLogger{
             } 
         }
 
-        void PrintFuncEvals(int it, int ncubes, int npg, int ndim/*, std::ofstream& outfile*/){
+        void PrintFuncEvals(int it, int ncubes, int npg, int ndim){
             
             size_t nums_per_cube = npg*ndim;
             size_t nums_per_sample = ndim;
@@ -150,7 +150,7 @@ class IterDataLogger{
             } 
         }
 
-        void PrintIntervals(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, int it,  std::ofstream& interval_myfile){
+        void PrintIntervals(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, int it){
             /*constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     
             if(it == 1)

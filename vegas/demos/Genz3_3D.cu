@@ -44,7 +44,6 @@ main(int argc, char** argv)
                 break;
         }
         epsrel /= 5.;
-        //expID++;
   }while(epsrel >= epsrel_min && success == true); 
   return 0;
 }

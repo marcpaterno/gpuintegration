@@ -41,14 +41,13 @@ main(int argc, char** argv)
   bool success = false;
   //size_t expID = 0;
   do{
-        //params.ncall = ncall;//required_ncall[expID];
+        params.ncall = ncall;
 		for(int run = 0; run < 100; run++){
 			success = mcubes_time_and_call<GENZ_6_6D, ndim>(integrand, epsrel, true_value, "f6 6D", params, &volume);
             if(!success)
                 break;
         }
         epsrel /= 5.;
-        //expID++;
   }while(epsrel >= epsrel_min && success == true); 
   
   return 0;

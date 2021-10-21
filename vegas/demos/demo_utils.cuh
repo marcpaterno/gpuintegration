@@ -35,13 +35,13 @@ void PrintHeader(){
 }
 
 
-template <typename F, int ndim>
+template <typename F, int ndim, bool MCUBES_DEBUG = false, typename GeneratorType = Curand_generator>
 bool
 mcubes_time_and_call(F integrand,
               double epsrel,
               double correct_answer,
               char const* integralName,
-              VegasParams params,
+              VegasParams& params,
               quad::Volume<double, ndim>* volume)
 {
   using MilliSeconds =
@@ -50,10 +50,11 @@ mcubes_time_and_call(F integrand,
   double constexpr epsabs = 1.0e-20;
   bool success = false;
   do{
+      //constexpr bool MCUBES_DEBUG = false;
       //std::cout<<"Trying with "<< params.ncall << " and "<< params.num_adjust_iters<< " adjust iters\n";
       double exp_epsrel = epsrel*.5;
       auto t0 = std::chrono::high_resolution_clock::now();
-      auto res = cuda_mcubes::integrate<F, ndim>
+      auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>
         (integrand, ndim, exp_epsrel, epsabs, params.ncall, volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
       success = (res.status == 0);

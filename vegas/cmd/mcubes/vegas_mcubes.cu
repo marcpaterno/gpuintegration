@@ -29,6 +29,7 @@ Last three arguments are: total iterations, iteration
 #include <stdint.h>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
@@ -165,6 +166,13 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
                              int chunkSize, uint32_t totalNumThreads,
                              int LastChunk, int fcode) {
 
+/*
+#ifdef CUSTOM
+    custom generator;
+#else
+    curand generator
+#endif
+*/
 
 #ifdef CUSTOM
 	uint64_t temp;
@@ -179,12 +187,9 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 
 	uint32_t seed, seed_init;
 	seed_init = (iter) * ncubes;
-
-
-
+    
 	int m = blockIdx.x * blockDim.x + threadIdx.x;
 	int tx = threadIdx.x;
-
 
 	double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
 	int kg[MXDIM + 1];
@@ -215,11 +220,12 @@ __global__ void vegas_kernel(int ng, int ndim, int npg, double xjac, double dxg,
 					temp =  a * seed + c;
 					seed = temp & (p - 1);
 					ran00 = (double) seed / (double) p ;
+                    printf("ran00:%.17e\n", ran00); 
 #endif
 #ifdef CURAND
 					ran00 = curand_uniform(&localState);
 #endif
-
+                    //ran00 = generator();
 					xn = (kg[j] - ran00) * dxg + 1.0;
 					ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
 
@@ -646,6 +652,8 @@ void vegas(double regn[], int ndim, int fcode,
   //printf("inside vegas\n");
 	int i, it, j, k, nd, ndo, ng, npg, ncubes;
 	double calls, dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
+     std::ofstream myfile;
+    myfile.open ("mcubes.csv");
 
 	double schi, si, swgt;
 	double result[2];
@@ -719,9 +727,9 @@ void vegas(double regn[], int ndim, int fcode,
 
 	cudaMemset(ia_dev, 0, sizeof(int) * (MXDIM + 1));
 
-	int chunkSize;
+	int chunkSize = 2048;
 
-	switch (fcode) {
+	/*switch (fcode) {
 	case 0:
 		chunkSize = 2048;
 		break;
@@ -736,7 +744,7 @@ void vegas(double regn[], int ndim, int fcode,
         chunkSize = 32;
         //chunkSize = 1;
 		break;
-	}
+	}*/
 
 	uint32_t totalNumThreads = (uint32_t) ((ncubes + chunkSize - 1) / chunkSize);
 	uint32_t totalCubes = totalNumThreads * chunkSize;
@@ -841,9 +849,8 @@ void vegas(double regn[], int ndim, int fcode,
             
 		}
         
-        //printf("DIM: after summation\n");
-        //for(int j = 0; j < (MXDIM + 1) * (NDMX + 1); j++)
-        //    printf("d[%i]:%.8f\n", j, d[j]);
+        printf("DIM: after summation\n");
+
         
 		for (j = 1; j <= ndim; j++) {
 			//printf("Checking if dt[%i] is greater than 0:%.8f\n", j, dt[j]);
@@ -910,6 +917,7 @@ void vegas(double regn[], int ndim, int fcode,
 	}  // end of iterations
 
 
+      myfile.close();
 
 	free(d);
 	free(dt);
@@ -985,6 +993,7 @@ int main(int argc, char **argv)
              << dt.count() << "\n";
     
     //printf("Absolute error %.15e\n", abs(1.084656084656085e-02 - avgi));
+    printf("Absolute error %.15e\n", abs(1.084656084656085e-02 - avgi));
 	return 0;
 
 }
