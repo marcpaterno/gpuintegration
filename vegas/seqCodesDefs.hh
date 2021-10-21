@@ -60,7 +60,7 @@ std::common_type_t<T, U> IMIN(T a, U b) {
     __typeof__(b) _b = (b);                                                    \
     _a < _b ? _a : _b;                                                         \
   })
-*/
+
 template <typename T>
 __host__ __device__
 T SQR(T a) {
