@@ -52,7 +52,7 @@ Last three arguments are: total iterations, iteration
 #include <assert.h> 
 #include <inttypes.h>
 
-#define TINY 1.0e-30
+//#define TINY 1.0e-200
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
@@ -380,7 +380,6 @@ vegas_kernel(IntegT* d_integrand,
              int chunkSize,
              uint32_t totalNumThreads,
              int LastChunk,
-             int fcode,
              unsigned int seed_init,
              double* randoms = nullptr,
              double* funcevals = nullptr)
@@ -440,7 +439,6 @@ vegas_kernelF(IntegT* d_integrand,
               int chunkSize,
               uint32_t totalNumThreads,
               int LastChunk,
-              int fcode,    //not needed
               unsigned int seed_init)
 {
 
@@ -459,6 +457,7 @@ vegas_kernelF(IntegT* d_integrand,
   double x[mxdim_p1];
   int k, j;
   double fbg = 0., f2bg = 0.;
+  
   if (m < totalNumThreads) {
     
     if (m == totalNumThreads - 1)
@@ -578,7 +577,6 @@ void
 vegas(IntegT integrand,
       double epsrel,
       double epsabs,
-      int fcode,
       double ncall,
       double* tgral,
       double* sd,
@@ -770,7 +768,6 @@ vegas(IntegT integrand,
                                                       chunkSize,
                                                       totalNumThreads,
                                                       LastChunk,
-                                                      fcode,
                                                       seed+it,
                                                       data_collector.randoms, 
                                                       data_collector.funcevals);
@@ -799,7 +796,7 @@ vegas(IntegT integrand,
 
     tsi *= dv2g;
     //printf("-------------------------------------------\n");
-    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
     
     if (it > skip) {
       wgt = 1.0 / tsi;         
@@ -847,7 +844,9 @@ vegas(IntegT integrand,
       if (dt[j] > 0.0) { // enter if there is any contribution only
         rc = 0.0;
         for (i = 1; i <= nd; i++) {
-			if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;    
+			//if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;    
+            //if(d[i*mxdim_p1+j]<TINY) printf("d[%i]:%.15e\n", i*mxdim_p1+j, d[i*mxdim_p1+j]);
+            //printf("d[%i]:%.15e\n", i*mxdim_p1+j, d[i*mxdim_p1+j]);
           r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                        (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
@@ -894,7 +893,6 @@ vegas(IntegT integrand,
                                                        chunkSize,
                                                        totalNumThreads,
                                                        LastChunk,
-                                                       fcode,
                                                        seed+it);
 
     cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
@@ -902,7 +900,7 @@ vegas(IntegT integrand,
     ti = result[0];
     tsi = result[1];
     tsi *= dv2g;
-    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
         
         
 	wgt = 1.0 / tsi;       
@@ -961,11 +959,9 @@ integrate(IntegT ig,
     
   cuhreResult<double> result;
   result.status = 1;
-  int fcode = -1; // test that it's really not being used anywhere
   vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(ig,
                       epsrel,
                       epsabs,
-                      fcode,
                       ncall,
                       &result.estimate,
                       &result.errorest,
@@ -993,13 +989,11 @@ simple_integrate(IntegT integrand,
     
   cuhreResult<double> result;
   result.status = 1;
-  int fcode = -1; // test that it's really not being used anywhere
 
   do {
     vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(integrand,
                         epsrel,
                         epsabs,
-                        fcode,
                         ncall,
                         &result.estimate,
                         &result.errorest,
@@ -1013,5 +1007,6 @@ simple_integrate(IntegT integrand,
 
   return result;
 }
+
 }
 #endif
