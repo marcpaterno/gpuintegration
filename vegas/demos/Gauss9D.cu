@@ -1,5 +1,6 @@
 #include "vegas/vegasT.cuh"
 #include "vegas/demos/demo_utils.cuh"
+#include "vegas/vegasT1D.cuh"
 #include "math.h"
 
 class Gauss9D {
@@ -22,7 +23,7 @@ public:
   }
 };
 
-int
+int 
 main(int argc, char** argv)
 {
   double epsrel = 1.e-3;
@@ -52,11 +53,28 @@ main(int argc, char** argv)
 using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
   constexpr bool MCUBES_DEBUG = false;
   auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = cuda_mcubes::integrate<Gauss9D, ndim, MCUBES_DEBUG>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  auto res = cuda_mcubes::simple_integrate<Gauss9D, ndim, MCUBES_DEBUG>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-    
-  std::cout.precision(15);
   std::cout << "Gauss9D" << "," 
+            << std::scientific << true_value << "," 
+            << std::scientific << res.estimate << "," 
+            << std::scientific << res.errorest << "," 
+            << dt.count() << "\n";  
+  
+  
+  res = mcubes1D::simple_integrate1D<double, Gauss9D, ndim>(integrand, 
+        epsrel, 
+        epsabs, 
+        params.ncall, 
+        &volume, 
+        titer, 
+        itmax, 
+        skip);  
+    
+
+  std::cout.precision(15);
+  printf("-----------------------\n");
+  std::cout << "Gauss9DD" << "," 
             << std::scientific << true_value << "," 
             << std::scientific << res.estimate << "," 
             << std::scientific << res.errorest << "," 
