@@ -91,7 +91,7 @@ __inline__ __device__  void get_indx(int ms, uint32_t *da, int ND, int NINTV) {
         }
 }
 
-template<typename IntegT, int ndim>
+template<typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 __global__ void vegas_kernel(IntegT* d_integrand,
                             int ng, 
                             int npg, 
@@ -110,11 +110,12 @@ __global__ void vegas_kernel(IntegT* d_integrand,
                             double ing,
                             int chunkSize, 
                             uint32_t totalNumThreads,
-                            int LastChunk) {
+                            int LastChunk,
+                            unsigned int seed_init) {
     constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-    
+/*    
 #ifdef CUSTOM
         uint64_t temp;
         uint32_t a = 1103515245;
@@ -124,14 +125,14 @@ __global__ void vegas_kernel(IntegT* d_integrand,
         expi = 31;
         uint32_t p = one << expi;
 #endif
-
-        uint32_t seed, seed_init;
-        seed_init = (iter) * ncubes;
+*/
+        //uint32_t seed, seed_init;
+        //seed_init = (iter) * ncubes;
 
         uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
         int tx = threadIdx.x;
-
-        double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
+        size_t cube_id_offset = m*chunkSize;
+        double fb, f2b, wgt, xn, xo, rc, f, f2;
         uint32_t kg[mxdim_p1];
         int ia[mxdim_p1];
         double x[mxdim_p1];
@@ -141,75 +142,86 @@ __global__ void vegas_kernel(IntegT* d_integrand,
         gpu::cudaArray<double, ndim> xx;             
         
         if (m < totalNumThreads) {
+            Random_num_generator<GeneratorType> rand_num_generator(seed_init);
+            
             get_indx(m * chunkSize, &kg[1], ndim, ng);
             if (m == totalNumThreads - 1) 
                 chunkSize = LastChunk;
             
-             seed = seed_init + m * chunkSize;
+             //seed = seed_init + m * chunkSize;
+/*
 #ifdef CURAND
                 curandState localState;
                 curand_init(seed, 0, 0, &localState);
 #endif
+*/
                 fbg = f2bg = 0.0;
                 for (int t = 0; t < chunkSize; t++) {
-                        fb = f2b = 0.0;
-                        //get_indx(m*chunkSize+t, &kg[1], ndim, ng);
-                        for ( k = 1; k <= npg; k++) {
-                                wgt = xjac;
-                                for ( j = 1; j <= ndim; j++) {
+                    fb = f2b = 0.0;
+                    uint32_t cube_id = cube_id_offset + t;
+                    if constexpr (mcubes::TypeChecker<GeneratorType, Custom_generator>::is_custom_generator()){
+                        rand_num_generator.SetSeed(cube_id);
+                    }
+                    
+                    for ( k = 1; k <= npg; k++) {
+                        wgt = xjac;
+                        for ( j = 1; j <= ndim; j++) {
+/*                            
 #ifdef CUSTOM
-                                        temp =  a * seed + c;
-                                        seed = temp & (p - 1);
-                                        ran00 = (double) seed / (double) p ;
+                            temp =  a * seed + c;
+                            seed = temp & (p - 1);
+                            ran00 = (double) seed / (double) p ;
 #endif
+*/
+/*
 #ifdef CURAND
-                                        ran00 = curand_uniform(&localState);
+                            ran00 = curand_uniform(&localState);
 #endif
+*/  
+                            const double ran00 = rand_num_generator();
+                            xn = (kg[j] - ran00) * dxg + 1.0;
+                            ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 
-                                        xn = (kg[j] - ran00) * dxg + 1.0;
-                                        ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
+                            if (ia[j] > 1) {
+                                xo = xi[j * ndmx_p1 + ia[j]] - xi[j * ndmx_p1 + ia[j] - 1];
+                                rc = xi[j * ndmx_p1 + ia[j] - 1] + (xn - ia[j]) * xo;
+                            } else {
+                                xo = xi[j * ndmx_p1 + ia[j]];
+                                rc = (xn - ia[j]) * xo;
+                            }
 
-                                        if (ia[j] > 1) {
-                                                xo = xi[j * ndmx_p1 + ia[j]] - xi[j * ndmx_p1 + ia[j] - 1];
-                                                rc = xi[j * ndmx_p1 + ia[j] - 1] + (xn - ia[j]) * xo;
-                                        } else {
-                                                xo = xi[j * ndmx_p1 + ia[j]];
-                                                rc = (xn - ia[j]) * xo;
-                                        }
-
-                                        x[j] = regn[j] + rc * dx[j];
-                                        wgt *= xo * xnd;
-                                }
-                                
-                                for(int dim = 0; dim <= ndim; dim++)
-                                    xx[dim] = x[dim+1];
-                                
-                                double tmp = gpu::apply(*d_integrand, xx);
-            
-                                f = wgt * tmp;
-                                f2 = f * f;
-
-                                fb += f;
-                                f2b += f2;
-
-
-                                atomicAdd(&d[ia[1]*mxdim_p1 + 1], /*fabs(f)*/f2);
-
-                        }  // end of npg loop
-
-                        f2b = sqrt(f2b * npg);
-                        f2b = (f2b - fb) * (f2b + fb);
-
-                        if (f2b <= 0.0) 
-                            f2b=TINY;
-
-                        fbg += fb;
-                        f2bg += f2b;
-
-                        for (int k = ndim; k >= 1; k--) {
-                                kg[k] %= ng;
-                                if (++kg[k] != 1) break;
+                            x[j] = regn[j] + rc * dx[j];
+                            wgt *= xo * xnd;
                         }
+                                
+                        for(int dim = 0; dim <= ndim; dim++)
+                            xx[dim] = x[dim+1];
+                                
+                            double tmp = gpu::apply(*d_integrand, xx);
+            
+                            f = wgt * tmp;
+                            f2 = f * f;
+
+                            fb += f;
+                            f2b += f2;
+
+                            atomicAdd(&d[ia[1]*mxdim_p1 + 1], /*fabs(f)*/f2);
+
+                    }  // end of npg loop
+
+                    f2b = sqrt(f2b * npg);
+                    f2b = (f2b - fb) * (f2b + fb);
+
+                    if (f2b <= 0.0) 
+                        f2b=TINY;
+
+                    fbg += fb;
+                    f2bg += f2b;
+
+                    for (int k = ndim; k >= 1; k--) {
+                        kg[k] %= ng;
+                        if (++kg[k] != 1) break;
+                    }
 
                 } //end of chunk for loop
             } // end of subcube if
@@ -223,7 +235,7 @@ __global__ void vegas_kernel(IntegT* d_integrand,
             }
 }
 
-template<typename IntegT, int ndim>
+template<typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 __global__ void vegas_kernelF(IntegT* d_integrand, 
                                 int ng, 
                                 int npg, 
@@ -242,13 +254,15 @@ __global__ void vegas_kernelF(IntegT* d_integrand,
                                 double ing,
                                 int chunkSize, 
                                 uint32_t totalNumThreads,
-                                int LastChunk) {
+                                int LastChunk,
+                                unsigned int seed_init) {
         
         
       constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
       constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
       constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-      
+
+/*      
 #ifdef CUSTOM
         uint64_t temp;
         uint32_t a = 1103515245;
@@ -258,9 +272,9 @@ __global__ void vegas_kernelF(IntegT* d_integrand,
         expi = 31;
         uint32_t p = one << expi;
 #endif
-
-        uint32_t seed, seed_init;
-        seed_init = (iter) * ncubes;
+*/
+        //uint32_t seed, seed_init;
+        //seed_init = (iter) * ncubes;
 
         uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
         int tx = threadIdx.x;
@@ -278,12 +292,15 @@ __global__ void vegas_kernelF(IntegT* d_integrand,
             
             if (m == totalNumThreads - 1) 
                 chunkSize = LastChunk;
-            
-            seed = seed_init + m * chunkSize;
+            Random_num_generator<GeneratorType> rand_num_generator(seed_init);
+
+            //seed = seed_init + m * chunkSize;
+/*            
 #ifdef CURAND
             curandState localState;
             curand_init(seed, 0, 0, &localState);
 #endif
+*/
             fbg = f2bg = 0.0;
             for (int t = 0; t < chunkSize; t++) {
                 fb = f2b = 0.0;
@@ -291,6 +308,7 @@ __global__ void vegas_kernelF(IntegT* d_integrand,
                 for ( k = 1; k <= npg; k++) {
                     wgt = xjac;
                     for ( j = 1; j <= ndim; j++) {
+/*
 #ifdef CUSTOM
                                         temp =  a * seed + c;
                                         seed = temp & (p - 1);
@@ -299,7 +317,8 @@ __global__ void vegas_kernelF(IntegT* d_integrand,
 #ifdef CURAND
                         ran00 = curand_uniform(&localState);
 #endif
-
+*/
+                        ran00 = rand_num_generator();
                         xn = (kg[j] - ran00) * dxg + 1.0;
                         iaj   = IMAX(IMIN((int)(xn), ndmx), 1);
 
@@ -378,7 +397,7 @@ void rebin(double rc, int nd, double r[], double xin[], double xi[])
         // printf("---------------------\n");
 }
 
-template<typename IntegT, int ndim>
+template<typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 void vegas1D(IntegT integrand,
            double epsrel,
            double epsabs,
@@ -392,6 +411,8 @@ void vegas1D(IntegT integrand,
            int skip, 
            quad::Volume<double, ndim> const* vol)
 {
+       auto t0 = std::chrono::high_resolution_clock::now();
+    
        constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
        constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
        constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
@@ -501,6 +522,10 @@ void vegas1D(IntegT integrand,
             cudaMemset(d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1));
             cudaMemset(result_dev, 0, 2 * sizeof(double));
 
+
+             MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+            unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);
+            
             vegas_kernel<IntegT, ndim> <<<nBlocks, nThreads>>>
                     (d_integrand, 
                     ng, 
@@ -520,7 +545,8 @@ void vegas1D(IntegT integrand,
                     ing, 
                     chunkSize,
                     totalNumThreads, 
-                    LastChunk);
+                    LastChunk,
+                    seed + it);
 
 
 
@@ -604,6 +630,10 @@ void vegas1D(IntegT integrand,
 
         cudaMemset(result_dev, 0, 2 * sizeof(double));
 
+
+        using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>; 
+        MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+        unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);    
         vegas_kernelF <IntegT, ndim><<< nBlocks, nThreads>>>(d_integrand, 
                     ng, 
                     npg, 
@@ -622,7 +652,8 @@ void vegas1D(IntegT integrand,
                     ing, 
                     chunkSize, 
                     totalNumThreads,
-                    LastChunk);
+                    LastChunk,
+                    seed + it);
         cudaMemcpy(result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
 
                 //printf("ti is %f", ti);
@@ -666,7 +697,7 @@ void vegas1D(IntegT integrand,
 
 }
 
-template<typename T, typename IntegT, int ndim>
+template<typename T, typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 cuhreResult<T>
 integrate1D(IntegT integrand, 
                     double epsrel, 
@@ -696,7 +727,7 @@ integrate1D(IntegT integrand,
 }
 
 
-template<typename T, typename IntegT, int ndim>
+template<typename T, typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 cuhreResult<T>
 simple_integrate1D(IntegT integrand, 
                     double epsrel, 
