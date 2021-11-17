@@ -52,42 +52,31 @@ struct Structures {
 };
 
 struct cuhreResult {
-
-  cuhreResult()
-  {
-    estimate = 0.;
-    errorest = 0.;
-    neval = 0.;
-    nregions = 0.;
-    status = 0.;
-    //activeRegions = 0.;
-    phase2_failedblocks = 0.;
-	lastPhase = 0;
-    nFinishedRegions = 0;
-  };
-
-  double estimate;
-  double errorest;
-  size_t neval;
-  size_t nregions;
-  size_t nFinishedRegions;
-  int status;
-  int lastPhase;
+  double estimate = 0.0;
+  double errorest = 0.0
+  size_t neval = 0;
+  size_t nregions = 0;
+  size_t nFinishedRegions = 0;
+  int status = 0;
+  int lastPhase = 0;
   //size_t activeRegions;    // is not currently being set
-  size_t phase2_failedblocks; // is not currently being set
+  size_t phase2_failedblocks = 0; // is not currently being set
 };
 
 struct Result {
-  double avg, err;
-  int bisectdim;
+  double avg = 0.0;
+  double err = 0.0;
+  int bisectdim = 0;
 };
 
 struct Bounds {
-  double lower, upper;
+  double lower = 0.0;
+  double upper = 0.0;
 };
 
 struct GlobalBounds {
-  double unScaledLower, unScaledUpper;
+  double unScaledLower = 0.0;
+  double unScaledUpper = 0.0;
 };
 
 class Managed 
