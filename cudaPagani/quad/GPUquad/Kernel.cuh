@@ -2048,12 +2048,6 @@ namespace quad {
                                activeRegions);
       integral += iter_finished_estimate;
       error += iter_finished_errorest;
-      printf("%i, %.15f, %.15f, %.15f, %.15f numRegions:%lu\n", iteration,
-       leaves_estimate, leaves_errorest, iter_estimate, iter_errorest,
-	     numRegions); //printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),
-      // numRegions:%lu\n", iteration, iter_estimate, iter_errorest,
-      // iter_estimate, iter_errorest, numRegions);
-      // printf("-----------------------\n");
       Phase_I_PrintFile(vol,
                         numRegions,
                         activeRegions,
