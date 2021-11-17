@@ -74,21 +74,6 @@ struct cuhreResult {
   double chi_sq = 0.;
 };*/
 
-
-template <typename T>
-std::ostream& operator<<(std::ostream& os, cuhreResult<T> const& r) {
-  os << r.estimate << ' '
-    << r.errorest << ' '
-    << r.neval << ' '
-    << r.nregions << ' '
-    << r.nFinishedRegions << ' '
-    << r.status << ' '
-    << r.lastPhase << ' '
-    << r.phase2_failedblocks << ' '
-    << r.chi_sq;
-  return os;
-}
-
 struct Result {
   double avg, err;
   int bisectdim;
