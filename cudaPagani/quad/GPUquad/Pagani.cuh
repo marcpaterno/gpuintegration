@@ -15,29 +15,27 @@ namespace quad {
   template <typename T, int NDIM>
   class Pagani {
 
-    // Debug message
-    char msg[256];
     int KEY;
 
     int VERBOSE;
     int numDevices;
 
-    int argc;
-    char** argv;
-
-    T epsrel, epsabs;
+    T epsrel;
+    T epsabs;
     Kernel<T, NDIM>* kernel;
     std::ofstream log;
+    int* leak;
 
   public:
     // Note that this also acts as the default constructor.
-    explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1)
+    explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1) :
+      KEY(key),
+      VERBOSE(verbose),
+      numDevices(numDevices),
+      epsrel(0.0),
+      epsabs(0.0),
+      kernel(new Kernel<T, NDIM>(std::cout))
     {
-      // QuadDebug(cudaDeviceReset());
-      KEY = key;
-      VERBOSE = verbose;
-      this->numDevices = numDevices;
-      kernel = new Kernel<T, NDIM>(std::cout);
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
@@ -52,7 +50,6 @@ namespace quad {
       // QuadDebug(cudaDeviceReset());
     }
 
-#define TAG 0
     template <typename IntegT>
     int
     ExecutePhaseI(IntegT* d_integrand,
