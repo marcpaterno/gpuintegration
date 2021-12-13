@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include "vegas/vegasT.cuh"
+#include "vegas/vegasT1D.cuh"
 #include <map>
 #include <string>
 
@@ -30,7 +31,7 @@ struct VegasParams{
 };
 
 void PrintHeader(){
-    std::cout << "id, epsrel, integral, estimate, std, chi, iters, adj_iters, skip_iters, ncall, neval,"
+    std::cout << "id, epsrel, integral, estimate, errorest, chi, iters, adj_iters, skip_iters, completed_iters, ncall, neval,"
                "time, status\n";
 }
 
@@ -49,18 +50,16 @@ mcubes_time_and_call(F integrand,
   // We make epsabs so small that epsrel is always the stopping condition.
   double constexpr epsabs = 1.0e-20;
   bool success = false;
+  int run = 0;
+  
   do{
-      //constexpr bool MCUBES_DEBUG = false;
-      //std::cout<<"Trying with "<< params.ncall << " and "<< params.num_adjust_iters<< " adjust iters\n";
-      double exp_epsrel = epsrel*.5;
       auto t0 = std::chrono::high_resolution_clock::now();
       auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>
-        (integrand, ndim, exp_epsrel, epsabs, params.ncall, volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+        (integrand, epsrel, epsabs, params.ncall, volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
       success = (res.status == 0);
       std::cout.precision(15);
-	  
-      //std::cout<<"absolute:"<<std::abs(res.estimate - correct_answer)<<"\n";
+
       if(success)
 		std::cout << integralName << "," 
             << epsrel << ","
@@ -71,11 +70,68 @@ mcubes_time_and_call(F integrand,
             << params.t_iter <<","
             << params.num_adjust_iters << ","
             << params.num_skip_iters << ","
+			<< res.iters << "," 
             << params.ncall <<","
             << res.neval <<","
             << dt.count() << ","
             << res.status << "\n";
-  }while (success == false && AdjustParams(params.ncall, params.t_iter) == true);
+            
+      if(run == 0 && !success)  
+        AdjustParams(params.ncall, params.t_iter);
+      if(success)
+        run++;
+  }while (success == false && CanAdjustNcallOrIters(params.ncall, params.t_iter) == true);
+  
+  return success;
+}
+
+template <typename F, int ndim, bool MCUBES_DEBUG = false, typename GeneratorType = Curand_generator>
+bool
+mcubes1D_time_and_call(F integrand,
+              double epsrel,
+              double correct_answer,
+              char const* integralName,
+              VegasParams& params,
+              quad::Volume<double, ndim>* volume)
+{
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+  double constexpr epsabs = 1.0e-20;
+  bool success = false;
+  int run = 0;
+  do{
+      
+      double exp_epsrel = epsrel/**.5*/;
+	  //std::cout<<"Trying with ncall:"<<ncall<<"\n";
+      auto t0 = std::chrono::high_resolution_clock::now();
+      auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>
+        (integrand, exp_epsrel, epsabs, params.ncall, volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+      success = (res.status == 0);
+      std::cout.precision(15);
+	        
+      if(success)
+		std::cout << integralName << "," 
+            << epsrel << ","
+            << std::scientific << correct_answer << "," 
+            << std::scientific << res.estimate << "," 
+            << std::scientific << res.errorest << "," 
+            << res.chi_sq << "," 
+            << params.t_iter <<","
+            << params.num_adjust_iters << ","
+            << params.num_skip_iters << ","
+			<< res.iters << "," 
+            << params.ncall <<","
+            << res.neval <<","
+            << dt.count() << ","
+            << res.status << "\n";
+            
+    if(run == 0 && !success)  
+        AdjustParams(params.ncall, params.t_iter);
+    if(success)
+        run++;
+  }while (success == false && CanAdjustNcallOrIters(params.ncall, params.t_iter) == true);
   
   return success;
 }
