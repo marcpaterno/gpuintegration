@@ -16,6 +16,7 @@ struct cuhreResult {
   int lastPhase = -1;
   size_t phase2_failedblocks = 0; // is not currently being set
   double chi_sq = 0.;
+  size_t iters = 0;
 };
 
 template<typename T>
