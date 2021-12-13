@@ -21,7 +21,7 @@ main(int argc, char** argv)
 
   constexpr int ndim = 6;
   double ncall = 2.0e9;
-  int titer = 50;
+  int titer = 10;
   int itmax = 0;
   int skip = 0;
   VegasParams params(ncall, titer, itmax, skip);
@@ -38,7 +38,7 @@ main(int argc, char** argv)
     
   constexpr bool MCUBES_DEBUG = false;  
   auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = cuda_mcubes::integrate<SinSum6D, ndim, MCUBES_DEBUG>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  auto res = cuda_mcubes::integrate<SinSum6D, ndim, MCUBES_DEBUG>(integrand, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     
   std::cout.precision(15);
@@ -51,6 +51,7 @@ main(int argc, char** argv)
             << params.t_iter <<","
             << params.num_adjust_iters << ","
             << params.num_skip_iters << ","
+            << res.iters << ","
             << params.ncall <<","
             << res.neval <<","
             << dt.count() << ","
