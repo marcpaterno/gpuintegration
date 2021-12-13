@@ -331,6 +331,13 @@ int GetChunkSize(const double ncall){
   this maximum is not configurable by the user, placeholder values are currently placed
  */
 
+bool CanAdjustNcallOrIters(double ncall, int totalIters){
+    if (ncall >= 8.e9 && totalIters >= 100)
+        return false;
+    else
+        return true;
+}
+
 bool
 AdjustParams(double& ncall, int& totalIters)
 {
