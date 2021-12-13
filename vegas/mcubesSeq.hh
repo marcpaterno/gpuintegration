@@ -334,7 +334,6 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
     //std::cout<<"finished resetting contributions for new iteration\n";
     
     for (int m = 0; m < ncubes; m++) {
-      //get_indx(m, &kg[1], ng, ndim); //kg array will have the index for each subcube in every dimension
       get_indx(m, &kg[1], ndim, ng); //replaced the line above with this, edited by Ioannis  
       fb = f2b = 0.0;
       
@@ -343,57 +342,30 @@ void vegas_mcubes(IntegT integrand, double regn[], int ndim, int init,
         for (j = 1; j <= ndim; j++) {
             
             ran00 = ran2(&idum);
-            //printf("got random number %f kg:%i ncubes:%i dxg:%f\n", ran00, kg[j], ncubes, dxg);
             xn = (kg[j] - ran00) * dxg + 1.0;
-            //printf(" %4d %4d %4d     %.8f %.8f\n", nscubes, j, kg[j], xn, dxg);
-            //randa[ridx] = ran00;
 
             ia[j] = IMAX(IMIN((int)(xn), NDMX), 1);
-            //printf("Selected bin %i\n", ia[j]);
 	  
             //getting the lb and rb for each bin for calculating the probability
             if (ia[j] > 1) {
                 xo=xi[j][ia[j]]-xi[j][ia[j]-1];  //calculating the length of the bin
                 rc=xi[j][ia[j]-1]+(xn-ia[j])*xo;
-                //printf("computing point xo:%f xn:%f binBounds:%f, %f\n", xo, xn,  xi[j][ia[j]-1], xi[j][ia[j]]);
             } else {
                 xo=xi[j][ia[j]];
                 rc=(xn-ia[j])*xo;   
-                //printf("computing point b xo:%f xn:%f binBounds:%f\n", xo, xn, xi[j][ia[j]]);
             }
 
             x[j] = regn[j] + rc * dx[j]; //generating random number for every dimension
-            //printf("calculating x[%i] min:%f range:%f actual point:%f\n", j, regn[j], dx[j], rc);
             wgt *= xo * xnd;  // calculating probability xnd=ndmx = 50
-            //printf("calculating wgt\n");
         }
-        //calculating and aggregating the sum of f^2 in all the subcubes storing it in the array d 
-        //f = wgt * (*fxn)(x);
-        //std::cout<<"Creating array of size:"<<NDIM<<"\n";
+  
         std::array<double, NDIM> xx;
         for(int dim = 0; dim<NDIM; ++dim)
           xx[dim]=x[dim+1];
-        //printf("array %f, %f, %f, %f, %f, %f\n", xx[0], xx[1], xx[2], xx[3], xx[4], xx[5]);
         double tmp = std::apply(integrand, xx);
 
         f = wgt * tmp;
-       
-       /*if(OUTPUT == 3){
-            intervals_outfile<<it<<",";
-            for(int dim = 1; dim <= ndim; dim++)
-                intervals_outfile<<kg[dim]<<",";
-            intervals_outfile<<",";
-            intervals_outfile<<f<<"\n";
-        }*/
-            
-        //std::cout << "it:" << it << " ncube:" << m << " npg" << k << " f:" << f << " tmp:"<< tmp<<  "\n";
-        
-        /*if(OUTPUT <= 3){
-            eval_outfile << it << "," << m << "," << k << "," << xx[0] << ","
-                << xx[1] << "," << xx[2] << "," << xx[3] << "," << xx[4] << ","
-                << xx[5] << "," << tmp << "," << f << "\n";
-        }*/
-        
+  
         f2 = f * f;
         fb += f;
         f2b += f2;
