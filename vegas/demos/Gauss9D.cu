@@ -30,7 +30,7 @@ main(int argc, char** argv)
   double epsrel_min = 1e-9;
   constexpr int ndim = 9;
   double epsabs = 1.e-20;
-  double ncall = 1.0e7;
+  double ncall = 1.0e8;
   int titer = 15;
   int itmax = 10;
   int skip = 10;
@@ -46,38 +46,29 @@ main(int argc, char** argv)
   
   Gauss9D integrand;
       
-  /*while(mcubes_time_and_call<Gauss9D, ndim>
-    (integrand, epsrel, true_value, "Gauss9D", params, &volume) == true && epsrel >= epsrel_min){
-        epsrel /= 5.;
-    }*/
-using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
+  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
   constexpr bool MCUBES_DEBUG = false;
-  auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = cuda_mcubes::integrate<Gauss9D, ndim, MCUBES_DEBUG>(integrand, ndim, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
-  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  std::cout << "Gauss9D" << "," 
+  for(int run = 0; run < 100; run++){
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = cuda_mcubes::integrate<Gauss9D, ndim, MCUBES_DEBUG>(integrand, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+                
+    std::cout << "Gauss9D" << "," 
+            << epsrel << ","
             << std::scientific << true_value << "," 
             << std::scientific << res.estimate << "," 
             << std::scientific << res.errorest << "," 
-            << dt.count() << "\n";  
-  
-  
-  res = mcubes1D::integrate1D<double, Gauss9D, ndim>(integrand, 
-        epsrel, 
-        epsabs, 
-        params.ncall, 
-        &volume, 
-        titer, 
-        itmax, 
-        skip);  
-    
+            << res.chi_sq << "," 
+            << params.t_iter <<","
+            << params.num_adjust_iters << ","
+            << params.num_skip_iters << ","
+			<< res.iters << "," 
+            << params.ncall <<","
+            << res.neval <<","
+            << dt.count() << ","
+            << res.status << "\n";      
+    break;
+  }
 
-  std::cout.precision(15);
-  printf("-----------------------\n");
-  std::cout << "Gauss9DD" << "," 
-            << std::scientific << true_value << "," 
-            << std::scientific << res.estimate << "," 
-            << std::scientific << res.errorest << "," 
-            << dt.count() << "\n";
   return 0;
 }
