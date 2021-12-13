@@ -184,7 +184,6 @@ get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
     t1 = m / t0;
     da[j] = 1 + t1;
     m = m - t1 * t0;
-    
   }
 }
 
@@ -208,7 +207,8 @@ void Test_get_indx(int ndim, int ng, uint32_t totalNumThreads, int chunkSize, in
 template <int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = Curand_generator>
 __inline__ __device__
 void Setup_Integrand_Eval(Random_num_generator<GeneratorType>* rand_num_generator,
-                            double xnd, double dxg, 
+                            double xnd, 
+                            double dxg, 
                             const double* const xi, const double* const regn, const double* const dx, 
                             const uint32_t* const kg, 
                             int* const ia, 
@@ -237,14 +237,25 @@ void Setup_Integrand_Eval(Random_num_generator<GeneratorType>* rand_num_generato
                 size_t nums_per_cube = npg*ndim;
                 size_t nums_per_sample = ndim;
                 size_t index = cube_id*nums_per_cube + nums_per_sample*(sampleID-1) + j-1;
-                randoms[index] = ran00;
+                //randoms[index] = ran00;
             }
           }
-
-          const double xn = (kg[j] - ran00) * dxg + 1.0;
+           /*if(cube_id == 0)
+              printf("dim :%i kg:%i ran:%f dxg:%f xn:%f\n", 
+                j, kg[j], ran00, dxg, (kg[j] - ran00) * dxg + 1.0);*/
+                
+                
+          //kg[j]-ran00 this essentially determines how far left or how far right in the interval is the bin we are drawing randomly, but it's expressed as a percentage. 
+          //random numbers close to zero mean to the right of the interval
+          //random numbers close to one mean to the left of the interval
+          //we multiply by dxg, which represents how many bins per interval there are
+          //this multiplication scales to which of the 500 bins this lands on. 
+          //thus, we are essentially choosing randomly and with equal probability which of the bins that correspond to the interval, will we choose for the sample point we are trying to generate
+          //this means that when we are processing a sub-cube, we are choosing randomly selecting one of the available bins that overlap with the interval
+          const double xn = (kg[j] - ran00) * dxg + 1.0; 
           double rc = 0., xo = 0.;
           ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
-                
+          
           if (ia[j] > 1) {
             xo = (xi[j * ndmx1 + ia[j]]) - (xi[j * ndmx1 + ia[j] - 1]); //bin length
             rc = (xi[j * ndmx1 + ia[j] - 1]) + (xn - ia[j]) * xo; //scaling ran00 to bin bounds
@@ -281,21 +292,21 @@ Process_npg_samples(IntegT* d_integrand,
       for (int k = 1; k <= npg; k++) {
           
         double wgt = xjac;
-        Setup_Integrand_Eval<ndim, DEBUG_MCUBES, GeneratorType>(rand_num_generator, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt,/* _seed, temp,*/ npg, /*chunkID,*/ k, /*chunkSize,*/ cube_id, randoms);
+        Setup_Integrand_Eval<ndim, DEBUG_MCUBES, GeneratorType>(rand_num_generator, xnd, dxg, xi, regn, dx, kg,  ia, x, wgt, npg, k, cube_id, randoms);
         
         gpu::cudaArray<double, ndim> xx;             
         for (int i = 0; i < ndim; i++) {
           xx[i] = x[i + 1];                       
         }
         
-        double tmp = gpu::apply(*d_integrand, xx);
-        double f = wgt * tmp;     
+        const double tmp = gpu::apply(*d_integrand, xx);
+        const double f = wgt * tmp;     
                
         if constexpr(DEBUG_MCUBES){
             if(funcevals != nullptr){
                 size_t nums_evals_per_cube = npg;
                 size_t index = cube_id*nums_evals_per_cube + (k-1);
-                funcevals[index] = f;
+                //funcevals[index] = f;
             }
         }
         
@@ -353,6 +364,7 @@ void Process_chunks(IntegT* d_integrand,
       
       for (int k = ndim; k >= 1; k--) {
         kg[k] %= ng;
+        
         if (++kg[k] != 1)
           break;
       }
@@ -394,9 +406,9 @@ vegas_kernel(IntegT* d_integrand,
   double fbg = 0., f2bg = 0.;
   
   if (m < totalNumThreads){
-    
+        
     size_t cube_id_offset = (blockIdx.x * blockDim.x + threadIdx.x)*chunkSize;
- 
+    
     if (m == totalNumThreads - 1)
       chunkSize = LastChunk;
     
@@ -461,7 +473,7 @@ vegas_kernelF(IntegT* d_integrand,
   if (m < totalNumThreads) {
     
     if (m == totalNumThreads - 1)
-      chunkSize = LastChunk /*+ 1*/;
+      chunkSize = LastChunk;
   
     Random_num_generator<GeneratorType> rand_num_generator(seed_init);
 
@@ -472,21 +484,20 @@ vegas_kernelF(IntegT* d_integrand,
     for (int t = 0; t < chunkSize; t++) {
       fb = f2b = 0.0;
  
-      //if constexpr(mcubes::is_same<GeneratorType, Custom_generato>())
       if constexpr (mcubes::TypeChecker<GeneratorType, Custom_generator>::is_custom_generator()){
         rand_num_generator->SetSeed(cube_id_offset + t);
       }
       
       for (k = 1; k <= npg; k++) {
-        wgt = xjac;
-
+        wgt = xjac; 
         for (j = 1; j <= ndim; j++) {
-
+          
+          
           ran00 = rand_num_generator();
           xn = (kg[j] - ran00) * dxg + 1.0;
           iaj = IMAX(IMIN((int)(xn), ndmx), 1);
         
-	  if (iaj > 1) {          
+          if (iaj > 1) {          
             xo = xi[j * ndmx_p1 + iaj] - xi[j * ndmx_p1 + iaj - 1];
             rc = xi[j * ndmx_p1 + iaj - 1] + (xn - iaj) * xo;
           } else {
@@ -509,13 +520,14 @@ vegas_kernelF(IntegT* d_integrand,
         f = wgt * tmp; 
         f2 = f * f;    
         
-        fb += f;
-        f2b += f2;
+        fb += f;	
+        f2b += f2;	
 
       } // end of npg loop
 
       f2b = sqrt(f2b * npg);
-      f2b = (f2b - fb) * (f2b + fb); // this is equivalent to s^(2) - (s^(1))^2
+      //double example = f2b;
+      f2b = (f2b - fb) * (f2b + fb); 
       
       if (f2b <= 0.0) 
           f2b=TINY;
@@ -568,8 +580,6 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
     xi[i] = xin[i];
   xi[nd] = 1.0;
   
-	// for (i=1;i<=nd;i++) printf("xi[%i]: %.10e\n", i, xi[i]);
-	// printf("---------------------\n");
 }
 
 template <typename IntegT, int ndim, bool DEBUG_MCUBES = false, typename GeneratorType = typename::Curand_generator>
@@ -582,6 +592,7 @@ vegas(IntegT integrand,
       double* sd,
       double* chi2a,
       int* status,
+	  size_t* iters,
       int titer,
       int itmax,
       int skip,
@@ -639,7 +650,6 @@ vegas(IntegT integrand,
   double sci = 1.0 / k;  //I dont' think that's used anywhere
   double sc = k;         //I dont' think that's used either
   k *= ng;
-  
   ncubes = k;
   
   npg = IMAX(ncall / k, 2);
@@ -647,12 +657,13 @@ vegas(IntegT integrand,
   //assert(ncubes == ComputeNcubes(ncall, ndim)); //to replace line directly above
 
   calls = (double)npg * (double)k;
-  dxg = 1.0 / ng;
+  dxg = 1.0 / ng;   
   
   double ing = dxg;
   for (dv2g = 1, i = 1; i <= ndim; i++)
     dv2g *= dxg;
   dv2g = (calls * dv2g * calls * dv2g) / npg / npg / (npg - 1.0);
+
   xnd = nd;
   dxg *= xnd;
   xjac = 1.0 / calls;
@@ -699,13 +710,12 @@ vegas(IntegT integrand,
 
   int chunkSize = GetChunkSize(ncall);
 
-  //uint32_t _totalNumThreads = (static_cast<uint32_t>(ncubes) % chunkSize) == 0 ? (uint32_t)((ncubes) / chunkSize) : (uint32_t)((ncubes) / chunkSize/* + 1*/);//there is no extra thread, there should be extra work on the last thread instead      
+
   uint32_t totalNumThreads = (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
-  //assert(_totalNumThreads == totalNumThreads);
   
   uint32_t totalCubes = totalNumThreads * chunkSize;    //even-split cubes
   int extra = ncubes - totalCubes;                      //left-over cubes
-  int LastChunk = /*chunkSize -*/ extra + chunkSize;    //last chunk of last thread
+  int LastChunk = extra + chunkSize;    //last chunk of last thread
   
   uint32_t nBlocks =
     ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;   //compute blocks based on chunk_size, ncubes, and block_dim_x
@@ -718,17 +728,19 @@ vegas(IntegT integrand,
   std::cout<<"k:"<<k<<"\n";
   std::cout<<"npg:"<<npg<<"\n";
   std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
-  std::cout<<"_totalNumThreads:"<<_totalNumThreads<<"\n";
+  //std::cout<<"_totalNumThreads:"<<_totalNumThreads<<"\n";
   std::cout<<"totalCubes:"<<totalCubes<<"\n";
   std::cout<<"chunkSize:"<<chunkSize<<"\n";
   std::cout<<"dv2g:"<<dv2g<<"\n";
   std::cout<<"extra:"<<extra<<"\n";
   std::cout<<"LastChunk:"<<LastChunk<<"\n";
+  std::cout<<"nBlocks:"<<nBlocks<<"\n";
+  std::cout<<"dxg:"<<dxg<<"\n";
   std::cout<<"-------------------\n";*/
   
   IterDataLogger<DEBUG_MCUBES> data_collector(totalNumThreads, chunkSize, extra, npg, ndim);
   
-  for (it = 1; it <= itmax && (*status) == 1; it++) {
+  for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
     ti = tsi = 0.0;
     for (j = 1; j <= ndim; j++) {
       for (i = 1; i <= nd; i++)
@@ -748,7 +760,6 @@ vegas(IntegT integrand,
     
     MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
     unsigned int seed = static_cast<unsigned int>(time_diff.count()) + static_cast<unsigned int>(it);
-    
     vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType><<<nBlocks, nThreads>>>(d_integrand,
                                                       ng,
                                                       npg,
@@ -772,10 +783,6 @@ vegas(IntegT integrand,
                                                       data_collector.randoms, 
                                                       data_collector.funcevals);
     
-
-
-    
-    
     cudaMemcpy(xi,
                xi_dev,
                sizeof(double) * (mxdim_p1) * (ndmx_p1),
@@ -793,10 +800,27 @@ vegas(IntegT integrand,
 
     ti = result[0];
     tsi = result[1];
-
     tsi *= dv2g;
+	
+	
+	/*
+	dxg = (1.0 / ng) * (xnd);  
+	for (dv2g = 1, i = 1; i <= ndim; i++)
+		dv2g *= dxg;
+	//which means that up till now ,dvg = (1/calls)*(1/calls)*(1/calls)***(1/calls)
+	dv2g = (calls * dv2g * calls * dv2g) / npg / npg / (npg - 1.0);
+	
+	ti = T_n/n 
+		(because of wgt, 
+			which we multiply every funceval with, 
+				contains xo*numBins*(1/calls)
+	
+	then
+	tsi is ((Q_n)^2)
+	
+	*/
     //printf("-------------------------------------------\n");
-    printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
+    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
     
     if (it > skip) {
       wgt = 1.0 / tsi;         
@@ -810,12 +834,14 @@ vegas(IntegT integrand,
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
+	  //printf("%i %.15f +- %.15f iteration: %.15f +- %.15f chi:%.15f\n", it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
+
     }
     
     if constexpr (DEBUG_MCUBES == true){
         data_collector.PrintBins(it, xi, d, ndim);
-        data_collector.PrintRandomNums(it, ncubes, npg, ndim);   
-        data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        //data_collector.PrintRandomNums(it, ncubes, npg, ndim);   
+        //data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
         data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
     }
     
@@ -833,10 +859,8 @@ vegas(IntegT integrand,
         d[i * mxdim_p1 + j] = (rc + xn) / 3.0;
         dt[j] += d[i * mxdim_p1 + j];
       }
-
      
       d[nd * mxdim_p1 + j] = (xo + xn) / 2.0;  // do bin nd last
-
       dt[j] += d[nd * mxdim_p1 + j];
     }
 
@@ -867,7 +891,7 @@ vegas(IntegT integrand,
              cudaMemcpyHostToDevice);
   cudaCheckError();
 
-  for (it = itmax + 1; it <= titer && (*status); it++) {    
+  for (it = itmax + 1; it <= titer && (*status); (*iters)++, it++) {    
     ti = tsi = 0.0;
     cudaMemset(result_dev, 0, 2 * sizeof(double));
     
@@ -900,8 +924,7 @@ vegas(IntegT integrand,
     ti = result[0];
     tsi = result[1];
     tsi *= dv2g;
-    printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
-        
+    //printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it, ti, sqrt(tsi), tsi, dv2g);
         
 	wgt = 1.0 / tsi;       
 	si += wgt * ti;         
@@ -913,13 +936,12 @@ vegas(IntegT integrand,
 	if (*chi2a < 0.0) *chi2a = 0.0;
 	*sd = sqrt(1.0 / swgt);
 	tsi = sqrt(tsi);
-
     *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-    
+    //printf("%i, %.15f,  %.15f, %.15f, %.15f, %.15f\n", it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
     if constexpr(DEBUG_MCUBES){
         data_collector.PrintBins(it, xi, d, ndim);
-        data_collector.PrintRandomNums(it, ncubes, npg, ndim);   
-        data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        //data_collector.PrintRandomNums(it, ncubes, npg, ndim);   
+        //data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
         data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
     }                  
     //printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n", it, *tgral, *sd, *chi2a);
@@ -947,7 +969,6 @@ vegas(IntegT integrand,
 template <typename IntegT, int NDIM, bool DEBUG_MCUBES = false, typename GeneratorType = typename::Curand_generator>
 cuhreResult<double>
 integrate(IntegT ig,
-          int ndim,
           double epsrel,
           double epsabs,
           double ncall,
@@ -967,6 +988,7 @@ integrate(IntegT ig,
                       &result.errorest,
                       &result.chi_sq,
                       &result.status,
+					  &result.iters,
                       totalIters,
                       adjustIters,
                       skipIters,
@@ -977,7 +999,6 @@ integrate(IntegT ig,
 template <typename IntegT, int NDIM, bool DEBUG_MCUBES = false, typename GeneratorType = typename::Curand_generator>
 cuhreResult<double>
 simple_integrate(IntegT integrand,
-                 int ndim,
                  double epsrel,
                  double epsabs,
                  double ncall,
@@ -999,6 +1020,7 @@ simple_integrate(IntegT integrand,
                         &result.errorest,
                         &result.chi_sq,
                         &result.status,
+						&result.iters,
                         totalIters,
                         adjustIters,
                         skipIters,

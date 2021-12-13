@@ -29,7 +29,6 @@ quad::mcubes::integrate(
 {
   constexpr std::size_t ndim = cubacpp::arity<F>();
   return cuda_mcubes::simple_integrate<F, ndim>(f,
-                                   ndim,
                                    epsrel,
                                    epsabs,
                                    static_cast<double>(maxcalls),
