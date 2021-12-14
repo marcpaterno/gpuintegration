@@ -33,9 +33,9 @@ namespace quad {
 
     ~Interp2D()
     {
-      // cudaFree(interpT);
-      // cudaFree(interpR);
-      // cudaFree(interpC);
+       cudaFree(interpT);
+       cudaFree(interpR);
+       cudaFree(interpC);
     }
 
     void

@@ -6,6 +6,7 @@
 #include "cudaPagani/quad/util/cudaMemoryUtil.h"
 #include "cudaPagani/quad/util/cudaTimerUtil.h"
 #include "cudaPagani/quad/util/str_to_doubles.hh"
+#include <assert.h> 
 
 namespace quad {
 
@@ -21,8 +22,8 @@ namespace quad {
 
     ~Interp1D()
     {
-      // cudaFree(interpT);
-      // cudaFree(interpC);
+       cudaFree(interpT);
+       cudaFree(interpC);
     }
 
     void
