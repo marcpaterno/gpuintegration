@@ -157,3 +157,11 @@ target_include_directories(Interpolation2D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(Interpolation2D Interpolation2D)
+
+add_executable(unified_mem_loop unified_mem_loop.cu)
+set_target_properties(unified_mem_loop PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(unified_mem_loop quadutil)
+target_include_directories(unified_mem_loop PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
