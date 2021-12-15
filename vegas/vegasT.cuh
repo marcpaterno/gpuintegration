@@ -228,18 +228,18 @@ void Setup_Integrand_Eval(Random_num_generator<GeneratorType>* rand_num_generato
             xi: right boundary coordinate of each bin
     */
     
-    for (int j = 1; j <= ndim; j++) {          
+    for (int j = 1; j <= ndim; j++) {
     
           const double ran00 = (*rand_num_generator)();
           
-          if constexpr(DEBUG_MCUBES){
-            if(randoms != nullptr){
-                size_t nums_per_cube = npg*ndim;
-                size_t nums_per_sample = ndim;
-                size_t index = cube_id*nums_per_cube + nums_per_sample*(sampleID-1) + j-1;
-                //randoms[index] = ran00;
-            }
-          }
+          //if constexpr(DEBUG_MCUBES) {
+          //  if(randoms != nullptr){
+          //      size_t nums_per_cube = npg*ndim;
+          //      size_t nums_per_sample = ndim;
+          //      size_t index = cube_id*nums_per_cube + nums_per_sample*(sampleID-1) + j-1;
+          //      //randoms[index] = ran00;
+          //  }
+          // }
            /*if(cube_id == 0)
               printf("dim :%i kg:%i ran:%f dxg:%f xn:%f\n", 
                 j, kg[j], ran00, dxg, (kg[j] - ran00) * dxg + 1.0);*/
@@ -302,13 +302,13 @@ Process_npg_samples(IntegT* d_integrand,
         const double tmp = gpu::apply(*d_integrand, xx);
         const double f = wgt * tmp;     
                
-        if constexpr(DEBUG_MCUBES){
-            if(funcevals != nullptr){
-                size_t nums_evals_per_cube = npg;
-                size_t index = cube_id*nums_evals_per_cube + (k-1);
-                //funcevals[index] = f;
-            }
-        }
+        // if constexpr(DEBUG_MCUBES){
+        //     if(funcevals != nullptr){
+        //         size_t nums_evals_per_cube = npg;
+        //         size_t index = cube_id*nums_evals_per_cube + (k-1);
+        //         //funcevals[index] = f;
+        //     }
+        // }
         
         double f2 = f * f;
         fb += f;
