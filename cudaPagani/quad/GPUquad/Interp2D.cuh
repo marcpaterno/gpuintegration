@@ -7,36 +7,17 @@
 #include "cudaPagani/quad/util/cudaTimerUtil.h"
 #include "cudaPagani/quad/util/str_to_doubles.hh"
 #include <assert.h>
+#include <utility>
+
 namespace quad {
 
   class Interp2D : public Managed {
-  public:
-    __host__ __device__
-    Interp2D()
-    {}
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
-    double* interpT;
-    double* interpR;
-    double* interpC;
-    size_t _rows;
-    size_t _cols;
-
-    Interp2D(const Interp2D& source)
-    {
-      Alloc(source._cols, source._rows);
-      interpT = source.interpT;
-      interpC = source.interpC;
-      interpR = source.interpR;
-      _cols = source._cols;
-      _rows = source._rows;
-    }
-
-    ~Interp2D()
-    {
-       cudaFree(interpT);
-       cudaFree(interpR);
-       cudaFree(interpC);
-    }
+    size_t _rows = 0;
+    size_t _cols = 0;
+    double* interpT = nullptr;
+    double* interpR = nullptr;
+    double* interpC = nullptr;
 
     void
     Alloc(size_t cols, size_t rows)
@@ -46,6 +27,48 @@ namespace quad {
       cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
       cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
       cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
+    }
+
+  public:
+
+    void swap(Interp2D& other)
+    {
+      std::swap(_rows, other._rows);
+      std::swap(_cols, other._cols);
+      std::swap(interpT, other.interpT);
+      std::swap(interpR, other.interpR);
+      std::swap(interpC, other.interpC);
+    }
+
+    __host__ __device__
+    Interp2D()
+    { }
+
+    Interp2D(const Interp2D& source)
+    {
+      _cols = source._cols;
+      _rows = source._rows;
+      Alloc(_cols, _rows);
+      memcpy(interpT, source.interpT, sizeof(double) * _cols * _rows);
+      memcpy(interpC, source.interpC, sizeof(double) * _cols);
+      memcpy(interpR, source.interpR, sizeof(double) * _rows);
+    }
+
+    Interp2D& operator=(Interp2D const& rhs)
+    {
+      Interp2D tmp(rhs);
+      swap(tmp);
+      return *this;
+    }
+
+    Interp2D(Interp2D&&) = delete;
+    Interp2D& operator=(Interp2D&&) = delete;
+
+    ~Interp2D()
+    {
+       cudaFree(interpT);
+       cudaFree(interpR);
+       cudaFree(interpC);
     }
 
     template <size_t M, size_t N>
@@ -100,9 +123,7 @@ namespace quad {
                  const size_t leftIndex,
                  const size_t RightIndex) const
     {
-      if (arr[leftIndex] <= val && arr[RightIndex] >= val)
-        return true;
-      return false;
+      return (arr[leftIndex] <= val && arr[RightIndex] >= val);
     }
 
     friend std::istream&

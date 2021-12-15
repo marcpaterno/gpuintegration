@@ -7,24 +7,15 @@
 #include "cudaPagani/quad/util/cudaTimerUtil.h"
 #include "cudaPagani/quad/util/str_to_doubles.hh"
 #include <assert.h> 
+#include <utility>
 
 namespace quad {
 
   class Interp1D : public Managed {
-  public:
-    __host__ __device__
-    Interp1D()
-    {}
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
-    double* interpT;
-    double* interpC;
-    size_t _cols;
-
-    ~Interp1D()
-    {
-       cudaFree(interpT);
-       cudaFree(interpC);
-    }
+    size_t _cols = 0;
+    double* interpT = nullptr;
+    double* interpC = nullptr;
 
     void
     Alloc(size_t cols)
@@ -34,7 +25,44 @@ namespace quad {
       cudaMallocManaged((void**)&interpT, sizeof(double) * _cols);
     }
 
-    template <size_t M>
+  public:
+
+    void swap(Interp1D& other)
+    {
+      std::swap(_cols, other._cols);
+      std::swap(interpT, other.interpT);
+      std::swap(interpC, other.interpC);
+    }
+
+    __host__ __device__
+    Interp1D()
+    { }
+
+    Interp1D(const Interp1D& source)
+    {
+      _cols = source._cols;
+      Alloc(source._cols);
+      memcpy(interpC, source.interpC, sizeof(double) * _cols);
+      memcpy(interpT, source.interpT, sizeof(double) * _cols);
+    }
+
+    Interp1D& operator=(Interp1D const& rhs)
+    {
+      Interp1D tmp(rhs);
+      swap(tmp);
+      return *this;
+    }
+
+    Interp1D(Interp1D&&) = delete;
+    Interp1D& operator=(Interp1D&&) = delete;
+
+    ~Interp1D()
+    {
+       cudaFree(interpT);
+       cudaFree(interpC);
+    }
+
+     template <size_t M>
     Interp1D(std::array<double, M> const& xs, std::array<double, M> const& zs)
     {
       Alloc(M);
@@ -42,22 +70,20 @@ namespace quad {
       memcpy(interpT, zs.data(), sizeof(double) * M);
     }
 
-    Interp1D(double* xs, double* zs, size_t cols)
+    Interp1D(double const* xs, double const* zs, size_t cols)
     {
       Alloc(cols);
       memcpy(interpC, xs, sizeof(double) * cols);
       memcpy(interpT, zs, sizeof(double) * cols);
     }
 
-    __device__ __host__ bool
+   __device__ __host__ bool
     AreNeighbors(const double val,
-                 double* arr,
+                 double const* arr,
                  const size_t leftIndex,
                  const size_t RightIndex) const
     {
-      if (arr[leftIndex] <= val && arr[RightIndex] >= val)
-        return true;
-      return false;
+      return (arr[leftIndex] <= val && arr[RightIndex] >= val);
     }
 
     friend std::istream&
@@ -85,15 +111,6 @@ namespace quad {
 
       return is;
     }
-
-    Interp1D(const Interp1D& source)
-    {
-      Alloc(source._cols);
-      interpT = source.interpT;
-      interpC = source.interpC;
-      _cols = source._cols;
-    }
-
     __device__ __host__ void
     FindNeighbourIndices(const double val,
                          double* arr,
