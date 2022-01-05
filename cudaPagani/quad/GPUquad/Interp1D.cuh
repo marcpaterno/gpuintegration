@@ -29,9 +29,12 @@ namespace quad {
     void _initialize(double const* x, double const* z);
 
     __device__ __host__ bool _in_range(double val, index_t range) const;
+	
+	__device__ __host__ bool _is_valid_range(index_t range) const;
 
-    __device__ __host__ index_t _find_neighbor_indices(double val) const;
-
+    __device__ __host__ index_t _find_smallest__index_range(double val) const;
+	
+	 
   public:
     Interp1D();
     Interp1D(const Interp1D& source);
@@ -116,44 +119,44 @@ quad::Interp1D::_in_range(const double val, index_t const range) const
   return (_xs[range.left] <= val) && (_xs[range.right] >= val);
 }
 
-inline __device__ __host__ quad::Interp1D::index_t
-quad::Interp1D::_find_neighbor_indices(const double val) const
+inline __device__ __host__ bool
+quad::Interp1D::_is_valid_range(index_t const range) const
 {
-  index_t result{0, _cols - 1};
-  size_t& leftIndex = result.left;
-  size_t& rightIndex = result.right;
+  if(range.left < range.right)
+		return true;
+	return false;
+}
 
-  // It would be good to have a name for the condition that this while
-  // loop tests:
-  //    while (some_condition(index)) { ...
-  //      // do stuff
-  //    }
-  // What does currentIndex represent? It is some kind of half-way
-  // point in the data arrays. What is when we reach the return statement?
-  size_t currentIndex = 0;
-  while (leftIndex <= rightIndex) {
-    // We are relying on some rounding here... does this depend upon a
-    // rounding mode? CPUs have them; does the GPU?
-    currentIndex = (rightIndex + leftIndex) * 0.5;
-    if (_in_range(val, {currentIndex, currentIndex + 1})) {
-      leftIndex = currentIndex;
-      rightIndex = currentIndex + 1;
-      return result;
-    }
-
-    if (_xs[currentIndex] > val) {
-      rightIndex = currentIndex;
-    } else {
-      leftIndex = currentIndex;
-    }
+inline __device__ __host__ quad::Interp1D::index_t
+quad::Interp1D::_find_smallest__index_range(const double val) const
+{
+  //we don't check if val is in the current range. clamp makes sure we dont pass values that exceed min/max, right?
+  index_t current_range{0, _cols-1};
+  size_t& leftIndex = current_range.left;
+  size_t& rightIndex = current_range.right;
+  
+  while(_is_valid_range(current_range))
+  {
+	  size_t middle_index = static_cast<size_t>((rightIndex + leftIndex) * 0.5);
+	  index_t smaller_candidate_range{middle_index, middle_index + 1};
+	  
+	  if(_in_range(val, smaller_candidate_range)){
+		return smaller_candidate_range; 
+	  }
+	  
+	  if (_xs[middle_index] > val) {
+		rightIndex = middle_index;
+	  } else {
+		leftIndex = middle_index;
+      }
   }
-  return result;
+  return current_range;
 }
 
 inline __device__ __host__ double
 quad::Interp1D::operator()(double x) const
 {
-  auto [x0_index, x1_index] = _find_neighbor_indices(x);
+  auto [x0_index, x1_index] = _find_smallest__index_range(x);
   const double y0 = _zs[x0_index];
   const double y1 = _zs[x1_index];
   const double x0 = _xs[x0_index];
