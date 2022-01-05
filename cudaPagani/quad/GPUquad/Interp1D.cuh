@@ -12,6 +12,13 @@
 namespace quad {
 
   class Interp1D : public Managed {
+
+    // Helper struct
+    struct index_t {
+      size_t left = 0;
+      size_t right = 0;
+    };
+
     size_t _cols = 0;
     double* _xs = nullptr;
     double* _zs = nullptr;
@@ -26,11 +33,7 @@ namespace quad {
                                             size_t lidx,
                                             size_t ridx) const;
 
-    __device__ __host__ void _find_neighbor_indices(double val,
-                                                    double const* arr,
-                                                    size_t size,
-                                                    size_t& lidx,
-                                                    size_t& ridx) const;
+    __device__ __host__ index_t _find_neighbor_indices(double val) const;
 
   public:
     Interp1D();
@@ -119,39 +122,35 @@ quad::Interp1D::_are_neighbors(const double val,
   return (arr[leftIndex] <= val && arr[rightIndex] >= val);
 }
 
-inline __device__ __host__ void
-quad::Interp1D::_find_neighbor_indices(const double val,
-                                       double const* arr,
-                                       const size_t size,
-                                       size_t& leftIndex,
-                                       size_t& rightIndex) const
+inline __device__ __host__ quad::Interp1D::index_t
+quad::Interp1D::_find_neighbor_indices(const double val) const
 {
-
-  size_t currentIndex = size / 2;
-  leftIndex = 0;
-  rightIndex = size - 1;
+  size_t currentIndex = _cols / 2;
+  index_t result{0, _cols - 1};
+  size_t& leftIndex = result.left;
+  size_t& rightIndex = result.right;
 
   while (leftIndex <= rightIndex) {
     currentIndex = (rightIndex + leftIndex) * 0.5;
-    if (_are_neighbors(val, arr, currentIndex, currentIndex + 1)) {
+    if (_are_neighbors(val, _xs, currentIndex, currentIndex + 1)) {
       leftIndex = currentIndex;
       rightIndex = currentIndex + 1;
-      return;
+      return result;
     }
 
-    if (arr[currentIndex] > val) {
+    if (_xs[currentIndex] > val) {
       rightIndex = currentIndex;
     } else {
       leftIndex = currentIndex;
     }
   }
+  return result;
 }
 
 inline __device__ __host__ double
 quad::Interp1D::operator()(double x) const
 {
-  size_t x0_index = 0, x1_index = 0;
-  _find_neighbor_indices(x, _xs, _cols, x0_index, x1_index);
+  auto [x0_index, x1_index] = _find_neighbor_indices(x);
   const double y0 = _zs[x0_index];
   const double y1 = _zs[x1_index];
   const double x0 = _xs[x0_index];
