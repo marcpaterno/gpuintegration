@@ -28,10 +28,7 @@ namespace quad {
     // match the memory allocation done.
     void _initialize(double const* x, double const* z);
 
-    __device__ __host__ bool _are_neighbors(double val,
-                                            double const* arr,
-                                            size_t lidx,
-                                            size_t ridx) const;
+    __device__ __host__ bool _are_neighbors(double val, index_t idx) const;
 
     __device__ __host__ index_t _find_neighbor_indices(double val) const;
 
@@ -114,25 +111,31 @@ quad::Interp1D::swap(Interp1D& other)
 }
 
 inline __device__ __host__ bool
-quad::Interp1D::_are_neighbors(const double val,
-                               double const* arr,
-                               const size_t leftIndex,
-                               const size_t rightIndex) const
+quad::Interp1D::_are_neighbors(const double val, index_t const index) const
 {
-  return (arr[leftIndex] <= val && arr[rightIndex] >= val);
+  return (_xs[index.left] <= val) && (_xs[index.right] >= val);
 }
 
 inline __device__ __host__ quad::Interp1D::index_t
 quad::Interp1D::_find_neighbor_indices(const double val) const
 {
+  // What does currentIndex represent? It is some kind of half-way
+  // point in the data arrays. What is when we reach the return statement?
   size_t currentIndex = _cols / 2;
   index_t result{0, _cols - 1};
   size_t& leftIndex = result.left;
   size_t& rightIndex = result.right;
 
+  // It would be good to have a name for the condition that this while
+  // loop tests:
+  //    while (some_condition(index)) { ...
+  //      // do stuff
+  //    }
   while (leftIndex <= rightIndex) {
+    // We are relying on some rounding here... does this depend upon a
+    // rounding mode? CPUs have them; does the GPU?
     currentIndex = (rightIndex + leftIndex) * 0.5;
-    if (_are_neighbors(val, _xs, currentIndex, currentIndex + 1)) {
+    if (_are_neighbors(val, {currentIndex, currentIndex + 1})) {
       leftIndex = currentIndex;
       rightIndex = currentIndex + 1;
       return result;
