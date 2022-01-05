@@ -28,7 +28,7 @@ namespace quad {
     // match the memory allocation done.
     void _initialize(double const* x, double const* z);
 
-    __device__ __host__ bool _are_neighbors(double val, index_t idx) const;
+    __device__ __host__ bool _in_range(double val, index_t range) const;
 
     __device__ __host__ index_t _find_neighbor_indices(double val) const;
 
@@ -111,17 +111,14 @@ quad::Interp1D::swap(Interp1D& other)
 }
 
 inline __device__ __host__ bool
-quad::Interp1D::_are_neighbors(const double val, index_t const index) const
+quad::Interp1D::_in_range(const double val, index_t const range) const
 {
-  return (_xs[index.left] <= val) && (_xs[index.right] >= val);
+  return (_xs[range.left] <= val) && (_xs[range.right] >= val);
 }
 
 inline __device__ __host__ quad::Interp1D::index_t
 quad::Interp1D::_find_neighbor_indices(const double val) const
 {
-  // What does currentIndex represent? It is some kind of half-way
-  // point in the data arrays. What is when we reach the return statement?
-  size_t currentIndex = _cols / 2;
   index_t result{0, _cols - 1};
   size_t& leftIndex = result.left;
   size_t& rightIndex = result.right;
@@ -131,11 +128,14 @@ quad::Interp1D::_find_neighbor_indices(const double val) const
   //    while (some_condition(index)) { ...
   //      // do stuff
   //    }
+  // What does currentIndex represent? It is some kind of half-way
+  // point in the data arrays. What is when we reach the return statement?
+  size_t currentIndex = 0;
   while (leftIndex <= rightIndex) {
     // We are relying on some rounding here... does this depend upon a
     // rounding mode? CPUs have them; does the GPU?
     currentIndex = (rightIndex + leftIndex) * 0.5;
-    if (_are_neighbors(val, {currentIndex, currentIndex + 1})) {
+    if (_in_range(val, {currentIndex, currentIndex + 1})) {
       leftIndex = currentIndex;
       rightIndex = currentIndex + 1;
       return result;
