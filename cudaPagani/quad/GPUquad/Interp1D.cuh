@@ -13,10 +13,24 @@ namespace quad {
 
   class Interp1D : public Managed {
     size_t _cols = 0;
-    double* _zs = nullptr;
     double* _xs = nullptr;
+    double* _zs = nullptr;
 
-    void Alloc(size_t cols);
+    // Copy the pointed-to arrays into managed memory.
+    // The class interface guarantees that the array lengths
+    // match the memory allocation done.
+    void _initialize(double const* x, double const* z);
+
+    __device__ __host__ bool _are_neighbors(double val,
+                                            double const* arr,
+                                            size_t lidx,
+                                            size_t ridx) const;
+
+    __device__ __host__ void FindNeighbourIndices(double val,
+                                                  double const* arr,
+                                                  size_t size,
+                                                  size_t& lidx,
+                                                  size_t& ridx) const;
 
   public:
     Interp1D();
@@ -32,18 +46,6 @@ namespace quad {
     Interp1D(double const* xs, double const* zs, size_t cols);
 
     void swap(Interp1D& other);
-
-    __device__ __host__ bool AreNeighbors(double val,
-                                          double const* arr,
-                                          size_t lidx,
-                                          size_t ridx) const;
-
-    __device__ __host__ void FindNeighbourIndices(double val,
-                                                  double const* arr,
-                                                  size_t size,
-                                                  size_t& lidx,
-                                                  size_t& ridx) const;
-
     __device__ __host__ double operator()(double x) const;
     __device__ __host__ double min_x() const;
     __device__ __host__ double max_x() const;
@@ -56,21 +58,20 @@ namespace quad {
 }
 
 inline void
-quad::Interp1D::Alloc(std::size_t cols)
+quad::Interp1D::_initialize(double const* x, double const* z)
 {
-  _cols = cols;
-  cudaMallocManaged((void**)&_xs, sizeof(double) * _cols);
-  cudaMallocManaged((void**)&_zs, sizeof(double) * _cols);
+  size_t const nbytes = sizeof(double) * _cols;
+  cudaMallocManaged(&_xs, nbytes);
+  memcpy(_xs, x, nbytes);
+  cudaMallocManaged(&_zs, nbytes);
+  memcpy(_zs, z, nbytes);
 }
 
 inline quad::Interp1D::Interp1D() {}
 
-inline quad::Interp1D::Interp1D(const Interp1D& source)
+inline quad::Interp1D::Interp1D(const Interp1D& source) : _cols(source._cols)
 {
-  _cols = source._cols;
-  Alloc(source._cols);
-  memcpy(_xs, source._xs, sizeof(double) * _cols);
-  memcpy(_zs, source._zs, sizeof(double) * _cols);
+  _initialize(source._xs, source._zs);
 }
 
 inline quad::Interp1D&
@@ -90,17 +91,15 @@ inline quad::Interp1D::~Interp1D()
 template <size_t M>
 quad::Interp1D::Interp1D(std::array<double, M> const& xs,
                          std::array<double, M> const& zs)
+  : _cols(M)
 {
-  Alloc(M);
-  memcpy(_xs, xs.data(), sizeof(double) * M);
-  memcpy(_zs, zs.data(), sizeof(double) * M);
+  _initialize(xs.data(), zs.data());
 }
 
 inline quad::Interp1D::Interp1D(double const* xs, double const* zs, size_t cols)
+  : _cols(cols)
 {
-  Alloc(cols);
-  memcpy(_xs, xs, sizeof(double) * cols);
-  memcpy(_zs, zs, sizeof(double) * cols);
+  _initialize(xs, zs);
 }
 
 inline void
@@ -112,38 +111,38 @@ quad::Interp1D::swap(Interp1D& other)
 }
 
 inline __device__ __host__ bool
-quad::Interp1D::AreNeighbors(const double val,
-                             double const* arr,
-                             const size_t leftIndex,
-                             const size_t RightIndex) const
+quad::Interp1D::_are_neighbors(const double val,
+                               double const* arr,
+                               const size_t leftIndex,
+                               const size_t rightIndex) const
 {
-  return (arr[leftIndex] <= val && arr[RightIndex] >= val);
+  return (arr[leftIndex] <= val && arr[rightIndex] >= val);
 }
 
 inline __device__ __host__ void
 quad::Interp1D::FindNeighbourIndices(const double val,
                                      double const* arr,
                                      const size_t size,
-                                     size_t& leftI,
-                                     size_t& rightI) const
+                                     size_t& leftIndex,
+                                     size_t& rightIndex) const
 {
 
   size_t currentIndex = size / 2;
-  leftI = 0;
-  rightI = size - 1;
+  leftIndex = 0;
+  rightIndex = size - 1;
 
-  while (leftI <= rightI) {
-    currentIndex = (rightI + leftI) * 0.5;
-    if (AreNeighbors(val, arr, currentIndex, currentIndex + 1)) {
-      leftI = currentIndex;
-      rightI = currentIndex + 1;
+  while (leftIndex <= rightIndex) {
+    currentIndex = (rightIndex + leftIndex) * 0.5;
+    if (_are_neighbors(val, arr, currentIndex, currentIndex + 1)) {
+      leftIndex = currentIndex;
+      rightIndex = currentIndex + 1;
       return;
     }
 
     if (arr[currentIndex] > val) {
-      rightI = currentIndex;
+      rightIndex = currentIndex;
     } else {
-      leftI = currentIndex;
+      leftIndex = currentIndex;
     }
   }
 }
