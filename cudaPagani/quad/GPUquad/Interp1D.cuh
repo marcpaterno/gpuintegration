@@ -26,11 +26,11 @@ namespace quad {
                                             size_t lidx,
                                             size_t ridx) const;
 
-    __device__ __host__ void FindNeighbourIndices(double val,
-                                                  double const* arr,
-                                                  size_t size,
-                                                  size_t& lidx,
-                                                  size_t& ridx) const;
+    __device__ __host__ void _find_neighbor_indices(double val,
+                                                    double const* arr,
+                                                    size_t size,
+                                                    size_t& lidx,
+                                                    size_t& ridx) const;
 
   public:
     Interp1D();
@@ -120,11 +120,11 @@ quad::Interp1D::_are_neighbors(const double val,
 }
 
 inline __device__ __host__ void
-quad::Interp1D::FindNeighbourIndices(const double val,
-                                     double const* arr,
-                                     const size_t size,
-                                     size_t& leftIndex,
-                                     size_t& rightIndex) const
+quad::Interp1D::_find_neighbor_indices(const double val,
+                                       double const* arr,
+                                       const size_t size,
+                                       size_t& leftIndex,
+                                       size_t& rightIndex) const
 {
 
   size_t currentIndex = size / 2;
@@ -151,7 +151,7 @@ inline __device__ __host__ double
 quad::Interp1D::operator()(double x) const
 {
   size_t x0_index = 0, x1_index = 0;
-  FindNeighbourIndices(x, _xs, _cols, x0_index, x1_index);
+  _find_neighbor_indices(x, _xs, _cols, x0_index, x1_index);
   const double y0 = _zs[x0_index];
   const double y1 = _zs[x1_index];
   const double x0 = _xs[x0_index];
