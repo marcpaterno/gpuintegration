@@ -13,8 +13,8 @@ namespace quad {
 
   class Interp1D : public Managed {
     size_t _cols = 0;
-    double* _interpT = nullptr;
-    double* _interpC = nullptr;
+    double* _zs = nullptr;
+    double* _xs = nullptr;
 
     void Alloc(size_t cols);
 
@@ -59,8 +59,8 @@ inline void
 quad::Interp1D::Alloc(std::size_t cols)
 {
   _cols = cols;
-  cudaMallocManaged((void**)&_interpC, sizeof(double) * _cols);
-  cudaMallocManaged((void**)&_interpT, sizeof(double) * _cols);
+  cudaMallocManaged((void**)&_xs, sizeof(double) * _cols);
+  cudaMallocManaged((void**)&_zs, sizeof(double) * _cols);
 }
 
 inline quad::Interp1D::Interp1D() {}
@@ -69,8 +69,8 @@ inline quad::Interp1D::Interp1D(const Interp1D& source)
 {
   _cols = source._cols;
   Alloc(source._cols);
-  memcpy(_interpC, source._interpC, sizeof(double) * _cols);
-  memcpy(_interpT, source._interpT, sizeof(double) * _cols);
+  memcpy(_xs, source._xs, sizeof(double) * _cols);
+  memcpy(_zs, source._zs, sizeof(double) * _cols);
 }
 
 inline quad::Interp1D&
@@ -83,8 +83,8 @@ quad::Interp1D::operator=(Interp1D const& rhs)
 
 inline quad::Interp1D::~Interp1D()
 {
-  cudaFree(_interpT);
-  cudaFree(_interpC);
+  cudaFree(_zs);
+  cudaFree(_xs);
 }
 
 template <size_t M>
@@ -92,23 +92,23 @@ quad::Interp1D::Interp1D(std::array<double, M> const& xs,
                          std::array<double, M> const& zs)
 {
   Alloc(M);
-  memcpy(_interpC, xs.data(), sizeof(double) * M);
-  memcpy(_interpT, zs.data(), sizeof(double) * M);
+  memcpy(_xs, xs.data(), sizeof(double) * M);
+  memcpy(_zs, zs.data(), sizeof(double) * M);
 }
 
 inline quad::Interp1D::Interp1D(double const* xs, double const* zs, size_t cols)
 {
   Alloc(cols);
-  memcpy(_interpC, xs, sizeof(double) * cols);
-  memcpy(_interpT, zs, sizeof(double) * cols);
+  memcpy(_xs, xs, sizeof(double) * cols);
+  memcpy(_zs, zs, sizeof(double) * cols);
 }
 
 inline void
 quad::Interp1D::swap(Interp1D& other)
 {
   std::swap(_cols, other._cols);
-  std::swap(_interpT, other._interpT);
-  std::swap(_interpC, other._interpC);
+  std::swap(_zs, other._zs);
+  std::swap(_xs, other._xs);
 }
 
 inline __device__ __host__ bool
@@ -152,11 +152,11 @@ inline __device__ __host__ double
 quad::Interp1D::operator()(double x) const
 {
   size_t x0_index = 0, x1_index = 0;
-  FindNeighbourIndices(x, _interpC, _cols, x0_index, x1_index);
-  const double y0 = _interpT[x0_index];
-  const double y1 = _interpT[x1_index];
-  const double x0 = _interpC[x0_index];
-  const double x1 = _interpC[x1_index];
+  FindNeighbourIndices(x, _xs, _cols, x0_index, x1_index);
+  const double y0 = _zs[x0_index];
+  const double y1 = _zs[x1_index];
+  const double x0 = _xs[x0_index];
+  const double x1 = _xs[x1_index];
   const double y = (y0 * (x1 - x) + y1 * (x - x0)) / (x1 - x0);
   return y;
 }
@@ -164,13 +164,13 @@ quad::Interp1D::operator()(double x) const
 inline __device__ __host__ double
 quad::Interp1D::min_x() const
 {
-  return _interpC[0];
+  return _xs[0];
 }
 
 inline __device__ __host__ double
 quad::Interp1D::max_x() const
 {
-  return _interpC[_cols - 1];
+  return _xs[_cols - 1];
 }
 
 inline __device__ __host__ double
@@ -208,13 +208,13 @@ namespace quad {
 
     interp._cols = xs.size();
 
-    cudaMallocManaged((void**)&interp._interpC, sizeof(double) * xs.size());
+    cudaMallocManaged((void**)&interp._xs, sizeof(double) * xs.size());
     cudaDeviceSynchronize();
-    cudaMallocManaged((void**)&interp._interpT, sizeof(double) * zs.size());
+    cudaMallocManaged((void**)&interp._zs, sizeof(double) * zs.size());
     cudaDeviceSynchronize();
 
-    memcpy(interp._interpC, xs.data(), sizeof(double) * xs.size());
-    memcpy(interp._interpT, zs.data(), sizeof(double) * zs.size());
+    memcpy(interp._xs, xs.data(), sizeof(double) * xs.size());
+    memcpy(interp._zs, zs.data(), sizeof(double) * zs.size());
 
     return is;
   }
