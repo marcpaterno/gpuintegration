@@ -11,13 +11,19 @@
 
 namespace quad {
 
-  class Interp1D : public Managed {
+  // Helper struct to describe an index range.
+  struct IndexRange {
+    size_t left = 0;
+    size_t right = 0;
 
-    // Helper struct
-    struct index_t {
-      size_t left = 0;
-      size_t right = 0;
-    };
+    __device__ __host__ bool is_valid() const;
+    __device__ __host__ size_t middle() const;
+    __device__ __host__ void adjust_edges(double const* xs,
+                                          double val,
+                                          size_t middle_indx);
+  };
+
+  class Interp1D : public Managed {
 
     size_t _cols = 0;
     double* _xs = nullptr;
@@ -28,13 +34,10 @@ namespace quad {
     // match the memory allocation done.
     void _initialize(double const* x, double const* z);
 
-    __device__ __host__ bool _in_range(double val, index_t range) const;
-	
-	__device__ __host__ bool _is_valid_range(index_t range) const;
+    __device__ __host__ bool _in_range(double val, IndexRange range) const;
+    __device__ __host__ IndexRange
+    _find_smallest__index_range(double val) const;
 
-    __device__ __host__ index_t _find_smallest__index_range(double val) const;
-	
-	 
   public:
     Interp1D();
     Interp1D(const Interp1D& source);
@@ -58,6 +61,31 @@ namespace quad {
 
     friend std::istream& operator>>(std::istream& is, Interp1D& interp);
   };
+}
+
+inline __device__ __host__ bool
+quad::IndexRange::is_valid() const
+{
+  return left < right;
+}
+
+inline __device__ __host__ size_t
+quad::IndexRange::middle() const
+{
+  return static_cast<size_t>((left + right) * 0.5);
+}
+
+inline __device__ __host__ void
+quad::IndexRange::adjust_edges(double const* xs,
+                               double val,
+                               size_t middle_index)
+{
+
+  if (xs[middle_index] > val) {
+    right = middle_index;
+  } else {
+    left = middle_index;
+  }
 }
 
 inline void
@@ -114,41 +142,26 @@ quad::Interp1D::swap(Interp1D& other)
 }
 
 inline __device__ __host__ bool
-quad::Interp1D::_in_range(const double val, index_t const range) const
+quad::Interp1D::_in_range(const double val, IndexRange const range) const
 {
   return (_xs[range.left] <= val) && (_xs[range.right] >= val);
 }
 
-inline __device__ __host__ bool
-quad::Interp1D::_is_valid_range(index_t const range) const
-{
-  if(range.left < range.right)
-		return true;
-	return false;
-}
-
-inline __device__ __host__ quad::Interp1D::index_t
+inline __device__ __host__ quad::IndexRange
 quad::Interp1D::_find_smallest__index_range(const double val) const
 {
-  //we don't check if val is in the current range. clamp makes sure we dont pass values that exceed min/max, right?
-  index_t current_range{0, _cols-1};
-  size_t& leftIndex = current_range.left;
-  size_t& rightIndex = current_range.right;
-  
-  while(_is_valid_range(current_range))
-  {
-	  size_t middle_index = static_cast<size_t>((rightIndex + leftIndex) * 0.5);
-	  index_t smaller_candidate_range{middle_index, middle_index + 1};
-	  
-	  if(_in_range(val, smaller_candidate_range)){
-		return smaller_candidate_range; 
-	  }
-	  
-	  if (_xs[middle_index] > val) {
-		rightIndex = middle_index;
-	  } else {
-		leftIndex = middle_index;
-      }
+  // we don't check if val is in the current range. clamp makes sure we dont
+  // pass values that exceed min/max, right?
+  IndexRange current_range{0, _cols - 1};
+
+  while (current_range.is_valid()) {
+    size_t middle_index = current_range.middle();
+    IndexRange smaller_candidate_range{middle_index, middle_index + 1};
+
+    if (_in_range(val, smaller_candidate_range)) {
+      return smaller_candidate_range;
+    }
+    current_range.adjust_edges(_xs, val, middle_index);
   }
   return current_range;
 }
