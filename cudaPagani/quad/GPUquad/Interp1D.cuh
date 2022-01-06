@@ -17,10 +17,10 @@ namespace quad {
     size_t right = 0;
 
     __device__ __host__ bool is_valid() const;
-    __device__ __host__ size_t middle() const;
+    __device__ __host__ IndexRange middle() const;
     __device__ __host__ void adjust_edges(double const* xs,
                                           double val,
-                                          size_t middle_indx);
+                                          IndexRange middle);
   };
 
   class Interp1D : public Managed {
@@ -69,22 +69,21 @@ quad::IndexRange::is_valid() const
   return left < right;
 }
 
-inline __device__ __host__ size_t
+inline __device__ __host__ quad::IndexRange
 quad::IndexRange::middle() const
 {
-  return static_cast<size_t>((left + right) * 0.5);
+  size_t const mid = static_cast<size_t>((left + right) * 0.5);
+  return {mid, mid + 1};
 }
 
 inline __device__ __host__ void
-quad::IndexRange::adjust_edges(double const* xs,
-                               double val,
-                               size_t middle_index)
+quad::IndexRange::adjust_edges(double const* xs, double val, IndexRange middle)
 {
 
-  if (xs[middle_index] > val) {
-    right = middle_index;
+  if (xs[middle.left] > val) {
+    right = middle.left;
   } else {
-    left = middle_index;
+    left = middle.left;
   }
 }
 
@@ -155,13 +154,12 @@ quad::Interp1D::_find_smallest__index_range(const double val) const
   IndexRange current_range{0, _cols - 1};
 
   while (current_range.is_valid()) {
-    size_t middle_index = current_range.middle();
-    IndexRange smaller_candidate_range{middle_index, middle_index + 1};
+    IndexRange smaller_candidate_range = current_range.middle();
 
     if (_in_range(val, smaller_candidate_range)) {
       return smaller_candidate_range;
     }
-    current_range.adjust_edges(_xs, val, middle_index);
+    current_range.adjust_edges(_xs, val, smaller_candidate_range);
   }
   return current_range;
 }
