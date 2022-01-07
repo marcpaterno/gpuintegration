@@ -81,9 +81,9 @@ quad::IndexRange::adjust_edges(double const* xs, double val, IndexRange middle)
 {
 
   if (xs[middle.left] > val) {
-    right = middle.left;
+    right = middle.left;   //shrink the right side
   } else {
-    left = middle.left;
+    left = middle.right;  //shrink the left side
   }
 }
 
@@ -155,7 +155,6 @@ quad::Interp1D::_find_smallest__index_range(const double val) const
 
   while (current_range.is_valid()) {
     IndexRange smaller_candidate_range = current_range.middle();
-
     if (_in_range(val, smaller_candidate_range)) {
       return smaller_candidate_range;
     }

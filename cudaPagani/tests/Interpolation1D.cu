@@ -57,8 +57,8 @@ TEST_CASE("Interp1D exact at knots", "[interpolation][1d]")
 
 TEST_CASE("Interp1D on quadratic")
 {
-  const size_t s = 3;
-  std::array<double, s> xs = {1., 2., 3.};
+  const size_t s = 5;
+  std::array<double, s> xs = {1., 2., 3., 4., 5.};
   std::array<double, s> ys = xs;
 
   auto Transform = [](std::array<double, s>& ys) {
@@ -69,10 +69,29 @@ TEST_CASE("Interp1D on quadratic")
   quad::Interp1D interpObj(xs, ys);
 
   double* result = quad::cuda_malloc_managed<double>(1);
-
-  Evaluate<<<1, 1>>>(interpObj, 1.41421, result);
+  double interp_point = 1.41421;
+  double true_interp_res = 2.24263;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
   cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+  
+  interp_point = 2.41421;
+  true_interp_res = 6.07105;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+  
+  interp_point = 3.41421;
+  true_interp_res = 11.89947;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+	
+  interp_point = 4.41421;
+  true_interp_res = 19.72789;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
 
-  CHECK(*result == Approx(2.24263).epsilon(1e-4));
   cudaFree(result);
 }
