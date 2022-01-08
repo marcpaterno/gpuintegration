@@ -28,13 +28,13 @@ namespace quad {
 
   public:
     // Note that this also acts as the default constructor.
-    explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1) :
-      KEY(key),
-      VERBOSE(verbose),
-      numDevices(numDevices),
-      epsrel(0.0),
-      epsabs(0.0),
-      kernel(new Kernel<T, NDIM>(std::cout))
+    explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1)
+      : KEY(key)
+      , VERBOSE(verbose)
+      , numDevices(numDevices)
+      , epsrel(0.0)
+      , epsabs(0.0)
+      , kernel(new Kernel<T, NDIM>(std::cout))
     {
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
@@ -78,20 +78,21 @@ namespace quad {
       memcpy(d_integrand, &integrand, sizeof(IntegT));
       return d_integrand;
     }
-	
-	template<typename IntegT>
-	VerboseResults
-	EvaluateAtCuhrePoints(IntegT integrand, Volume<T, NDIM>* volume = nullptr){
-		IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
-		CudaCheckError();
-		kernel->GenerateInitialRegions();
-		VerboseResults resultsObj;
-		resultsObj.NDIM = NDIM;
-		kernel->EvaluateAtCuhrePoints(d_integrand, resultsObj, volume);
-		
-		return resultsObj;
-	}
-	
+
+    template <typename IntegT>
+    VerboseResults
+    EvaluateAtCuhrePoints(IntegT integrand, Volume<T, NDIM>* volume = nullptr)
+    {
+      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
+      CudaCheckError();
+      kernel->GenerateInitialRegions();
+      VerboseResults resultsObj;
+      resultsObj.NDIM = NDIM;
+      kernel->EvaluateAtCuhrePoints(d_integrand, resultsObj, volume);
+
+      return resultsObj;
+    }
+
     template <typename IntegT>
     cuhreResult<T>
     integrate(IntegT integrand,
