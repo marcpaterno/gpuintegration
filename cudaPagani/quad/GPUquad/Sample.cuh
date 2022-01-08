@@ -108,33 +108,32 @@ namespace quad {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
     }
   }
-	
-	
+
   template <typename IntegT, typename T, int NDIM>
   __device__ void
   verboseComputePermutation(IntegT* d_integrand,
-                     int pIndex,
-                     Bounds* b,
-                     GlobalBounds sBound[],
-                     //T* g,
-                     gpu::cudaArray<T, NDIM>& x,
-                     //T* sum,
-                     //const Structures<double>& constMem,
-                     T range[],
-                     //T* jacobian,
-                     double* generators,
-                     int FEVAL,
-                     //int iteration,
-                     //T* sdata,
-					 double* results,
-					 double* funcEvals)
+                            int pIndex,
+                            Bounds* b,
+                            GlobalBounds sBound[],
+                            // T* g,
+                            gpu::cudaArray<T, NDIM>& x,
+                            // T* sum,
+                            // const Structures<double>& constMem,
+                            T range[],
+                            // T* jacobian,
+                            double* generators,
+                            int FEVAL,
+                            // int iteration,
+                            // T* sdata,
+                            double* results,
+                            double* funcEvals)
   {
 
     for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = 0;
     }
 
-    //int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
+    // int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
 
     for (int dim = 0; dim < NDIM; ++dim) {
       T generator = __ldg(&generators[FEVAL * dim + pIndex]);
@@ -146,41 +145,40 @@ namespace quad {
     T fun = gpu::apply(*d_integrand, x) /** (*jacobian)*/;
     results[pIndex] = fun; // target for reduction
 
-	size_t index = pIndex*NDIM;
-	for(int i=0; i<NDIM; i++){
-		funcEvals[index+i] = x[i];
-	}
-	//we only care about func evaluations and results
+    size_t index = pIndex * NDIM;
+    for (int i = 0; i < NDIM; i++) {
+      funcEvals[index + i] = x[i];
+    }
+    // we only care about func evaluations and results
     /*for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
     }*/
-  }	
-	
-	
+  }
+
   template <typename IntegT, typename T, int NDIM, int blockdim>
   __device__ void
   verboseSampleRegionBlock(IntegT* d_integrand,
-                    int sIndex,
-                    const Structures<double>& constMem,
-                    int FEVAL,
-                    int NSETS,
-                    Region<NDIM> sRegionPool[],
-                    GlobalBounds sBound[],
-                    T* vol,
-                    int* maxdim,
-                    T range[],
-                    T* jacobian,
-                    double* generators,
-                    int iteration,
-					double* results,
-					double* funcEvals)
+                           int sIndex,
+                           const Structures<double>& constMem,
+                           int FEVAL,
+                           int NSETS,
+                           Region<NDIM> sRegionPool[],
+                           GlobalBounds sBound[],
+                           T* vol,
+                           int* maxdim,
+                           T range[],
+                           T* jacobian,
+                           double* generators,
+                           int iteration,
+                           double* results,
+                           double* funcEvals)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     __shared__ T sdata[blockdim];
-    //T g[NDIM];
+    // T g[NDIM];
     gpu::cudaArray<T, NDIM> x;
     int perm = 0;
-	
+
     T ratio =
       Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
@@ -195,21 +193,21 @@ namespace quad {
 
     if (pIndex < FEVAL) {
       verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                          pIndex,
-                                          region->bounds,
-                                          sBound,
-                                          //g,
-                                          x,
-                                          //sum,
-                                          //constMem,
-                                          range,
-                                          //jacobian,
-                                          generators,
-                                          FEVAL,
-                                          //iteration,
-                                          //sdata,
-										  results,
-										  funcEvals);
+                                                 pIndex,
+                                                 region->bounds,
+                                                 sBound,
+                                                 // g,
+                                                 x,
+                                                 // sum,
+                                                 // constMem,
+                                                 range,
+                                                 // jacobian,
+                                                 generators,
+                                                 FEVAL,
+                                                 // iteration,
+                                                 // sdata,
+                                                 results,
+                                                 funcEvals);
     }
 
     __syncthreads();
@@ -241,21 +239,21 @@ namespace quad {
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx.x;
       verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                          pIndex,
-                                          region->bounds,
-                                          sBound,
-                                          //g,
-                                          x,
-                                          //sum,
-                                          //constMem,
-                                          range,
-                                          //jacobian,
-                                          generators,
-                                          FEVAL,
-                                          //iteration,
-                                          //sdata,
-										  results,
-										  funcEvals);
+                                                 pIndex,
+                                                 region->bounds,
+                                                 sBound,
+                                                 // g,
+                                                 x,
+                                                 // sum,
+                                                 // constMem,
+                                                 range,
+                                                 // jacobian,
+                                                 generators,
+                                                 FEVAL,
+                                                 // iteration,
+                                                 // sdata,
+                                                 results,
+                                                 funcEvals);
     }
     //__syncthreads();
     // Balance permutations
@@ -263,27 +261,27 @@ namespace quad {
     if (pIndex < FEVAL) {
       int pIndex = perm * blockdim + threadIdx.x;
       verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                          pIndex,
-                                          region->bounds,
-                                          sBound,
-                                          //g,
-                                          x,
-                                          //sum,
-                                          //constMem,
-                                          range,
-                                          //jacobian,
-                                          generators,
-                                          FEVAL,
-                                          //iteration,
-                                          //sdata,
-										  results,
-										  funcEvals);
+                                                 pIndex,
+                                                 region->bounds,
+                                                 sBound,
+                                                 // g,
+                                                 x,
+                                                 // sum,
+                                                 // constMem,
+                                                 range,
+                                                 // jacobian,
+                                                 generators,
+                                                 FEVAL,
+                                                 // iteration,
+                                                 // sdata,
+                                                 results,
+                                                 funcEvals);
     }
     // __syncthreads();
 
-    //for (int i = 0; i < NRULES; ++i) {
-     // sum[i] = blockReduceSum /*computeReduce*/ (sum[i] /*, sdata*/);
-      //__syncthreads();
+    // for (int i = 0; i < NRULES; ++i) {
+    // sum[i] = blockReduceSum /*computeReduce*/ (sum[i] /*, sdata*/);
+    //__syncthreads();
     //}
 
     /*if (threadIdx.x == 0) {
@@ -306,10 +304,8 @@ namespace quad {
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
     }*/
-  }	
-	
-	
-	
+  }
+
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
   template <typename IntegT, typename T, int NDIM, int blockdim>
   __device__ void
