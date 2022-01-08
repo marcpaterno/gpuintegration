@@ -81,9 +81,9 @@ quad::IndexRange::adjust_edges(double const* xs, double val, IndexRange middle)
 {
 
   if (xs[middle.left] > val) {
-    right = middle.left;   //shrink the right side
+    right = middle.left; // shrink the right side
   } else {
-    left = middle.right;  //shrink the left side
+    left = middle.right; // shrink the left side
   }
 }
 
