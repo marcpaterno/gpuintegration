@@ -272,7 +272,7 @@ namespace quad {
   __global__ void
   RevertFinishedStatus(int* activeRegions, size_t numRegions)
   {
-    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t const tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (tid < numRegions) {
       activeRegions[tid] = 1;
@@ -281,22 +281,22 @@ namespace quad {
 
   template <typename T>
   __global__ void
-  Filter(T* dRegionsError,
+  Filter(T const* dRegionsError,
          int* unpolishedRegions,
-         int* activeRegions,
+         int const* activeRegions,
          size_t numRegions,
          T errThreshold)
   {
-    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t const tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (tid < numRegions) { // consider not having the ones passing the previous
-                            // test (id<numRegions && activeRegions[tid] != 1)
-      T selfErr = dRegionsError[tid];
-      unpolishedRegions[tid] =
-        (selfErr > errThreshold) *
-        activeRegions[tid]; // onle "real active" regions can be polished
-                            // (rename activeRegions in this context to
-                            // polishedRegions)
+    // consider not having the ones passing the previous test
+    //    (id<numRegions && activeRegions[tid] != 1)
+    if (tid < numRegions) {
+      T const selfErr = dRegionsError[tid];
+      int const factor = (selfErr > errThreshold);
+      // only "real active" regions can be polished (rename activeRegions in
+      // this context to polishedRegions)
+      unpolishedRegions[tid] = factor * activeRegions[tid];
     }
   }
 	
