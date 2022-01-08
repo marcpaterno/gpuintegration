@@ -30,8 +30,8 @@ namespace quad {
     }
 
   public:
-
-    void swap(Interp2D& other)
+    void
+    swap(Interp2D& other)
     {
       std::swap(_rows, other._rows);
       std::swap(_cols, other._cols);
@@ -42,7 +42,7 @@ namespace quad {
 
     __host__ __device__
     Interp2D()
-    { }
+    {}
 
     Interp2D(const Interp2D& source)
     {
@@ -54,7 +54,8 @@ namespace quad {
       memcpy(interpR, source.interpR, sizeof(double) * _rows);
     }
 
-    Interp2D& operator=(Interp2D const& rhs)
+    Interp2D&
+    operator=(Interp2D const& rhs)
     {
       Interp2D tmp(rhs);
       swap(tmp);
@@ -66,9 +67,9 @@ namespace quad {
 
     ~Interp2D()
     {
-       cudaFree(interpT);
-       cudaFree(interpR);
-       cudaFree(interpC);
+      cudaFree(interpT);
+      cudaFree(interpR);
+      cudaFree(interpC);
     }
 
     template <size_t M, size_t N>
