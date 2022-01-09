@@ -81,7 +81,7 @@ Sample(IntegT d_integrand,
        const double* _cRuleWt,
        int FEVAL,
        int NSETS,
-      Region<NDIM>* sRegionPool,
+       Region<NDIM>* sRegionPool,
        double vol,
        int maxdim,
        double* range,
@@ -217,11 +217,11 @@ Sample(IntegT d_integrand,
       sum[rul] = maxerr;
     }
 
-    r->avg = (vol) * sum[0];
+    r->avg = (vol)*sum[0];
     r->err = (vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
-                          errcoeff[0] * sum[2] <= sum[3]) ?
-                           errcoeff[1] * sum[1] :
-                           errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
+                       errcoeff[0] * sum[2] <= sum[3]) ?
+                        errcoeff[1] * sum[1] :
+                        errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
   }
 }
 

@@ -55,17 +55,19 @@ public:
   Kernel(int nsets)
   {
     NSETS = nsets;
-    lows = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("lows"), NDIM);
-    highs = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("highs"), NDIM);
+    lows =
+      ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("lows"), NDIM);
+    highs =
+      ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("highs"), NDIM);
 
     // ViewVectorDouble::HostMirror hlows = Kokkos::create_mirror_view(lows);
-    //ViewVectorDouble::HostMirror hhighs = Kokkos::create_mirror_view(highs);
-    //Kokkos::deep_copy(hhighs, highs);
+    // ViewVectorDouble::HostMirror hhighs = Kokkos::create_mirror_view(highs);
+    // Kokkos::deep_copy(hhighs, highs);
     depthBeingProcessed = 0;
 
-    //for (int i = 0; i < NDIM; i++)
-    //  hhighs[i] = 1.;
-   // Kokkos::deep_copy(highs, hhighs);
+    // for (int i = 0; i < NDIM; i++)
+    //   hhighs[i] = 1.;
+    // Kokkos::deep_copy(highs, hhighs);
     fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
                       2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
                       4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
@@ -181,7 +183,7 @@ public:
                                                                   numThreads);
     auto team_policy = Kokkos::Experimental::require(
       team_policy1, Kokkos::Experimental::WorkItemProperty::HintLightWeight);
-    
+
     Kokkos::parallel_for(
       "DivideIntervalsGPU",
       team_policy,
@@ -251,8 +253,9 @@ public:
                           ViewVectorDouble& dParentsError,
                           constViewVectorDouble generators)
   {
-    ViewVectorInt scannedArray(Kokkos::ViewAllocateWithoutInitializing("scannedArray"), numRegions);
-    //deep_copy(scannedArray, activeRegions);
+    ViewVectorInt scannedArray(
+      Kokkos::ViewAllocateWithoutInitializing("scannedArray"), numRegions);
+    // deep_copy(scannedArray, activeRegions);
     Kokkos::Profiling::pushRegion("Exclusive scan");
     exclusive_prefix_scan(activeRegions, scannedArray);
     Kokkos::Profiling::popRegion();
@@ -270,17 +273,22 @@ public:
     if (numActiveRegions > 0) {
       Kokkos::Profiling::pushRegion("Aligning regions");
       size_t numOfDivisionOnDimension = 2;
-      ViewVectorDouble newActiveRegions(Kokkos::ViewAllocateWithoutInitializing("newActiveRegions"),
-                                        numActiveRegions * NDIM);
-      ViewVectorDouble newActiveRegionsLength(Kokkos::ViewAllocateWithoutInitializing("newActiveRegionsLength"),
-                                              numActiveRegions * NDIM);
-      ViewVectorInt newActiveRegionsBisectDim(Kokkos::ViewAllocateWithoutInitializing("newActiveRegionsBisectDim"),
-                                              numActiveRegions *
-                                                numOfDivisionOnDimension);
+      ViewVectorDouble newActiveRegions(
+        Kokkos::ViewAllocateWithoutInitializing("newActiveRegions"),
+        numActiveRegions * NDIM);
+      ViewVectorDouble newActiveRegionsLength(
+        Kokkos::ViewAllocateWithoutInitializing("newActiveRegionsLength"),
+        numActiveRegions * NDIM);
+      ViewVectorInt newActiveRegionsBisectDim(
+        Kokkos::ViewAllocateWithoutInitializing("newActiveRegionsBisectDim"),
+        numActiveRegions * numOfDivisionOnDimension);
 
-      ExpandcuArray(dParentsIntegral, numRegions / 2, numActiveRegions);    //no memcpy should be reported here by nvprof
+      ExpandcuArray(
+        dParentsIntegral,
+        numRegions / 2,
+        numActiveRegions); // no memcpy should be reported here by nvprof
       ExpandcuArray(dParentsError, numRegions / 2, numActiveRegions);
-      
+
       AlignRegions(dRegions,
                    dRegionsLength,
                    activeRegions,
@@ -297,21 +305,23 @@ public:
                    numActiveRegions,
                    numOfDivisionOnDimension);
       Kokkos::Profiling::popRegion();
-      
+
       Kokkos::Profiling::pushRegion("Dividing intervals allocations");
       /*ViewVectorDouble genRegions(
         "genRegions", numActiveRegions * NDIM * numOfDivisionOnDimension);
       ViewVectorDouble genRegionsLength(
-        "genRegionsLength", numActiveRegions * NDIM * numOfDivisionOnDimension);*/
-        
-      
-      ViewVectorDouble genRegions(Kokkos::ViewAllocateWithoutInitializing("genRegions")
-        , numActiveRegions * NDIM * numOfDivisionOnDimension);
+        "genRegionsLength", numActiveRegions * NDIM *
+      numOfDivisionOnDimension);*/
+
+      ViewVectorDouble genRegions(
+        Kokkos::ViewAllocateWithoutInitializing("genRegions"),
+        numActiveRegions * NDIM * numOfDivisionOnDimension);
       ViewVectorDouble genRegionsLength(
-        Kokkos::ViewAllocateWithoutInitializing("genRegionsLength"), numActiveRegions * NDIM * numOfDivisionOnDimension);
-        
-      Kokkos::Profiling::popRegion();   
-      
+        Kokkos::ViewAllocateWithoutInitializing("genRegionsLength"),
+        numActiveRegions * NDIM * numOfDivisionOnDimension);
+
+      Kokkos::Profiling::popRegion();
+
       Kokkos::Profiling::pushRegion("Dividing intervals body");
       DivideIntervalsGPU(genRegions,
                          genRegionsLength,
@@ -321,14 +331,14 @@ public:
                          numActiveRegions,
                          numOfDivisionOnDimension);
       Kokkos::Profiling::popRegion();
-      
+
       Kokkos::Profiling::pushRegion("Dividing intervals assignment");
-      dRegions = genRegions; //shallow copy? why nvprof says DtoH happen here?
+      dRegions = genRegions; // shallow copy? why nvprof says DtoH happen here?
       dRegionsLength = genRegionsLength;
-      
+
       Kokkos::Profiling::popRegion();
       numInActiveRegions = numRegions - numActiveRegions;
-      //Kokkos::Profiling::popRegion();
+      // Kokkos::Profiling::popRegion();
       numRegions = numActiveRegions * numOfDivisionOnDimension;
 
     } else {
@@ -353,9 +363,9 @@ public:
     if (error > abs(newLeavesEstimate) * epsrel) {
       // printf("REVERTING ACTIVE REGIONS\n");
       Kokkos::parallel_for(
-        "FixErrorBudgetOverflow", numRegions, KOKKOS_LAMBDA(const int64_t index) {
-          activeRegions(index) = 1.;
-        });
+        "FixErrorBudgetOverflow",
+        numRegions,
+        KOKKOS_LAMBDA(const int64_t index) { activeRegions(index) = 1.; });
 
       error -= iter_finished_errorest;
       integral -= iter_finished_estimate;
@@ -515,15 +525,16 @@ public:
         !estimateHasConverged) {
       return;
     }
-    
+
     double targetError = abs(leaves_estimate) * epsrel;
 
     double MaxPercentOfErrorBudget = .25;
     double acceptableThreshold = 0.;
-    ViewVectorInt unpolishedRegions(Kokkos::ViewAllocateWithoutInitializing("numRegions"), numRegions); 
+    ViewVectorInt unpolishedRegions(
+      Kokkos::ViewAllocateWithoutInitializing("numRegions"), numRegions);
 
     size_t targetRegionNum = numRegions / 2;
-    double ErrThreshold = iterErrorest / (numRegions); 
+    double ErrThreshold = iterErrorest / (numRegions);
 
     double lastThreshold = ErrThreshold;
     size_t numActiveRegions = numRegions;
@@ -544,12 +555,12 @@ public:
       iter_polished_errorest = 0.;
 
       if (numDirectionChanges >= maxDirectionChanges) {
-        ErrThreshold = acceptableThreshold; 
+        ErrThreshold = acceptableThreshold;
       } else if (numDirectionChanges > 2 && numDirectionChanges <= 9 &&
                  directionChange) {
-        MaxPercentOfErrorBudget =  numDirectionChanges > 1 ?
-            MaxPercentOfErrorBudget + .1 :
-            MaxPercentOfErrorBudget;
+        MaxPercentOfErrorBudget = numDirectionChanges > 1 ?
+                                    MaxPercentOfErrorBudget + .1 :
+                                    MaxPercentOfErrorBudget;
       }
 
       numActiveRegions = 0;
@@ -561,33 +572,37 @@ public:
       numActiveRegions = ComputeNumUnPolishedRegions(unpolishedRegions);
 
       if (numActiveRegions <= targetRegionNum) {
-          
+
         double polishedEstimate = 0.;
-        Kokkos::parallel_reduce("polished errorest", numRegions,
-            KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += dRegionsIntegral(index)*unpolishedRegions(index);
-            },
-            polishedEstimate);
-          
+        Kokkos::parallel_reduce(
+          "polished errorest",
+          numRegions,
+          KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+            valueToUpdate += dRegionsIntegral(index) * unpolishedRegions(index);
+          },
+          polishedEstimate);
+
         iter_polished_estimate =
           iterEstimate - iter_finished_estimate - polishedEstimate;
-        //iter_polished_estimate =
-        //  iterEstimate - iter_finished_estimate -
-        //  KokkosBlas::dot(unpolishedRegions, dRegionsIntegral);
-          
+        // iter_polished_estimate =
+        //   iterEstimate - iter_finished_estimate -
+        //   KokkosBlas::dot(unpolishedRegions, dRegionsIntegral);
+
         double polishedErrorest = 0.;
-        Kokkos::parallel_reduce("polished errorest", numRegions,
-            KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-                valueToUpdate += dRegionsError(index)*unpolishedRegions(index);
-            },
-            polishedErrorest);
-        
+        Kokkos::parallel_reduce(
+          "polished errorest",
+          numRegions,
+          KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
+            valueToUpdate += dRegionsError(index) * unpolishedRegions(index);
+          },
+          polishedErrorest);
+
         iter_polished_errorest =
           iterErrorest - iter_finished_errorest - polishedErrorest;
-        //iter_polished_errorest =
-        //  iterErrorest - iter_finished_errorest -
-        //  KokkosBlas::dot(unpolishedRegions, dRegionsError);
-          
+        // iter_polished_errorest =
+        //   iterErrorest - iter_finished_errorest -
+        //   KokkosBlas::dot(unpolishedRegions, dRegionsError);
+
         if ((iter_polished_errorest <=
                MaxPercentOfErrorBudget * (targetError - error) ||
              numDirectionChanges == maxDirectionChanges)) {
@@ -646,7 +661,8 @@ public:
     if (iteration == 0)
       return;
     int currIterRegions = numRegions;
-    ViewVectorDouble newErrs(Kokkos::ViewAllocateWithoutInitializing("newErrs"), numRegions);
+    ViewVectorDouble newErrs(Kokkos::ViewAllocateWithoutInitializing("newErrs"),
+                             numRegions);
     // int heuristicID = positiveSemiDefinite;
     Kokkos::parallel_for(
       "RefineError", numRegions, KOKKOS_LAMBDA(const int64_t index) {
@@ -705,44 +721,53 @@ public:
                       int it)
   {
     Kokkos::Profiling::pushRegion("Iteration Allocations");
-    ViewVectorInt activeRegions(Kokkos::ViewAllocateWithoutInitializing("activeRegions"), numRegions);
-    ViewVectorInt subDividingDimension(Kokkos::ViewAllocateWithoutInitializing("subDividingDimension"), numRegions);
+    ViewVectorInt activeRegions(
+      Kokkos::ViewAllocateWithoutInitializing("activeRegions"), numRegions);
+    ViewVectorInt subDividingDimension(
+      Kokkos::ViewAllocateWithoutInitializing("subDividingDimension"),
+      numRegions);
 
-    dRegionsIntegral = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("dRegionsIntegral"), numRegions);
-    dRegionsError = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("dRegionsError"), numRegions);
+    dRegionsIntegral = ViewVectorDouble(
+      Kokkos::ViewAllocateWithoutInitializing("dRegionsIntegral"), numRegions);
+    dRegionsError = ViewVectorDouble(
+      Kokkos::ViewAllocateWithoutInitializing("dRegionsError"), numRegions);
 
     if (it == 0) {
-      dParentsIntegral = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("dParentsIntegral"), numRegions);
-      dParentsError = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("dParentsError"), numRegions);
+      dParentsIntegral = ViewVectorDouble(
+        Kokkos::ViewAllocateWithoutInitializing("dParentsIntegral"),
+        numRegions);
+      dParentsError = ViewVectorDouble(
+        Kokkos::ViewAllocateWithoutInitializing("dParentsError"), numRegions);
     }
     Kokkos::Profiling::popRegion();
 
     Kokkos::Profiling::pushRegion("INTEGRATE_GPU_PHASE1");
     // printf("Launching kernel numRegions:%lu\n", numRegions);
-    INTEGRATE_GPU_PHASE1<IntegT, NDIM>(d_integrand,
-                                       dRegions.data(),
-                                       dRegionsLength.data(),
-                                       numRegions,
-                                       dRegionsIntegral.data(),
-                                       dRegionsError.data(),
-                                       activeRegions.data(),
-                                       subDividingDimension.data(),
-                                       //epsrel,
-                                       //epsabs,
-                                       /*constMem&*/ constMem._gpuG.data(),
-                                       constMem._GPUScale.data(),
-                                       constMem._GPUNorm.data(),
-                                       constMem._gpuGenPermGIndex.data(),
-                                       constMem._cRuleWt.data(),
-                                       fEvalPerRegion,
-                                       NSETS,
-                                       lows.data(),
-                                       highs.data(),
-                                      // it,
-                                       ldexp(1., -depthBeingProcessed), //depthBeingProcessed,
-                                       Jacobian,
-                                       generators.data(),
-                                       it);
+    INTEGRATE_GPU_PHASE1<IntegT, NDIM>(
+      d_integrand,
+      dRegions.data(),
+      dRegionsLength.data(),
+      numRegions,
+      dRegionsIntegral.data(),
+      dRegionsError.data(),
+      activeRegions.data(),
+      subDividingDimension.data(),
+      // epsrel,
+      // epsabs,
+      /*constMem&*/ constMem._gpuG.data(),
+      constMem._GPUScale.data(),
+      constMem._GPUNorm.data(),
+      constMem._gpuGenPermGIndex.data(),
+      constMem._cRuleWt.data(),
+      fEvalPerRegion,
+      NSETS,
+      lows.data(),
+      highs.data(),
+      // it,
+      ldexp(1., -depthBeingProcessed), // depthBeingProcessed,
+      Jacobian,
+      generators.data(),
+      it);
     Kokkos::Profiling::popRegion();
     Kokkos::Profiling::pushRegion("RelErrClassify");
     RelErrClassify(heuristicID,
@@ -756,9 +781,9 @@ public:
     Kokkos::Profiling::popRegion();
 
     // Compute integral and error estimates through reductions
-    
-    //printf("Reduction 1 %lu regions\n", numRegions);
-    //Kokkos::Profiling::pushRegion("Reduction 1");
+
+    // printf("Reduction 1 %lu regions\n", numRegions);
+    // Kokkos::Profiling::pushRegion("Reduction 1");
     double iter_estimate = 0.;
     Kokkos::parallel_reduce(
       "Estimate computation",
@@ -768,9 +793,9 @@ public:
       },
       iter_estimate);
 
-    //Kokkos::Profiling::popRegion();
+    // Kokkos::Profiling::popRegion();
 
-    //Kokkos::Profiling::pushRegion("Reduction 2");
+    // Kokkos::Profiling::pushRegion("Reduction 2");
     double iter_errorest = 0.;
     Kokkos::parallel_reduce(
       "Estimate computation",
@@ -779,51 +804,49 @@ public:
         valueToUpdate += dRegionsError(index);
       },
       iter_errorest);
-    //Kokkos::Profiling::popRegion();
-    // printf("iter_estimate:%.15f +- %.15f numRegions:%lu iteration:%i\n",
-    // iter_estimate, iter_errorest, numRegions, it);
+    // Kokkos::Profiling::popRegion();
+    //  printf("iter_estimate:%.15f +- %.15f numRegions:%lu iteration:%i\n",
+    //  iter_estimate, iter_errorest, numRegions, it);
 
     double leaves_estimate = integral + iter_estimate;
     double leaves_errorest = error + iter_errorest;
-    
-    //Kokkos::Profiling::pushRegion("Inner Product 1");
+
+    // Kokkos::Profiling::pushRegion("Inner Product 1");
     double activeEst = 0.;
     Kokkos::parallel_reduce(
       "ProParRed1",
       numRegions,
       KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-        valueToUpdate += dRegionsIntegral(index)*activeRegions(index);
+        valueToUpdate += dRegionsIntegral(index) * activeRegions(index);
       },
       activeEst);
-    double iter_finished_estimate =
-      iter_estimate - activeEst;
-    //double iter_finished_estimate =
-    //  iter_estimate - KokkosBlas::dot(activeRegions, dRegionsIntegral);
-      
-    //Kokkos::Profiling::popRegion();
-    
-    //Kokkos::Profiling::pushRegion("Inner Product 2");
+    double iter_finished_estimate = iter_estimate - activeEst;
+    // double iter_finished_estimate =
+    //   iter_estimate - KokkosBlas::dot(activeRegions, dRegionsIntegral);
+
+    // Kokkos::Profiling::popRegion();
+
+    // Kokkos::Profiling::pushRegion("Inner Product 2");
     double activeErrorest = 0.;
     Kokkos::parallel_reduce(
       "ProParRed2",
       numRegions,
       KOKKOS_LAMBDA(const int64_t index, double& valueToUpdate) {
-        valueToUpdate += dRegionsError(index)*activeRegions(index);
+        valueToUpdate += dRegionsError(index) * activeRegions(index);
       },
       activeErrorest);
-    double iter_finished_errorest =
-      iter_errorest - activeErrorest;
-      
-    //double iter_finished_errorest =
-    //  iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
-      
-    //Kokkos::Profiling::popRegion();
+    double iter_finished_errorest = iter_errorest - activeErrorest;
+
+    // double iter_finished_errorest =
+    //   iter_errorest - KokkosBlas::dot(activeRegions, dRegionsError);
+
+    // Kokkos::Profiling::popRegion();
     integral += iter_finished_estimate;
     error += iter_finished_errorest;
 
     /*printf("leaves_estimate:%.15f +- %.15f numRegions:%zu iteration:%i\n",
      leaves_estimate, leaves_errorest, numRegions, it);*/
-    //Kokkos::Profiling::pushRegion("FixErrorBudgetOverflow");
+    // Kokkos::Profiling::pushRegion("FixErrorBudgetOverflow");
     FixErrorBudgetOverflow(activeRegions,
                            integral,
                            error,
@@ -832,7 +855,7 @@ public:
                            leaves_estimate,
                            epsrel,
                            fail);
-    //Kokkos::Profiling::popRegion();
+    // Kokkos::Profiling::popRegion();
 
     if (CheckTerminationCondition(leaves_estimate,
                                   leaves_errorest,
@@ -881,7 +904,7 @@ public:
 
     if (it < 700 && fail == 1) {
       Kokkos::Profiling::pushRegion("GenerateActiveIntervals");
-      //printf("Generate active intervals\n");
+      // printf("Generate active intervals\n");
       size_t numInActiveIntervals =
         GenerateActiveIntervals(dRegions,
                                 dRegionsLength,
@@ -907,33 +930,36 @@ public:
     return false;
   }
 
-  void AllocVolArrays(Volume<double, NDIM>* vol){
+  void
+  AllocVolArrays(Volume<double, NDIM>* vol)
+  {
     Kokkos::Profiling::pushRegion("AllocVolArrays");
-    lows = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("lows"), NDIM);
-    highs = ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("highs"), NDIM);  
-    
+    lows =
+      ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("lows"), NDIM);
+    highs =
+      ViewVectorDouble(Kokkos::ViewAllocateWithoutInitializing("highs"), NDIM);
+
     ViewVectorDouble::HostMirror h_highs = Kokkos::create_mirror_view(highs);
     ViewVectorDouble::HostMirror h_lows = Kokkos::create_mirror_view(lows);
     Jacobian = 1.;
-    
-    if(vol){
-        for (int i = 0; i < NDIM; i++){
-            h_highs(i) = vol->highs[i];
-            h_lows(i) = vol->lows[i];
-            Jacobian *= vol->highs[i]- vol->lows[i];
-        }
+
+    if (vol) {
+      for (int i = 0; i < NDIM; i++) {
+        h_highs(i) = vol->highs[i];
+        h_lows(i) = vol->lows[i];
+        Jacobian *= vol->highs[i] - vol->lows[i];
+      }
+    } else {
+      Volume<T, NDIM> tempVol;
+      for (int i = 0; i < NDIM; i++) {
+        h_highs(i) = tempVol.highs[i];
+        h_lows(i) = tempVol.lows[i];
+        Jacobian *= tempVol.highs[i] - tempVol.lows[i];
+      }
     }
-    else{
-        Volume<T, NDIM> tempVol;
-        for(int i=0; i<NDIM; i++){
-            h_highs(i) = tempVol.highs[i];
-            h_lows(i) = tempVol.lows[i];
-            Jacobian *= tempVol.highs[i] - tempVol.lows[i];
-        }
-    }
-    
+
     Kokkos::deep_copy(highs, h_highs);
-    Kokkos::deep_copy(lows, h_lows);   
+    Kokkos::deep_copy(lows, h_lows);
     Kokkos::Profiling::popRegion();
   }
 
@@ -958,13 +984,14 @@ public:
                       const Structures<double>& constMem,
                       Volume<T, NDIM>* vol = nullptr)
   {
-   
-    Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> d_integrand("d_integrand", 1); //seems bad to just let them object be captured
+
+    Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> d_integrand(
+      "d_integrand", 1); // seems bad to just let them object be captured
     d_integrand(0) = _integrand;
-    //h_integrand(0) = _integrand;
-    //Kokkos::deep_copy(d_integrand, h_integrand);
+    // h_integrand(0) = _integrand;
+    // Kokkos::deep_copy(d_integrand, h_integrand);
     ViewVectorDouble _generators("generators", NDIM * fEvalPerRegion);
-    //printf("About to compute generators\n");
+    // printf("About to compute generators\n");
     ComputeGenerators<NDIM>(_generators, fEvalPerRegion, constMem);
     AllocVolArrays(vol);
     constViewVectorDouble generators = _generators;
@@ -1031,8 +1058,11 @@ public:
     depthBeingProcessed = log2(numOfDivisionPerRegionPerDimension) * NDIM;
     numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
 
-    ViewVectorDouble newRegions(Kokkos::ViewAllocateWithoutInitializing("newRegions"), numRegions * NDIM);
-    ViewVectorDouble newRegionsLength(Kokkos::ViewAllocateWithoutInitializing("newRegionsLength"), numRegions * NDIM);
+    ViewVectorDouble newRegions(
+      Kokkos::ViewAllocateWithoutInitializing("newRegions"), numRegions * NDIM);
+    ViewVectorDouble newRegionsLength(
+      Kokkos::ViewAllocateWithoutInitializing("newRegionsLength"),
+      numRegions * NDIM);
 
     size_t numThreads = 512;
     size_t numBlocks = (size_t)ceil(

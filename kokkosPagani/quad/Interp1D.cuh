@@ -5,14 +5,15 @@
 
 namespace quad {
 
-class Interp1D{
+  class Interp1D {
   public:
     __host__ __device__
-    Interp1D():interpT(), interpC()
+    Interp1D()
+      : interpT(), interpC()
     {}
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
-    //double* interpT;
-    //double* interpC;
+    // double* interpT;
+    // double* interpC;
     ViewVectorDouble interpT("interpT", 1);
     ViewVectorDouble interpC("interpC", 1;
     //alternatively do ViewVectorDouble interpT("interpT", 1);
@@ -30,9 +31,9 @@ class Interp1D{
       _cols = cols;
       interpT = ViewVectorDouble("interpT"), cols);
       interpC = ViewVectorDouble("interpC"), cols);
-        
-      //cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
-      //cudaMallocManaged((void**)&interpT, sizeof(double) * _cols);
+
+      // cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
+      // cudaMallocManaged((void**)&interpT, sizeof(double) * _cols);
     }
     
     template <size_t M>
@@ -88,7 +89,7 @@ class Interp1D{
     }
 
     Interp1D(const Interp1D& source)
-    {   
+    {
       Alloc(source._cols);
       interpT = source.interpT;
       interpC = source.interpC;
@@ -102,7 +103,6 @@ class Interp1D{
                          size_t& leftI,
                          size_t& rightI) const
     {
-
       size_t currentIndex = size / 2;
       leftI = 0;
       rightI = size - 1;

@@ -189,8 +189,7 @@ exclusive_prefix_scan(ViewVectorInt input, ViewVectorInt output)
   int update = 0.;
 
   Kokkos::parallel_scan(
-    input.extent(0),
-    KOKKOS_LAMBDA(const int i, int& update, const bool final) {
+    input.extent(0), KOKKOS_LAMBDA(const int i, int& update, const bool final) {
       const int val_i = input(i);
       if (final) {
         output(i) = update;

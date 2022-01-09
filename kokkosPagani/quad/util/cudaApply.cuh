@@ -23,9 +23,14 @@ namespace gpu {
       return s;
     }
 
-    __host__ __device__ T& operator[](std::size_t i) { return data[i]; }
+    __host__ __device__ T&
+    operator[](std::size_t i)
+    {
+      return data[i];
+    }
 
-    __host__ __device__ T const& operator[](std::size_t i) const
+    __host__ __device__ T const&
+    operator[](std::size_t i) const
     {
       return data[i];
     }
