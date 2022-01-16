@@ -27,7 +27,6 @@ int
 main(int argc, char** argv)
 {
   double epsrel = 1.e-3;
-  double epsrel_min = 1e-9;
   constexpr int ndim = 9;
   double epsabs = 1.e-20;
   double ncall = 1.0e8;

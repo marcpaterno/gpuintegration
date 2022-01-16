@@ -42,7 +42,6 @@ main(int argc, char** argv)
 
   PrintHeader();
   bool success = false;
-  size_t expID = 0;
   do {
     params.ncall = ncall;
     for (int run = 0; run < 100; run++) {
