@@ -1,6 +1,5 @@
-#include "vegas/vegasT.cuh"
 #include "vegas/demos/demo_utils.cuh"
-
+#include "vegas/vegasT.cuh"
 
 class GENZ_2_6D {
 public:
@@ -33,30 +32,27 @@ main(int argc, char** argv)
   int itmax = 40;
   int skip = 10;
   VegasParams params(ncall, titer, itmax, skip);
-  
+
   double true_value = 1.286889807581113e+13;
 
   double lows[] = {0., 0., 0., 0., 0., 0.};
   double highs[] = {1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_2_6D integrand;
-  
+
   PrintHeader();
   bool success = false;
   size_t expID = 0;
-  do{
-        params.ncall = ncall;
-        for(int run = 0; run < 100; run++){
-            success = mcubes_time_and_call<GENZ_2_6D, ndim>
-            (integrand, epsrel, true_value, "f2 6D", params, &volume);
-            if(!success)
-                break;
-            }
-        epsrel /= 5.;
-  }while(epsrel >= epsrel_min && success == true); 
-  
+  do {
+    params.ncall = ncall;
+    for (int run = 0; run < 100; run++) {
+      success = mcubes_time_and_call<GENZ_2_6D, ndim>(
+        integrand, epsrel, true_value, "f2 6D", params, &volume);
+      if (!success)
+        break;
+    }
+    epsrel /= 5.;
+  } while (epsrel >= epsrel_min && success == true);
+
   return 0;
 }
-
-
-

@@ -1,7 +1,7 @@
-#include "vegas/vegasT.cuh"
-#include "vegas/demos/demo_utils.cuh"
-#include "vegas/vegasT1D.cuh"
 #include "math.h"
+#include "vegas/demos/demo_utils.cuh"
+#include "vegas/vegasT.cuh"
+#include "vegas/vegasT1D.cuh"
 
 class Gauss9D {
 public:
@@ -23,7 +23,7 @@ public:
   }
 };
 
-int 
+int
 main(int argc, char** argv)
 {
   double epsrel = 1.e-3;
@@ -43,30 +43,32 @@ main(int argc, char** argv)
   double lows[] = {-1., -1., -1., -1., -1., -1., -1., -1., -1.};
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
-  
+
   Gauss9D integrand;
-      
-  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
+
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
   constexpr bool MCUBES_DEBUG = false;
-  for(int run = 0; run < 100; run++){
+  for (int run = 0; run < 100; run++) {
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = cuda_mcubes::integrate<Gauss9D, ndim, MCUBES_DEBUG>(integrand, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+    auto res = cuda_mcubes::integrate<Gauss9D, ndim, MCUBES_DEBUG>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      &volume,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-                
-    std::cout << "Gauss9D" << "," 
-            << epsrel << ","
-            << std::scientific << true_value << "," 
-            << std::scientific << res.estimate << "," 
-            << std::scientific << res.errorest << "," 
-            << res.chi_sq << "," 
-            << params.t_iter <<","
-            << params.num_adjust_iters << ","
-            << params.num_skip_iters << ","
-			<< res.iters << "," 
-            << params.ncall <<","
-            << res.neval <<","
-            << dt.count() << ","
-            << res.status << "\n";      
+
+    std::cout << "Gauss9D"
+              << "," << epsrel << "," << std::scientific << true_value << ","
+              << std::scientific << res.estimate << "," << std::scientific
+              << res.errorest << "," << res.chi_sq << "," << params.t_iter
+              << "," << params.num_adjust_iters << "," << params.num_skip_iters
+              << "," << res.iters << "," << params.ncall << "," << res.neval
+              << "," << dt.count() << "," << res.status << "\n";
     break;
   }
 

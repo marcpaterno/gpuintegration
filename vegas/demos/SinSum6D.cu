@@ -1,5 +1,5 @@
-#include "vegas/vegasT.cuh"
 #include "vegas/demos/demo_utils.cuh"
+#include "vegas/vegasT.cuh"
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -34,29 +34,30 @@ main(int argc, char** argv)
   double highs[] = {10., 10., 10., 10., 10., 10.};
   quad::Volume<double, ndim> volume(lows, highs);
   SinSum6D integrand;
-  using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;  
-    
-  constexpr bool MCUBES_DEBUG = false;  
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+
+  constexpr bool MCUBES_DEBUG = false;
   auto t0 = std::chrono::high_resolution_clock::now();
-  auto res = cuda_mcubes::integrate<SinSum6D, ndim, MCUBES_DEBUG>(integrand, epsrel, epsabs, params.ncall, &volume, params.t_iter, params.num_adjust_iters, params.num_skip_iters);
+  auto res = cuda_mcubes::integrate<SinSum6D, ndim, MCUBES_DEBUG>(
+    integrand,
+    epsrel,
+    epsabs,
+    params.ncall,
+    &volume,
+    params.t_iter,
+    params.num_adjust_iters,
+    params.num_skip_iters);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-    
+
   std::cout.precision(15);
-  std::cout << "SinSum6D" << "," 
-            << epsrel << ","
-            << std::scientific << true_value << "," 
-            << std::scientific << res.estimate << "," 
-            << std::scientific << res.errorest << "," 
-            << res.chi_sq << "," 
-            << params.t_iter <<","
-            << params.num_adjust_iters << ","
-            << params.num_skip_iters << ","
-            << res.iters << ","
-            << params.ncall <<","
-            << res.neval <<","
-            << dt.count() << ","
-            << res.status << "\n";
-  
-  
+  std::cout << "SinSum6D"
+            << "," << epsrel << "," << std::scientific << true_value << ","
+            << std::scientific << res.estimate << "," << std::scientific
+            << res.errorest << "," << res.chi_sq << "," << params.t_iter << ","
+            << params.num_adjust_iters << "," << params.num_skip_iters << ","
+            << res.iters << "," << params.ncall << "," << res.neval << ","
+            << dt.count() << "," << res.status << "\n";
+
   return 0;
 }
