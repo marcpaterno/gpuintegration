@@ -1,5 +1,5 @@
-#include "demo_utils.cuh"
-#include "genz_1abs_5d.cuh"
+#include "cudaPagani/demos/demo_utils.cuh"
+#include "cudaPagani/demos/genz_1abs_5d.cuh"
 #include <chrono>
 #include <cmath>
 #include <iomanip>

@@ -1,4 +1,4 @@
-#include "mcubesSeq.hh"
+#include "vegas/mcubesSeq.hh"
 #include <iostream>
 #include <tuple>
 #include <utility>

@@ -1,5 +1,5 @@
 extern "C" {
-#include "tests/do_integration_from_c.h"
+#include "cudaPagani/tests/do_integration_from_c.h"
 }
 
 #include "cudaPagani/quad/GPUquad/Pagani.cuh"

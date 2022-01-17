@@ -1,5 +1,5 @@
-//#include "function.cuh"
-#include "demo_utils.cuh"
+//#include "cudaPagani/demos/function.cuh"
+#include "cudaPagani/demos/demo_utils.cuh"
 #include <chrono>
 #include <cmath>
 #include <fstream>

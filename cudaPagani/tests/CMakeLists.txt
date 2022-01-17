@@ -22,8 +22,6 @@ target_include_directories(cudaUnifiedArray PRIVATE
 )
 add_test(cudaUnifiedArray cudaUnifiedArray)
 
-
-
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model
                            PRIVATE ${CMAKE_SOURCE_DIR}
@@ -45,7 +43,6 @@ target_include_directories(test_cpu_vs_gpu PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(test_cpu_vs_gpu test_cpu_vs_gpu)
-
 
 add_executable(hello hello.cu)
 set_target_properties(hello PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})

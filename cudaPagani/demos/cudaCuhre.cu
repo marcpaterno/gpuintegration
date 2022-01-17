@@ -4,7 +4,7 @@
 
 #include "cudaPagani/quad/quad.h"
 #include "cudaPagani/quad/util/cudaUtil.h"
-#include "function.cuh"
+#include "cudaPagani/demos/function.cuh"
 
 #include "cudaPagani/quad/GPUquad/Interp2D.cuh"
 #include "cudaPagani/quad/GPUquad/Pagani.cuh"
