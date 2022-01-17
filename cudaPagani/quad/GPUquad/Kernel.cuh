@@ -287,8 +287,6 @@ namespace quad {
     T errorest_change; // delete, not doing anything useful anymore
     T estimate_change;
 
-    T* dlastErr;
-    T* dlastAvg;
     int KEY, VERBOSE, outLevel;
     // delete numPolishedRegions, numFunctionEvaluations
     size_t numRegions, numPolishedRegions, h_numRegions, numFunctionEvaluations,
@@ -929,65 +927,7 @@ namespace quad {
       Host.ReleaseMemory(h_highs);
       Host.ReleaseMemory(h_lows);
     }
-
-    void
-    Phase_II_PrintFile(T integral,
-                       T error,
-                       T epsrel,
-                       T epsabs,
-                       int regionCnt,
-                       int* dRegionsNumRegion,
-                       Region<NDIM>* hgRegionsPhase1,
-                       size_t size)
-    {
-
-      if (outLevel >= 1) {
-        out1 << integral << "," << error << "," << (regionCnt - size)
-             << std::endl;
-        PrintToFile(out1.str(), "Level_1.csv");
-      }
-
-      if (outLevel >= 2) {
-        auto callback = [](T integral, T error, T rel) {
-          return fabs(error / (rel * integral));
-        };
-
-        using func_pointer = T (*)(T integral, T error, T rel);
-        func_pointer lambda_fp = callback;
-
-        display(dRegionsIntegral,
-                dRegionsError,
-                epsrel,
-                size,
-                lambda_fp,
-                "end_ratio.csv",
-                "result, error, end_ratio");
-        display(dRegionsNumRegion, size, "numRegions.csv", "nregions");
-      }
-
-      if (outLevel >= 4) {
-        // this outLevel will only work for phasetype = 1
-        Region<NDIM>* cgRegionPool = 0;
-        int* RegionsNumRegion = 0;
-        cgRegionPool = (Region<NDIM>*)malloc(sizeof(Region<NDIM>) * size *
-                                             max_globalpool_size);
-        RegionsNumRegion = (int*)malloc(sizeof(int) * size);
-
-        QuadDebug(cudaMemcpy(cgRegionPool,
-                             gRegionPool,
-                             sizeof(Region<NDIM>) * size * max_globalpool_size,
-                             cudaMemcpyDeviceToHost));
-
-        // printf("Inside print file for phase 2 cgRegionPool[4096]\n");
-
-        CudaCheckError();
-        QuadDebug(cudaMemcpy(RegionsNumRegion,
-                             dRegionsNumRegion,
-                             sizeof(int) * size,
-                             cudaMemcpyDeviceToHost));
-      }
-    }
-
+    
     template <class K, size_t numArrays>
     void
     display(size_t arraySize, ...)
