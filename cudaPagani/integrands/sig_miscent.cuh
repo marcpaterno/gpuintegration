@@ -1,6 +1,6 @@
 #ifndef SIG_MISCENT_CUH
 #define SIG_MISCENT_CUH
-#include "../cudaCuhre/quad/util/cudaArray.cuh"
+#include "cudaPagani/quad/util/cudaArray.cuh"
 #include "modules/sigma_miscent_y1_scalarintegrand.hh"
 
 #include <iostream>
