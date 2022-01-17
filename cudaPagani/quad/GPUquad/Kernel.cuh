@@ -239,22 +239,10 @@ namespace quad {
 
     T* curr_hRegions;
     T* curr_hRegionsLength;
-
-    T** hRegions;
-    T** hRegionsLength;
-
+    
     T* dParentsError;
     T* dParentsIntegral;
-    T** hParentsError; // used only for batching phase 1 execution
-    T** hParentsIntegral;
 
-    //-----------------------------------
-    T* polishedRegions;
-    T* polishedRegionsLength;
-    int* polishedRegionsSubDivDimension;
-    T* polishedRegionsIntegral;
-    T* polishedRegionsError;
-    int* polishedRegionsDiv;
 
     //-----------------------------------
 
@@ -276,7 +264,6 @@ namespace quad {
 
     bool estimateHasConverged;
     int Final; // delete, not being used anymore
-    int phase_I_type;
     int heuristicID;
     int fail; // 0 for satisfying ratio, 1 for not satisfying ratio, 2 for
               // running out of bad regions
@@ -312,7 +299,6 @@ namespace quad {
     double* generators = nullptr;
 
   public:
-    T weightsum, avgsum, guess, chisq, chisum, chisqsum;
 
     void
     GetPtrsToArrays(T*& regions,
@@ -349,12 +335,6 @@ namespace quad {
       highBounds = highs;
     }
     
-    int
-    GetPhase_I_type()
-    {
-      return phase_I_type;
-    }
-
     T
     GetIntegral()
     {
@@ -377,12 +357,6 @@ namespace quad {
     GetRatio(T epsrel, T epsabs)
     {
       return lastErr / MaxErr(lastAvg, epsrel, epsabs);
-    }
-
-    void
-    SetPhase_I_type(int type)
-    {
-      phase_I_type = type;
     }
 
     void
@@ -457,32 +431,14 @@ namespace quad {
     
       ConfigureMemoryUtilization();
 
-      polishedRegions = nullptr;
-      polishedRegionsLength = nullptr;
-      polishedRegionsSubDivDimension = nullptr;
-      polishedRegionsIntegral = nullptr;
-      polishedRegionsError = nullptr;
-      polishedRegionsDiv = nullptr;
-
       lastErr = 0;
       lastAvg = 0;
       Final = 0;
       fail = 1;
-      weightsum = 0, avgsum = 0, guess = 0, chisq = 0, chisum = 0,
-      chisqsum = 0; // only used when FINAL = 0 in Rcuhre
       numRegions = 0;
       numFunctionEvaluations = 0;
-      // NDIM = 0;
       KEY = 0;
-      phase_I_type =
-        0; // breadth-first sub-region generation with good region fitler
       h_numRegions = 0;
-
-      /*for (int i = 0; i < 4; i++) {
-        partionSize[i] = 0;
-        partionContributionsError[i] = 0.;
-        partionContributionsIntegral[i] = 0.;
-      }*/
     }
 
     ~Kernel()
@@ -602,12 +558,12 @@ namespace quad {
     Phase_I_PrintFile(T epsrel, T epsabs)
     {
 
-      if (outLevel >= 1 && phase_I_type == 0) {
+      if (outLevel >= 1) {
         printf("OutLevel 1\n");
         PrintToFile(out1.str(), "Level_1.csv");
       }
 
-      if (outLevel >= 3 && phase_I_type == 0) {
+      if (outLevel >= 3) {
         printf("OutLevel 3\n");
 
         auto callback = [](T integral, T error, T rel) {

@@ -52,7 +52,6 @@ PrepKernel(quad::Kernel<double, NDIM>* kernel)
   kernel->InitKernel(KEY, VERBOSE, numDevices);
   kernel->SetFinal(Final);
   kernel->SetVerbosity(VERBOSE);
-  kernel->SetPhase_I_type(phase1type);
   kernel->SetHeuristicID(heuristicID);
   kernel->GenerateInitialRegions();
 }
