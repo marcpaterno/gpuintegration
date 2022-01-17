@@ -54,8 +54,7 @@ namespace quad {
     int
     ExecutePhaseI(IntegT* d_integrand,
                   cuhreResult<T>& res,
-                  Volume<T, NDIM> const* volume,
-                  const int phase1type)
+                  Volume<T, NDIM> const* volume)
     {
 
       return kernel->IntegrateFirstPhase(d_integrand,
@@ -102,8 +101,7 @@ namespace quad {
               int verbosity = 0,
               int Final = 0,
               int heuristicID = 0,
-              int phase1type = 0,
-              bool phase2 = false)
+              int phase1type = 0)
     {
       cuhreResult<T> res;
 
@@ -111,9 +109,7 @@ namespace quad {
       this->epsabs = epsabs;
       kernel->SetFinal(Final);
       kernel->SetVerbosity(verbosity);
-      kernel->SetPhase_I_type(phase1type);
       kernel->SetHeuristicID(heuristicID);
-      kernel->SetPhase2(phase2);
 
       // cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
       // memcpy(d_integrand, &integrand, sizeof(IntegT));
@@ -123,7 +119,7 @@ namespace quad {
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
 
-      res.status = ExecutePhaseI(d_integrand, res, volume, phase1type);
+      res.status = ExecutePhaseI(d_integrand, res, volume);
       res.lastPhase = 1;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
 

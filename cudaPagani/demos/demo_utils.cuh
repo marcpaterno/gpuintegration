@@ -51,14 +51,12 @@ struct Config {
          int heuristic,
          int phaseT,
          int deviceNum,
-         int finFlag,
-         bool phase2)
+         int finFlag)
     : outfileVerbosity{verbosity}
     , phase_I_type(phaseT)
     , numdevices{deviceNum}
     , heuristicID{heuristic}
     , _final(finFlag)
-    , phase_2(phase2)
   {}
   Config() = default;
 
@@ -107,8 +105,7 @@ namespace floatIntegrands {
                                              config.outfileVerbosity,
                                              config._final,
                                              config.heuristicID,
-                                             config.phase_I_type,
-                                             config.phase_2);
+                                             config.phase_I_type);
     // nvtxRangePop();
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     float const absolute_error = std::abs(result.estimate - true_value);
@@ -155,8 +152,7 @@ cu_time_and_call(std::string id,
                                            config.outfileVerbosity,
                                            config._final,
                                            config.heuristicID,
-                                           config.phase_I_type,
-                                           config.phase_2);
+                                           config.phase_I_type);
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
