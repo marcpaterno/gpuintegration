@@ -8,218 +8,218 @@ target_include_directories(cudaCuhre PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(B8_15 B8_15.cu)
-set_target_properties(B8_15 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(B8_15 util ${NVTX_LIBRARY})
-target_include_directories(B8_15 PRIVATE
+add_executable(pagani_B8_15 B8_15.cu)
+set_target_properties(pagani_B8_15 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_B8_15 util ${NVTX_LIBRARY})
+target_include_directories(pagani_B8_15 PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(DiagonalRidge2D diagonalRidge2D.cu)
-set_target_properties(DiagonalRidge2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(DiagonalRidge2D util ${NVTX_LIBRARY})
-target_include_directories(DiagonalRidge2D PRIVATE
+add_executable(pagani_DiagonalRidge2D diagonalRidge2D.cu)
+set_target_properties(pagani_DiagonalRidge2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_DiagonalRidge2D util ${NVTX_LIBRARY})
+target_include_directories(pagani_DiagonalRidge2D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(B8_22 B8_22.cu)
-set_target_properties(B8_22 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(B8_22 util ${NVTX_LIBRARY})
-target_include_directories(B8_22 PRIVATE
+add_executable(pagani_B8_22 B8_22.cu)
+set_target_properties(pagani_B8_22 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_B8_22 util ${NVTX_LIBRARY})
+target_include_directories(pagani_B8_22 PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(Gauss9D Gauss9D.cu)
-set_target_properties(Gauss9D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Gauss9D util ${NVTX_LIBRARY})
-target_include_directories(Gauss9D PRIVATE
+add_executable(pagani_Gauss9D Gauss9D.cu)
+set_target_properties(pagani_Gauss9D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Gauss9D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Gauss9D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(Gauss9Dfloat Gauss9Dfloat.cu)
-set_target_properties(Gauss9Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Gauss9Dfloat util ${NVTX_LIBRARY})
-target_include_directories(Gauss9Dfloat PRIVATE
+add_executable(pagani_Gauss9Dfloat Gauss9Dfloat.cu)
+set_target_properties(pagani_Gauss9Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Gauss9Dfloat util ${NVTX_LIBRARY})
+target_include_directories(pagani_Gauss9Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(absCosSum5Dplus1 absCosSum5Dplus1.cu)
-set_target_properties(absCosSum5Dplus1 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(absCosSum5Dplus1 util ${NVTX_LIBRARY})
-target_include_directories(absCosSum5Dplus1 PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-
-add_executable(Genz2_2DGPU Genz2_2D.cu)
-set_target_properties(Genz2_2DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz2_2DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz2_2DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz2_6DGPU Genz2_6D.cu)
-set_target_properties(Genz2_6DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz2_6DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz2_6DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz2_8DGPU Genz2_8D.cu)
-set_target_properties(Genz2_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz2_8DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz2_8DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz3_3DGPU Genz3_3D.cu)
-set_target_properties(Genz3_3DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz3_3DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz3_3DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz3_6DGPU Genz3_6D.cu)
-set_target_properties(Genz3_6DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz3_6DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz3_6DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz3_8DGPU Genz3_8D.cu)
-set_target_properties(Genz3_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz3_8DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz3_8DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz4_5DGPU Genz4_5D.cu)
-set_target_properties(Genz4_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz4_5DGPU util ${NVTX_LIBRARY}) 
-target_include_directories(Genz4_5DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz4_5Dfloat Genz4_5Dfloat.cu)
-set_target_properties(Genz4_5Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz4_5Dfloat util ${NVTX_LIBRARY}) 
-target_include_directories(Genz4_5Dfloat PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz4_8DGPU Genz4_8D.cu)
-set_target_properties(Genz4_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz4_8DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz4_8DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz4_8Dfloat Genz4_8Dfloat.cu)
-set_target_properties(Genz4_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz4_8Dfloat util ${NVTX_LIBRARY})
-target_include_directories(Genz4_8Dfloat PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz5_2DGPU Genz5_2D.cu)
-set_target_properties(Genz5_2DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz5_2DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz5_2DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz5_5DGPU Genz5_5D.cu)
-set_target_properties(Genz5_5DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz5_5DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz5_5DGPU PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Genz5_8DGPU Genz5_8D.cu)
-set_target_properties(Genz5_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz5_8DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz5_8DGPU PRIVATE
+add_executable(pagani_absCosSum5Dplus1 absCosSum5Dplus1.cu)
+set_target_properties(pagani_absCosSum5Dplus1 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_absCosSum5Dplus1 util ${NVTX_LIBRARY})
+target_include_directories(pagani_absCosSum5Dplus1 PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
 
-add_executable(Genz6_2DGPU Genz6_2D.cu)
-set_target_properties(Genz6_2DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz6_2DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz6_2DGPU PRIVATE
+add_executable(pagani_Genz2_2D Genz2_2D.cu)
+set_target_properties(pagani_Genz2_2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz2_2D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz2_2D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(Genz6_6DGPU Genz6_6D.cu)
-set_target_properties(Genz6_6DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz6_6DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz6_6DGPU PRIVATE
+add_executable(pagani_Genz2_6D Genz2_6D.cu)
+set_target_properties(pagani_Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz2_6D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz2_6D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(Genz6_6Dfloat Genz6_6Dfloat.cu)
-set_target_properties(Genz6_6Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz6_6Dfloat util ${NVTX_LIBRARY})
-target_include_directories(Genz6_6Dfloat PRIVATE
+add_executable(pagani_Genz2_8D Genz2_8D.cu)
+set_target_properties(pagani_Genz2_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz2_8D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz2_8D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(Genz1_8DGPU Genz1_8D.cu)
-target_compile_options(Genz1_8DGPU PRIVATE "-lineinfo")
-set_target_properties(Genz1_8DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz1_8DGPU util ${NVTX_LIBRARY})
-target_include_directories(Genz1_8DGPU PRIVATE
+add_executable(pagani_Genz3_3D Genz3_3D.cu)
+set_target_properties(pagani_Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz3_3D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz3_3D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz3_6D Genz3_6D.cu)
+set_target_properties(pagani_Genz3_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz3_6D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz3_6D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz3_8D Genz3_8D.cu)
+set_target_properties(pagani_Genz3_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz3_8D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz3_8D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz4_5D Genz4_5D.cu)
+set_target_properties(pagani_Genz4_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz4_5D util ${NVTX_LIBRARY}) 
+target_include_directories(pagani_Genz4_5D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz4_5Dfloat Genz4_5Dfloat.cu)
+set_target_properties(pagani_Genz4_5Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz4_5Dfloat util ${NVTX_LIBRARY}) 
+target_include_directories(pagani_Genz4_5Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz4_8D Genz4_8D.cu)
+set_target_properties(pagani_Genz4_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz4_8D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz4_8D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz4_8Dfloat Genz4_8Dfloat.cu)
+set_target_properties(pagani_Genz4_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz4_8Dfloat util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz4_8Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz5_2D Genz5_2D.cu)
+set_target_properties(pagani_Genz5_2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz5_2D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz5_2D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz5_5D Genz5_5D.cu)
+set_target_properties(pagani_Genz5_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz5_5D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz5_5D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz5_8D Genz5_8D.cu)
+set_target_properties(pagani_Genz5_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz5_8D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz5_8D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+
+add_executable(pagani_Genz6_2D Genz6_2D.cu)
+set_target_properties(pagani_Genz6_2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz6_2D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz6_2D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz6_6D Genz6_6D.cu)
+set_target_properties(pagani_Genz6_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz6_6D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz6_6D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz6_6Dfloat Genz6_6Dfloat.cu)
+set_target_properties(pagani_Genz6_6Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz6_6Dfloat util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz6_6Dfloat PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(pagani_Genz1_8D Genz1_8D.cu)
+target_compile_options(pagani_Genz1_8D PRIVATE "-lineinfo")
+set_target_properties(pagani_Genz1_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz1_8D util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz1_8D PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(Genz1_8Dfloat Genz1_8Dfloat.cu)
-target_compile_options(Genz1_8Dfloat PRIVATE "-lineinfo")
-set_target_properties(Genz1_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Genz1_8Dfloat util ${NVTX_LIBRARY})
-target_include_directories(Genz1_8Dfloat PRIVATE
+add_executable(pagani_Genz1_8Dfloat Genz1_8Dfloat.cu)
+target_compile_options(pagani_Genz1_8Dfloat PRIVATE "-lineinfo")
+set_target_properties(pagani_Genz1_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_Genz1_8Dfloat util ${NVTX_LIBRARY})
+target_include_directories(pagani_Genz1_8Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(absCosSum5D absCosSum5D.cu)
-target_compile_options(absCosSum5D PRIVATE "-lineinfo")
-set_target_properties(absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(absCosSum5D util ${NVTX_LIBRARY})
-target_include_directories(absCosSum5D PRIVATE
+add_executable(pagani_absCosSum5D absCosSum5D.cu)
+target_compile_options(pagani_absCosSum5D PRIVATE "-lineinfo")
+set_target_properties(pagani_absCosSum5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_absCosSum5D util ${NVTX_LIBRARY})
+target_include_directories(pagani_absCosSum5D PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(cuda_genz_1abs_5d genz_1abs_5d.cu)
-set_target_properties(cuda_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(cuda_genz_1abs_5d util ${NVTX_LIBRARY})
-target_include_directories(cuda_genz_1abs_5d PRIVATE
+add_executable(pagani_genz_1abs_5d genz_1abs_5d.cu)
+set_target_properties(pagani_genz_1abs_5d PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_genz_1abs_5d util ${NVTX_LIBRARY})
+target_include_directories(pagani_genz_1abs_5d PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(SinSum6DGPU SinSum6D.cu)
-set_target_properties(SinSum6DGPU PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(SinSum6DGPU util ${NVTX_LIBRARY})
-target_include_directories(SinSum6DGPU PRIVATE
+add_executable(pagani_SinSum6D SinSum6D.cu)
+set_target_properties(pagani_SinSum6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(pagani_SinSum6D util ${NVTX_LIBRARY})
+target_include_directories(pagani_SinSum6D PRIVATE
   ${CMAKE_SOURCE_DIR}
 )																								

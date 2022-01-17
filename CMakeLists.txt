@@ -20,7 +20,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
 include_directories(AFTER cubacpp externals cudaCuhre)
 
-add_subdirectory(cudaCuhre)
 add_subdirectory(cudaPagani)
 add_subdirectory(vegas)
 
