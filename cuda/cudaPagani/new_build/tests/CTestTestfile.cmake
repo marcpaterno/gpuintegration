@@ -1,0 +1,36 @@
+# CMake generated Testfile for 
+# Source directory: /home/isaki001/numint/gpuintegration/cudaPagani/tests
+# Build directory: /home/isaki001/numint/gpuintegration/cudaPagani/new_build/tests
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+add_test(CuhrePointsEvaluation "CuhrePointsEvaluation")
+set_tests_properties(CuhrePointsEvaluation PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;9;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(cudaUnifiedArray "cudaUnifiedArray")
+set_tests_properties(cudaUnifiedArray PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;18;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(test_cpu_vs_gpu "test_cpu_vs_gpu")
+set_tests_properties(test_cpu_vs_gpu PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;42;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(hello "hello")
+set_tests_properties(hello PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;47;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(test_integration_from_c "test_integration_from_c")
+set_tests_properties(test_integration_from_c PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;59;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(StatefullIntegrand "StatefullIntegrand")
+set_tests_properties(StatefullIntegrand PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;68;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(test_cuhre_convergence "test_cuhre_convergence")
+set_tests_properties(test_cuhre_convergence PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;77;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(BoxIntegrals "BoxIntegrals")
+set_tests_properties(BoxIntegrals PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;86;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(NanIntegral "NanIntegral")
+set_tests_properties(NanIntegral PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;95;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(test_volume "test_volume")
+set_tests_properties(test_volume PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;104;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(RegionSampling "RegionSampling")
+set_tests_properties(RegionSampling PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;114;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(FourthDividedDifference "FourthDividedDifference")
+set_tests_properties(FourthDividedDifference PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;125;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(Interpolation "Interpolation")
+set_tests_properties(Interpolation PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;135;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(Interpolation1D "Interpolation1D")
+set_tests_properties(Interpolation1D PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;145;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")
+add_test(Interpolation2D "Interpolation2D")
+set_tests_properties(Interpolation2D PROPERTIES  _BACKTRACE_TRIPLES "/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;154;add_test;/home/isaki001/numint/gpuintegration/cudaPagani/tests/CMakeLists.txt;0;")

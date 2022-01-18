@@ -1,0 +1,2 @@
+kernel_reduction 5 0.19844
+---

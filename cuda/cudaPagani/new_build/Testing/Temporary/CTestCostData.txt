@@ -1,0 +1,17 @@
+test_Volume 2 0.0498212
+CuhrePointsEvaluation 2 0.236405
+cudaUnifiedArray 2 0.216921
+test_cpu_vs_gpu 2 0.205228
+hello 2 0.178155
+test_integration_from_c 2 0.202275
+StatefullIntegrand 2 0.224833
+test_cuhre_convergence 2 0.246122
+BoxIntegrals 2 0.239119
+NanIntegral 2 0.236612
+test_volume 2 0.375559
+RegionSampling 2 0.197354
+FourthDividedDifference 2 0.0215288
+Interpolation 2 0.263618
+Interpolation1D 2 0.200704
+Interpolation2D 2 0.225248
+---
