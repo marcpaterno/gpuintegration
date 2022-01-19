@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(gpuintegration VERSION 0.0.1 LANGUAGES CXX CUDA C)
-enable_testing()
+#enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
 # the ABI here -- e.g., the standard level.
