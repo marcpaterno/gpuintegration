@@ -21,12 +21,8 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 include_directories(AFTER cubacpp externals ${PAGANI_DIR})
 
 add_subdirectory(cuda)
+if (GPUINTEGRATION_BUILD_KOKKOS)
 add_subdirectory(kokkos)
-#add_subdirectory(cudaPagani)
-#add_subdirectory(vegas)
-
-#if (GPUINTEGRATION_BUILD_KOKKOS)
-#  add_subdirectory(kokkosPaagani)
-#endif()
+endif()
 
 
