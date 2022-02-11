@@ -43,7 +43,7 @@ main(int argc, char** argv)
     {1.e-3, 6.e9}, {2.e-4, 6.e9}, {4.e-5, 6.e9}, {8.e-6, 6.e9}, {1.6e-6, 6.e9}
   };*/
 
-  PrintHeader();
+  print_mcubes_header();
   bool success = false;
   do {
     params.ncall = ncall; // required_ncall[epsrel];

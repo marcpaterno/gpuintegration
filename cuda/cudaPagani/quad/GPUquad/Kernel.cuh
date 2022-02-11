@@ -1038,6 +1038,27 @@ namespace quad {
     void
     GenerateInitialRegions()
     {
+      //reset variables before allocating Host memory
+      mustFinish = false;
+      numPolishedRegions = 0;
+      dParentsError = nullptr;
+      dParentsIntegral = nullptr;
+      gRegionPool = nullptr;
+      errorest_change = 0.;
+      estimate_change = 0.;
+      estimateHasConverged = false;
+    
+      ConfigureMemoryUtilization();
+
+      lastErr = 0;
+      lastAvg = 0;
+      Final = 0;
+      fail = 1;
+      numRegions = 0;
+      numFunctionEvaluations = 0;
+      KEY = 0;
+      h_numRegions = 0;
+      
       curr_hRegions = (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * NDIM);
       curr_hRegionsLength =
         (T*)Host.AllocateMemory(&curr_hRegionsLength, sizeof(T) * NDIM);
@@ -1183,7 +1204,8 @@ namespace quad {
         cudaMalloc((void**)&newActiveRegionsBisectDim,
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
-
+        
+        //std::cout<<"numActiveRegions for parent expansion:"<<numActiveRegions<<"\n";
         ExpandcuArray(dParentsIntegral, numRegions / 2, numActiveRegions);
         CudaCheckError();
         ExpandcuArray(dParentsError, numRegions / 2, numActiveRegions);
@@ -1373,10 +1395,7 @@ namespace quad {
       estimateHasConverged =
         estimateHasConverged == false ?
           //(iteration >= 2 ?
-          (iteration >= 10 ?
-             sigDigitsSame(
-               lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) :
-             false) :
+          (iteration >= 10 ? sigDigitsSame(lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) : false) :
           true;
 
       secondTolastAvg = lastAvg;
@@ -1387,7 +1406,7 @@ namespace quad {
         (double)GetGPUMemNeededForNextIteration_CallBeforeSplit() /
         ((double)Device.GetAmountFreeMem());
       bool enoughMemForNextIter = mem_need_have_ratio < 1.;
-
+      //printf("Heuristic classification mem_need_have_ratio:%f estimateHasConverged:%i enoughMemForNextIter:%i lastAvg:%e, secondToLast:%e, leaves_estimate:%e\n", mem_need_have_ratio, estimateHasConverged, enoughMemForNextIter, lastAvg, secondTolastAvg, leaves_estimate);
       if (enoughMemForNextIter &&
           !estimateHasConverged) // don't filter if we haven't converged and we
                                  // have enough mem
@@ -1395,10 +1414,8 @@ namespace quad {
 
       if (mem_need_have_ratio < .1)
         return;
-
-      // printf("Will attempt Filtering at iter:%i with %lu regions
-      // estimateHasConverged:%i\n", iteration, numRegions,
-      // estimateHasConverged);
+      
+      // printf("Will attempt Filtering at iter:%i with %lu regions estimateHasConverged:%i\n", iteration, numRegions, estimateHasConverged);
       T targetError = abs(leaves_estimate) * epsrel;
       size_t numThreads = BLOCK_SIZE;
 
@@ -1536,11 +1553,14 @@ namespace quad {
       if (numActiveRegions == numRegions) {
         mustFinish = true;
         QuadDebug(Device.ReleaseMemory(unpolishedRegions));
+        //printf("must finish triggered\n");
       } else {
+        //printf("worked now have %lu active regions\n", numActiveRegions);
         QuadDebug(Device.ReleaseMemory(activeRegions));
         activeRegions = unpolishedRegions;
-        CudaCheckError();
+        //CudaCheckError();
       }
+      CudaCheckError();
     }
 
     void
@@ -1906,9 +1926,7 @@ namespace quad {
                              iter_finished_errorest,
                              leaves_estimate,
                              epsrel);
-      // printf("%i, iter estimates: %.15f, %.15f (%.15e +- %.15e),
-      // numRegions:%lu\n", iteration, iter_estimate, iter_errorest,
-      // iter_estimate, iter_errorest, numRegions);
+      //printf("%i, iter estimates: %.15e, %.15e (%.15e +- %.15e),numRegions:%lu\n", iteration, iter_estimate, iter_errorest, iter_finished_estimate, iter_finished_errorest, numRegions);
       if (/*GetGPUMemNeededForNextIteration_CallBeforeSplit() >=
        Device.GetAmountFreeMem() && mustFinish == true && */
           CheckTerminationCondition(leaves_estimate,
@@ -2084,6 +2102,7 @@ namespace quad {
       for (iteration = 0; iteration < 700 &&
                           fail == 1 && mustFinish == false;
            iteration++) {
+        CudaCheckError();
         FirstPhaseIteration<IntegT>(d_integrand,
                                     epsrel,
                                     epsabs,
@@ -2099,19 +2118,20 @@ namespace quad {
                                     lastIteration);
         QuadDebug(cudaFree(dRegionsError));
         QuadDebug(cudaFree(dRegionsIntegral));
+        CudaCheckError();
       }
 
       CudaCheckError();
 
       StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
-      QuadDebug(Device.ReleaseMemory(dRegions));
-      QuadDebug(Device.ReleaseMemory(dRegionsLength));
-      QuadDebug(Device.ReleaseMemory(dParentsIntegral));
-      QuadDebug(Device.ReleaseMemory(dParentsError));
-      QuadDebug(Device.ReleaseMemory(lows));
-      QuadDebug(Device.ReleaseMemory(highs));
-      QuadDebug(cudaFree(generators));
-
+      QuadDebug(Device.ReleaseMemory(dRegions));CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dRegionsLength));CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dParentsIntegral));CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dParentsError));CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(lows));CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(highs));CudaCheckError();
+      QuadDebug(cudaFree(generators));CudaCheckError();
+      
       bool convergence = false;
       convergence = error <= MaxErr(integral, epsrel, epsabs);
       return !convergence;

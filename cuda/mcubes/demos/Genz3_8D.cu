@@ -37,9 +37,8 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_3_8D integrand;
-  PrintHeader();
 
-  PrintHeader();
+  print_mcubes_header();
 
   size_t expID = 0;
   bool success = false;

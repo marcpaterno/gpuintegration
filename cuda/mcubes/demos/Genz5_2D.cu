@@ -32,7 +32,7 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_5_2D integrand;
 
-  PrintHeader();
+  print_mcubes_header();
   while (mcubes_time_and_call<GENZ_5_2D, ndim>(
            integrand, epsrel, true_value, "GENZ_5_2D", params, &volume) ==
            true &&

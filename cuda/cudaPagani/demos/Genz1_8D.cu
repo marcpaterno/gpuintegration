@@ -28,7 +28,7 @@ main()
   ;
 
   PrintHeader();
-  while (cu_time_and_call<GENZ_1_8D, ndim>("8D f1",
+  while (cu_time_and_call_100<GENZ_1_8D, ndim>("8D f1",
                                            integrand,
                                            epsrel,
                                            true_value,

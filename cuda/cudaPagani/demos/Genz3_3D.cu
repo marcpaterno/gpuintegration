@@ -33,7 +33,7 @@ main()
   constexpr int ndim = 3;
 
   PrintHeader();
-  while (cu_time_and_call<detail::GENZ_3_3D, ndim>("3D f3",
+  while (cu_time_and_call_100<detail::GENZ_3_3D, ndim>("3D f3",
                                                    integrand,
                                                    epsrel,
                                                    true_value,

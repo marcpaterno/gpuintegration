@@ -113,8 +113,11 @@ namespace quad {
 
       // cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
       // memcpy(d_integrand, &integrand, sizeof(IntegT));
+      // size_t free_physmem, total_physmem;
+      //QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+      //std::cout<< "free mem:"<< free_physmem<<"\n";
       IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
-      CudaCheckError();
+      //CudaCheckError();
 
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
@@ -122,8 +125,9 @@ namespace quad {
       res.status = ExecutePhaseI(d_integrand, res, volume);
       res.lastPhase = 1;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
-
+      //CudaCheckError();
       cudaFree(d_integrand);
+      //CudaCheckError();
       return res;
     }
   };

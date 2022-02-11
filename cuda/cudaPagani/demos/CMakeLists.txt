@@ -1,5 +1,13 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(randomized_integrands randomized_integrands.cu)
+set_target_properties(randomized_integrands PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(randomized_integrands util ${NVTX_LIBRARY})
+target_include_directories(randomized_integrands PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(cudaCuhre cudaCuhre.cu)
 set_target_properties(cudaCuhre PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(cudaCuhre quadutil ${NVTX_LIBRARY})

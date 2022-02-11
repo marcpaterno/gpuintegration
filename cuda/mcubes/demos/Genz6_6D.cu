@@ -34,7 +34,7 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_6_6D integrand;
 
-  PrintHeader();
+  print_mcubes_header();
   // std::array<double, 10> required_ncall =
   // {1.e7, 1.e7, 1.e7, 3.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
 

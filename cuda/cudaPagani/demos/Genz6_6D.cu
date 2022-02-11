@@ -35,7 +35,7 @@ main()
   detail::GENZ_6_6D integrand;
   PrintHeader();
 
-  while (cu_time_and_call<detail::GENZ_6_6D, ndim>("6D f6",
+  while (cu_time_and_call_100<detail::GENZ_6_6D, ndim>("6D f6",
                                                    integrand,
                                                    epsrel,
                                                    true_value,

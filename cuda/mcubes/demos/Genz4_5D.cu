@@ -37,7 +37,7 @@ main(int argc, char** argv)
   // std::array<double, 6> required_ncall =
   // {1.e7, 1.e7, 1.e7, 1.e9, 1.e9, 8.e9};
 
-  PrintHeader();
+  print_mcubes_header();
   // size_t expID = 0;
   bool success = false;
 

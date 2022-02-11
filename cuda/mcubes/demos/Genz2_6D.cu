@@ -40,7 +40,7 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_2_6D integrand;
 
-  PrintHeader();
+  print_mcubes_header();
   bool success = false;
   do {
     params.ncall = ncall;

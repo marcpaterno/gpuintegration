@@ -42,7 +42,7 @@ main()
   // configuration.heuristicID = 0;
   // configuration.phase_2 = true;
 
-  while (cu_time_and_call<detail::GENZ_3_8D, ndim>("8D f3",
+  while (cu_time_and_call_100<detail::GENZ_3_8D, ndim>("8D f3",
                                                    integrand,
                                                    epsrel,
                                                    true_value,

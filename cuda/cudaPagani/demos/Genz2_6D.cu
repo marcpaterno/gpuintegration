@@ -21,7 +21,7 @@ main()
   // configuration.heuristicID = 0;
 
   PrintHeader();
-  while (cu_time_and_call<GENZ_2_6D, ndim>("GENZ2_6D",
+  while (cu_time_and_call_100<GENZ_2_6D, ndim>("GENZ2_6D",
                                            integrand,
                                            epsrel,
                                            true_value,
