@@ -27,6 +27,7 @@ namespace quad {
       cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
       cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
       cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
+      CudaCheckError();
     }
 
   public:
@@ -52,12 +53,14 @@ namespace quad {
       memcpy(interpT, source.interpT, sizeof(double) * _cols * _rows);
       memcpy(interpC, source.interpC, sizeof(double) * _cols);
       memcpy(interpR, source.interpR, sizeof(double) * _rows);
+      CudaCheckError();
     }
 
     Interp2D&
     operator=(Interp2D const& rhs)
     {
       Interp2D tmp(rhs);
+      CudaCheckError();
       swap(tmp);
       return *this;
     }
@@ -67,9 +70,11 @@ namespace quad {
 
     ~Interp2D()
     {
+      CudaCheckError();
       cudaFree(interpT);
       cudaFree(interpR);
       cudaFree(interpC);
+      CudaCheckError();
     }
 
     template <size_t M, size_t N>
@@ -77,10 +82,12 @@ namespace quad {
              std::array<double, N> const& ys,
              std::array<double, (N) * (M)> const& zs)
     {
+      CudaCheckError();
       Alloc(M, N);
       memcpy(interpR, ys.data(), sizeof(double) * N);
       memcpy(interpC, xs.data(), sizeof(double) * M);
       memcpy(interpT, zs.data(), sizeof(double) * N * M);
+      CudaCheckError();
     }
 
     Interp2D(double const* xs,
@@ -89,23 +96,28 @@ namespace quad {
              size_t cols,
              size_t rows)
     {
+      CudaCheckError();
       Alloc(cols, rows);
       memcpy(interpR, ys, sizeof(double) * rows);
       memcpy(interpC, xs, sizeof(double) * cols);
       memcpy(interpT, zs, sizeof(double) * rows * cols);
+      CudaCheckError();
     }
 
     Interp2D(std::vector<double> const& xs,
              std::vector<double> const& ys,
              std::vector<double> const& zs)
       : Interp2D(xs.data(), ys.data(), zs.data(), xs.size(), ys.size())
-    {}
+    {
+      CudaCheckError();
+    }
 
     template <size_t M, size_t N>
     Interp2D(std::array<double, M> xs,
              std::array<double, N> ys,
              std::array<std::array<double, N>, M> zs)
     {
+      CudaCheckError();
       Alloc(M, N);
       memcpy(interpR, ys.data(), sizeof(double) * N);
       memcpy(interpC, xs.data(), sizeof(double) * M);
@@ -116,6 +128,7 @@ namespace quad {
           interpT[i + j * M] = row[j];
         }
       }
+      CudaCheckError();
     }
 
     __host__ __device__ bool
@@ -145,11 +158,8 @@ namespace quad {
       interp._rows = ys.size();
 
       cudaMallocManaged((void**)&interp.interpR, sizeof(double) * ys.size());
-      cudaDeviceSynchronize();
       cudaMallocManaged((void**)&interp.interpC, sizeof(double) * xs.size());
-      cudaDeviceSynchronize();
       cudaMallocManaged((void**)&interp.interpT, sizeof(double) * zs.size());
-      cudaDeviceSynchronize();
 
       memcpy(interp.interpR, ys.data(), sizeof(double) * ys.size());
       memcpy(interp.interpC, xs.data(), sizeof(double) * xs.size());
