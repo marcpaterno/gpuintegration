@@ -2069,6 +2069,7 @@ namespace quad {
     {
       QuadDebug(Device.AllocateMemory((void**)&generators,
                                       sizeof(double) * NDIM * fEvalPerRegion));
+      CudaCheckError();
       ComputeGenerators<double, NDIM>
         <<<1, BLOCK_SIZE>>>(generators, fEvalPerRegion, constMem);
       cudaDeviceSynchronize();
