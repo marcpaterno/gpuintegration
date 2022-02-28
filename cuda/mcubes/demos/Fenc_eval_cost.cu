@@ -34,6 +34,44 @@ public:
   }
 };
 
+class GENZ_3_8D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    return pow(1 + 8 * s + 7 * t + 6 * u + 5 * v + 4 * w + 3 * x + 2 * y + z,
+               -9);
+  }
+};
+
+class GENZ_4_8D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double k,
+             double m,
+             double n)
+  {
+    double beta = .5;
+    return exp(-1.0 *
+               (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2) +
+                pow(25, 2) * pow(z - beta, 2) + pow(25, 2) * pow(w - beta, 2) +
+                pow(25, 2) * pow(v - beta, 2) + pow(25, 2) * pow(k - beta, 2) +
+                pow(25, 2) * pow(m - beta, 2) + pow(25, 2) * pow(n - beta, 2)));
+  }
+};
+
 class GENZ_6_6D {
 public:
   __device__ __host__ double
@@ -46,6 +84,7 @@ public:
                  5 * u) /*/1.5477367885091207413e8*/;
   }
 };
+
 
 double num_sub_cubes(const double ncall, const int ndim){
     
@@ -249,10 +288,85 @@ double avg_genz6_6D_cost_per_iter(){
     return 0.;
 }
 
+double avg_genz4_8D_cost_per_iter(){
+    auto t0 = std::chrono::high_resolution_clock::now();
+    GENZ_4_8D integrand;
+    GENZ_4_8D* d_integrand = cuda_copy_to_managed(integrand);
+    constexpr int ndim = 8; 
+    double ncall = 1.0e8;
+    //size_t BLOCK_DIM_X = 128;
+    
+    int chunkSize = GetChunkSize(ncall);
+    double ncubes = num_sub_cubes(ncall, ndim);
+    
+    uint32_t totalNumThreads = (uint32_t)((ncubes) / chunkSize);
+    uint32_t totalCubes = totalNumThreads * chunkSize;
+    int extra = ncubes - totalCubes; 
+    int LastChunk = extra + chunkSize; 
+    uint32_t nBlocks = ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
+    uint32_t nThreads = BLOCK_DIM_X;
+    int npg = samples_per_cube(ncall, ncubes);
+    
+    using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
+    MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
+                          static_cast<unsigned int>(0);
+    
+    for(int i = 0; i < 1000; i++){
+        random_eval<GENZ_4_8D, ndim><<<nBlocks, nThreads>>>(d_integrand, npg, chunkSize, totalNumThreads, LastChunk, seed);
+        cudaDeviceSynchronize();
+    }
+    
+    for(int i = 0; i < 1000; i++){
+        just_random_gen<GENZ_4_8D, ndim><<<nBlocks, nThreads>>>(d_integrand, npg, chunkSize, totalNumThreads, LastChunk, seed);
+        cudaDeviceSynchronize();
+    }
+    
+    return 0.;
+}
+
+double avg_genz3_8D_cost_per_iter(){
+    auto t0 = std::chrono::high_resolution_clock::now();
+    GENZ_3_8D integrand;
+    GENZ_3_8D* d_integrand = cuda_copy_to_managed(integrand);
+    constexpr int ndim = 8; 
+    double ncall = 1.0e8;
+    //size_t BLOCK_DIM_X = 128;
+    
+    int chunkSize = GetChunkSize(ncall);
+    double ncubes = num_sub_cubes(ncall, ndim);
+    
+    uint32_t totalNumThreads = (uint32_t)((ncubes) / chunkSize);
+    uint32_t totalCubes = totalNumThreads * chunkSize;
+    int extra = ncubes - totalCubes; 
+    int LastChunk = extra + chunkSize; 
+    uint32_t nBlocks = ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
+    uint32_t nThreads = BLOCK_DIM_X;
+    int npg = samples_per_cube(ncall, ncubes);
+    
+    using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
+    MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
+      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
+                          static_cast<unsigned int>(0);
+    
+    for(int i = 0; i < 1000; i++){
+        random_eval<GENZ_3_8D, ndim><<<nBlocks, nThreads>>>(d_integrand, npg, chunkSize, totalNumThreads, LastChunk, seed);
+        cudaDeviceSynchronize();
+    }
+    
+    for(int i = 0; i < 1000; i++){
+        just_random_gen<GENZ_3_8D, ndim><<<nBlocks, nThreads>>>(d_integrand, npg, chunkSize, totalNumThreads, LastChunk, seed);
+        cudaDeviceSynchronize();
+    }
+    
+    return 0.;
+}
+
 int main(){
    //avg_sinsum_cost_per_iter();
-  avg_gauss9D_cost_per_iter();
+  //avg_gauss9D_cost_per_iter();
   //avg_genz6_6D_cost_per_iter();  
-    
+  //  avg_genz3_8D_cost_per_iter();
+    avg_genz4_8D_cost_per_iter();
     return 0;
 }
