@@ -24,7 +24,6 @@ namespace quad {
     T epsabs;
     Kernel<T, NDIM>* kernel;
     std::ofstream log;
-    int* leak;
 
   public:
     // Note that this also acts as the default constructor.

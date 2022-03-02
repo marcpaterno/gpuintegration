@@ -26,6 +26,7 @@ adjusting the intervals
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <tuple>
 #define OUTPUT 3
 
@@ -74,7 +75,10 @@ revArrDouble(double* arr, size_t start, size_t end)
 void
 extract(FILE* fp, void* data, size_t size)
 {
-  fread(data, size, 1, fp);
+  int rc = fread(data, size, 1, fp);
+  if (rc != 0) {
+    throw std::runtime_error("fread failed to read from file\n");
+  }
   reverse_bytes(data, size);
 }
 // not used in this code
