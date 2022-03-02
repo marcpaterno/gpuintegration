@@ -100,10 +100,10 @@ namespace quad {
           dev = 0;
         }
 
-        error = QuadDebug(cudaSetDevice(dev));
+        //error = QuadDebug(cudaSetDevice(dev));
         if (error)
           break;
-
+        
         size_t free_physmem, total_physmem;
         QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
 

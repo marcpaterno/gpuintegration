@@ -29,7 +29,7 @@ target_include_directories(cpu_model
 
 add_library(gpu_model model.cu)
 set_target_properties(gpu_model PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(gpu_model quadutil ${NVTX_LIBRARY})
+target_link_libraries(gpu_model ${NVTX_LIBRARY})
 target_include_directories(gpu_model PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -62,7 +62,7 @@ add_test(test_integration_from_c test_integration_from_c)
 
 add_executable(StatefullIntegrand StatefulIntegrand.cu)
 set_target_properties(StatefullIntegrand PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(StatefullIntegrand quadutil ${NVTX_LIBRARY})
+target_link_libraries(StatefullIntegrand ${NVTX_LIBRARY})
 target_include_directories(StatefullIntegrand PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -139,7 +139,7 @@ add_test(Interpolation Interpolation)
 
 add_executable(Interpolation1D Interpolation1D.cu)
 set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Interpolation1D quadutil ${NVTX_LIBRARY})
+target_link_libraries(Interpolation1D ${NVTX_LIBRARY})
 target_include_directories(Interpolation1D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -148,7 +148,7 @@ add_test(Interpolation1D Interpolation1D)
 
 add_executable(Interpolation2D Interpolation2D.cu)
 set_target_properties(Interpolation2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Interpolation2D quadutil ${NVTX_LIBRARY})
+target_link_libraries(Interpolation2D ${NVTX_LIBRARY})
 target_include_directories(Interpolation2D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -157,7 +157,7 @@ add_test(Interpolation2D Interpolation2D)
 
 add_executable(interpolator_mem_usage interpolator_mem_usage.cu)
 set_target_properties(interpolator_mem_usage PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(interpolator_mem_usage quadutil)
+target_link_libraries(interpolator_mem_usage)
 target_include_directories(interpolator_mem_usage PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals

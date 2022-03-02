@@ -10,7 +10,7 @@ target_include_directories(randomized_integrands PRIVATE
 
 add_executable(cudaCuhre cudaCuhre.cu)
 set_target_properties(cudaCuhre PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(cudaCuhre quadutil ${NVTX_LIBRARY})
+target_link_libraries(cudaCuhre ${NVTX_LIBRARY})
 target_include_directories(cudaCuhre PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
