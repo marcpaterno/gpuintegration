@@ -6,8 +6,7 @@
 #include <array>
 
 __global__ void
-kernel(int chunkSize,
-       uint32_t totalNumThreads,
+kernel(int32_t totalNumThreads,
        int LastChunk,
        double* result_dev,
        double* block_reductions)
@@ -18,8 +17,6 @@ kernel(int chunkSize,
                    // block shouldn'tbe getting it from all
   if (m < totalNumThreads) {
     fbg = 1.1;
-    if (m == totalNumThreads - 1)
-      chunkSize = LastChunk + 1;
   }
 
   fbg = cuda_mcubes::blockReduceSum(fbg); // i thought issue would be ere
@@ -42,7 +39,6 @@ Reduction(double ncall, int chunkSize, int ndim)
   double fgb = 1.1;
 
   kernel<<<kernel_params.nBlocks, kernel_params.nThreads>>>(
-    chunkSize,
     kernel_params.totalNumThreads,
     kernel_params.LastChunk,
     result,
