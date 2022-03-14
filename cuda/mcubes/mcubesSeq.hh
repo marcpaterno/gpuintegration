@@ -14,8 +14,8 @@ adjusting the intervals
 /* Driver for routine vegas, shorter version
    to avoid differnt cases */
 
-#include "cuda/cudaPagani/quad/util/Volume.cuh"
-#include "cuda/cudaPagani/quad/util/cuhreResult.cuh"
+#include "cuda/pagani/quad/util/Volume.cuh"
+#include "cuda/pagani/quad/util/cuhreResult.cuh"
 #include "cuda/mcubes/seqCodesDefs.hh"
 
 #include <stdio.h>

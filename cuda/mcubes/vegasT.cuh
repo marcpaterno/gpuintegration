@@ -30,10 +30,10 @@ Last three arguments are: total iterations, iteration
 
 #define OUTFILEVAR 0
 
-#include "cuda/cudaPagani/quad/quad.h"
-#include "cuda/cudaPagani/quad/util/Volume.cuh"
-#include "cuda/cudaPagani/quad/util/cudaApply.cuh"
-#include "cuda/cudaPagani/quad/util/cudaArray.cuh"
+#include "cuda/pagani/quad/quad.h"
+#include "cuda/pagani/quad/util/Volume.cuh"
+#include "cuda/pagani/quad/util/cudaApply.cuh"
+#include "cuda/pagani/quad/util/cudaArray.cuh"
 #include "cuda/mcubes/seqCodesDefs.hh"
 #include "cuda/mcubes/util/func.cuh"
 #include "cuda/mcubes/util/util.cuh"

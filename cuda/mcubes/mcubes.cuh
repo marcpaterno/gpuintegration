@@ -2,7 +2,7 @@
 #define GPUINTEGRATION_VEGAS_MCUBES_CUH
 
 #include "cubacpp/arity.hh"
-#include "cuda/cudaPagani/quad/quad.h"
+#include "cuda/pagani/quad/quad.h"
 #include "cuda/mcubes/drivervegasM.h"
 #include "cuda/mcubes/util/util.cuh"
 #include "cuda/mcubes/vegasT.cuh"

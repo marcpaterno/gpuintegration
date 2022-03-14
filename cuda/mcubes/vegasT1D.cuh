@@ -21,9 +21,9 @@ Last three arguments are: total iterations, iteration
 #include <chrono>
 #include <stdio.h>
 //#include <malloc.h>
-#include "cuda/cudaPagani/quad/util/Volume.cuh"
-#include "cuda/cudaPagani/quad/util/cudaApply.cuh"
-#include "cuda/cudaPagani/quad/util/cudaArray.cuh"
+#include "cuda/pagani/quad/util/Volume.cuh"
+#include "cuda/pagani/quad/util/cudaApply.cuh"
+#include "cuda/pagani/quad/util/cudaArray.cuh"
 #include "cuda/mcubes/util/func.cuh"
 #include "cuda/mcubes/util/vegas_utils.cuh"
 #include "cuda/mcubes/util/verbose_utils.cuh"

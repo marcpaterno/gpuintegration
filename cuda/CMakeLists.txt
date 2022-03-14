@@ -1,2 +1,2 @@
 add_subdirectory(mcubes)
-add_subdirectory(cudaPagani)
+add_subdirectory(pagani)

@@ -5,8 +5,8 @@
 #include "cubacpp/array.hh"
 #include "cubacpp/integration_result.hh"
 #include "cubacpp/integration_volume.hh"
-#include "cuda/cudaPagani/quad/util/Volume.cuh"
-#include "cuda/cudaPagani/quad/util/cuhreResult.cuh"
+#include "cuda/pagani/quad/util/Volume.cuh"
+#include "cuda/pagani/quad/util/cuhreResult.cuh"
 #include "cuda/mcubes/mcubesSeq.hh"
 #include <array>
 #include <functional>
