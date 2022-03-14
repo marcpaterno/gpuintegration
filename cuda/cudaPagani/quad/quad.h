@@ -87,26 +87,6 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
-class Managed {
-public:
-  void*
-  operator new(size_t len)
-  {
-    printf("Managed operator new invoked\n");
-    void* ptr;
-    cudaMallocManaged(&ptr, len);
-    cudaDeviceSynchronize();
-    return ptr;
-  }
-
-  void
-  operator delete(void* ptr)
-  {
-    cudaDeviceSynchronize();
-    cudaFree(ptr);
-  }
-};
-
 struct PhaseII_output {
   // perhaps activeRegions belongs here based on what attributes Region has
   PhaseII_output()

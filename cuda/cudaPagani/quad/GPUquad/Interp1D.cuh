@@ -23,7 +23,7 @@ namespace quad {
                                           IndexRange middle);
   };
 
-  class Interp1D : public Managed {
+  class Interp1D {
 
     size_t _cols = 0;
     double* _xs = nullptr;

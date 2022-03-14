@@ -126,17 +126,6 @@ target_include_directories(FourthDividedDifference PRIVATE
 )
 add_test(FourthDividedDifference FourthDividedDifference)
 
-add_executable(Interpolation Interpolation.cu)
-set_target_properties(Interpolation PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(Interpolation util ${NVTX_LIBRARY})
-target_include_directories(Interpolation PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-  ${CMAKE_SOURCE_DIR}/tests/data
-)
-add_test(Interpolation Interpolation)
-
-
 add_executable(Interpolation1D Interpolation1D.cu)
 set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(Interpolation1D ${NVTX_LIBRARY})

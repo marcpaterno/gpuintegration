@@ -54,10 +54,6 @@ add_executable(serial_mcubesGenz3_3D seqGenz3_3D.cu)
 target_compile_options(serial_mcubesGenz3_3D PRIVATE "-O2")
 set_target_properties(serial_mcubesGenz3_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 
-add_executable(mcubes_Gauss6D Gauss6D.cu)
-target_compile_options(mcubes_Gauss6D PRIVATE "-O2" "-DCURAND")
-set_target_properties(mcubes_Gauss6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-
 add_executable(mcubes_Gauss9D Gauss9D.cu)
 target_compile_options(mcubes_Gauss9D PRIVATE "-O2" "-DCURAND")
 set_target_properties(mcubes_Gauss9D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})

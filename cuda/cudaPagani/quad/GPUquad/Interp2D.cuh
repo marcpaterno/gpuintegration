@@ -11,7 +11,7 @@
 
 namespace quad {
 
-  class Interp2D : public Managed {
+  class Interp2D {
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
     size_t _rows = 0;
     size_t _cols = 0;
