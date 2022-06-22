@@ -7,6 +7,8 @@
 #include "cuda/pagani/quad/util/cudaTimerUtil.h"
 #include "cuda/pagani/quad/util/str_to_doubles.hh"
 #include <assert.h>
+#include <cstdlib>
+#include <iostream>
 #include <utility>
 
 namespace quad {
@@ -22,10 +24,23 @@ namespace quad {
     void
     Alloc(size_t cols, size_t rows)
     {
+      CudaCheckError();
+      if ((cols > 100000) || (rows > 100000)) {
+       std::cerr << "Interp2D::Alloc called with cols="
+          << cols << " and rows=" << rows << '\n';
+        std::abort();
+      } 
+      if ( cols*rows > 1000000 ) {
+       std::cerr << "Interp2D::Alloc called with cols="
+          << cols << " and rows=" << rows << '\n';
+        std::abort();
+      }
       _rows = rows;
       _cols = cols;
       cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
+      CudaCheckError();
       cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
+      CudaCheckError();
       cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
       CudaCheckError();
     }

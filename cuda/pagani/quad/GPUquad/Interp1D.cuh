@@ -7,6 +7,8 @@
 #include "cuda/pagani/quad/util/cudaTimerUtil.h"
 #include "cuda/pagani/quad/util/str_to_doubles.hh"
 #include <assert.h>
+#include <cstdlib>
+#include <iostream>
 #include <utility>
 
 namespace quad {
@@ -90,6 +92,10 @@ quad::IndexRange::adjust_edges(double const* xs, double val, IndexRange middle)
 inline void
 quad::Interp1D::_initialize(double const* x, double const* z)
 {
+  if (_cols > 1000000) {
+    std::cerr << "Interp1D::_initilize called when _cols=" << _cols << '\n';
+    std::abort();
+  }
   size_t const nbytes = sizeof(double) * _cols;
   cudaMallocManaged(&_xs, nbytes);
   memcpy(_xs, x, nbytes);
