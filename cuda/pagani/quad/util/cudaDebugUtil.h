@@ -7,6 +7,33 @@
 #include <stdlib.h>
 #include <string>
 
+
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Obtain a backtrace and print it to stdout. */
+/* This is a hideous C function taken from 
+ * https://www.gnu.org/software/libc/manual/html_node/Backtraces.html
+ * and modified slightly.
+ */
+void print_trace() {
+  int const MAX_FRAMES =100;
+  void *array[MAX_FRAMES];
+  char **strings;
+  int size, i;
+
+  size = backtrace (array, MAX_FRAMES);
+  strings = backtrace_symbols (array, size);
+  if (strings != NULL)
+  {
+    printf ("Obtained %d stack frames.\n", size);
+    for (i = 0; i < size; i++)
+      printf ("%s\n", strings[i]);
+  }
+  free (strings);
+}
+
 namespace quad {
 
 #if (defined(DEBUG) || defined(_DEBUG))
@@ -75,7 +102,8 @@ namespace quad {
               file,
               line,
               cudaGetErrorString(err));
-      exit(-1);
+      print_trace();
+      abort();
     }
 
     // More careful checking. However, this will affect performance.
@@ -87,7 +115,8 @@ namespace quad {
               file,
               line,
               cudaGetErrorString(err));
-      exit(-1);
+      print_trace();
+      abort();
     }
 #endif
 
