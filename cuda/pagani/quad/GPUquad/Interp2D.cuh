@@ -26,7 +26,7 @@ namespace quad {
     {
       CudaCheckError();
       if ((cols > 100000) || (rows > 100000)) {
-       std::cerr << "Interp2D::Alloc called with cols="
+       std::cerr << "InterpD::Alloc called with cols="
           << cols << " and rows=" << rows << '\n';
         std::abort();
       } 
@@ -37,11 +37,14 @@ namespace quad {
       }
       _rows = rows;
       _cols = cols;
-      cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
+      //cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
+      interpR = cuda_malloc<double>(_rows);
       CudaCheckError();
-      cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
+      //cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
+      interpC = cuda_malloc<double>(_cols);
       CudaCheckError();
-      cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
+      //cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
+      interpT = cuda_malloc<double>(_rows * _cols);
       CudaCheckError();
     }
 
@@ -62,13 +65,17 @@ namespace quad {
 
     Interp2D(const Interp2D& source)
     {
+      printf("in copy constructor %lu, %lu, %lu\n", source._cols, source._rows, source._cols * source._rows);
       _cols = source._cols;
       _rows = source._rows;
       Alloc(_cols, _rows);
-      memcpy(interpT, source.interpT, sizeof(double) * _cols * _rows);
-      memcpy(interpC, source.interpC, sizeof(double) * _cols);
-      memcpy(interpR, source.interpR, sizeof(double) * _rows);
+      cuda_memcpy_device_to_device<double>(interpT, source.interpT, _cols * _rows);
+      cuda_memcpy_device_to_device<double>(interpC, source.interpC, _cols);
+      cuda_memcpy_device_to_device<double>(interpR, source.interpR, _rows);
       CudaCheckError();
+      size_t free_physmem, total_physmem;
+      cudaMemGetInfo(&free_physmem, &total_physmem);
+      std::cout<< "free mem:"<< free_physmem<<" at end copy-constructor\n";
     }
 
     Interp2D&
@@ -85,11 +92,16 @@ namespace quad {
 
     ~Interp2D()
     {
+      size_t free_physmem, total_physmem;
+      cudaMemGetInfo(&free_physmem, &total_physmem);
+      std::cout<< "destructor start free mem:"<< free_physmem<<" at end copy-constructor " << _rows << "x" << _cols << "\n";
       CudaCheckError();
       cudaFree(interpT);
       cudaFree(interpR);
       cudaFree(interpC);
       CudaCheckError();
+      cudaMemGetInfo(&free_physmem, &total_physmem);
+      std::cout<< "destructor end free mem:"<< free_physmem<<" at end copy-constructor\n";
     }
 
     template <size_t M, size_t N>
@@ -99,9 +111,9 @@ namespace quad {
     {
       CudaCheckError();
       Alloc(M, N);
-      memcpy(interpR, ys.data(), sizeof(double) * N);
-      memcpy(interpC, xs.data(), sizeof(double) * M);
-      memcpy(interpT, zs.data(), sizeof(double) * N * M);
+      cuda_memcpy_to_device<double>(interpR, ys.data(), N);
+      cuda_memcpy_to_device<double>(interpC, xs.data(), M);
+      cuda_memcpy_to_device<double>(interpT, zs.data(), N * M);
       CudaCheckError();
     }
 
@@ -113,9 +125,9 @@ namespace quad {
     {
       CudaCheckError();
       Alloc(cols, rows);
-      memcpy(interpR, ys, sizeof(double) * rows);
-      memcpy(interpC, xs, sizeof(double) * cols);
-      memcpy(interpT, zs, sizeof(double) * rows * cols);
+      cuda_memcpy_to_device<double>(interpR, ys, rows);
+      cuda_memcpy_to_device<double>(interpC, xs, cols);
+      cuda_memcpy_to_device<double>(interpT, zs, rows * cols);
       CudaCheckError();
     }
 
@@ -134,15 +146,20 @@ namespace quad {
     {
       CudaCheckError();
       Alloc(M, N);
-      memcpy(interpR, ys.data(), sizeof(double) * N);
-      memcpy(interpC, xs.data(), sizeof(double) * M);
-
+      cuda_memcpy_to_device<double>(interpR, ys.data(), N);
+      cuda_memcpy_to_device<double>(interpC, xs.data(), M);
+      printf("std::array constructor\n");
+      //double* buffer = cuda_malloc_managed<double>(N*M);
+      std::vector<double> buffer(N*M);
       for (std::size_t i = 0; i < M; ++i) {
         std::array<double, N> const& row = zs[i];
         for (std::size_t j = 0; j < N; ++j) {
-          interpT[i + j * M] = row[j];
+          buffer[i + j * M] = row[j];
         }
       }
+      cuda_memcpy_to_device<double>(interpT, buffer.data(), N*M);
+     
+      //cudaFree(buffer);
       CudaCheckError();
     }
 
@@ -158,6 +175,7 @@ namespace quad {
     friend std::istream&
     operator>>(std::istream& is, Interp2D& interp)
     {
+      std::cout<<"interp2D>>" << std::endl;
       assert(is.good());
       std::string buffer;
       std::getline(is, buffer);
@@ -167,8 +185,9 @@ namespace quad {
       std::getline(is, buffer);
       std::vector<double> zs = str_to_doubles(buffer);
 
+      //why is this done?
       cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
-
+      
       interp._cols = xs.size();
       interp._rows = ys.size();
 

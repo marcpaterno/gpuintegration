@@ -35,6 +35,7 @@ namespace quad {
       , epsabs(0.0)
       , kernel(new Kernel<T, NDIM>(std::cout))
     {
+      printf("Pagani constructor\n");
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
@@ -93,7 +94,7 @@ namespace quad {
 
     template <typename IntegT>
     cuhreResult<T>
-    integrate(IntegT integrand,
+    integrate(IntegT& integrand,
               T epsrel,
               T epsabs,
               Volume<T, NDIM> const* volume = nullptr,
@@ -102,6 +103,7 @@ namespace quad {
               int heuristicID = 0,
               int phase1type = 0)
     {
+      printf("integrate called\n");
       cuhreResult<T> res;
 
       this->epsrel = epsrel;
@@ -115,8 +117,10 @@ namespace quad {
       // size_t free_physmem, total_physmem;
       //QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
       //std::cout<< "free mem:"<< free_physmem<<"\n";
-      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
-      //CudaCheckError();
+      printf("copying integrand to device memory\n");
+      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);//try cuda_memcpy_to_device
+      printf("copied integrand to device memory\n");
+      CudaCheckError();
 
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;

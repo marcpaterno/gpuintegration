@@ -146,6 +146,7 @@ add_test(Interpolation2D Interpolation2D)
 
 add_executable(interpolator_mem_usage interpolator_mem_usage.cu)
 set_target_properties(interpolator_mem_usage PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_compile_options(interpolator_mem_usage PRIVATE "-g" "-lineinfo") 
 target_link_libraries(interpolator_mem_usage)
 target_include_directories(interpolator_mem_usage PRIVATE
   ${CMAKE_SOURCE_DIR}

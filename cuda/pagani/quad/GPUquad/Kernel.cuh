@@ -420,6 +420,7 @@ namespace quad {
 
     Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
+      printf("kernel constructor\n");
       mustFinish = false;
       numPolishedRegions = 0;
       dParentsError = nullptr;
@@ -1855,7 +1856,11 @@ namespace quad {
       }*/
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
-      // printf("Launching for %lu regions\n", numBlocks);
+
+      size_t free_physmem, total_physmem;
+      cudaMemGetInfo(&free_physmem, &total_physmem);
+      std::cout<< "free mem:"<< free_physmem<<"\n";
+      printf("Launching for %lu regions\n", numBlocks);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
         <<<numBlocks, numThreads /*, NDIM * sizeof(GlobalBounds)*/>>>(
           d_integrand,
@@ -1884,6 +1889,7 @@ namespace quad {
       // printf("Reduction 1 %lu regions\n", numRegions);
       // nvtxRangePush("Reduction 1");
       T iter_estimate = ComputeIterContribution(dRegionsIntegral);
+      printf("computed iter estimate contribution\n");
       // nvtxRangePop();
       T leaves_estimate = integral + iter_estimate;
       nvtxRangePush("Rel Error Classify");
@@ -1894,6 +1900,7 @@ namespace quad {
       T iter_finished_estimate = 0, iter_finished_errorest = 0;
       // nvtxRangePush("Reduction 2");
       T iter_errorest = ComputeIterContribution(dRegionsError);
+      printf("computed iter errorest contribution\n");
       // nvtxRangePop();
       T leaves_errorest = error + iter_errorest;
 
@@ -1904,6 +1911,7 @@ namespace quad {
                                dRegionsError,
                                iter_errorest,
                                activeRegions);
+      printf("computed finished estimates\n");
       integral += iter_finished_estimate;
       error += iter_finished_errorest;
       Phase_I_PrintFile(vol,

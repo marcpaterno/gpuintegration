@@ -2,6 +2,7 @@
 #include "catch2/catch.hpp"
 #include "cuda/pagani/quad/GPUquad/Interp2D.cuh"
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 
 #include <array>
 #include <chrono>
@@ -157,7 +158,26 @@ TEST_CASE("Interp2D on bilinear")
   }
 
   quad::Interp2D f(xs, ys, zs);
-
+  
   double interpResult = Evaluate(f, 2.5, 1.5);
   CHECK(interpResult == 4.5);
+
+  
+    constexpr int ndim = 2;
+    quad::Pagani<double, ndim> pagani;
+    std::array<double, ndim> lows = {1., 1.};
+    std::array<double, ndim> highs = {3., 4.};
+    quad::Volume<double, ndim> vol(lows, highs);
+
+    size_t free_physmem, total_physmem;
+    
+    for(int run = 0; run < 100000; ++run){
+      cudaMemGetInfo(&free_physmem, &total_physmem);
+      std::cout << "start" << "," << run << "," << free_physmem << std::endl;
+      pagani.integrate<quad::Interp2D>(f, 1.e-3, 1.e-12, &vol);
+      std::cout << "end" << "," << run << "," << free_physmem << std::endl;
+    }
+  
 }
+
+
