@@ -30,6 +30,7 @@ Last three arguments are: total iterations, iteration
 
 #define OUTFILEVAR 0
 
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "cuda/pagani/quad/util/cudaApply.cuh"
@@ -693,7 +694,7 @@ namespace cuda_mcubes {
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
   void
-  vegas(IntegT integrand,
+  vegas(IntegT const& integrand,
         double epsrel,
         double epsabs,
         double ncall,
@@ -715,7 +716,8 @@ namespace cuda_mcubes {
     constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
-    IntegT* d_integrand = cuda_copy_to_managed(integrand);
+    //IntegT* d_integrand = quad::cuda_copy_to_device(integrand);
+    IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
     double regn[2 * mxdim_p1];
 
     for (int j = 1; j <= ndim; j++) {
@@ -1090,6 +1092,7 @@ namespace cuda_mcubes {
     free(xin);
     free(r);
 
+    d_integrand->~IntegT();
     cudaFree(d_dev);
     cudaFree(dx_dev);
     cudaFree(ia_dev);
@@ -1105,7 +1108,7 @@ namespace cuda_mcubes {
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
   cuhreResult<double>
-  integrate(IntegT ig,
+  integrate(IntegT& ig,
             double epsrel,
             double epsabs,
             double ncall,
@@ -1138,7 +1141,7 @@ namespace cuda_mcubes {
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
   cuhreResult<double>
-  simple_integrate(IntegT integrand,
+  simple_integrate(IntegT const& integrand,
                    double epsrel,
                    double epsabs,
                    double ncall,
