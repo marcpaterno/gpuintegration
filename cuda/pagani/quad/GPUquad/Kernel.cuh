@@ -222,7 +222,7 @@ namespace quad {
     int* h_a = (int*)malloc(bytes);
     int* d_a;
     cudaMalloc((int**)&d_a, bytes);
-
+    
     memset(h_a, 0, bytes);
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
@@ -385,9 +385,6 @@ namespace quad {
       // printf("current size:%i, newSize:%i\n", currentSize, newSize);
       QuadDebug(Device.AllocateMemory((void**)&temp, sizeof(T) * newSize));
       CudaCheckError();
-      /* QuadDebug(cudaMemcpy(
-         temp, array, sizeof(T) * copy_size, cudaMemcpyDeviceToDevice));*/
-      CudaCheckError();
       QuadDebug(Device.ReleaseMemory(array));
       array = temp;
     }
@@ -420,7 +417,6 @@ namespace quad {
 
     Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
-      printf("kernel constructor\n");
       mustFinish = false;
       numPolishedRegions = 0;
       dParentsError = nullptr;
@@ -740,9 +736,6 @@ namespace quad {
                            cudaMemcpyDeviceToHost));
       CudaCheckError();
 
-      // printf("Displaying Estimates\n");
-      // display<T, 2>(iter_nregions, dRegionsIntegral, dRegionsError);
-
       QuadDebug(cudaMemcpy(curr_ParentsIntegral,
                            dParentsIntegral,
                            sizeof(T) * ceil(iter_nregions / 2),
@@ -753,9 +746,6 @@ namespace quad {
                            sizeof(T) * ceil(iter_nregions / 2),
                            cudaMemcpyDeviceToHost));
       CudaCheckError();
-
-      // printf("iteration:%i Displaying Parents\n", iteration);
-      // display<T, 2>(iter_nregions/2, dParentsIntegral, dParentsError);
 
       QuadDebug(cudaMemcpy(h_activeRegions,
                            activeRegions,
@@ -774,7 +764,7 @@ namespace quad {
                                               sizeof(T) * iter_nregions * NDIM);
       curr_hRegionsLength = (T*)Host.AllocateMemory(
         curr_hRegionsLength, sizeof(T) * iter_nregions * NDIM);
-      // free_bounds_needed = true;
+
       QuadDebug(cudaMemcpy(curr_hRegions,
                            dRegions,
                            sizeof(T) * iter_nregions * NDIM,
@@ -1186,7 +1176,7 @@ namespace quad {
 
       numInActiveRegions = numRegions - numActiveRegions;
 
-      // printf("Bad Reginos %lu/%lu\n", numActiveRegions, numRegions);
+      
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
@@ -1206,7 +1196,7 @@ namespace quad {
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
         
-        //std::cout<<"numActiveRegions for parent expansion:"<<numActiveRegions<<"\n";
+        
         ExpandcuArray(dParentsIntegral, numRegions / 2, numActiveRegions);
         CudaCheckError();
         ExpandcuArray(dParentsError, numRegions / 2, numActiveRegions);
@@ -1217,8 +1207,6 @@ namespace quad {
           numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
 
         cudaDeviceSynchronize();
-        // printf("Populating dParents with the results of dRegionsIntegral\n");
-        // printf("Aligning %lu numRegions\n", numRegions);
 
         alignRegions<T, NDIM>
           <<<numBlocks, numThreads>>>(dRegions,
@@ -1237,7 +1225,6 @@ namespace quad {
                                       numActiveRegions,
                                       numOfDivisionOnDimension);
 
-        // cudaDeviceSynchronize();
         CudaCheckError();
         nvtxRangePop();
         T *genRegions = 0, *genRegionsLength = 0;
@@ -1247,10 +1234,7 @@ namespace quad {
         QuadDebug(Device.ReleaseMemory(dRegions));
         QuadDebug(Device.ReleaseMemory(dRegionsLength));
         QuadDebug(Device.ReleaseMemory(scannedArray));
-
-        // printf("need to allocate %lu bytes\n", sizeof(T) * numActiveRegions *
-        // NDIM * numOfDivisionOnDimension *2); printf("Amount of free
-        // memory:%lu\n", Device.GetAmountFreeMem());
+	
         nvtxRangePush("dividing Intervals");
         QuadDebug(cudaMalloc((void**)&genRegions,
                              sizeof(T) * numActiveRegions * NDIM *
@@ -1259,8 +1243,7 @@ namespace quad {
                              sizeof(T) * numActiveRegions * NDIM *
                                numOfDivisionOnDimension));
         CudaCheckError();
-        // printf("Dividing %lu regions\n", numActiveRegions);
-
+	
         divideIntervalsGPU<T, NDIM>
           <<<numBlocks, numThreads>>>(genRegions,
                                       genRegionsLength,
@@ -1857,10 +1840,7 @@ namespace quad {
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
 
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      std::cout<< "free mem:"<< free_physmem<<"\n";
-      printf("Launching for %lu regions\n", numBlocks);
+      //printf("Launching for %lu regions\n", numBlocks);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
         <<<numBlocks, numThreads /*, NDIM * sizeof(GlobalBounds)*/>>>(
           d_integrand,
@@ -1889,7 +1869,6 @@ namespace quad {
       // printf("Reduction 1 %lu regions\n", numRegions);
       // nvtxRangePush("Reduction 1");
       T iter_estimate = ComputeIterContribution(dRegionsIntegral);
-      printf("computed iter estimate contribution\n");
       // nvtxRangePop();
       T leaves_estimate = integral + iter_estimate;
       nvtxRangePush("Rel Error Classify");
@@ -1900,7 +1879,6 @@ namespace quad {
       T iter_finished_estimate = 0, iter_finished_errorest = 0;
       // nvtxRangePush("Reduction 2");
       T iter_errorest = ComputeIterContribution(dRegionsError);
-      printf("computed iter errorest contribution\n");
       // nvtxRangePop();
       T leaves_errorest = error + iter_errorest;
 
@@ -1911,7 +1889,6 @@ namespace quad {
                                dRegionsError,
                                iter_errorest,
                                activeRegions);
-      printf("computed finished estimates\n");
       integral += iter_finished_estimate;
       error += iter_finished_errorest;
       Phase_I_PrintFile(vol,

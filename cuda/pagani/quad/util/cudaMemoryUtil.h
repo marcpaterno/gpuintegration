@@ -194,17 +194,14 @@ namespace quad {
     {
       T* buffer = cuda_malloc_managed<T>();
       CudaCheckError();
-      //try {
-      //printf("invoking placement new\n");
-      new (buffer) T(on_host);
-      //CudaCheckError();
-      //}
-      //catch (...) {
-      //printf("catch in copy_to_managed\n");
-      //printf("deleting\n");
-      //cudaFree(buffer);
-      //throw;
-      //}
+      try {
+	new (buffer) T(on_host);
+	CudaCheckError();
+      }
+      catch (...) {
+	cudaFree(buffer);
+	throw;
+      }
       return buffer;
     }
   
@@ -214,13 +211,7 @@ namespace quad {
     T* temp;  
     auto rc = cudaMalloc((void**)&temp, sizeof(T) * size);
     if (rc != cudaSuccess){
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-	
-      printf("attempted cudaMalloc with %lu elems and size %lu but %lu was available\n", size, sizeof(T) * size, free_physmem);
-      printf("cuda_malloc not success:%s\n", cudaGetErrorString(rc));
-      //throw std::bad_alloc();
-      //abort();
+      throw std::bad_alloc();
     }
     return temp;
   }
@@ -232,7 +223,7 @@ namespace quad {
     void
     cuda_memcpy_to_device(T* dest, T* src, size_t size){
     auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyHostToDevice);
-    if(rc != cudaSuccess){
+    if(rc != cudaSuccess){ 
       printf("error in cuda_mempcy_to_device with host src\n");
       throw std::bad_alloc();
       abort();
@@ -277,7 +268,6 @@ namespace quad {
       T* buffer = cuda_malloc<T>(1);
       const T* hp = &on_host;
       cuda_memcpy_to_device<T>(buffer, hp, 1);
-      //new (buffer) T(on_host);
       CudaCheckError();
       return buffer;
     } 

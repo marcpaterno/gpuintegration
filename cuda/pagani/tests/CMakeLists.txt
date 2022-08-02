@@ -115,17 +115,6 @@ target_include_directories(RegionSampling PRIVATE
 )
 add_test(RegionSampling RegionSampling)
 
-add_executable(FourthDividedDifference FourthDividedDifference.cu)
-set_target_properties(FourthDividedDifference PROPERTIES
-  POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH}
-  CUDA_ARCHITECTURES 70-real)
-target_link_libraries(FourthDividedDifference util ${NVTX_LIBRARY})
-target_include_directories(FourthDividedDifference PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(FourthDividedDifference FourthDividedDifference)
-
 add_executable(Interpolation1D Interpolation1D.cu)
 set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(Interpolation1D ${NVTX_LIBRARY})

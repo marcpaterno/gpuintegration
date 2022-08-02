@@ -47,7 +47,6 @@ namespace quad {
     ~Pagani()
     {
       delete kernel;
-      // QuadDebug(cudaDeviceReset());
     }
 
     template <typename IntegT>
@@ -103,7 +102,6 @@ namespace quad {
               int heuristicID = 0,
               int phase1type = 0)
     {
-      printf("integrate called\n");
       cuhreResult<T> res;
 
       this->epsrel = epsrel;
@@ -112,25 +110,18 @@ namespace quad {
       kernel->SetVerbosity(verbosity);
       kernel->SetHeuristicID(heuristicID);
 
-      // cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-      // memcpy(d_integrand, &integrand, sizeof(IntegT));
-      // size_t free_physmem, total_physmem;
-      //QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
-      //std::cout<< "free mem:"<< free_physmem<<"\n";
-      printf("copying integrand to device memory\n");
-      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);//try cuda_memcpy_to_device
-      printf("copied integrand to device memory\n");
+      IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
       CudaCheckError();
 
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
-
+      
       res.status = ExecutePhaseI(d_integrand, res, volume);
       res.lastPhase = 1;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));
-      //CudaCheckError();
+      d_integrand->~IntegT();
       cudaFree(d_integrand);
-      //CudaCheckError();
+      CudaCheckError();
       return res;
     }
   };

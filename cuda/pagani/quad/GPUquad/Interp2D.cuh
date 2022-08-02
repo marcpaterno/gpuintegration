@@ -37,13 +37,10 @@ namespace quad {
       }
       _rows = rows;
       _cols = cols;
-      //cudaMallocManaged((void**)&interpR, sizeof(double) * _rows);
       interpR = cuda_malloc<double>(_rows);
       CudaCheckError();
-      //cudaMallocManaged((void**)&interpC, sizeof(double) * _cols);
       interpC = cuda_malloc<double>(_cols);
       CudaCheckError();
-      //cudaMallocManaged((void**)&interpT, sizeof(double) * _rows * _cols);
       interpT = cuda_malloc<double>(_rows * _cols);
       CudaCheckError();
     }
@@ -65,17 +62,14 @@ namespace quad {
 
     Interp2D(const Interp2D& source)
     {
-      printf("in copy constructor %lu, %lu, %lu\n", source._cols, source._rows, source._cols * source._rows);
       _cols = source._cols;
       _rows = source._rows;
       Alloc(_cols, _rows);
+      
       cuda_memcpy_device_to_device<double>(interpT, source.interpT, _cols * _rows);
       cuda_memcpy_device_to_device<double>(interpC, source.interpC, _cols);
       cuda_memcpy_device_to_device<double>(interpR, source.interpR, _rows);
       CudaCheckError();
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      std::cout<< "free mem:"<< free_physmem<<" at end copy-constructor\n";
     }
 
     Interp2D&
@@ -86,22 +80,15 @@ namespace quad {
       swap(tmp);
       return *this;
     }
-
+    
     Interp2D(Interp2D&&) = delete;
     Interp2D& operator=(Interp2D&&) = delete;
 
     ~Interp2D()
     {
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      std::cout<< "destructor start free mem:"<< free_physmem<<" at end copy-constructor " << _rows << "x" << _cols << "\n";
-      CudaCheckError();
       cudaFree(interpT);
       cudaFree(interpR);
       cudaFree(interpC);
-      CudaCheckError();
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      std::cout<< "destructor end free mem:"<< free_physmem<<" at end copy-constructor\n";
     }
 
     template <size_t M, size_t N>
@@ -144,12 +131,12 @@ namespace quad {
              std::array<double, N> ys,
              std::array<std::array<double, N>, M> zs)
     {
+      
       CudaCheckError();
       Alloc(M, N);
       cuda_memcpy_to_device<double>(interpR, ys.data(), N);
       cuda_memcpy_to_device<double>(interpC, xs.data(), M);
-      printf("std::array constructor\n");
-      //double* buffer = cuda_malloc_managed<double>(N*M);
+
       std::vector<double> buffer(N*M);
       for (std::size_t i = 0; i < M; ++i) {
         std::array<double, N> const& row = zs[i];
@@ -158,8 +145,6 @@ namespace quad {
         }
       }
       cuda_memcpy_to_device<double>(interpT, buffer.data(), N*M);
-     
-      //cudaFree(buffer);
       CudaCheckError();
     }
 
@@ -175,7 +160,6 @@ namespace quad {
     friend std::istream&
     operator>>(std::istream& is, Interp2D& interp)
     {
-      std::cout<<"interp2D>>" << std::endl;
       assert(is.good());
       std::string buffer;
       std::getline(is, buffer);

@@ -96,14 +96,9 @@ quad::Interp1D::_initialize(double const* x, double const* z)
     std::cerr << "Interp1D::_initilize called when _cols=" << _cols << '\n';
     std::abort();
   }
-  //size_t const nbytes = sizeof(double) * _cols;
   _xs = cuda_malloc<double>(_cols);
-  //cudaMallocManaged(&_xs, nbytes);
-  //memcpy(_xs, x, nbytes);
   cuda_memcpy_to_device<double>(_xs, x, _cols);
   _zs = cuda_malloc<double>(_cols);
-  //cudaMallocManaged(&_zs, nbytes);
-  //memcpy(_zs, z, nbytes);
   cuda_memcpy_to_device<double>(_zs, z, _cols);
 }
 
@@ -220,7 +215,6 @@ namespace quad {
   inline std::istream&
   operator>>(std::istream& is, quad::Interp1D& interp)
   {
-    std::cout<<"interp1D>>"<<std::endl;
     assert(is.good());
     std::string buffer;
     std::getline(is, buffer);
