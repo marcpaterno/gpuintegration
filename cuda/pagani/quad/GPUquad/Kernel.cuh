@@ -1101,7 +1101,7 @@ dRegions = cuda_malloc<T>(NDIM);
       CudaCheckError();
 
       generateInitialRegions<T><<<numBlocks, numThreads, NDIM * sizeof(T)>>>(
-q									     dRegions,
+									     dRegions,
 									     dRegionsLength,
 									     1,
 									     newRegions,
