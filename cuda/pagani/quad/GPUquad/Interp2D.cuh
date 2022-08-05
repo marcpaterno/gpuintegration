@@ -12,7 +12,7 @@
 #include <utility>
 
 namespace quad {
-
+  
   class Interp2D {
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
     size_t _rows = 0;
@@ -20,7 +20,7 @@ namespace quad {
     double* interpT = nullptr;
     double* interpR = nullptr;
     double* interpC = nullptr;
-
+    
     void
     Alloc(size_t cols, size_t rows)
     {
@@ -44,8 +44,17 @@ namespace quad {
       interpT = cuda_malloc<double>(_rows * _cols);
       CudaCheckError();
     }
-
+    
   public:
+    
+    size_t get_device_mem_footprint(){
+      return 8*(_cols*_rows + _cols + _rows);
+    }
+
+    size_t get_device_mem_footprint()const{
+      return 8*(_cols*_rows + _cols + _rows);
+    }
+    
     void
     swap(Interp2D& other)
     {

@@ -46,7 +46,7 @@ namespace quad {
   }
 
   //==========
-  __constant__ size_t dFEvalPerRegion;
+  //__constant__ size_t dFEvalPerRegion;
 
   // delete, the display function does this now
 
@@ -531,11 +531,11 @@ namespace quad {
       fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
                         2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
                         4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
-      QuadDebug(cudaMemcpyToSymbol(dFEvalPerRegion,
+      /*QuadDebug(cudaMemcpyToSymbol(dFEvalPerRegion,
                                    &fEvalPerRegion,
                                    sizeof(size_t),
                                    0,
-                                   cudaMemcpyHostToDevice));
+                                   cudaMemcpyHostToDevice));*/
       rule.Init(NDIM, fEvalPerRegion, KEY, VERBOSE, &constMem);
       // QuadDebug(Device.SetHeapSize());
     }
@@ -1062,18 +1062,19 @@ namespace quad {
         curr_hRegionsLength[dim] = 1;
 #endif
       }
-
-      QuadDebug(Device.AllocateMemory((void**)&dRegions, sizeof(T) * NDIM));
-      QuadDebug(
-        Device.AllocateMemory((void**)&dRegionsLength, sizeof(T) * NDIM));
-
-      QuadDebug(cudaMemcpy(
-        dRegions, curr_hRegions, sizeof(T) * NDIM, cudaMemcpyHostToDevice));
+      std::cout<<"generateInitialRegions:"<<numRegions<<std::endl;
+      dRegions = cuda_malloc<T>(NDIM);
+      dRegionsLength = cuda_malloc<T>(NDIM);
+      CudaCheckError();
+      QuadDebug(cudaMemcpy(dRegions,
+			   curr_hRegions,
+			   sizeof(T) * NDIM,
+			   cudaMemcpyHostToDevice));
       QuadDebug(cudaMemcpy(dRegionsLength,
                            curr_hRegionsLength,
                            sizeof(T) * NDIM,
                            cudaMemcpyHostToDevice));
-
+      CudaCheckError();
       size_t numThreads = 512;
       // this has been changed temporarily, do not remove
       size_t numOfDivisionPerRegionPerDimension = 4;
@@ -1087,49 +1088,35 @@ namespace quad {
         numOfDivisionPerRegionPerDimension = 2;
       if (NDIM > 10)
         numOfDivisionPerRegionPerDimension = 1;
-
+      
       depthBeingProcessed = log2(numOfDivisionPerRegionPerDimension) * NDIM;
       // size_t numOfDivisionPerRegionPerDimension = 1;
-
+      CudaCheckError();
       size_t numBlocks = (size_t)ceil(
-        pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
+				      pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
       numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
 
-      T* newRegions = 0;
-      T* newRegionsLength = 0;
-      QuadDebug(Device.AllocateMemory((void**)&newRegions,
-                                      sizeof(T) * numRegions * NDIM));
-      QuadDebug(Device.AllocateMemory((void**)&newRegionsLength,
-                                      sizeof(T) * numRegions * NDIM));
-
+      T* newRegions = cuda_malloc<T>(numRegions * NDIM);
+      T* newRegionsLength = cuda_malloc<T>(numRegions * NDIM);
+      CudaCheckError();
+      std::cout<<"init regs:"<<numBlocks << ","<<numThreads << std::endl;
       generateInitialRegions<T><<<numBlocks, numThreads, NDIM * sizeof(T)>>>(
-        dRegions,
-        dRegionsLength,
-        1,
-        newRegions,
-        newRegionsLength,
-        numRegions,
-        numOfDivisionPerRegionPerDimension,
-        NDIM);
-
-      QuadDebug(Device.ReleaseMemory((void*)dRegions));
-      QuadDebug(Device.ReleaseMemory((void*)dRegionsLength));
-
+									     dRegions,
+									     dRegionsLength,
+									     1,
+									     newRegions,
+									     newRegionsLength,
+									     numRegions,
+									     numOfDivisionPerRegionPerDimension,
+									     NDIM);
+      cudaFree(dRegions);
+      cudaFree(dRegionsLength);
+      
       dRegions = newRegions;
       dRegionsLength = newRegionsLength;
-      QuadDebug(cudaMemcpy(dRegions,
-                           newRegions,
-                           sizeof(T) * numRegions * NDIM,
-                           cudaMemcpyDeviceToDevice));
-      QuadDebug(cudaMemcpy(dRegionsLength,
-                           newRegionsLength,
-                           sizeof(T) * numRegions * NDIM,
-                           cudaMemcpyDeviceToDevice));
+
       Host.ReleaseMemory(curr_hRegions);
       Host.ReleaseMemory(curr_hRegionsLength);
-      // free(curr_hRegionsLength);
-      // curr_hRegions = nullptr;
-      // curr_hRegionsLength = nullptr;
     }
 
     size_t
@@ -1840,7 +1827,6 @@ namespace quad {
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
 
-      //printf("Launching for %lu regions\n", numBlocks);
       INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
         <<<numBlocks, numThreads /*, NDIM * sizeof(GlobalBounds)*/>>>(
           d_integrand,
