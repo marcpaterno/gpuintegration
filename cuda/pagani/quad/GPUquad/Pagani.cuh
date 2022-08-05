@@ -35,7 +35,6 @@ namespace quad {
       , epsabs(0.0)
       , kernel(new Kernel<T, NDIM>(std::cout))
     {
-      printf("Pagani constructor\n");
       kernel->InitKernel(KEY, VERBOSE, numDevices);
     }
 
