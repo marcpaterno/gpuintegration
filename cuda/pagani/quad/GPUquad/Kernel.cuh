@@ -1062,8 +1062,8 @@ namespace quad {
         curr_hRegionsLength[dim] = 1;
 #endif
       }
-      std::cout<<"generateInitialRegions:"<<numRegions<<std::endl;
-      dRegions = cuda_malloc<T>(NDIM);
+
+dRegions = cuda_malloc<T>(NDIM);
       dRegionsLength = cuda_malloc<T>(NDIM);
       CudaCheckError();
       QuadDebug(cudaMemcpy(dRegions,
@@ -1099,9 +1099,9 @@ namespace quad {
       T* newRegions = cuda_malloc<T>(numRegions * NDIM);
       T* newRegionsLength = cuda_malloc<T>(numRegions * NDIM);
       CudaCheckError();
-      std::cout<<"init regs:"<<numBlocks << ","<<numThreads << std::endl;
+
       generateInitialRegions<T><<<numBlocks, numThreads, NDIM * sizeof(T)>>>(
-									     dRegions,
+q									     dRegions,
 									     dRegionsLength,
 									     1,
 									     newRegions,
