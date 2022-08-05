@@ -141,7 +141,7 @@ namespace mcubes {
   }*/
 }
 
-class Internal_Vegas_Params {
+/*class Internal_Vegas_Params {
   static constexpr int ndmx = 500;
   static constexpr int mxdim = 20;
   static constexpr double alph = 1.5;
@@ -176,7 +176,7 @@ public:
   {
     return mxdim + 1;
   }
-};
+};*/
 
 __inline__ double
 ComputeNcubes(double ncall, int ndim)

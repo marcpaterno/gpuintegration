@@ -84,9 +84,9 @@ public:
   void
   PrintBins(int iter, double* xi, double* d, int ndim)
   {
-    int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
-    int ndmx = Internal_Vegas_Params::get_NDMX();
-    int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    int ndmx1 = 501;//Internal_Vegas_Params::get_NDMX_p1();
+    int ndmx = 500;//Internal_Vegas_Params::get_NDMX();
+    int mxdim_p1 = 21;//Internal_Vegas_Params::get_MXDIM_p1();
 
     if (iter == 1) {
       myfile_bin_bounds
