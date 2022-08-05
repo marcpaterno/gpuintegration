@@ -270,7 +270,15 @@ namespace quad {
       cuda_memcpy_to_device<T>(buffer, hp, 1);
       CudaCheckError();
       return buffer;
-    } 
+    }
+
+  size_t
+  get_free_mem()
+    {
+      size_t free_physmem, total_physmem;
+      QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+      return free_physmem;
+    }
 
 }
 
