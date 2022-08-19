@@ -187,8 +187,6 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
       nsets,
       lows,
       highs,
-      iteration,
-      depthBeingProcessed,
       generators);
   cudaDeviceSynchronize();
   CudaCheckError();
@@ -226,6 +224,7 @@ TEST_CASE("Constant Positive Value Function")
     constexpr int block_size = 256;
     result = EvaluateRegions<PTest, ndim, block_size>(&kernel,
                                                       gpu_invocable_integrand);
+	std::cout<<"result:"<<result.estimate << std::endl;
     CHECK(abs(result.estimate - 15.37) <= .00000000000001);
   }
 
@@ -245,6 +244,7 @@ TEST_CASE("Constant Positive Value Function")
     CHECK(abs(result.estimate - 15.37) <= .00000000000001);
   }
 }
+
 
 TEST_CASE("Constant Negative Value Function")
 {

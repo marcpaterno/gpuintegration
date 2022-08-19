@@ -84,7 +84,6 @@ namespace quad {
                      T* jacobian,
                      double* generators,
                      int FEVAL,
-                     int iteration,
                      T* sdata)
   {
 
@@ -102,6 +101,7 @@ namespace quad {
     }
 
     T fun = gpu::apply(*d_integrand, x) * (*jacobian);
+	//printf("fun:%f jacobian:%f\n", fun, *jacobian);
     sdata[threadIdx.x] = fun; // target for reduction
 
     for (int rul = 0; rul < NRULES; ++rul) {
@@ -169,7 +169,6 @@ namespace quad {
                            T range[],
                            T* jacobian,
                            double* generators,
-                           int iteration,
                            double* results,
                            double* funcEvals)
   {
@@ -320,8 +319,7 @@ namespace quad {
                     int* maxdim,
                     T range[],
                     T* jacobian,
-                    double* generators,
-                    int iteration)
+                    double* generators)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
     __shared__ T sdata[blockdim];
@@ -354,7 +352,6 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           FEVAL,
-                                          iteration,
                                           sdata);
     }
 
@@ -398,7 +395,6 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           FEVAL,
-                                          iteration,
                                           sdata);
     }
     //__syncthreads();
@@ -418,7 +414,6 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           FEVAL,
-                                          iteration,
                                           sdata);
     }
     // __syncthreads();
@@ -441,7 +436,7 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
-
+      
       r->avg = (*vol) * sum[0];
       r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?

@@ -171,7 +171,7 @@ TEST_CASE("Interp2D on bilinear")
 
     size_t free_physmem, total_physmem;
     
-    for(int run = 0; run < 100000; ++run){
+    for(int run = 0; run < 1; ++run){
       cudaMemGetInfo(&free_physmem, &total_physmem);
       std::cout << "start" << "," << run << "," << free_physmem << std::endl;
       pagani.integrate<quad::Interp2D>(f, 1.e-3, 1.e-12, &vol);

@@ -2,6 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_DRULE_CUH
 
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "cuda/pagani/quad/quad.h"
 
 namespace quad {
   template <typename T>

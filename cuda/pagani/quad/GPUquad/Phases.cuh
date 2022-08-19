@@ -365,7 +365,6 @@ namespace quad {
                                                         ranges,
                                                         &Jacobian,
                                                         generators,
-                                                        iteration,
                                                         results,
                                                         funcEvals);
     __syncthreads();
@@ -384,8 +383,6 @@ namespace quad {
                    GlobalBounds sBound[],
                    T* lows,
                    T* highs,
-                   int iteration,
-                   int depth,
                    double* generators)
   {
     size_t index = blockIdx.x;
@@ -399,18 +396,19 @@ namespace quad {
     if (threadIdx.x == 0) {
 
       Jacobian = 1.;
+	  vol = 1.;
       T maxRange = 0;
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-
+		vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
+		
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
         ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-        sRegionPool[0].div = depth;
-
+		
         T range = sRegionPool[0].bounds[dim].upper - lower;
         Jacobian = Jacobian * ranges[dim];
         if (range > maxRange) {
@@ -418,8 +416,6 @@ namespace quad {
           maxRange = range;
         }
       }
-
-      vol = ldexp(1., -depth);
     }
 
     __syncthreads();
@@ -434,8 +430,7 @@ namespace quad {
                                                  &maxDim,
                                                  ranges,
                                                  &Jacobian,
-                                                 generators,
-                                                 iteration);
+                                                 generators);
     __syncthreads();
   }
 
@@ -456,8 +451,6 @@ namespace quad {
                        int NSETS,
                        T* lows,
                        T* highs,
-                       int iteration,
-                       int depth,
                        double* generators)
   {
     __shared__ Region<NDIM> sRegionPool[1];
@@ -474,8 +467,6 @@ namespace quad {
                                                 sBound,
                                                 lows,
                                                 highs,
-                                                iteration,
-                                                depth,
                                                 generators);
 
     if (threadIdx.x == 0) {

@@ -1844,8 +1844,6 @@ dRegions = cuda_malloc<T>(NDIM);
           rule.GET_NSETS(),
           lows,
           highs,
-          iteration,
-          depthBeingProcessed,
           generators);
 
       neval += numRegions * fEvalPerRegion;
@@ -1859,7 +1857,7 @@ dRegions = cuda_malloc<T>(NDIM);
       T leaves_estimate = integral + iter_estimate;
       nvtxRangePush("Rel Error Classify");
       RelErrClassify(
-        activeRegions, nregions, epsrel, /*depthBeingProcessed*/ iteration);
+        activeRegions, nregions, epsrel, iteration);
       nvtxRangePop();
       // printf("Reduction 2 %lu regions\n", numRegions);
       T iter_finished_estimate = 0, iter_finished_errorest = 0;
@@ -1956,7 +1954,6 @@ dRegions = cuda_malloc<T>(NDIM);
                                   dParentsError);
         CheckZeroNumRegionsTermination(
           integral, error, leaves_estimate, leaves_errorest);
-        depthBeingProcessed++;
         nregions += numInActiveIntervals;
         nFinishedRegions += numInActiveIntervals;
       } else {

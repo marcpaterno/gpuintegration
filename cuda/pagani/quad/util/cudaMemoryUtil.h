@@ -5,7 +5,15 @@
 #include <cuda.h>
 
 namespace quad {
-
+	
+  size_t
+      GetAmountFreeMem()
+    {
+      size_t free_physmem, total_physmem;
+      QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
+      return free_physmem;
+    }	
+	
   class Managed {
   public:
     void *operator new(size_t len) {
