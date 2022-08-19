@@ -21,10 +21,12 @@ clean_time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
     bool good = false;
-
+  Workspace<ndim> workspace;
+  quad::Volume<double, ndim> vol;
+  
   for(int i=0; i < 10; i++){
-	Workspace<ndim> workspace;
-	quad::Volume<double, ndim> vol;
+	
+	
   
 	auto const t0 = std::chrono::high_resolution_clock::now();
 	size_t partitions_per_axis = 2;   
