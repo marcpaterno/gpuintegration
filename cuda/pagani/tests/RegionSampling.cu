@@ -183,8 +183,6 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
       epsrel,
       epsabs,
       *constMemPtr,
-      numFuncEvals,
-      nsets,
       lows,
       highs,
       generators);

@@ -377,8 +377,8 @@ namespace quad {
                    T* dRegionsLength,
                    size_t numRegions,
                    const Structures<double>& constMem,
-                   int FEVAL,
-                   int NSETS,
+                   //int FEVAL,
+                   //int NSETS,
                    Region<NDIM> sRegionPool[],
                    GlobalBounds sBound[],
                    T* lows,
@@ -392,7 +392,7 @@ namespace quad {
     __shared__ T vol;
 
     __shared__ T ranges[NDIM];
-
+	
     if (threadIdx.x == 0) {
 
       Jacobian = 1.;
@@ -420,10 +420,10 @@ namespace quad {
 
     __syncthreads();
     SampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
-                                                 0,
+                                                 //0,
                                                  constMem,
-                                                 FEVAL,
-                                                 NSETS,
+                                                 //FEVAL,
+                                                 //NSETS,
                                                  sRegionPool,
                                                  sBound,
                                                  &vol,
@@ -447,8 +447,8 @@ namespace quad {
                        T epsrel,
                        T epsabs,
                        Structures<double> constMem,
-                       int FEVAL,
-                       int NSETS,
+                       //int FEVAL,
+                       //int NSETS,
                        T* lows,
                        T* highs,
                        double* generators)
@@ -461,8 +461,8 @@ namespace quad {
                                                 dRegionsLength,
                                                 numRegions,
                                                 constMem,
-                                                FEVAL,
-                                                NSETS,
+                                                //FEVAL,
+                                                //NSETS,
                                                 sRegionPool,
                                                 sBound,
                                                 lows,

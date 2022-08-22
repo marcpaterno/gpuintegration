@@ -1840,8 +1840,8 @@ dRegions = cuda_malloc<T>(NDIM);
           epsrel,
           epsabs,
           constMem,
-          rule.GET_FEVAL(),
-          rule.GET_NSETS(),
+          //rule.GET_FEVAL(),
+          //rule.GET_NSETS(),
           lows,
           highs,
           generators);

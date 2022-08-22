@@ -7,6 +7,7 @@
 #include "cuda/pagani/quad/util/cudaUtil.h"
 //#include "cuda/pagani/quad/GPUquad/Kernel.cuh"
 #include "cuda/pagani/quad/GPUquad/Phases.cuh"
+#include "cuda/pagani/quad/GPUquad/Sample.cuh"
 #include "cuda/pagani/quad/util/cuhreResult.cuh"
 #include "cuda/pagani/quad/GPUquad/Rule.cuh"
 
@@ -21,13 +22,7 @@
 
 #include <stdlib.h>  
 
-template<size_t ndim>
-constexpr 
-size_t CuhreFuncEvalsPerRegion(){
-    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
-                        2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
-                        4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
-}
+
 
 __constant__ size_t dFEvalPerRegion;
 
@@ -48,7 +43,7 @@ class Cubature_rules{
     using Regs_characteristics = Region_characteristics<ndim>;
     
     Cubature_rules(){
-        size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<ndim>();
+        constexpr size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<ndim>();
         quad::Rule<double> rule;
         const int key = 0;
         const int verbose = 0;
@@ -110,9 +105,9 @@ class Cubature_rules{
         IntegT* d_integrand =  make_gpu_integrand<IntegT>(integrand);
         
         size_t num_regions = subregions.size;
-        int nsets = 9;
-        int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
-        std::cout<<"feval:"<<feval<<std::endl;
+        //int nsets = 9;
+        //int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
+        //std::cout<<"feval:"<<feval<<std::endl;
         Region_characteristics<ndim> region_characteristics(num_regions);
         Region_estimates<ndim> subregion_estimates(num_regions);
         
@@ -134,8 +129,8 @@ class Cubature_rules{
             epsrel, 
             epsabs, 
             constMem, 
-            feval, 
-            nsets, 
+            //feval, 
+            //nsets, 
             integ_space_lows, 
             integ_space_highs, 
             0, 
@@ -159,8 +154,8 @@ class Cubature_rules{
     {
             
         size_t num_regions = subregions.size;
-        constexpr int nsets = 9;
-        int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
+        //constexpr int nsets = 9;
+        //int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
         
         set_device_array<int>(region_characteristics.active_regions, num_regions, 1.);
         
@@ -180,8 +175,8 @@ class Cubature_rules{
             epsrel, 
             epsabs, 
             constMem, 
-            feval, 
-            nsets, 
+            //feval, 
+            //nsets, 
             integ_space_lows, 
             integ_space_highs, 
             generators);
