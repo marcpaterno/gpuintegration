@@ -1,6 +1,7 @@
 #ifndef ALTERNATIVE_TIME_AND_CALL_CUH
 #define ALTERNATIVE_TIME_AND_CALL_CUH
 
+#include <chrono>
 #include "cuda/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 #include "cuda/pagani/quad/util/cuhreResult.cuh"

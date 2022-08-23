@@ -7,8 +7,17 @@
 #include "cuda/pagani/quad/util/cudaArray.cuh"
 #include "cuda/pagani/quad/util/cudaUtil.h"
 
-namespace quad {
+template<size_t ndim>
+__host__ __device__
+constexpr 
+size_t CuhreFuncEvalsPerRegion(){
+    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+                        2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+                        4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
+}
 
+
+namespace quad {
   template <typename T>
   __device__ T
   Sq(T x)
@@ -76,34 +85,36 @@ namespace quad {
                      int pIndex,
                      Bounds* b,
                      GlobalBounds sBound[],
-                     T* g,
-                     gpu::cudaArray<T, NDIM>& x,
+                     //T* g,
+                     //gpu::cudaArray<T, NDIM>& x,
                      T* sum,
                      const Structures<double>& constMem,
                      T range[],
                      T* jacobian,
                      double* generators,
-                     int FEVAL,
+                     //int FEVAL,
                      T* sdata)
   {
 
-    for (int dim = 0; dim < NDIM; ++dim) {
+    /*for (int dim = 0; dim < NDIM; ++dim) {
       x[dim] = 0;
-    }
+    }*/
 
-    int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
-
+    
+	
+	gpu::cudaArray<T, NDIM> x;
     for (int dim = 0; dim < NDIM; ++dim) {
-      T generator = __ldg(&generators[FEVAL * dim + pIndex]);
+      const T generator = __ldg(&generators[CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
       x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-
-    T fun = gpu::apply(*d_integrand, x) * (*jacobian);
-	//printf("fun:%f jacobian:%f\n", fun, *jacobian);
+	
+    const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[threadIdx.x] = fun; // target for reduction
-
+	const int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
+	
+	#pragma unroll 5
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
     }
@@ -309,10 +320,10 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockdim>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
-                    int sIndex,
+                    //int sIndex,
                     const Structures<double>& constMem,
-                    int FEVAL,
-                    int NSETS,
+                    //int FEVAL,
+                    //int NSETS,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
@@ -321,15 +332,12 @@ namespace quad {
                     T* jacobian,
                     double* generators)
   {
-    Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
+    Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
     __shared__ T sdata[blockdim];
-    T g[NDIM];
-    gpu::cudaArray<T, NDIM> x;
+    //T g[NDIM];
+    //gpu::cudaArray<T, NDIM> x;
     int perm = 0;
-
-    T ratio =
-      Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
-    int offset = 2 * NDIM;
+    constexpr int offset = 2 * NDIM;
 
     T sum[NRULES];
     Zap(sum);
@@ -338,26 +346,27 @@ namespace quad {
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * blockdim + threadIdx.x;
-
+	constexpr int FEVAL = CuhreFuncEvalsPerRegion<NDIM>();
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM>(d_integrand,
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          g,
-                                          x,
+                                          //g,
+                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          FEVAL,
+                                          //FEVAL,
                                           sdata);
     }
 
     __syncthreads();
 
     if (threadIdx.x == 0) {
+	  const T ratio = Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
       T* f = &sdata[0];
       Result* r = &region->result;
       T* f1 = f;
@@ -387,14 +396,14 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          g,
-                                          x,
+                                          //g,
+                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          FEVAL,
+                                          //FEVAL,
                                           sdata);
     }
     //__syncthreads();
@@ -406,27 +415,32 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          g,
-                                          x,
+                                          //g,
+                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          FEVAL,
+                                          //FEVAL,
                                           sdata);
     }
     // __syncthreads();
 
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum /*computeReduce*/ (sum[i] /*, sdata*/);
+      sum[i] = blockReduceSum(sum[i]);
       //__syncthreads();
     }
 
     if (threadIdx.x == 0) {
       Result* r = &region->result;
+	  
+	  #pragma unroll 4
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0;
+		
+		constexpr int NSETS = 9;
+		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
           maxerr =
             max(maxerr,

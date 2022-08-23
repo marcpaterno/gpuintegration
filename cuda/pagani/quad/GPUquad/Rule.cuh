@@ -1,5 +1,5 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_DRULE_CUH
+#define CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
 
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/quad.h"
