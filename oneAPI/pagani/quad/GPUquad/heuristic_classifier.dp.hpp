@@ -150,7 +150,6 @@ void set_true_for_larger_than(const T* arr, const T val, const size_t size, doub
             arr, val, size, output_flags, item_ct1);
       });
     dpct::get_current_device().queues_wait_and_throw();
-    quad::CudaCheckError();
 }
 
 size_t total_device_mem(){

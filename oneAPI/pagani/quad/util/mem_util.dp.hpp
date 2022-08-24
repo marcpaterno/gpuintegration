@@ -180,7 +180,6 @@ array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
 
     for(int i = 0; i < dev_arr_size; i++){
         if(host_arr[i] < static_cast<T>(val)){
-            std::cout<<"host_arr["<<i<<"]:"<<host_arr[i]<<" val:"<<val<<"\n";
             return false;
         }
     }
