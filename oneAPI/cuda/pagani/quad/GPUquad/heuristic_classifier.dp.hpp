@@ -153,16 +153,53 @@ void set_true_for_larger_than(const T* arr, const T val, const size_t size, doub
     quad::CudaCheckError();
 }
 
-size_t free_device_mem(){
-    size_t free_physmem, total_physmem;
-    /*
-    DPCT1072:116: DPC++ currently does not support getting the available
-     * memory on the current device. You may need to adjust the code.
-    */
-    total_physmem =
-      dpct::get_current_device().get_device_info().get_global_mem_size();
-    return free_physmem;
+size_t total_device_mem(){
+    return dpct::get_current_device().get_device_info().get_global_mem_size();
 }
+
+size_t  
+num_ints_needed(size_t num_regions){//move to pagani utils, has nothing to do with classifying
+    const size_t scanned = num_regions;
+    const size_t subDivDim = 2 * num_regions;
+    const size_t activeBisectDim = num_regions;
+    return activeBisectDim + subDivDim + scanned;
+}
+
+size_t  
+num_doubles_needed(size_t num_regions, size_t ndim){//move to pagani utils, has nothing to do with classifying
+    const size_t newActiveRegions = num_regions * ndim;
+    const size_t newActiveRegionsLength = num_regions * ndim;
+    const size_t parentExpansionEstimate = num_regions;
+    const size_t parentExpansionErrorest = num_regions;
+    const size_t genRegions = num_regions * ndim * 2;
+    const size_t genRegionsLength = num_regions * ndim * 2;
+            
+    const size_t regions = 2 * num_regions * ndim;
+    const size_t regionsLength = 2 * num_regions * ndim;
+    const size_t regionsIntegral = 2 * num_regions;
+    const size_t regionsError = 2 * num_regions;
+    const size_t parentsIntegral = num_regions;
+    const size_t parentsError = num_regions;
+            
+    return parentsError + parentsIntegral+regionsError + regionsIntegral + regionsLength + regions + genRegionsLength + genRegions+parentExpansionErrorest + parentExpansionEstimate+newActiveRegionsLength + newActiveRegions;
+}
+
+size_t 
+device_mem_required_for_full_split(size_t num_regions, size_t ndim){
+    return 8 * num_doubles_needed(num_regions, ndim) + 4 * num_ints_needed(num_regions);
+}
+
+size_t 
+free_device_mem(size_t num_regions, size_t ndim){
+	size_t total_physmem = total_device_mem();
+    size_t mem_occupied = device_mem_required_for_full_split(num_regions, ndim);
+	
+	//the 1 is so we don't divide by zero at any point when using this
+    size_t free_mem = total_physmem > mem_occupied ? total_physmem - mem_occupied : 1;
+	return free_mem;
+}
+
+
 
 template<size_t ndim>
 class Heuristic_classifier{
@@ -263,16 +300,16 @@ class Heuristic_classifier{
             return activeBisectDim + subDivDim + scanned;
         }
         
-        size_t device_mem_required_for_full_split(const size_t num_regions){
+        size_t device_mem_required_for_full_split(size_t num_regions){
             return 8 * num_doubles_needed(num_regions) + 4 * num_ints_needed(num_regions);
         }
         
         bool  enough_mem_for_next_split(const size_t num_regions){
-            return free_device_mem() > device_mem_required_for_full_split(num_regions);
+            return free_device_mem(num_regions, ndim) > device_mem_required_for_full_split(num_regions, ndim);
         }
                         
         bool need_further_classification(const size_t num_regions){
-            if(estimate_converged() == false || enough_mem_for_next_split(num_regions) == true)
+            if(estimate_converged() == false || enough_mem_for_next_split(num_regions, ndim) == true)
                 return false;
             return true;  
         }            
@@ -330,7 +367,7 @@ class Heuristic_classifier{
         
         bool 
 		classification_criteria_met(const size_t num_regions){
-            double ratio = static_cast<double>(device_mem_required_for_full_split(num_regions))/static_cast<double>(quad::GetAmountFreeMem());
+            double ratio = static_cast<double>(device_mem_required_for_full_split(num_regions))/static_cast<double>(free_device_mem(num_regions, ndim));
 					
             if(ratio > 1.)
                 return true;

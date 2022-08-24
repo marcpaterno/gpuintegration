@@ -54,7 +54,7 @@ Workspace<ndim>::heuristic_classify(Classifier& classifier_a,
     const Res& iter, 
     const cuhreResult<double>& cummulative){
         
-        const double ratio = static_cast<double>(classifier_a.device_mem_required_for_full_split(characteristics.size))/static_cast<double>(quad::GetAmountFreeMem());
+        const double ratio = static_cast<double>(classifier_a.device_mem_required_for_full_split(characteristics.size))/static_cast<double>(free_device_mem(characteristics.size, ndim));
         const bool classification_necessary = ratio > 1.;
         if(!classifier_a.classification_criteria_met(characteristics.size)){
             const bool must_terminate = classification_necessary;
@@ -192,7 +192,9 @@ Workspace<ndim>::integrate(const IntegT& integrand,
                 splitter.split(&subregions, &characteristics);
                 cummulative.iters++;
             }
-            cummulative.nregions += subregions.size;
+            
+			d_integrand->~IntegT();
+			cummulative.nregions += subregions.size;
             sycl::free(d_integrand, q_ct1);
             return cummulative;
             
