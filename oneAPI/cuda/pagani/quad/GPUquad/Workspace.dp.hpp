@@ -137,7 +137,7 @@ Workspace<ndim>::integrate(const IntegT& integrand,
             cummulative.status = 1;
             bool compute_relerr_error_reduction = false;
             
-            IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
+            IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
 						
             for(size_t it = 0; it < 700 && subregions.size > 0; it++){
                 size_t num_regions = subregions.size;

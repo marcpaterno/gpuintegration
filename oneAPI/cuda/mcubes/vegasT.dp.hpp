@@ -989,6 +989,7 @@ namespace cuda_mcubes {
     sycl::free(xi_dev, q_ct1);
     sycl::free(regn_dev, q_ct1);
     sycl::free(result_dev, q_ct1);
+	d_integrand->~IntegT();
     sycl::free(d_integrand, q_ct1);
   }
 
