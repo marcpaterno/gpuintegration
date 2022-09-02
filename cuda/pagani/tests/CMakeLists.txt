@@ -141,3 +141,12 @@ target_include_directories(interpolator_mem_usage PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
+
+add_executable(Reduction Reduction.cu)
+set_target_properties(Reduction PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_compile_options(Reduction PRIVATE "-g" "-lineinfo") 
+target_link_libraries(Reduction)
+target_include_directories(Reduction PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
