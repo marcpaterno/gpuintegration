@@ -162,6 +162,10 @@ namespace quad {
                 size_t feval_index,
                 size_t total_feval)
   {
+	 for (int dim = 0; dim < NDIM; ++dim) {
+      g[dim] = 0.;
+    }
+  
     int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
                  __ldg(&constMem._gpuGenPermVarStart[feval_index]);
     int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);
@@ -192,9 +196,9 @@ namespace quad {
   {
     size_t perm = 0;
     T g[NDIM] = {0.};
-    for (size_t dim = 0; dim < NDIM; ++dim) {
-      g[dim] = 0;
-    }
+    /*for (size_t dim = 0; dim < NDIM; ++dim) {
+      g[dim] = 0.;
+    }*/
 
     size_t feval_index = perm * BLOCK_SIZE + threadIdx.x;
     // printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
