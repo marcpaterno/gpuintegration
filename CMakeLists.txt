@@ -22,7 +22,7 @@ include_directories(AFTER cubacpp externals ${PAGANI_DIR})
 
 add_subdirectory(cuda)
 if (GPUINTEGRATION_BUILD_KOKKOS)
-add_subdirectory(kokkos)
+#add_subdirectory(kokkos)
 endif()
 
 
