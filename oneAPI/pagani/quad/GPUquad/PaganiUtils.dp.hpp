@@ -41,7 +41,7 @@ class Cubature_rules{
         const int key = 0;
         const int verbose = 0;
         rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
-        generators = cuda_malloc<double>(sizeof(double) * ndim * fEvalPerRegion);
+        generators = cuda_malloc<double>(/*sizeof(double) **/ ndim * fEvalPerRegion);
         
         size_t block_size = 64;
         
@@ -50,7 +50,7 @@ class Cubature_rules{
         //info::device::max_work_group_size. Adjust the workgroup size if needed.
         
 		auto* constMem_ct2 = &constMem;
-		 
+		std::cout<<"fEvalPerRegion:"<<fEvalPerRegion<<std::endl;
         dpct::get_default_queue().submit([&](sycl::handler& cgh) {
             auto generators_ct0 = generators;
            
@@ -64,7 +64,13 @@ class Cubature_rules{
                                                                  item_ct1);
                              });
         });
-
+		
+		double* h_generators = new double[ndim * fEvalPerRegion];
+		cuda_memcpy_to_host(h_generators, generators, ndim * fEvalPerRegion);
+		
+		for(int i=0; i < ndim*fEvalPerRegion; ++i)
+			printf("generators[%i]:%f\n", i, h_generators[i]); 
+		
         integ_space_lows = cuda_malloc<double>(ndim);
         integ_space_highs = cuda_malloc<double>(ndim);
         
