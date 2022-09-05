@@ -475,6 +475,7 @@ namespace quad {
       subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
+	  //printf("region %i %e +- %e\n", blockIdx.x, dRegionsIntegral[blockIdx.x], dRegionsError[blockIdx.x]);
     }
   }
 

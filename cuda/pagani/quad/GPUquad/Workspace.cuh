@@ -65,7 +65,7 @@ Workspace<ndim>::heuristic_classify(Classifier& classifier_a,
         if(hs_classify_success){
             cudaFree(characteristics.active_regions);
             characteristics.active_regions = hs_results.active_flags;
-            finished.estimate = iter.estimate - dot_product<int, double>(characteristics.active_regions, estimates.integral_estimates, characteristics.size);     
+            finished.estimate = iter.estimate - dot_product<int, double, false>(characteristics.active_regions, estimates.integral_estimates, characteristics.size);     
             finished.errorest = hs_results.finished_errorest;
         }    
         
@@ -126,15 +126,15 @@ Workspace<ndim>::integrate(const IntegT& integrand, Sub_regions<ndim>& subregion
 				}
                 two_level_errorest_and_relerr_classify<ndim>(estimates, prev_iter_estimates, characteristics, epsrel, relerr_classification);
                 
-                iter.errorest = reduction<double>(estimates.error_estimates, subregions.size);
+                iter.errorest = reduction<double, false>(estimates.error_estimates, subregions.size);
                                        
-				/*std::cout<< it << ",\t"
+				std::cout<< it << ",\t"
 					<< cummulative.estimate + iter.estimate << ",\t"
 					<< cummulative.errorest + iter.errorest << ",\t"
 					<< subregions.size << ",\t\t"
 					<< cummulative.nregions << ",\t"
                     << quad::GetAmountFreeMem() << ",\t"
-					<< dt.count() << std::endl;*/
+					<< dt.count() << std::endl;
 						
                 if(predict_split){
 					if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){

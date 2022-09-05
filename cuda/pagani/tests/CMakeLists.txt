@@ -150,3 +150,4 @@ target_include_directories(Reduction PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
+add_test(Reduction Reduction)

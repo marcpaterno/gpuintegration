@@ -4,6 +4,8 @@
 #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "cuda/pagani/quad/util/mem_util.cuh"
 #include "cuda/pagani/quad/util/thrust_utils.cuh"
+#include "cuda/pagani/quad/util/custom_functions.cuh"
+
 #include <string>
 
 
@@ -216,9 +218,11 @@ class Heuristic_classifier{
             };
             
             set_true_for_larger_than<double>(errorests, res.threshold, num_regions, res.active_flags);
-            res.num_active  = static_cast<size_t>(reduction<int>(res.active_flags, num_regions));    
+            res.num_active  = static_cast<size_t>(reduction<int, false>(res.active_flags, num_regions));    
             res.percent_mem_active = int_division(res.num_active, num_regions);
             res.pass_mem = res.percent_mem_active <= max_active_regions_percentage;
+			std::cout<<"heuristic classifier reduction (num_active_regions:)"<< res.num_active << std::endl;
+
         }
         
         void 
@@ -232,7 +236,7 @@ class Heuristic_classifier{
             const double total_f_errorest,
             const double max_percent_err_budget){
             
-            const double extra_f_errorest = active_errorest - dot_product<double, int>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
+            const double extra_f_errorest = active_errorest - dot_product<double, int, true>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
             const double error_budget = target_error - total_f_errorest;
             res.pass_errorest_budget = 
                 extra_f_errorest <= max_percent_err_budget * error_budget;

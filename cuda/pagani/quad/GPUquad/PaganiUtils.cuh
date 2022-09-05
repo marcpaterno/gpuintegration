@@ -19,7 +19,7 @@
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
 //#include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
-
+#include "cuda/pagani/quad/util/custom_functions.cuh"
 #include <stdlib.h>  
 
 
@@ -183,8 +183,8 @@ class Cubature_rules{
         cudaDeviceSynchronize();
         
         cuhreResult<double> res;
-        res.estimate = reduction<double>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<double>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();        
+        res.estimate = reduction<double, true>(subregion_estimates.integral_estimates, num_regions);
+        res.errorest = compute_error ? reduction<double, true>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();        
         return res;
     }
            
@@ -198,10 +198,10 @@ class Cubature_rules{
 template<size_t ndim>
 cuhreResult<double>
 compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region_characteristics<ndim>& classifiers, const cuhreResult<double>& iter){
-    cuhreResult<double> finished;
-    finished.estimate = iter.estimate - dot_product<int, double>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
-    finished.errorest = iter.errorest - dot_product<int, double>(classifiers.active_regions, estimates.error_estimates, estimates.size);
-    return finished;
+    cuhreResult<double> finished; 
+	finished.estimate = iter.estimate - dot_product<int, double, true>(classifiers.active_regions, estimates.integral_estimates, estimates.size);;
+    finished.errorest = iter.errorest - dot_product<int, double, true>(classifiers.active_regions, estimates.error_estimates, estimates.size);;
+	return finished;
 }
 
 bool accuracy_reached(double epsrel, double epsabs, double estimate, double errorest){

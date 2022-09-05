@@ -25,7 +25,7 @@ clean_time_and_call(std::string id,
   Workspace<ndim> workspace;
   quad::Volume<double, ndim> vol;
   
-  for(int i=0; i < 10; i++){
+  for(int i=0; i < 1; i++){
 	
 	
   

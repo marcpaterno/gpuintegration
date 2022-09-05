@@ -9,6 +9,15 @@ target_include_directories(hybrid PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
+add_executable(new_interface_Genz3_3D new_interface_Genz3_3D.cu)
+set_target_properties(new_interface_Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz3_3D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz3_3D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz3_3D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(new_interface_Genz4_5D new_interface_Genz4_5D.cu)
 set_target_properties(new_interface_Genz4_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(new_interface_Genz4_5D util ${NVTX_LIBRARY})

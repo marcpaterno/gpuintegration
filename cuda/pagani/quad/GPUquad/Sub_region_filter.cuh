@@ -91,7 +91,7 @@ class Sub_regions_filter{
         
         const size_t current_num_regions = sub_regions.size;
         const size_t num_active_regions = get_num_active_regions(region_characteristics.active_regions, current_num_regions);
-        
+
         if(num_active_regions == 0){
             return 0;
         }
