@@ -37,12 +37,12 @@ thrust_exclusive_scan(T* arr, size_t size, T* out){
 }
 
 __global__
-void gpu_sum_scan_blelloch(unsigned int* const d_out,
-	const unsigned int* const d_in,
-	unsigned int* const d_block_sums,
+void gpu_sum_scan_blelloch(int* const d_out,
+	const int* const d_in,
+	int* const d_block_sums,
 	const size_t numElems)
 {
-	extern __shared__ unsigned int s_out[];
+	extern __shared__ int s_out[];
 
 	unsigned int glbl_tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -80,7 +80,7 @@ void gpu_sum_scan_blelloch(unsigned int* const d_out,
 
 	unsigned int r_idx = 0;
 	unsigned int l_idx = 0;
-	unsigned int sum = 0; // global sum can be passed to host if needed
+	int sum = 0; // global sum can be passed to host if needed
 	unsigned int t_active = 0;
 	for (int s = 0; s < max_steps; ++s)
 	{
@@ -166,9 +166,9 @@ void gpu_sum_scan_blelloch(unsigned int* const d_out,
 }
 
 __global__
-void gpu_add_block_sums(unsigned int* const d_out,
-	const unsigned int* const d_in,
-	unsigned int* const d_block_sums,
+void gpu_add_block_sums(int* const d_out,
+	const int* const d_in,
+	int* const d_block_sums,
 	const size_t numElems)
 {
 	//unsigned int glbl_t_idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -212,15 +212,15 @@ void gpu_add_block_sums(unsigned int* const d_out,
 // Modified version of Mark Harris' implementation of the Blelloch scan
 //  according to https://www.mimuw.edu.pl/~ps209291/kgkp/slides/scan.pdf
 __global__
-void gpu_prescan(unsigned int* const d_out,
-	const unsigned int* const d_in,
-	unsigned int* const d_block_sums,
+void gpu_prescan(int* const d_out,
+	const int* const d_in,
+	int* const d_block_sums,
 	const unsigned int len,
 	const unsigned int shmem_sz,
 	const unsigned int max_elems_per_block)
 {
 	// Allocated on invocation
-	extern __shared__ unsigned int s_out[];
+	extern __shared__ int s_out[];
 
 	int thid = threadIdx.x;
 	int ai = thid;
@@ -299,7 +299,7 @@ void gpu_prescan(unsigned int* const d_out,
 			ai += CONFLICT_FREE_OFFSET(ai);
 			bi += CONFLICT_FREE_OFFSET(bi);
 
-			unsigned int temp = s_out[ai];
+			int temp = s_out[ai];
 			s_out[ai] = s_out[bi];
 			s_out[bi] += temp;
 		}
@@ -315,8 +315,8 @@ void gpu_prescan(unsigned int* const d_out,
 	}
 }
 
-void sum_scan_blelloch(unsigned int* const d_out,
-	const unsigned int* const d_in,
+void sum_scan_blelloch(int* const d_out,
+	const int* const d_in,
 	const size_t numElems)
 {
 	// Zero out d_out
@@ -342,13 +342,13 @@ void sum_scan_blelloch(unsigned int* const d_out,
 
 	// Allocate memory for array of total sums produced by each block
 	// Array length must be the same as number of blocks
-	unsigned int* d_block_sums;
-	(cudaMalloc(&d_block_sums, sizeof(unsigned int) * grid_sz));
-	(cudaMemset(d_block_sums, 0, sizeof(unsigned int) * grid_sz));
+	int* d_block_sums;
+	(cudaMalloc(&d_block_sums, sizeof(int) * grid_sz));
+	(cudaMemset(d_block_sums, 0, sizeof(int) * grid_sz));
 
 	// Sum scan data allocated to each block
 	//gpu_sum_scan_blelloch<<<grid_sz, block_sz, sizeof(unsigned int) * max_elems_per_block >>>(d_out, d_in, d_block_sums, numElems);
-	gpu_prescan<<<grid_sz, block_sz, sizeof(unsigned int) * shmem_sz>>>(d_out, 
+	gpu_prescan<<<grid_sz, block_sz, sizeof(int) * shmem_sz>>>(d_out, 
 																	d_in, 
 																	d_block_sums, 
 																	numElems, 
@@ -360,11 +360,11 @@ void sum_scan_blelloch(unsigned int* const d_out,
 	//  (This requires only one block to do the scan)
 	if (grid_sz <= max_elems_per_block)
 	{
-		unsigned int* d_dummy_blocks_sums;
-		(cudaMalloc(&d_dummy_blocks_sums, sizeof(unsigned int)));
-		(cudaMemset(d_dummy_blocks_sums, 0, sizeof(unsigned int)));
+		int* d_dummy_blocks_sums;
+		(cudaMalloc(&d_dummy_blocks_sums, sizeof(int)));
+		(cudaMemset(d_dummy_blocks_sums, 0, sizeof(int)));
 		//gpu_sum_scan_blelloch<<<1, block_sz, sizeof(unsigned int) * max_elems_per_block>>>(d_block_sums, d_block_sums, d_dummy_blocks_sums, grid_sz);
-		gpu_prescan<<<1, block_sz, sizeof(unsigned int) * shmem_sz>>>(d_block_sums, 
+		gpu_prescan<<<1, block_sz, sizeof(int) * shmem_sz>>>(d_block_sums, 
 																	d_block_sums, 
 																	d_dummy_blocks_sums, 
 																	grid_sz, 
@@ -376,9 +376,9 @@ void sum_scan_blelloch(unsigned int* const d_out,
 	//  for the block sums
 	else
 	{
-		unsigned int* d_in_block_sums;
-		(cudaMalloc(&d_in_block_sums, sizeof(unsigned int) * grid_sz));
-		(cudaMemcpy(d_in_block_sums, d_block_sums, sizeof(unsigned int) * grid_sz, cudaMemcpyDeviceToDevice));
+		int* d_in_block_sums;
+		(cudaMalloc(&d_in_block_sums, sizeof(int) * grid_sz));
+		(cudaMemcpy(d_in_block_sums, d_block_sums, sizeof(int) * grid_sz, cudaMemcpyDeviceToDevice));
 		sum_scan_blelloch(d_block_sums, d_in_block_sums, grid_sz);
 		(cudaFree(d_in_block_sums));
 	}
@@ -405,12 +405,12 @@ void sum_scan_blelloch(unsigned int* const d_out,
 TEST_CASE("Exclusvie scan of array of size 8")
 {
 	constexpr size_t size = 8;
-	std::array<unsigned int, size> arr = {3, 1, 7, 0, 4, 1, 6, 3};
-	std::array<unsigned int, size> true_results = {0, 3, 4, 11, 11, 15, 16, 22};
+	std::array<int, size> arr = {3, 1, 7, 0, 4, 1, 6, 3};
+	std::array<int, size> true_results = {0, 3, 4, 11, 11, 15, 16, 22};
 	
-	unsigned int *out = quad::cuda_malloc_managed<unsigned int>(size);
-	unsigned int *d_arr = quad::cuda_malloc_managed<unsigned int>(size);
-	cuda_memcpy_to_device<unsigned int>(d_arr, arr.data(), size);
+	int *out = quad::cuda_malloc_managed<int>(size);
+	int *d_arr = quad::cuda_malloc_managed<int>(size);
+	cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 	
 	sum_scan_blelloch(out, d_arr, size);
 	
@@ -427,7 +427,7 @@ TEST_CASE("Exclusvie scan of array of size 8")
 		out[i] = 0;	
 	}
 	
-	thrust_exclusive_scan<unsigned int>(d_arr, size, out);
+	thrust_exclusive_scan<int>(d_arr, size, out);
 
 	
 	SECTION("Thrust Gets the same results")
@@ -444,16 +444,16 @@ TEST_CASE("Exclusvie scan of array of size 8")
 TEST_CASE("Exclusvie scan of array of non-power-two size")
 {
 	constexpr size_t size = 10000;
-	std::array<unsigned int, size> arr;
+	std::array<int, size> arr;
 	std::iota(arr.begin(), arr.end(), 1.);
 	
-	unsigned int *out_thrust = quad::cuda_malloc_managed<unsigned int>(size);
-	unsigned int *out_custom = quad::cuda_malloc_managed<unsigned int>(size);
-	unsigned int *d_arr = quad::cuda_malloc_managed<unsigned int>(size);
-	cuda_memcpy_to_device<unsigned int>(d_arr, arr.data(), size);
+	int *out_thrust = quad::cuda_malloc_managed<int>(size);
+	int *out_custom = quad::cuda_malloc_managed<int>(size);
+	int *d_arr = quad::cuda_malloc_managed<int>(size);
+	cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 	
 	sum_scan_blelloch(out_custom, d_arr, size);
-	thrust_exclusive_scan<unsigned int>(d_arr, size, out_thrust);
+	thrust_exclusive_scan<int>(d_arr, size, out_thrust);
 	
 	SECTION("Check results of custom function")
 	{
@@ -470,16 +470,16 @@ TEST_CASE("Exclusvie scan of array of non-power-two size")
 TEST_CASE("Exclusvie scan of array of odd size")
 {
 	constexpr size_t size = 10001;
-	std::array<unsigned int, size> arr;
+	std::array<int, size> arr;
 	std::iota(arr.begin(), arr.end(), 1.);
 	
-	unsigned int *out_thrust = quad::cuda_malloc_managed<unsigned int>(size);
-	unsigned int *out_custom = quad::cuda_malloc_managed<unsigned int>(size);
-	unsigned int *d_arr = quad::cuda_malloc_managed<unsigned int>(size);
-	cuda_memcpy_to_device<unsigned int>(d_arr, arr.data(), size);
+	int *out_thrust = quad::cuda_malloc_managed<int>(size);
+	int *out_custom = quad::cuda_malloc_managed<int>(size);
+	int *d_arr = quad::cuda_malloc_managed<int>(size);
+	cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 	
 	sum_scan_blelloch(out_custom, d_arr, size);
-	thrust_exclusive_scan<unsigned int>(d_arr, size, out_thrust);
+	thrust_exclusive_scan<int>(d_arr, size, out_thrust);
 	
 	SECTION("Check results of custom function")
 	{
@@ -491,4 +491,3 @@ TEST_CASE("Exclusvie scan of array of odd size")
 	cudaFree(out_thrust);
 	cudaFree(out_custom);
 }
-
