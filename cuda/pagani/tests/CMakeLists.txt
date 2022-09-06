@@ -1,5 +1,13 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(prefix_sum prefix_sum.cu)
+set_target_properties(prefix_sum PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_include_directories(prefix_sum PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(prefix_sum prefix_sum)
+
 add_executable(pagani_loop_test pagani_loop_test.cu)
 set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(pagani_loop_test ${NVTX_LIBRARY})
