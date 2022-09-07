@@ -61,10 +61,6 @@ class Sub_regions_filter{
     }
     
     size_t get_num_active_regions(int* active_regions, const size_t num_regions){
-        
-        //thrust::device_ptr<int> d_ptr = thrust::device_pointer_cast(active_regions);
-        //thrust::device_ptr<int> scan_ptr = thrust::device_pointer_cast(scanned_array);
-        //thrust::exclusive_scan(d_ptr, d_ptr + num_regions, scan_ptr);
         exclusive_scan<int, use_custom>(active_regions, num_regions, scanned_array);
         int last_element;
         int num_active = 0;

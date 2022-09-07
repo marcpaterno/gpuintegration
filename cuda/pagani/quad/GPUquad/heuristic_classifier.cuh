@@ -271,7 +271,7 @@ class Heuristic_classifier{
             const double iter_finished_errorest,
             const double total_finished_errorest){
                            
-            Classification_res thres_search = (device_array_min_max<double>(errorests, num_regions));
+            Classification_res thres_search = (device_array_min_max<double, use_custom>(errorests, num_regions));
             thres_search.data_allocated = true;
             
             const double min_errorest = thres_search.threshold_range.low;
