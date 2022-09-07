@@ -209,7 +209,7 @@ class Heuristic_classifier{
             res.num_active  = static_cast<size_t>(reduction<int, use_custom>(res.active_flags, num_regions));    
             res.percent_mem_active = int_division(res.num_active, num_regions);
             res.pass_mem = res.percent_mem_active <= max_active_regions_percentage;
-			std::cout<<"heuristic classifier reduction (num_active_regions:)"<< res.num_active << std::endl;
+			//std::cout<<"heuristic classifier reduction (num_active_regions:)"<< res.num_active << std::endl;
 
         }
         

@@ -1,31 +1,30 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 
-  class GENZ_4_5D {
+class GENZ_6_6D {
   public:
     __device__ __host__ double
-    operator()(double x, double y, double z, double w, double v)
+    operator()(double u, double v, double w, double x, double y, double z)
     {
-      // double alpha = 25.;
-      double beta = .5;
-      return exp(
-        -1.0 * (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2) +
-                pow(25, 2) * pow(z - beta, 2) + pow(25, 2) * pow(w - beta, 2) +
-                pow(25, 2) * pow(v - beta, 2)));
+      if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
+        return 0.;
+      else
+        return exp(10 * z + 9 * y + 8 * x + 7 * w + 6 * v +
+                   5 * u) /*/1.5477367885091207413e8*/;
     }
-  };
+};
 
 int main(){
     
     double epsrel = 1.0e-3;
     double const epsrel_min = 1.0240000000000002e-10;
-    constexpr int ndim = 5;
-    GENZ_4_5D integrand;
-    double true_value = 1.79132603674879e-06;
+    constexpr int ndim = 6;
+    GENZ_6_6D integrand;
+	double true_value = 0.010846560846560846561;
 	
 	
 	
-    while (clean_time_and_call<GENZ_4_5D, ndim, false>("f4",
+    while (clean_time_and_call<GENZ_6_6D, ndim, false>("f6",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -36,7 +35,7 @@ int main(){
 	}
 	
 	epsrel = 1.0e-3;
-	while (clean_time_and_call<GENZ_4_5D, ndim, true>("f4",
+	while (clean_time_and_call<GENZ_6_6D, ndim, true>("f6",
                                            integrand,
                                            epsrel,
                                            true_value,

@@ -7,8 +7,9 @@
 #include "cuda/pagani/quad/util/cuhreResult.cuh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "nvToolsExt.h"
+#include <string>
 
-template <typename F, int ndim>
+template <typename F, int ndim, bool use_custom = false>
 bool
 clean_time_and_call(std::string id,
                  F integrand,
@@ -22,10 +23,16 @@ clean_time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
     bool good = false;
-  Workspace<ndim> workspace;
+  Workspace<ndim, use_custom> workspace;
   quad::Volume<double, ndim> vol;
   
-  for(int i=0; i < 1; i++){
+  
+  auto print_custom = [=](bool use_custom_flag){
+	  std::string to_print = use_custom_flag == true ? "custom" : "library";
+	  return to_print;
+  };
+  
+  for(int i=0; i < 11; i++){
 	
 	
   
@@ -51,8 +58,11 @@ clean_time_and_call(std::string id,
 	}
 
 	outfile.precision(17);
-	outfile << std::fixed << std::scientific << id  << ","
+	if(i != 0)
+		outfile << std::fixed << std::scientific 
+		  << id  << ","
           << ndim << ","
+		  << print_custom(use_custom) << ","
           << true_value  << "," << epsrel  << ","
           << epsabs << ","
           << result.estimate << ","
@@ -66,7 +76,7 @@ clean_time_and_call(std::string id,
 
 void
 print_header(){
-    std::cout<<"id, ndim, integral, epsrel, epsabs, estimate, errorest, nregions, status, time\n";
+    std::cout<<"id, ndim, use_custom, integral, epsrel, epsabs, estimate, errorest, nregions, status, time\n";
 }
 
 

@@ -1,31 +1,38 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 
-  class GENZ_4_5D {
+class GENZ_5_8D {
   public:
     __device__ __host__ double
-    operator()(double x, double y, double z, double w, double v)
+    operator()(double x,
+               double y,
+               double z,
+               double k,
+               double m,
+               double n,
+               double p,
+               double q)
     {
-      // double alpha = 25.;
       double beta = .5;
-      return exp(
-        -1.0 * (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2) +
-                pow(25, 2) * pow(z - beta, 2) + pow(25, 2) * pow(w - beta, 2) +
-                pow(25, 2) * pow(v - beta, 2)));
+      double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
+                  10. * fabs(z - beta) - 10. * fabs(k - beta) -
+                  10. * fabs(m - beta) - 10. * fabs(n - beta) -
+                  10. * fabs(p - beta) - 10. * fabs(q - beta);
+      return exp(t1);
     }
-  };
+};
 
 int main(){
     
     double epsrel = 1.0e-3;
     double const epsrel_min = 1.0240000000000002e-10;
-    constexpr int ndim = 5;
-    GENZ_4_5D integrand;
-    double true_value = 1.79132603674879e-06;
+    constexpr int ndim = 8;
+    GENZ_5_8D integrand;
+	double true_value = 2.425217625641885e-06;
 	
 	
 	
-    while (clean_time_and_call<GENZ_4_5D, ndim, false>("f4",
+    while (clean_time_and_call<GENZ_5_8D, ndim, false>("f5",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -36,7 +43,7 @@ int main(){
 	}
 	
 	epsrel = 1.0e-3;
-	while (clean_time_and_call<GENZ_4_5D, ndim, true>("f4",
+	while (clean_time_and_call<GENZ_5_8D, ndim, true>("f5",
                                            integrand,
                                            epsrel,
                                            true_value,

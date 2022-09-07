@@ -1,10 +1,40 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+
+
 add_executable(hybrid hybrid.cu)
 set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(hybrid util ${NVTX_LIBRARY})
 target_compile_options(hybrid PRIVATE "--expt-relaxed-constexpr")
 target_include_directories(hybrid PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(new_interface_Genz5_8D new_interface_Genz5_8D.cu)
+set_target_properties(new_interface_Genz5_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz5_8D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz5_8D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz5_8D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(new_interface_Genz6_6D new_interface_Genz6_6D.cu)
+set_target_properties(new_interface_Genz6_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz6_6D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz6_6D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz6_6D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+
+add_executable(new_interface_Genz2_6D new_interface_Genz2_6D.cu)
+set_target_properties(new_interface_Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz2_6D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz2_6D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz2_6D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )

@@ -128,13 +128,13 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 
                 iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
                                        
-				std::cout<< it << ",\t"
+				/*std::cout<< it << ",\t"
 					<< cummulative.estimate + iter.estimate << ",\t"
 					<< cummulative.errorest + iter.errorest << ",\t"
 					<< subregions.size << ",\t\t"
 					<< cummulative.nregions << ",\t"
                     << quad::GetAmountFreeMem() << ",\t"
-					<< dt.count() << std::endl;
+					<< dt.count() << std::endl;*/
 						
                 if(predict_split){
 					if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){
