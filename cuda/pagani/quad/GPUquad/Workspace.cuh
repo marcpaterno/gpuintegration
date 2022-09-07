@@ -25,7 +25,7 @@ class Workspace{
     using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;
     using Res = cuhreResult<double>;
-    using Filter = Sub_regions_filter<ndim>;
+    using Filter = Sub_regions_filter<ndim, use_custom>;
     using Splitter = Sub_region_splitter<ndim>;
     using Classifier = Heuristic_classifier<ndim>;
     
