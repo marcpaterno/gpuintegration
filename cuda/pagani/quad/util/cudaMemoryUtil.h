@@ -166,15 +166,14 @@ namespace quad {
       T* temp = nullptr;
       auto rc = cudaMallocManaged(&temp, sizeof(T) * size);
       if (rc != cudaSuccess){
-	temp = nullptr;
+		temp = nullptr;
 
-	size_t free_physmem, total_physmem;
-	cudaMemGetInfo(&free_physmem, &total_physmem);
-	printf("cuda_malloc_managed(size) allocating size %lu free mem:%lu\n", size, free_physmem);
+		size_t free_physmem, total_physmem;
+		cudaMemGetInfo(&free_physmem, &total_physmem);
+		printf("cuda_malloc_managed(size) allocating size %lu free mem:%lu\n", size, free_physmem);
       
-	CudaCheckError();
-	throw std::bad_alloc();
-      
+		CudaCheckError();
+		throw std::bad_alloc();
       }
       return temp;
     }

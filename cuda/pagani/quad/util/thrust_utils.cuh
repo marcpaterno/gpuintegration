@@ -25,6 +25,7 @@
 
 
 
+//https://www.apriorit.com/dev-blog/614-cpp-cuda-accelerate-algorithm-cpu-gpu
 
 template<typename T1, typename T2, bool use_custom = false>
 double
@@ -41,10 +42,10 @@ dot_product(T1* arr1, T2* arr2, const size_t size){
 		
 		return res;
 	}
-	else{
-		double res = custom_inner_product_atomics<T1, T2>(arr1, arr2, size);
-		return res;
-	}
+
+	double res = custom_inner_product_atomics<T1, T2>(arr1, arr2, size);
+	return res;
+	
 }
 
 template<typename T, bool use_custom =  false>
@@ -54,9 +55,8 @@ reduction(T* arr, size_t size){
 		thrust::device_ptr<T> wrapped_ptr = thrust::device_pointer_cast(arr);
 		return thrust::reduce(wrapped_ptr, wrapped_ptr + size);
 	}
-	else{
-		return custom_reduce_atomics(arr, size);
-	}
+	
+	return custom_reduce_atomics(arr, size);
 }
 
 template<typename T, bool use_custom = false>
@@ -88,8 +88,6 @@ void gpu_sum_scan_blelloch(int* const d_out,
 {
 	extern __shared__ int s_out[];
 
-	unsigned int glbl_tid = blockDim.x * blockIdx.x + threadIdx.x;
-
 	// Zero out shared memory
 	// Especially important when padding shmem for
 	//  non-power of 2 sized input
@@ -100,12 +98,6 @@ void gpu_sum_scan_blelloch(int* const d_out,
 
 	__syncthreads();
 
-	// Copy d_in to shared memory per block
-	//if (2 * glbl_tid < numElems)
-	//{
-	//	s_out[2 * threadIdx.x] = d_in[2 * glbl_tid];
-	//	if (2 * glbl_tid + 1 < numElems)
-	//		s_out[2 * threadIdx.x + 1] = d_in[2 * glbl_tid + 1];
 	//}
 	unsigned int cpy_idx = 2 * blockIdx.x * blockDim.x + threadIdx.x;
 	if (cpy_idx < numElems)
@@ -133,7 +125,7 @@ void gpu_sum_scan_blelloch(int* const d_out,
 		// calculate necessary indexes
 		// right index must be (t+1) * 2^(s+1)) - 1
 		r_idx = ((threadIdx.x + 1) * (1 << (s + 1))) - 1;
-		if (r_idx >= 0 && r_idx < 2048)
+		if (/*r_idx >= 0 &&*/ r_idx < 2048)
 			t_active = 1;
 
 		if (t_active)
@@ -168,7 +160,7 @@ void gpu_sum_scan_blelloch(int* const d_out,
 		// calculate necessary indexes
 		// right index must be (t+1) * 2^(s+1)) - 1
 		r_idx = ((threadIdx.x + 1) * (1 << (s + 1))) - 1;
-		if (r_idx >= 0 && r_idx < 2048)
+		if (/*r_idx >= 0 &&*/ r_idx < 2048)
 		{
 			t_active = 1;
 		}
