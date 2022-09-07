@@ -26,7 +26,7 @@
 
 __constant__ size_t dFEvalPerRegion;
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 class Cubature_rules{
     public:    
     //integrator requires constMem structure and generators array (those two can and should be combined into one)
@@ -138,8 +138,8 @@ class Cubature_rules{
         cudaDeviceSynchronize();
         
         cuhreResult<double> res;
-        res.estimate = reduction<double>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<double>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();
+        res.estimate = reduction<double, use_custom>(subregion_estimates.integral_estimates, num_regions);
+        res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();
         
         return res;
     }
@@ -183,8 +183,8 @@ class Cubature_rules{
         cudaDeviceSynchronize();
         
         cuhreResult<double> res;
-        res.estimate = reduction<double, true>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<double, true>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();        
+        res.estimate = reduction<double, use_custom>(subregion_estimates.integral_estimates, num_regions);
+        res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();        
         return res;
     }
            

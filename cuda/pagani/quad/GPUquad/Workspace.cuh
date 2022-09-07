@@ -126,7 +126,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 				}
                 two_level_errorest_and_relerr_classify<ndim>(estimates, prev_iter_estimates, characteristics, epsrel, relerr_classification);
                 
-                iter.errorest = reduction<double, false>(estimates.error_estimates, subregions.size);
+                iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
                                        
 				std::cout<< it << ",\t"
 					<< cummulative.estimate + iter.estimate << ",\t"
