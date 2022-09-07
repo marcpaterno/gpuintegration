@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(gpuintegration VERSION 0.1.0 LANGUAGES CXX CUDA)
+
+if (GPUINTEGRATION_BUILD_CUDA)
+  project(gpuintegration VERSION 0.1.0 LANGUAGES CXX CUDA)
+else ()
+  project(gpuintegration VERSION 0.1.0 LANGUAGES CXX)
+endif()
+
 enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
@@ -18,18 +24,18 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
-include_directories(AFTER cubacpp externals ${TOP_DIR})
+include_directories(AFTER cubacpp externals ${CMAKE_SOURCE_DIR})
 
 if (GPUINTEGRATION_BUILD_CUDA)
-add_subdirectory(cuda)
+  add_subdirectory(cuda)
 endif()
 
 
 if (GPUINTEGRATION_BUILD_KOKKOS)
-add_subdirectory(kokkos)
+  add_subdirectory(kokkos)
 endif()
 
 
 if (GPUINTEGRATION_BUILD_ONEAPI)
-add_subdirectory(oneAPI)
+  add_subdirectory(oneAPI)
 endif()
