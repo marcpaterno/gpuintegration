@@ -426,6 +426,7 @@ void gpu_add_block_sums(int* const d_out,
 
 // Modified version of Mark Harris' implementation of the Blelloch scan
 //  according to https://www.mimuw.edu.pl/~ps209291/kgkp/slides/scan.pdf
+//this macro is only used for prefix scan
 
 #ifdef ZERO_BANK_CONFLICTS
 #define CONFLICT_FREE_OFFSET(n) \

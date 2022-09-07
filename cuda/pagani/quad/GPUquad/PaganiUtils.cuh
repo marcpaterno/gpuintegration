@@ -195,12 +195,12 @@ class Cubature_rules{
     double *integ_space_highs = nullptr;
 };
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 cuhreResult<double>
 compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region_characteristics<ndim>& classifiers, const cuhreResult<double>& iter){
     cuhreResult<double> finished; 
-	finished.estimate = iter.estimate - dot_product<int, double, true>(classifiers.active_regions, estimates.integral_estimates, estimates.size);;
-    finished.errorest = iter.errorest - dot_product<int, double, true>(classifiers.active_regions, estimates.error_estimates, estimates.size);;
+	finished.estimate = iter.estimate - dot_product<int, double, use_custom>(classifiers.active_regions, estimates.integral_estimates, estimates.size);;
+    finished.errorest = iter.errorest - dot_product<int, double, use_custom>(classifiers.active_regions, estimates.error_estimates, estimates.size);;
 	return finished;
 }
 

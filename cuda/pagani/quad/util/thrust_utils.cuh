@@ -10,12 +10,6 @@
 #include <thrust/transform_reduce.h>
 #include "cuda/pagani/quad/util/custom_functions.cuh"
 
-//this macro is only used for custom prefix scan
-
-
-
-
-
 //https://www.apriorit.com/dev-blog/614-cpp-cuda-accelerate-algorithm-cpu-gpu
 
 template<typename T1, typename T2, bool use_custom = false>
@@ -70,5 +64,24 @@ thrust_exclusive_scan(T* arr, size_t size, T* out){
     thrust::device_ptr<T> scan_ptr = thrust::device_pointer_cast(out);
     thrust::exclusive_scan(d_ptr, d_ptr + size, scan_ptr);
 }
+
+template<typename T, bool use_custom = false>
+Range<T>
+device_array_min_max(T* arr, size_t size){
+	Range<T> range;
+	if(use_custom == false){
+		thrust::device_ptr<T> d_ptrE = thrust::device_pointer_cast(arr);
+		auto __tuple = thrust::minmax_element(d_ptrE, d_ptrE + size);
+		range.low = *__tuple.first;
+		range.high = *__tuple.second;
+		return range;
+	}
+	
+	auto res = min_max<T>(arr, size);
+	range.low  = res.first;
+	range.high = res.second;
+	return range;
+}
+
 
 #endif

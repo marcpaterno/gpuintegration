@@ -8,18 +8,6 @@
 
 #include <string>
 
-
-template<typename T>
-Range<T>
-device_array_min_max(T* arr, size_t size){
-    Range<T> range;
-    thrust::device_ptr<T> d_ptrE = thrust::device_pointer_cast(arr);
-    auto __tuple = thrust::minmax_element(d_ptrE, d_ptrE + size);
-    range.low = *__tuple.first;
-    range.high = *__tuple.second;
-    return range;
-}
-
  std::string
  doubleToString(double val, int prec_level){
       std::ostringstream out;
@@ -96,7 +84,7 @@ size_t free_device_mem(){
     return free_physmem;
 }
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 class Heuristic_classifier{
     
      double epsrel = 0.;
@@ -236,7 +224,7 @@ class Heuristic_classifier{
             const double total_f_errorest,
             const double max_percent_err_budget){
             
-            const double extra_f_errorest = active_errorest - dot_product<double, int, true>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
+            const double extra_f_errorest = active_errorest - dot_product<double, int, use_custom>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
             const double error_budget = target_error - total_f_errorest;
             res.pass_errorest_budget = 
                 extra_f_errorest <= max_percent_err_budget * error_budget;

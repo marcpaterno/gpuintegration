@@ -19,7 +19,7 @@ void output_iter_data(){
         
 }
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 class Workspace{
     using Estimates = Region_estimates<ndim>;
     using Sub_regs = Sub_regions<ndim>;
@@ -42,9 +42,9 @@ class Workspace{
         cuhreResult<double> integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel, double epsabs, quad::Volume<double, ndim>& vol, bool relerr_classification = true);
 };
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom>
 bool
-Workspace<ndim>::heuristic_classify(Classifier& classifier_a, 
+Workspace<ndim, use_custom>::heuristic_classify(Classifier& classifier_a, 
     Region_characteristics<ndim>& characteristics, 
     const Estimates& estimates, 
     cuhreResult<double>& finished, 
@@ -65,7 +65,7 @@ Workspace<ndim>::heuristic_classify(Classifier& classifier_a,
         if(hs_classify_success){
             cudaFree(characteristics.active_regions);
             characteristics.active_regions = hs_results.active_flags;
-            finished.estimate = iter.estimate - dot_product<int, double, false>(characteristics.active_regions, estimates.integral_estimates, characteristics.size);     
+            finished.estimate = iter.estimate - dot_product<int, double, use_custom>(characteristics.active_regions, estimates.integral_estimates, characteristics.size);     
             finished.errorest = hs_results.finished_errorest;
         }    
         
@@ -73,9 +73,9 @@ Workspace<ndim>::heuristic_classify(Classifier& classifier_a,
         return must_terminate;
 }
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom>
 void
-Workspace<ndim>::fix_error_budget_overflow(Region_characteristics<ndim>& characteristics, 
+Workspace<ndim, use_custom>::fix_error_budget_overflow(Region_characteristics<ndim>& characteristics, 
                                             const cuhreResult<double>& cummulative_finished, 
                                             const cuhreResult<double>& iter, 
                                             cuhreResult<double>& iter_finished, 
@@ -95,10 +95,10 @@ Workspace<ndim>::fix_error_budget_overflow(Region_characteristics<ndim>& charact
     }
 }
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom>
 template<typename IntegT, bool predict_split, bool collect_iters, bool collect_sub_regions>
 cuhreResult<double>       
-Workspace<ndim>::integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel, double epsabs, quad::Volume<double, ndim>& vol, bool relerr_classification){
+Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel, double epsabs, quad::Volume<double, ndim>& vol, bool relerr_classification){
             using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
 
 			
@@ -154,7 +154,7 @@ Workspace<ndim>::integrate(const IntegT& integrand, Sub_regions<ndim>& subregion
                 quad::CudaCheckError();
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
                 //std::cout<<"before compute_finished_estimates quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
-                Res finished = compute_finished_estimates<ndim>(estimates, characteristics, iter);   
+                Res finished = compute_finished_estimates<ndim, use_custom>(estimates, characteristics, iter);   
                 //std::cout<<"after compute_finished_estimates quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;        
                 fix_error_budget_overflow(characteristics, cummulative, iter, finished, epsrel);
 				//std::cout<<"before hs_classify quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;        
