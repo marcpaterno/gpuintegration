@@ -229,24 +229,24 @@ __global__ void block0_min_max(T* mins, T* maxs, const int size, T* min, T* max)
 }
 
 template<typename T>
-std::pair<double,double>
+std::pair<T,T>
 min_max(T* input, const int size){
 	size_t num_threads = 1024;
 	size_t max_num_blocks = 1024;
 	size_t num_blocks = min((size + num_threads - 1)/num_threads, max_num_blocks);
 	
-	double* block_mins = cuda_malloc<double>(num_blocks);
-	double* block_maxs = cuda_malloc<double>(num_blocks);
-	double* d_min = cuda_malloc<double>(1);
-	double* d_max = cuda_malloc<double>(1);
+	T* block_mins = cuda_malloc<T>(num_blocks);
+	T* block_maxs = cuda_malloc<T>(num_blocks);
+	T* d_min = cuda_malloc<T>(1);
+	T* d_max = cuda_malloc<T>(1);
 	
-	blocks_min_max<double><<<num_blocks, num_threads>>>(input, size, block_mins, block_maxs);
-	block0_min_max<double><<<1, std::max(num_blocks, (size_t)32)>>>(block_mins, block_maxs, num_blocks, d_min, d_max);
+	blocks_min_max<T><<<num_blocks, num_threads>>>(input, size, block_mins, block_maxs);
+	block0_min_max<T><<<1, std::max(num_blocks, (size_t)32)>>>(block_mins, block_maxs, num_blocks, d_min, d_max);
 	
 	cudaDeviceSynchronize();
 	
-	double min = 0.;
-	double max = 0.;
+	T min = 0.;
+	T max = 0.;
 	
 	cuda_memcpy_to_host(&min, d_min, 1);
 	cuda_memcpy_to_host(&max, d_max, 1);

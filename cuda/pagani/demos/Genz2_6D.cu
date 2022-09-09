@@ -19,9 +19,12 @@ main()
   Config configuration;
   configuration.outfileVerbosity = 0;
   // configuration.heuristicID = 0;
-
+  constexpr bool debug = true;
+  constexpr bool predict_split = false; 
+  constexpr bool collect_iters = false;
   PrintHeader();
-  while (cu_time_and_call_100<GENZ_2_6D, ndim>("GENZ2_6D",
+   
+  while (cu_time_and_call_100<GENZ_2_6D, ndim, predict_split, collect_iters, debug>("GENZ2_6D",
                                            integrand,
                                            epsrel,
                                            true_value,

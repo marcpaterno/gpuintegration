@@ -28,8 +28,9 @@ int main(){
     constexpr int ndim = 6;
     GENZ_2_6D integrand;
 	double true_value = 1.286889807581113e+13;
-	
-    while (clean_time_and_call<GENZ_2_6D, ndim, false>("f2",
+	constexpr bool use_custom_false = false;
+	constexpr bool debug = true;
+    while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_false, debug>("f2",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -37,10 +38,13 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 		epsrel /= 5.0;
+		break;
 	}
 	
+	return 0;
+	constexpr bool use_custom_true = true;
 	epsrel = 1.0e-3;
-	while (clean_time_and_call<GENZ_2_6D, ndim, true>("f2",
+	while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_true>("f2",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -48,6 +52,7 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 		epsrel /= 5.0;
+		break;
 	}
     return 0;
 }

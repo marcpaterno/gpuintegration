@@ -1,11 +1,13 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
+#include <assert.h>
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "cuda/pagani/quad/util/cudaApply.cuh"
 #include "cuda/pagani/quad/util/cudaArray.cuh"
 #include "cuda/pagani/quad/util/cudaUtil.h"
+#include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 #include <cmath>
 #include <curand_kernel.h>
 
@@ -33,14 +35,7 @@ public:
   }
 };
 }
-template<size_t ndim>
-__host__ __device__
-constexpr 
-size_t CuhreFuncEvalsPerRegion(){
-    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
-                        2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
-                        4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
-}
+
 
 
 namespace quad {
@@ -104,8 +99,9 @@ namespace quad {
     }
     return sdata[0];
   }
+  
 
-  template <typename IntegT, typename T, int NDIM>
+  template <typename IntegT, typename T, int NDIM, bool debug = false>
   __device__ void
   computePermutation(IntegT* d_integrand,
                      int pIndex,
@@ -119,32 +115,38 @@ namespace quad {
                      T* jacobian,
                      double* generators,
                      //int FEVAL,
-                     T* sdata)
+                     T* sdata,
+					 quad::Func_Evals<NDIM>& fevals)
   {
-
-    /*for (int dim = 0; dim < NDIM; ++dim) {
-      x[dim] = 0;
-    }*/
-
-    
-	
 	gpu::cudaArray<T, NDIM> x;
     for (int dim = 0; dim < NDIM; ++dim) {
-      const T generator = __ldg(&generators[CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
+      const T generator = __ldg(&generators[pagani::CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
       x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-	
+		
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[threadIdx.x] = fun; // target for reduction
 	const int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
 	
+	if constexpr(debug){
+	  //assert(fevals != nullptr);
+	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
+	  	  //printf("block:%i tid:%i pIndex:%i writting to fevals[%lu]:%e, %i\n", blockIdx.x, threadIdx.x, pIndex, blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex, gpu::apply(*d_integrand, x), pIndex);
+		//if(blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex > 64 * 453)
+		//	printf("problem\n");
+		//printf("%i:\n", fevals[0].feval_index);
+	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
+	}
+			
 	#pragma unroll 5
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
     }
   }
+
+
 
   template <typename IntegT, typename T, int NDIM>
   __device__ void
@@ -343,7 +345,7 @@ namespace quad {
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
-  template <typename IntegT, typename T, int NDIM, int blockdim>
+  template <typename IntegT, typename T, int NDIM, int blockdim, bool debug>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     //int sIndex,
@@ -356,7 +358,8 @@ namespace quad {
                     int* maxdim,
                     T range[],
                     T* jacobian,
-                    double* generators)
+                    double* generators,
+					quad::Func_Evals<NDIM>& fevals)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
     __shared__ T sdata[blockdim];
@@ -372,9 +375,9 @@ namespace quad {
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * blockdim + threadIdx.x;
-	constexpr int FEVAL = CuhreFuncEvalsPerRegion<NDIM>();
+	constexpr int FEVAL = pagani::CuhreFuncEvalsPerRegion<NDIM>();
     if (pIndex < FEVAL) {
-      computePermutation<IntegT, T, NDIM>(d_integrand,
+      computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
                                           sBound,
@@ -386,7 +389,8 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
 
     __syncthreads();
@@ -418,7 +422,7 @@ namespace quad {
 
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx.x;
-      computePermutation<IntegT, T, NDIM>(d_integrand,
+      computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
                                           sBound,
@@ -430,14 +434,15 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
     //__syncthreads();
     // Balance permutations
     pIndex = perm * blockdim + threadIdx.x;
     if (pIndex < FEVAL) {
       int pIndex = perm * blockdim + threadIdx.x;
-      computePermutation<IntegT, T, NDIM>(d_integrand,
+      computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
                                           sBound,
@@ -449,7 +454,8 @@ namespace quad {
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
     // __syncthreads();
 
@@ -706,7 +712,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 	}
   }
 	
-	template <typename IntegT, typename T, int NDIM, int blockdim>
+	template <typename IntegT, typename T, int NDIM, int blockdim, bool debug = false>
 	__device__ void
 	Vegas_assisted_SampleRegionBlock(IntegT* d_integrand,
                     const Structures<double>& constMem,
@@ -717,6 +723,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                     T range[],
                     T* jacobian,
                     double* generators,
+					quad::Func_Evals<NDIM>& fevals,
 					unsigned int seed_init)
   {
 	pagani::Curand_generator rand_num_generator(seed_init);  
@@ -743,9 +750,9 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
     // values for the permutation used to compute
     // fourth dimension
     int pIndex = perm * blockdim + threadIdx.x;
-	constexpr int FEVAL = CuhreFuncEvalsPerRegion<NDIM>();
+	constexpr int FEVAL = pagani::CuhreFuncEvalsPerRegion<NDIM>();
     if (pIndex < FEVAL) {
-      computePermutation<IntegT, T, NDIM>(d_integrand,
+      computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
                                           sBound,
@@ -757,7 +764,8 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
 
     __syncthreads();
@@ -801,7 +809,8 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
     //__syncthreads();
     // Balance permutations
@@ -820,7 +829,8 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                                           jacobian,
                                           generators,
                                           //FEVAL,
-                                          sdata);
+                                          sdata,
+										  fevals);
     }
     // __syncthreads();
 

@@ -371,7 +371,7 @@ namespace quad {
     __syncthreads();
   }
 
-  template <typename IntegT, typename T, int NDIM, int blockDim>
+  template <typename IntegT, typename T, int NDIM, int blockDim, bool debug>
   __device__ void
   INIT_REGION_POOL(IntegT* d_integrand,
                    T* dRegions,
@@ -384,7 +384,8 @@ namespace quad {
                    GlobalBounds sBound[],
                    T* lows,
                    T* highs,
-                   double* generators)
+                   double* generators,
+				   quad::Func_Evals<NDIM>& fevals)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -420,7 +421,7 @@ namespace quad {
     }
 
     __syncthreads();
-    SampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
+    SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
                                                  //0,
                                                  constMem,
                                                  //FEVAL,
@@ -431,11 +432,13 @@ namespace quad {
                                                  &maxDim,
                                                  ranges,
                                                  &Jacobian,
-                                                 generators);
+                                                 generators,
+												 fevals);
     __syncthreads();
   }
-
-  template <typename IntegT, typename T, int NDIM, int blockDim>
+  
+  
+  template <typename IntegT, typename T, int NDIM, int blockDim, bool debug = false>
   __global__ void
   INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
                        T* dRegions,
@@ -447,17 +450,18 @@ namespace quad {
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
-                       Structures<double> constMem,
+                       Structures<double> constMem, //switch to const ptr:  Structures<double> const * const constMem,
                        //int FEVAL,
                        //int NSETS,
                        T* lows,
                        T* highs,
-                       double* generators)
+                       double* generators,
+					   quad::Func_Evals<NDIM> fevals)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
 
-    INIT_REGION_POOL<IntegT, T, NDIM, blockDim>(d_integrand,
+    INIT_REGION_POOL<IntegT, T, NDIM, blockDim, debug>(d_integrand,
                                                 dRegions,
                                                 dRegionsLength,
                                                 numRegions,
@@ -468,14 +472,15 @@ namespace quad {
                                                 sBound,
                                                 lows,
                                                 highs,
-                                                generators);
+                                                generators,
+												fevals);
 
     if (threadIdx.x == 0) {
       activeRegions[blockIdx.x] = 1;
       subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
-	  //printf("region %i %e +- %e\n", blockIdx.x, dRegionsIntegral[blockIdx.x], dRegionsError[blockIdx.x]);
+	  printf("region %i %e +- %e\n", blockIdx.x, dRegionsIntegral[blockIdx.x], dRegionsError[blockIdx.x]);
     }
   }
 
@@ -545,6 +550,7 @@ namespace quad {
                    T* lows,
                    T* highs,
                    double* generators,
+				   quad::Func_Evals<NDIM>& fevals,
 				   unsigned int seed_init)
   {
     size_t index = blockIdx.x;
@@ -593,6 +599,7 @@ namespace quad {
                                                  ranges,
                                                  &Jacobian,
                                                  generators,
+												 fevals,
 												 seed_init);
     __syncthreads();
   }	
@@ -615,6 +622,7 @@ namespace quad {
                        T* lows,
                        T* highs,
                        double* generators,
+					   quad::Func_Evals<NDIM>* fevals,
 					   unsigned int seed_init)
   {
     __shared__ Region<NDIM> sRegionPool[1];
@@ -630,6 +638,7 @@ namespace quad {
                                                 lows,
                                                 highs,
                                                 generators,
+												*fevals,
 												seed_init);
 
     if (threadIdx.x == 0) {

@@ -12,6 +12,7 @@
 
 #include "cuda/pagani/quad/GPUquad/Phases.cuh"
 #include "cuda/pagani/quad/GPUquad/Rule.cuh"
+#include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 
 #include "nvToolsExt.h"
 #include <cuda.h>
@@ -1826,9 +1827,10 @@ dRegions = cuda_malloc<T>(NDIM);
       }*/
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
-
-      INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE>
-        <<<numBlocks, numThreads /*, NDIM * sizeof(GlobalBounds)*/>>>(
+	  quad::Func_Evals<NDIM>* fevals = nullptr;
+	  bool constexpr debug = false;
+      quad::INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE, debug>
+        <<<numBlocks, numThreads>>>(
           d_integrand,
           dRegions,
           dRegionsLength,
@@ -1844,7 +1846,8 @@ dRegions = cuda_malloc<T>(NDIM);
           //rule.GET_NSETS(),
           lows,
           highs,
-          generators);
+          generators,
+		  fevals);
 
       neval += numRegions * fEvalPerRegion;
       cudaDeviceSynchronize();

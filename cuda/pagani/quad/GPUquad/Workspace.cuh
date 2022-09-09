@@ -38,7 +38,7 @@ class Workspace{
     public:
         Workspace() = default;
 		Workspace(double* lows, double* highs):Cubature_rules<ndim>(lows, highs){}
-        template<typename IntegT, bool predict_split = false, bool collect_iters = false, bool collect_sub_regions = false>
+        template<typename IntegT, bool predict_split = false, bool collect_iters = false, bool debug = false>
         cuhreResult<double> integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel, double epsabs, quad::Volume<double, ndim>& vol, bool relerr_classification = true);
 };
 
@@ -96,12 +96,11 @@ Workspace<ndim, use_custom>::fix_error_budget_overflow(Region_characteristics<nd
 }
 
 template<size_t ndim, bool use_custom>
-template<typename IntegT, bool predict_split, bool collect_iters, bool collect_sub_regions>
+template<typename IntegT, bool predict_split, bool collect_iters, bool debug>
 cuhreResult<double>       
 Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel, double epsabs, quad::Volume<double, ndim>& vol, bool relerr_classification){
             using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
 
-			
 			rules.set_device_volume(vol.lows, vol.highs);
             Estimates prev_iter_estimates; 
             Res cummulative;
@@ -118,23 +117,23 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 Estimates estimates(subregions.size);
 				
                 auto const t0 = std::chrono::high_resolution_clock::now();
-                Res iter = rules.apply_cubature_integration_rules(d_integrand, subregions, estimates, characteristics, compute_relerr_error_reduction);
+                Res iter = rules.template apply_cubature_integration_rules<IntegT, debug>(d_integrand, subregions, estimates, characteristics, compute_relerr_error_reduction);
                 MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
                 
-				if(predict_split){
+				if constexpr(predict_split){
 					relerr_classification = subregions.size <= 15000000 && it < 15  && cummulative.nregions == 0 ? false : true;
 				}
                 two_level_errorest_and_relerr_classify<ndim>(estimates, prev_iter_estimates, characteristics, epsrel, relerr_classification);
                 
                 iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
                                        
-				/*std::cout<< it << ",\t"
+				std::cout<< it << ",\t"
 					<< cummulative.estimate + iter.estimate << ",\t"
 					<< cummulative.errorest + iter.errorest << ",\t"
 					<< subregions.size << ",\t\t"
 					<< cummulative.nregions << ",\t"
                     << quad::GetAmountFreeMem() << ",\t"
-					<< dt.count() << std::endl;*/
+					<< dt.count() << std::endl;
 						
                 if(predict_split){
 					if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){
@@ -142,7 +141,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 					}
 				}
 				
-                if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
+                if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest) || it ==0){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
                     cummulative.status = 0;
@@ -155,9 +154,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
                 //std::cout<<"before compute_finished_estimates quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
                 Res finished = compute_finished_estimates<ndim, use_custom>(estimates, characteristics, iter);   
-                //std::cout<<"after compute_finished_estimates quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;        
                 fix_error_budget_overflow(characteristics, cummulative, iter, finished, epsrel);
-				//std::cout<<"before hs_classify quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;        
                 if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;

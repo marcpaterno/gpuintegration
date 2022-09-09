@@ -146,6 +146,17 @@ struct Region {
 
 #define NRULES 5
 
+namespace pagani{
+	template<size_t ndim>
+	__host__ __device__
+	constexpr 
+	size_t CuhreFuncEvalsPerRegion(){
+		return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+							2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+							4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
+	}
+}
+
 template <int NDIM>
 struct Snapshot {
   __host__

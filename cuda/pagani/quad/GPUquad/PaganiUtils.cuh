@@ -20,9 +20,10 @@
 #include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
 //#include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
 #include "cuda/pagani/quad/util/custom_functions.cuh"
+#include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 #include <stdlib.h>  
 
-
+#include <string>
 
 __constant__ size_t dFEvalPerRegion;
 
@@ -43,7 +44,7 @@ class Cubature_rules{
     using Regs_characteristics = Region_characteristics<ndim>;
     
     Cubature_rules(){
-        constexpr size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<ndim>();
+        constexpr size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<ndim>();
         quad::Rule<double> rule;
         const int key = 0;
         const int verbose = 0;
@@ -57,6 +58,12 @@ class Cubature_rules{
         integ_space_highs = cuda_malloc<double>(ndim);
         
         set_device_volume();
+		
+		/*double* h_generators = new double[ndim * fEvalPerRegion];
+		cuda_memcpy_to_host<double>(h_generators, generators, ndim * fEvalPerRegion);
+		for(int i=0; i < ndim * fEvalPerRegion; ++i){
+          printf("generator %i %e\n", i, h_generators[i]);
+        }*/
     }
        
     void
@@ -83,11 +90,44 @@ class Cubature_rules{
         cudaFree(integ_space_highs);
     }
     
-
+	void
+	Print_func_evals(quad::Func_Evals<ndim> fevals, const size_t num_regions){
+		std::cout<<"about to print fevals"<<std::endl;
+		/*std::cout<<"reg_id, feval_id,";
+		for(size_t dim = 0; dim < ndim; ++dim)
+			std::cout<<"reg_low_dim" + std::to_string(dim) << "," <<  "reg_upper_dim" + std::to_string(dim) << ",";
+		
+		for(size_t dim = 0; dim < ndim; ++dim)
+			std::cout<<"gl_low_dim" + std::to_string(dim) << "," <<  "gl_upper_dim" + std::to_string(dim) << ",";
+		std::cout<<"feval\n";*/
+		
+		constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+		
+		auto print_reg = [=](const Bounds* sub_region){
+			for(size_t dim =0; dim < ndim; ++dim){
+				printf("%e, %e,", sub_region[dim].lower, sub_region[dim].upper);
+			}
+		};
+		
+		auto print_global_bounds = [=](const GlobalBounds* sub_region){
+			for(size_t dim =0; dim < ndim; ++dim){
+				printf("%e, %e,", sub_region[dim].unScaledLower, sub_region[dim].unScaledUpper);
+			}
+		};
+		
+		for(size_t reg = 0; reg < num_regions; ++reg){
+			printf("%i, %lu,", reg, fevals[reg].feval_index);
+			quad::Feval<ndim> feval = fevals[reg];
+			std::cout << reg << "," << feval.feval_index <<",";
+			print_reg(fevals[reg].region_bounds);
+			print_global_bounds(fevals[reg].global_bounds);
+			printf("%e\n", fevals[reg].feval);
+		}
+	}
     
     template<int dim>
     void Setup_cubature_integration_rules(){
-        size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<dim>();
+        size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<dim>();
         quad::Rule<double> rule;
         const int key = 0;
         const int verbose = 0;
@@ -98,7 +138,6 @@ class Cubature_rules{
         quad::ComputeGenerators<double, dim><<<1, block_size>>>(generators, fEvalPerRegion, constMem);
     }
     
-
     template<typename IntegT>
     cuhreResult<double> apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
         
@@ -144,16 +183,23 @@ class Cubature_rules{
         return res;
     }
     
-    template<typename IntegT, bool pre_allocated_integrand = false>
+    template<typename IntegT, bool debug = false>
     cuhreResult<double> 
     apply_cubature_integration_rules(IntegT* d_integrand,
         const Sub_regs& subregions, 
         const Reg_estimates& subregion_estimates, 
         const Regs_characteristics& region_characteristics, 
-        bool compute_error = false)
+        bool compute_error = false,
+		quad::Func_Evals<ndim>* hfevals = nullptr)
     {
-            
-        size_t num_regions = subregions.size;
+		size_t num_regions = subregions.size;
+		quad::Func_Evals<ndim> dfevals;
+        if constexpr(debug){
+			constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+			dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals); 
+
+        }
+		
         //constexpr int nsets = 9;
         //int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
         
@@ -164,7 +210,7 @@ class Cubature_rules{
         constexpr size_t block_size = 64;
         
         double epsrel = 1.e-3, epsabs = 1.e-12;
-        quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size><<<num_blocks, block_size>>>
+        quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size, debug><<<num_blocks, block_size>>>
             (d_integrand, 
             subregions.dLeftCoord, 
             subregions.dLength, num_regions, 
@@ -179,9 +225,22 @@ class Cubature_rules{
             //nsets, 
             integ_space_lows, 
             integ_space_highs, 
-            generators);
+            generators,
+			dfevals);
         cudaDeviceSynchronize();
-        
+		
+		if constexpr(debug){
+			std::cout<<"processing for host printing"<<std::endl;
+			constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+			hfevals = new quad::Func_Evals<ndim>;
+			hfevals->fevals_list = new quad::Feval<ndim>[num_regions*num_fevals];
+			cuda_memcpy_to_host<quad::Feval<ndim>>(hfevals->fevals_list, dfevals.fevals_list, num_regions*num_fevals);
+			Print_func_evals(*hfevals, num_regions);
+			delete[] hfevals->fevals_list;
+			delete hfevals;
+			cudaFree(dfevals.fevals_list);
+		}
+		
         cuhreResult<double> res;
         res.estimate = reduction<double, use_custom>(subregion_estimates.integral_estimates, num_regions);
         res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();        

@@ -18,6 +18,8 @@ cuda_memcpy_to_host(T* dest, T* src, size_t size){
     auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyDeviceToHost);
     if(rc != cudaSuccess)
         throw std::bad_alloc();
+	else
+		std::cout<<"error in cuda_memcpy_to_host"<<std::endl;
 }
 
 template<typename T>

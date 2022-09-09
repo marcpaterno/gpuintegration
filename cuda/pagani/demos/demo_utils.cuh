@@ -189,7 +189,7 @@ cu_time_and_call(std::string id,
   return good;
 }
 
-template <typename F, int ndim>
+template <typename F, int ndim, bool predict_split = false, bool collect_iters = false, bool debug = false>
 bool
 cu_time_and_call_100(std::string id,
                  F integrand,

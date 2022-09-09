@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 
   class GENZ_4_5D {
   public:
@@ -56,7 +57,7 @@ int main(){
 	Sub_regions<ndim> sub_regions(partitions_per_axis);
 	sub_regions.uniform_split(partitions_per_axis);
 	
-	constexpr size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<ndim>();
+	constexpr size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<ndim>();
     quad::Rule<double> rule;
     const int key = 0;
     const int verbose = 0;
@@ -80,6 +81,7 @@ int main(){
 	Regs_characteristics region_characteristics(sub_regions.size);
 	unsigned int seed = 4;
 	std::cout<<"Launching kernel with " << sub_regions.size << " regions" << std::endl;
+	quad::Func_Evals<ndim>* fevals = nullptr;
 	quad::VEGAS_ASSISTED_INTEGRATE_GPU_PHASE1<GENZ_4_5D, double, ndim, 64><<<sub_regions.size, 64>>>(d_integrand,
             sub_regions.dLeftCoord, 
             sub_regions.dLength,
@@ -94,12 +96,14 @@ int main(){
             integ_space_lows, 
             integ_space_highs, 
             generators,
+			fevals,
 			seed);
 	cudaDeviceSynchronize();
 	
 	double mcubes_est = reduction<double>(estimates.integral_estimates, sub_regions.size);
     double mcubes_err = reduction<double>(estimates.error_estimates, sub_regions.size);
     
+	quad::Func_Evals<ndim>* fevals_vanilla = nullptr;
 	quad::INTEGRATE_GPU_PHASE1<GENZ_4_5D, double, ndim, 64><<<sub_regions.size, 64>>>(d_integrand,
             sub_regions.dLeftCoord, 
             sub_regions.dLength,
@@ -113,7 +117,8 @@ int main(){
             constMem, 
             integ_space_lows, 
             integ_space_highs, 
-            generators);
+            generators,
+			fevals_vanilla);
 	cudaDeviceSynchronize();
 	
 	double pagani_est = reduction<double>(estimates.integral_estimates, sub_regions.size);

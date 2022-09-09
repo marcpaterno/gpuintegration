@@ -9,7 +9,7 @@
 #include "nvToolsExt.h"
 #include <string>
 
-template <typename F, int ndim, bool use_custom = false>
+template <typename F, int ndim, bool use_custom = false, bool debug = false>
 bool
 clean_time_and_call(std::string id,
                  F integrand,
@@ -19,6 +19,8 @@ clean_time_and_call(std::string id,
                  std::ostream& outfile,
                  bool relerr_classification = true)
 {
+  
+	
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-40;
@@ -32,10 +34,8 @@ clean_time_and_call(std::string id,
 	  return to_print;
   };
   
-  for(int i=0; i < 11; i++){
+  for(int i=0; i < 1; i++){
 	
-	
-  
 	auto const t0 = std::chrono::high_resolution_clock::now();
 	size_t partitions_per_axis = 2;   
 	if(ndim < 5)
@@ -48,7 +48,10 @@ clean_time_and_call(std::string id,
 	Sub_regions<ndim> sub_regions(partitions_per_axis);
 	sub_regions.uniform_split(partitions_per_axis);
 	
-	cuhreResult<double> result = workspace.integrate(integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
+	constexpr bool predict_split = false;
+	constexpr bool collect_iters = false;
+	
+	cuhreResult<double> result = workspace.template integrate<F, predict_split, collect_iters, debug>(integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
 	MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 	double const absolute_error = std::abs(result.estimate - true_value);
   
