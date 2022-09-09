@@ -1,6 +1,13 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
-
+add_executable(custom_funcs custom_funcs.cu)
+set_target_properties(custom_funcs PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(custom_funcs util ${NVTX_LIBRARY})
+target_compile_options(custom_funcs PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(custom_funcs PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
 
 add_executable(hybrid hybrid.cu)
 set_target_properties(hybrid PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
