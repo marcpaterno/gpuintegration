@@ -116,12 +116,16 @@ class Cubature_rules{
 		};
 		
 		for(size_t reg = 0; reg < num_regions; ++reg){
-			printf("%i, %lu,", reg, fevals[reg].feval_index);
-			quad::Feval<ndim> feval = fevals[reg];
-			std::cout << reg << "," << feval.feval_index <<",";
-			print_reg(fevals[reg].region_bounds);
-			print_global_bounds(fevals[reg].global_bounds);
-			printf("%e\n", fevals[reg].feval);
+			for(int feval = 0; feval < fevals.num_fevals; ++feval){
+				size_t index = reg * fevals.num_fevals + feval;
+				
+				std::cout << reg << "," 
+						  << fevals[index].feval_index << ",";
+				
+				print_reg(fevals[index].region_bounds);
+				print_global_bounds(fevals[index].global_bounds);
+				std::cout<< std::scientific << fevals[index].feval << std::endl;
+			}
 		}
 	}
     

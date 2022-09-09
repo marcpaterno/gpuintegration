@@ -81,7 +81,7 @@ int main(){
 	Regs_characteristics region_characteristics(sub_regions.size);
 	unsigned int seed = 4;
 	std::cout<<"Launching kernel with " << sub_regions.size << " regions" << std::endl;
-	quad::Func_Evals<ndim>* fevals = nullptr;
+	quad::Func_Evals<ndim> fevals;
 	quad::VEGAS_ASSISTED_INTEGRATE_GPU_PHASE1<GENZ_4_5D, double, ndim, 64><<<sub_regions.size, 64>>>(d_integrand,
             sub_regions.dLeftCoord, 
             sub_regions.dLength,
@@ -103,7 +103,7 @@ int main(){
 	double mcubes_est = reduction<double>(estimates.integral_estimates, sub_regions.size);
     double mcubes_err = reduction<double>(estimates.error_estimates, sub_regions.size);
     
-	quad::Func_Evals<ndim>* fevals_vanilla = nullptr;
+	quad::Func_Evals<ndim> fevals_vanilla;
 	quad::INTEGRATE_GPU_PHASE1<GENZ_4_5D, double, ndim, 64><<<sub_regions.size, 64>>>(d_integrand,
             sub_regions.dLeftCoord, 
             sub_regions.dLength,

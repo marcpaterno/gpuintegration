@@ -169,7 +169,7 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
   CudaCheckError();
 
   kernel->AllocVolArrays(&tempVol);
-  quad::Func_Evals<NDIM>* fevals = nullptr;
+  quad::Func_Evals<NDIM> fevals;
   INTEGRATE_GPU_PHASE1<IntegT, double, NDIM, BLOCKDIM>
     <<<numRegions, BLOCKDIM, NDIM * sizeof(GlobalBounds)>>>(
       d_integrand,

@@ -1827,7 +1827,7 @@ dRegions = cuda_malloc<T>(NDIM);
       }*/
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
-	  quad::Func_Evals<NDIM>* fevals = nullptr;
+	  quad::Func_Evals<NDIM> fevals;
 	  bool constexpr debug = false;
       quad::INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE, debug>
         <<<numBlocks, numThreads>>>(

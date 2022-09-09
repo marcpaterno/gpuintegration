@@ -622,7 +622,7 @@ namespace quad {
                        T* lows,
                        T* highs,
                        double* generators,
-					   quad::Func_Evals<NDIM>* fevals,
+					   quad::Func_Evals<NDIM> fevals,
 					   unsigned int seed_init)
   {
     __shared__ Region<NDIM> sRegionPool[1];
@@ -638,7 +638,7 @@ namespace quad {
                                                 lows,
                                                 highs,
                                                 generators,
-												*fevals,
+												fevals,
 												seed_init);
 
     if (threadIdx.x == 0) {
