@@ -43,8 +43,9 @@ class Cubature_rules{
     using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;
     std::ofstream outregions;
+	std::ofstream outgenerators;
 	
-    Cubature_rules():outregions("cuda_fevals.csv"){
+    Cubature_rules():outregions("cuda_fevals.csv"), outgenerators("cuda_generators.csv"){
 		auto print_header = [=](){
 			
             outregions << "reg, fid,";
@@ -61,6 +62,8 @@ class Cubature_rules{
 			
             outregions << std::scientific << "feval, estimate, errorest"<< std::endl;
         };
+		
+		
         
         print_header();
         constexpr size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<ndim>();
@@ -105,6 +108,7 @@ class Cubature_rules{
        
     ~Cubature_rules(){
 		outregions.close();
+		outgenerators.close();
         cudaFree(generators);
         cudaFree(integ_space_lows);
         cudaFree(integ_space_highs);
@@ -216,6 +220,7 @@ class Cubature_rules{
     template<typename IntegT, bool debug = false>
     cuhreResult<double> 
     apply_cubature_integration_rules(IntegT* d_integrand,
+		int it, 
         const Sub_regs& subregions, 
         const Reg_estimates& subregion_estimates, 
         const Regs_characteristics& region_characteristics, 
@@ -277,6 +282,17 @@ class Cubature_rules{
 			delete[] ests;
 			delete[] errs;
 			cudaFree(dfevals.fevals_list);
+			
+			auto print_generators = [=](double* d_generators){
+				outgenerators << "i, gen" << std::endl;
+				double* h_generators = new double[ndim * pagani::CuhreFuncEvalsPerRegion<ndim>()];
+				cuda_memcpy_to_host<double>(h_generators, d_generators, ndim * pagani::CuhreFuncEvalsPerRegion<ndim>());
+				for(int i=0; i < ndim * pagani::CuhreFuncEvalsPerRegion<ndim>(); ++i){
+					outgenerators << i << "," << std::scientific << h_generators[i] << std::endl;
+				}
+				delete[] h_generators;
+			};
+			print_generators(generators);
 		}
 		
         cuhreResult<double> res;

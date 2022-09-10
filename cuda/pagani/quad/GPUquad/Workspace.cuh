@@ -117,7 +117,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 Estimates estimates(subregions.size);
 				
                 auto const t0 = std::chrono::high_resolution_clock::now();
-                Res iter = rules.template apply_cubature_integration_rules<IntegT, debug>(d_integrand, subregions, estimates, characteristics, compute_relerr_error_reduction);
+                Res iter = rules.template apply_cubature_integration_rules<IntegT, debug>(d_integrand, it, subregions, estimates, characteristics, compute_relerr_error_reduction);
                 MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
                 
 				if constexpr(predict_split){
