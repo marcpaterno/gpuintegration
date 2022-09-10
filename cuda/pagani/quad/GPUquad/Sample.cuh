@@ -133,11 +133,8 @@ namespace quad {
 	if constexpr(debug){
 	  //assert(fevals != nullptr);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
-	  	  //printf("block:%i tid:%i pIndex:%i writting to fevals[%lu]:%e, %i\n", blockIdx.x, threadIdx.x, pIndex, blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex, gpu::apply(*d_integrand, x), pIndex);
-		//if(blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex > 64 * 453)
-		//	printf("problem\n");
-		//printf("%i:\n", fevals[0].feval_index);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
+	  printf("feval:%e\n", gpu::apply(*d_integrand, x));
 	}
 			
 	#pragma unroll 5

@@ -22,7 +22,7 @@
 #include "cuda/pagani/quad/util/custom_functions.cuh"
 #include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 #include <stdlib.h>  
-
+#include <fstream>
 #include <string>
 
 __constant__ size_t dFEvalPerRegion;
@@ -42,8 +42,27 @@ class Cubature_rules{
     using Reg_estimates = Region_estimates<ndim>;
     using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;
-    
-    Cubature_rules(){
+    std::ofstream outregions;
+	
+    Cubature_rules():outregions("cuda_fevals.csv"){
+		auto print_header = [=](){
+			
+            outregions << "reg, fid,";
+            for(size_t dim = 0; dim < ndim; ++dim)
+                outregions << "dim" + std::to_string(dim) << + "low" << ","
+                    <<  "dim" + std::to_string(dim) + "high,";
+                    
+            for(size_t dim = 0; dim < ndim; ++dim)
+                outregions << "gdim" + std::to_string(dim) << + "low" << ","
+                    <<  "gdim" + std::to_string(dim) + "high" << ",";
+							
+			for(size_t dim = 0; dim < ndim; ++dim)
+                outregions << "dim" + std::to_string(dim) << ",";
+			
+            outregions << std::scientific << "feval, estimate, errorest"<< std::endl;
+        };
+        
+        print_header();
         constexpr size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<ndim>();
         quad::Rule<double> rule;
         const int key = 0;
@@ -85,49 +104,56 @@ class Cubature_rules{
        
        
     ~Cubature_rules(){
+		outregions.close();
         cudaFree(generators);
         cudaFree(integ_space_lows);
         cudaFree(integ_space_highs);
     }
     
 	void
-	Print_func_evals(quad::Func_Evals<ndim> fevals, const size_t num_regions){
-		std::cout<<"about to print fevals"<<std::endl;
-		/*std::cout<<"reg_id, feval_id,";
-		for(size_t dim = 0; dim < ndim; ++dim)
-			std::cout<<"reg_low_dim" + std::to_string(dim) << "," <<  "reg_upper_dim" + std::to_string(dim) << ",";
-		
-		for(size_t dim = 0; dim < ndim; ++dim)
-			std::cout<<"gl_low_dim" + std::to_string(dim) << "," <<  "gl_upper_dim" + std::to_string(dim) << ",";
-		std::cout<<"feval\n";*/
-		
+	Print_func_evals(quad::Func_Evals<ndim> fevals, double* ests, double* errs, const size_t num_regions){
 		constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
 		
 		auto print_reg = [=](const Bounds* sub_region){
 			for(size_t dim =0; dim < ndim; ++dim){
-				printf("%e, %e,", sub_region[dim].lower, sub_region[dim].upper);
+                outregions << std::scientific << sub_region[dim].lower << "," <<  sub_region[dim].upper << ",";
 			}
 		};
 		
 		auto print_global_bounds = [=](const GlobalBounds* sub_region){
 			for(size_t dim =0; dim < ndim; ++dim){
-				printf("%e, %e,", sub_region[dim].unScaledLower, sub_region[dim].unScaledUpper);
+                outregions << std::scientific << sub_region[dim].unScaledLower << "," << sub_region[dim].unScaledUpper << ",";
 			}
 		};
 		
+		auto print_feval_point = [=](double* x){
+			for(size_t dim =0; dim < ndim; ++dim){
+                outregions << std::scientific << x[dim] << "," ;
+			}
+		};
+		
+		
 		for(size_t reg = 0; reg < num_regions; ++reg){
 			for(int feval = 0; feval < fevals.num_fevals; ++feval){
-				size_t index = reg * fevals.num_fevals + feval;
-				
-				std::cout << reg << "," 
-						  << fevals[index].feval_index << ",";
-				
+				size_t index = reg * fevals.num_fevals + feval; 
+						  
+               outregions << reg << "," 
+						  << fevals[index].feval_index << ",";           
+                          
 				print_reg(fevals[index].region_bounds);
 				print_global_bounds(fevals[index].global_bounds);
-				std::cout<< std::scientific << fevals[index].feval << std::endl;
+				print_feval_point(fevals[index].point);
+
+				
+				outregions << std::scientific << fevals[index].feval << ",";
+				outregions << std::scientific << ests[reg] << "," 
+					<<  errs[reg];				
+				outregions << std::endl;
 			}
+            
 		}
-	}
+        
+	}    
     
     template<int dim>
     void Setup_cubature_integration_rules(){
@@ -238,10 +264,18 @@ class Cubature_rules{
 			constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
 			hfevals = new quad::Func_Evals<ndim>;
 			hfevals->fevals_list = new quad::Feval<ndim>[num_regions*num_fevals];
+			double* ests = new double[num_regions];
+			double* errs = new double[num_regions];
+			
+			cuda_memcpy_to_host<double>(ests, subregion_estimates.integral_estimates, num_regions);
+			cuda_memcpy_to_host<double>(errs, subregion_estimates.error_estimates, num_regions);
 			cuda_memcpy_to_host<quad::Feval<ndim>>(hfevals->fevals_list, dfevals.fevals_list, num_regions*num_fevals);
-			Print_func_evals(*hfevals, num_regions);
+			
+			Print_func_evals(*hfevals, ests, errs, num_regions);
 			delete[] hfevals->fevals_list;
 			delete hfevals;
+			delete[] ests;
+			delete[] errs;
 			cudaFree(dfevals.fevals_list);
 		}
 		
