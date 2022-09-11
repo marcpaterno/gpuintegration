@@ -75,7 +75,8 @@ namespace quad {
 
     // read from shared memory only if that warp existed
     val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0;
-
+	__syncthreads();  
+	
     if (wid == 0)
       val = warpReduceSum(val); // Final reduce within first warp
 
@@ -134,7 +135,6 @@ namespace quad {
 	  //assert(fevals != nullptr);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
-	  printf("feval:%e\n", gpu::apply(*d_integrand, x));
 	}
 			
 	#pragma unroll 5
