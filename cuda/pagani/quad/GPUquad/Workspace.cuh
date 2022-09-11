@@ -28,7 +28,8 @@ class Workspace{
     using Filter = Sub_regions_filter<ndim, use_custom>;
     using Splitter = Sub_region_splitter<ndim>;
     using Classifier = Heuristic_classifier<ndim>;
-    
+    std::ofstream outiters;
+	
     private:
         void fix_error_budget_overflow(Region_characteristics<ndim>& classifiers, const cuhreResult<double>& finished, const cuhreResult<double>& iter, cuhreResult<double>& iter_finished, const double epsrel);
         bool heuristic_classify(Classifier& classifier_a, Regs_characteristics& characteristics, const Estimates& estimates, cuhreResult<double>& finished, const cuhreResult<double>& iter, const cuhreResult<double>& cummulative);
@@ -110,6 +111,11 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
             
             IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
 			
+			if constexpr(debug){
+                outiters.open("cuda_iters.csv");
+				outiters << "it, estimate, errorest, nregions"<<std::endl;
+            }
+			
             for(size_t it = 0; it < 700 && subregions.size > 0; it++){
                 //std::cout<<" start of iteration quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
                 size_t num_regions = subregions.size;
@@ -127,13 +133,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 
                 iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
                                        
-				std::cout<< it << ",\t"
-					<< cummulative.estimate + iter.estimate << ",\t"
-					<< cummulative.errorest + iter.errorest << ",\t"
-					<< subregions.size << ",\t\t"
-					<< cummulative.nregions << ",\t"
-                    << quad::GetAmountFreeMem() << ",\t"
-					<< dt.count() << std::endl;
+				 if constexpr(debug)
+                    outiters << it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
 						
                 if(predict_split){
 					if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){
@@ -141,12 +142,14 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 					}
 				}
 				
-                if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest) || it ==0){
+                if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
                     cummulative.status = 0;
                     cummulative.nregions += subregions.size;
                     cudaFree(d_integrand);
+					if constexpr(debug)
+                        outiters.close();
                     return cummulative;
                 }
                 
@@ -161,6 +164,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                     cummulative.nregions += subregions.size;
                     cudaFree(d_integrand);
                    // std::cout<<" term. from hs_classify quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
+				   if constexpr(debug)
+                        outiters.close();
                     return cummulative;
                 }               
                 //std::cout<<"after hs_classify quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;    
@@ -182,6 +187,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
             cummulative.nregions += subregions.size;
             cudaFree(d_integrand);
             //std::cout<<" terminating after freeing integrand quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
+			if constexpr(debug)
+                        outiters.close();
             return cummulative;
             
         }
