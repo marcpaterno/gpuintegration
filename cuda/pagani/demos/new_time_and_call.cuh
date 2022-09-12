@@ -9,7 +9,7 @@
 #include "nvToolsExt.h"
 #include <string>
 
-template <typename F, int ndim, bool use_custom = false, bool debug = false>
+template <typename F, int ndim, bool use_custom = false, int debug = 0>
 bool
 clean_time_and_call(std::string id,
                  F integrand,
@@ -34,7 +34,7 @@ clean_time_and_call(std::string id,
 	  return to_print;
   };
   
-  for(int i=0; i < 1; i++){
+  for(int i=0; i < 11; i++){
 	
 	auto const t0 = std::chrono::high_resolution_clock::now();
 	size_t partitions_per_axis = 2;   

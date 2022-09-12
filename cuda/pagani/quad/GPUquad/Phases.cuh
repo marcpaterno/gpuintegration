@@ -371,7 +371,7 @@ namespace quad {
     __syncthreads();
   }
 
-  template <typename IntegT, typename T, int NDIM, int blockDim, bool debug>
+  template <typename IntegT, typename T, int NDIM, int blockDim, int debug>
   __device__ void
   INIT_REGION_POOL(IntegT* d_integrand,
                    T* dRegions,
@@ -438,7 +438,7 @@ namespace quad {
   }
   
   
-  template <typename IntegT, typename T, int NDIM, int blockDim, bool debug = false>
+  template <typename IntegT, typename T, int NDIM, int blockDim, int debug = 0>
   __global__ void
   INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
                        T* dRegions,
@@ -451,8 +451,6 @@ namespace quad {
                        T epsrel,
                        T epsabs,
                        Structures<double> constMem, //switch to const ptr:  Structures<double> const * const constMem,
-                       //int FEVAL,
-                       //int NSETS,
                        T* lows,
                        T* highs,
                        double* generators,
@@ -480,7 +478,6 @@ namespace quad {
       subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
-	  printf("region %i %e +- %e\n", blockIdx.x, dRegionsIntegral[blockIdx.x], dRegionsError[blockIdx.x]);
     }
   }
 

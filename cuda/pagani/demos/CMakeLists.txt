@@ -40,7 +40,7 @@ target_include_directories(new_interface_Genz6_6D PRIVATE
 add_executable(new_interface_Genz2_6D new_interface_Genz2_6D.cu)
 set_target_properties(new_interface_Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(new_interface_Genz2_6D util ${NVTX_LIBRARY})
-target_compile_options(new_interface_Genz2_6D PRIVATE "--expt-relaxed-constexpr")
+target_compile_options(new_interface_Genz2_6D PRIVATE "--expt-relaxed-constexpr" "-g" "-lineinfo")
 target_include_directories(new_interface_Genz2_6D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals

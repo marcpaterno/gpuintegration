@@ -17,7 +17,7 @@ int main(){
     constexpr int ndim = 3;
     GENZ_3_3D integrand;
 	double true_value = 0.010846560846560846561;
-	constexpr bool debug = true;
+	constexpr int debug = 1;
 	
 	
     while (clean_time_and_call<GENZ_3_3D, ndim, false, debug>("f3",
@@ -30,7 +30,7 @@ int main(){
 			epsrel /= 5.0;
 	}
 	
-	/*epsrel = 1.0e-3;
+	epsrel = 1.0e-3;
 	while (clean_time_and_call<GENZ_3_3D, ndim, true>("f3",
                                            integrand,
                                            epsrel,
@@ -39,7 +39,7 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 			epsrel /= 5.0;
-	}*/
+	}
     return 0;
 }
 

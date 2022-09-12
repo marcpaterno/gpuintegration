@@ -288,7 +288,7 @@ class Heuristic_classifier{
             int threshold_changed = 0; //keeps track of where the threshold is being pulled (left or right)
 
             do{
-                
+                //std::cout<<"classifying"<<std::endl;
                 if(!thres_search.pass_mem && num_thres_increases <= max_thres_increases){
                     get_larger_threshold_results(thres_search, active_flags, errorests, num_regions);
                     num_thres_increases++;

@@ -102,7 +102,7 @@ namespace quad {
   }
   
 
-  template <typename IntegT, typename T, int NDIM, bool debug = false>
+  template <typename IntegT, typename T, int NDIM, int debug = 0>
   __device__ void
   computePermutation(IntegT* d_integrand,
                      int pIndex,
@@ -131,7 +131,7 @@ namespace quad {
     sdata[threadIdx.x] = fun; // target for reduction
 	const int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
 	
-	if constexpr(debug){
+	if constexpr(debug >= 2){
 	  //assert(fevals != nullptr);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
 	  fevals[blockIdx.x * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
@@ -342,7 +342,7 @@ namespace quad {
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
-  template <typename IntegT, typename T, int NDIM, int blockdim, bool debug>
+  template <typename IntegT, typename T, int NDIM, int blockdim, int debug>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     //int sIndex,

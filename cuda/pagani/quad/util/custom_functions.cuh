@@ -90,7 +90,6 @@ device_custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size, T2* out){
 	const int total_num_threads = blockDim.x * gridDim.x;
 	
 	for (size_t i = tid; i < size; i += total_num_threads) {
-		T2 temp = arr1[i]*arr2[i];
 		sum += arr1[i]*arr2[i];
 	}
 	

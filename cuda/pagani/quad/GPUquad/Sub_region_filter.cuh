@@ -91,7 +91,7 @@ class Sub_regions_filter{
         if(num_active_regions == 0){
             return 0;
         }
-        
+        		
         //I dont' create Regions filtered_regions, because upon destruction it would deallocate and for performance reasons, I don't want a deep_copy to occur here
         double* filtered_leftCoord = cuda_malloc<double>(num_active_regions*ndim);        
         double* filtered_length = cuda_malloc<double>(num_active_regions*ndim);

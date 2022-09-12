@@ -12,6 +12,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <string>
+#include <fstream>
+
+template<int debug = 0>
+class Recorder{
+  public:
+    std::ofstream outfile;
+    
+	Recorder() = default;
+	
+    Recorder(std::string filename){
+        if constexpr(debug > 0)
+            outfile.open(filename.c_str());
+    }
+    
+    ~Recorder(){
+        if constexpr(debug > 0)
+            outfile.close();
+    }
+};
+
+
 /* Obtain a backtrace and print it to stdout. */
 /* This is a hideous C function taken from 
  * https://www.gnu.org/software/libc/manual/html_node/Backtraces.html
