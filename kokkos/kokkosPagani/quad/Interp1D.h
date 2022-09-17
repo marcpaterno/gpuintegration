@@ -3,41 +3,41 @@
 
 #include "kokkos/kokkosPagani/quad/quad.h"
 #include "kokkos/kokkosPagani/quad/util/str_to_doubles.hh"
-#include <assert.h> 
+#include <assert.h>
 
 /*
     interpC is the coordinate list
     interpT is the value list at the respective coordinates
 */
 
-//typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+// typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 
 namespace quad {
 
-class Interp1D {
+  class Interp1D {
   public:
-    
     __host__ __device__
     Interp1D()
     {}
-    
+
     ViewDouble interpT;
     ViewDouble interpC;
 
     size_t _cols;
-    
-    Interp1D(HostVectorDouble xs, HostVectorDouble ys){
-        
-        assert(xs.extent(0) == ys.extent(0));
-        _cols = xs.extent(0);
-        
-        interpT = ViewDouble("interpT", _cols);
-        interpC = ViewDouble("interpC", _cols);
-        
-        deep_copy(interpC, xs);
-        deep_copy(interpT, ys);
+
+    Interp1D(HostVectorDouble xs, HostVectorDouble ys)
+    {
+
+      assert(xs.extent(0) == ys.extent(0));
+      _cols = xs.extent(0);
+
+      interpT = ViewDouble("interpT", _cols);
+      interpC = ViewDouble("interpC", _cols);
+
+      deep_copy(interpC, xs);
+      deep_copy(interpT, ys);
     }
-    
+
     template <size_t M>
     Interp1D(std::array<double, M> const& xs, std::array<double, M> const& zs)
     {
@@ -47,48 +47,48 @@ class Interp1D {
 
     Interp1D(double* xs, double* zs, size_t cols)
     {
-        AllocateAndSet(xs, zs, cols);
+      AllocateAndSet(xs, zs, cols);
     }
-    
+
     void
     AllocateAndSet(double* xs, double* zs, size_t cols)
     {
       _cols = cols;
       interpT = ViewDouble("interpT", _cols);
       interpC = ViewDouble("interpC", _cols);
-      
+
       ViewDouble::HostMirror x = Kokkos::create_mirror(interpC);
       ViewDouble::HostMirror y = Kokkos::create_mirror(interpT);
-      
-      for(size_t i = 0; i < _cols; ++i){
-        x[i] = xs[i];  
+
+      for (size_t i = 0; i < _cols; ++i) {
+        x[i] = xs[i];
         y[i] = zs[i];
       }
-      
+
       Kokkos::deep_copy(interpC, x);
       Kokkos::deep_copy(interpT, y);
     }
-    
-    
+
     template <size_t M>
     void
-    AllocateAndSet(std::array<double, M> const& xs, std::array<double, M> const& zs)
+    AllocateAndSet(std::array<double, M> const& xs,
+                   std::array<double, M> const& zs)
     {
       _cols = M;
       interpT = ViewDouble("interpT", _cols);
       interpC = ViewDouble("interpC", _cols);
-      
+
       HostVectorDouble x("x", _cols);
       HostVectorDouble y("x", _cols);
 
-      
-      Kokkos::parallel_for(
-        "Copy_from_stdArray", _cols, [=,*this] __host__ __device__ (const int64_t index) {
-          interpT(index) = zs[index];
-          interpC(index) = xs[index];
-        });
+      Kokkos::parallel_for("Copy_from_stdArray",
+                           _cols,
+                           [=, *this] __host__ __device__(const int64_t index) {
+                             interpT(index) = zs[index];
+                             interpC(index) = xs[index];
+                           });
     }
-    
+
     __device__ bool
     AreNeighbors(const double val,
                  ViewDouble arr,
@@ -99,7 +99,7 @@ class Interp1D {
         return true;
       return false;
     }
-    
+
     __device__ void
     FindNeighbourIndices(const double val,
                          ViewDouble arr,

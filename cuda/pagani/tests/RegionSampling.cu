@@ -47,8 +47,7 @@ template <int NDIM>
 void
 PrepKernel(quad::Kernel<double, NDIM>* kernel)
 {
-  int KEY = 0, VERBOSE = 0, heuristicID = 0, numDevices = 1,
-      Final = 1;
+  int KEY = 0, VERBOSE = 0, heuristicID = 0, numDevices = 1, Final = 1;
   kernel->InitKernel(KEY, VERBOSE, numDevices);
   kernel->SetFinal(Final);
   kernel->SetVerbosity(VERBOSE);

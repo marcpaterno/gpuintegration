@@ -43,12 +43,12 @@ main()
   // configuration.phase_2 = true;
 
   while (cu_time_and_call_100<detail::GENZ_3_8D, ndim>("8D f3",
-                                                   integrand,
-                                                   epsrel,
-                                                   true_value,
-                                                   "gpucuhre",
-                                                   std::cout,
-                                                   configuration) == true &&
+                                                       integrand,
+                                                       epsrel,
+                                                       true_value,
+                                                       "gpucuhre",
+                                                       std::cout,
+                                                       configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
     // break;

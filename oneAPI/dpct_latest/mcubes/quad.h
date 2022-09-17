@@ -19,26 +19,25 @@
 #include "oneAPI/dpct_latest/mcubes/cuhreResult.dp.hpp"
 using TYPE = double;
 
-
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
 // errcoeff not required and causing erros with SYCL. Left Omitted ~ Emmanuel
-//dpct::constant_memory<TYPE, 1> errcoeff(sycl::range<1>(1), {5, 1, 5});
+// dpct::constant_memory<TYPE, 1> errcoeff(sycl::range<1>(1), {5, 1, 5});
 
 // Utilities
 //#include "./cudaArchUtil.h"
 //#include "./cudaDebugUtil.h"
 
-class VerboseResults{
-	public:
-		std::vector<std::vector<double>> funcEvaluationPoints;
-		std::vector<double> results;
-		size_t numFuncEvals = 0;
-		size_t NDIM = 0;
+class VerboseResults {
+public:
+  std::vector<std::vector<double>> funcEvaluationPoints;
+  std::vector<double> results;
+  size_t numFuncEvals = 0;
+  size_t NDIM = 0;
 };
 
 template <typename T>
 struct Structures {
-  
+
   Structures()
     : _gpuG(nullptr)
     , _cRuleWt(nullptr)

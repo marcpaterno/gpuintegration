@@ -65,7 +65,8 @@ main()
   double epsrel = 1.0e-3;
   // warm up the CPU
   auto r = cuhre.integrate(fun6, epsrel, 1.0e-12);
-  if (r.status != 0) return 1;
+  if (r.status != 0)
+    return 1;
   for (int i = 1; i <= 20; ++i) {
     cuhre.flags = 0;
     time_and_call(cuhre, fun6, epsrel, 1.0, "cuhre_0");

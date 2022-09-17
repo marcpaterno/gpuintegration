@@ -417,7 +417,7 @@ vegas_mcubes(IntegT integrand,
     } // end of subcube loop
     // calculating the integral in this part
     //"iter, dim, dim_binID, global_binID, left, right, contribution,
-    //damped_contr\n"; xi[MXDIM + 1][NDMX + 1]
+    // damped_contr\n"; xi[MXDIM + 1][NDMX + 1]
     /*if(OUTPUT <= 3){
             for(int dim=1; dim< MXDIM+1; dim++)
                     for(int bin=1; bin<NDMX+1; bin++){

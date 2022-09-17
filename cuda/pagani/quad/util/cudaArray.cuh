@@ -48,36 +48,38 @@ namespace gpu {
   };
 
   template <typename T>
-  class cudaDynamicArray{
+  class cudaDynamicArray {
   public:
     __host__ __device__
-    cudaDynamicArray(const cudaDynamicArray& a){
-        #ifndef __CUDA_ARCH__
-            N = a.N;
-            cudaMallocManaged((void**)&data, sizeof(T) * a.N);
-            memcpy(data, a.data, sizeof(T) * a.N);
-        #else
-            //can't instantiate on device and then access on host
-            N = a.N;
-            data = new T[a.N];
-            memcpy(data, a.data, sizeof(T) * a.N);
-        #endif
+    cudaDynamicArray(const cudaDynamicArray& a)
+    {
+#ifndef __CUDA_ARCH__
+      N = a.N;
+      cudaMallocManaged((void**)&data, sizeof(T) * a.N);
+      memcpy(data, a.data, sizeof(T) * a.N);
+#else
+      // can't instantiate on device and then access on host
+      N = a.N;
+      data = new T[a.N];
+      memcpy(data, a.data, sizeof(T) * a.N);
+#endif
     }
-    
+
     __host__ __device__
     cudaDynamicArray()
     {
       data = nullptr;
       N = 0;
     }
-    
-    //make everything host device
-    
-    cudaDynamicArray(T const* initData, size_t s) { 
-        Initialize(initData, s); 
+
+    // make everything host device
+
+    cudaDynamicArray(T const* initData, size_t s)
+    {
+      Initialize(initData, s);
     }
-    
-    void    
+
+    void
     Initialize(T const* initData, size_t s)
     {
       N = s;
@@ -91,9 +93,8 @@ namespace gpu {
       N = s;
       cudaMallocManaged((void**)&data, sizeof(T) * s);
     }
-    
-    explicit
-    cudaDynamicArray(size_t s)
+
+    explicit cudaDynamicArray(size_t s)
     {
       N = s;
       cudaMallocManaged((void**)&data, sizeof(T) * s);

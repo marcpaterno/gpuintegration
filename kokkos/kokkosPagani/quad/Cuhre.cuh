@@ -85,7 +85,7 @@ public:
       // printf("Storing at cpu side:%.15f +- %.15f\n", RegionsIntegral(regID),
       // RegionsError(regID));
     }
-	
+
     for (size_t index = 0; index < numOutputRegions * NDIM; index++) {
       OutputRegions[index] = Regions(index);
       OutputRegionsLength[index] = RegionsLength(index);

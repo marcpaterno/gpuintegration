@@ -118,12 +118,14 @@ namespace cubacpp {
       // Result is here to silence a compilation warning from nvcc 11.0.
       // nvcc 11.0 also has trouble with make_tuple.
       std::tuple<std::size_t, double*, double*, double*> tup;
-      if constexpr (std::is_same_v<typename integrand_traits<decltype(f)>::function_return_type,
+      if constexpr (std::is_same_v<typename integrand_traits<
+                                     decltype(f)>::function_return_type,
                                    std::vector<double>>) {
-        tup = std::make_tuple(detail::integration_traits_private::runtime_ncomp(f),
-                              result.value.data(),
-                              result.error.data(),
-                              result.prob.data());
+        tup =
+          std::make_tuple(detail::integration_traits_private::runtime_ncomp(f),
+                          result.value.data(),
+                          result.error.data(),
+                          result.prob.data());
       } else {
         tup = std::make_tuple(detail::integration_traits_private::ncomp<F>(),
                               (double*)&result.value,

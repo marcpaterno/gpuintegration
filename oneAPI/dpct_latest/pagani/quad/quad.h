@@ -20,34 +20,34 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-//dpct::constant_memory<TYPE, 1> errcoeff(sycl::range(1), {5, 1, 5});
+// dpct::constant_memory<TYPE, 1> errcoeff(sycl::range(1), {5, 1, 5});
 
 // Utilities
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
 
-class VerboseResults{
-	public:
-		std::vector<std::vector<double>> funcEvaluationPoints;
-		std::vector<double> results;
-		size_t numFuncEvals = 0;
-		size_t NDIM = 0;
+class VerboseResults {
+public:
+  std::vector<std::vector<double>> funcEvaluationPoints;
+  std::vector<double> results;
+  size_t numFuncEvals = 0;
+  size_t NDIM = 0;
 };
 
 template <typename T>
 struct Structures {
-  
+
   Structures() = default;
-   /* : _gpuG(nullptr)
-    , _cRuleWt(nullptr)
-    , _GPUScale(nullptr)
-    , _gpuGenPos(nullptr)
-    , _gpuGenPermGIndex(nullptr)
-    , _gpuGenPermVarCount(nullptr)
-    , _gpuGenPermVarStart(nullptr)
-    , _cGeneratorCount(nullptr)
-    , _GPUNorm(nullptr)
-  {}*/
+  /* : _gpuG(nullptr)
+   , _cRuleWt(nullptr)
+   , _GPUScale(nullptr)
+   , _gpuGenPos(nullptr)
+   , _gpuGenPermGIndex(nullptr)
+   , _gpuGenPermVarCount(nullptr)
+   , _gpuGenPermVarStart(nullptr)
+   , _cGeneratorCount(nullptr)
+   , _GPUNorm(nullptr)
+ {}*/
 
   T* _gpuG = nullptr;
   T* _cRuleWt = nullptr;
@@ -86,7 +86,6 @@ struct Bounds {
 struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
-
 
 template <int dim>
 struct Region {

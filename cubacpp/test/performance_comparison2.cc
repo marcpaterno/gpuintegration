@@ -14,7 +14,7 @@ double
 genz_1abs_5d(double v, double w, double x, double y, double z)
 {
   double constexpr k = 0.6371054;
-  return abs(cos(4*v + 5*w + 6*x + 7*y + 8*z))/k;
+  return abs(cos(4 * v + 5 * w + 6 * x + 7 * y + 8 * z)) / k;
 }
 
 template <typename ALG, typename F>
@@ -59,12 +59,13 @@ main()
   double epsrel = 1.0e-2;
   // warm up the CPU
   auto r = cuhre.integrate(genz_1abs_5d, epsrel, 1.0e-12);
-  if (r.status != 0) return 1;
+  if (r.status != 0)
+    return 1;
   for (int i = 1; i <= 10; ++i) {
     cuhre.flags = 0;
     time_and_call(cuhre, genz_1abs_5d, epsrel, 1.0, "cuhre_0");
-    //cuhre.flags = 4;
-    //time_and_call(cuhre, genz_1abs_5d, epsrel, 1.0, "cuhre_1");
+    // cuhre.flags = 4;
+    // time_and_call(cuhre, genz_1abs_5d, epsrel, 1.0, "cuhre_1");
     time_and_call(vegas, genz_1abs_5d, epsrel, 1.0, "vegas");
     epsrel /= 2.0;
   }

@@ -84,17 +84,18 @@ Evaluate(const Model* model,
   size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
   size_t n_threads = blockDim.x * gridDim.x;
 
-  // Loop over the part of the array this is handled in 
+  // Loop over the part of the array this is handled in
   // conviently-sized blocks.
   size_t i = 0;
-  for ( /*already initialized*/ ; i*n_threads < size; ++i) {
+  for (/*already initialized*/; i * n_threads < size; ++i) {
     auto idx = tid + i * n_threads;
     results[idx] = (*model)(input[idx]);
   }
- 
+
   // Clean up the rest of the range.
-  auto idx = tid +i * n_threads;
-  if (idx < size) results[idx] = (*model)(input[idx]);
+  auto idx = tid + i * n_threads;
+  if (idx < size)
+    results[idx] = (*model)(input[idx]);
 }
 
 template <typename Model>

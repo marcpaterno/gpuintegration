@@ -74,19 +74,19 @@ TEST_CASE("Interp1D on quadratic")
   Evaluate<<<1, 1>>>(interpObj, interp_point, result);
   cudaDeviceSynchronize();
   CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-  
+
   interp_point = 2.41421;
   true_interp_res = 6.07105;
   Evaluate<<<1, 1>>>(interpObj, interp_point, result);
   cudaDeviceSynchronize();
   CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-  
+
   interp_point = 3.41421;
   true_interp_res = 11.89947;
   Evaluate<<<1, 1>>>(interpObj, interp_point, result);
   cudaDeviceSynchronize();
   CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-	
+
   interp_point = 4.41421;
   true_interp_res = 19.72789;
   Evaluate<<<1, 1>>>(interpObj, interp_point, result);

@@ -37,7 +37,7 @@ namespace cubacpp {
 
   template <typename F>
   auto
-  //CuhreIntegrate(F const& user_function,
+  // CuhreIntegrate(F const& user_function,
   CuhreIntegrate(F user_function,
                  double epsrel,
                  double epsabs,
@@ -61,7 +61,7 @@ namespace cubacpp {
     // rescaled_function is the function that will be called by CUHRE.
     // It will always be given argument values within the unit hypercube.
     integrand_t rescaled_function = detail::cuba_wrapped_integrand<F>;
-    //detail::definite_integral adapt(&user_function, &vol)
+    // detail::definite_integral adapt(&user_function, &vol)
     integral_adapter_t adapt(&user_function, &vol);
     constexpr int nvec = 1;
     results_t res = detail::default_integration_results(user_function);

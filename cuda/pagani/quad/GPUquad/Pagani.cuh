@@ -43,10 +43,7 @@ namespace quad {
     Pagani& operator=(Pagani const&) = delete; // no assignment
     Pagani& operator=(Pagani&&) = delete;      // no move assignment
 
-    ~Pagani()
-    {
-      delete kernel;
-    }
+    ~Pagani() { delete kernel; }
 
     template <typename IntegT>
     int
@@ -114,7 +111,7 @@ namespace quad {
 
       kernel->GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
-      
+
       res.status = ExecutePhaseI(d_integrand, res, volume);
       res.lastPhase = 1;
       res.status = !(res.errorest <= MaxErr(res.estimate, epsrel, epsabs));

@@ -44,8 +44,8 @@ namespace cubacpp {
     std::array<double, N> transform(std::array<double, N> const& in) const;
 
     // friend declarations for this N.
-    friend std::ostream& operator<<<>(std::ostream& os,
-                                      IntegrationVolume const& iv);
+    friend std::ostream& operator<< <>(std::ostream& os,
+                                       IntegrationVolume const& iv);
     friend bool operator==
       <>(IntegrationVolume const& a, IntegrationVolume const& b);
   };
@@ -68,8 +68,7 @@ namespace cubacpp {
   bool
   operator==(IntegrationVolume<N> const& a, IntegrationVolume<N> const& b)
   {
-    return (a.jacobian_ == b.jacobian_) &&
-           (a.lows_ == b.lows_) &&
+    return (a.jacobian_ == b.jacobian_) && (a.lows_ == b.lows_) &&
            (a.ranges_ == b.ranges_);
   }
 

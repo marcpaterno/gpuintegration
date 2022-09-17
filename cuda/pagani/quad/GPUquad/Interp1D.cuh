@@ -41,10 +41,12 @@ namespace quad {
     _find_smallest__index_range(double val) const;
 
   public:
-    size_t get_device_mem_footprint(){
-      return 8*_cols*_cols;
+    size_t
+    get_device_mem_footprint()
+    {
+      return 8 * _cols * _cols;
     }
-    
+
     Interp1D();
     Interp1D(const Interp1D& source);
     Interp1D& operator=(Interp1D const& rhs);

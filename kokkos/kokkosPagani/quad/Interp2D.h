@@ -3,7 +3,7 @@
 
 #include "kokkos/kokkosPagani/quad/quad.h"
 #include "kokkos/kokkosPagani/quad/util/str_to_doubles.hh"
-#include <assert.h> 
+#include <assert.h>
 
 /*
     interpC is x for cols
@@ -11,40 +11,41 @@
     interpT is z for the values at the row/col coordinates
 */
 
-//typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+// typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 
 namespace quad {
 
-class Interp2D {
+  class Interp2D {
   public:
     __host__ __device__
     Interp2D()
     {}
-    
+
     ViewDouble interpT;
     ViewDouble interpR;
     ViewDouble interpC;
-    
+
     size_t _cols, _rows;
-    
-    Interp2D(ViewDouble xs, ViewDouble ys, ViewDouble zs){
-        assert(xs.extent(0) * ys.extent(0) == zs.extent(0));
-        _cols = xs.extent(0);
-        _rows = ys.extent(0);
-        
-        interpT = ViewDouble("interpT", _cols*_rows);
-        interpC = ViewDouble("interpC", _cols);
-        interpR = ViewDouble("interpR", _rows);
-        
-        interpC = xs;
-        interpR = ys;
-        interpT = zs;
+
+    Interp2D(ViewDouble xs, ViewDouble ys, ViewDouble zs)
+    {
+      assert(xs.extent(0) * ys.extent(0) == zs.extent(0));
+      _cols = xs.extent(0);
+      _rows = ys.extent(0);
+
+      interpT = ViewDouble("interpT", _cols * _rows);
+      interpC = ViewDouble("interpC", _cols);
+      interpR = ViewDouble("interpR", _rows);
+
+      interpC = xs;
+      interpR = ys;
+      interpT = zs;
     }
-    
+
     template <size_t M, size_t N>
-    Interp2D(std::array<double, M> const& xs, 
-        std::array<double, N> const& ys, 
-        std::array<double, M*N> const& zs)
+    Interp2D(std::array<double, M> const& xs,
+             std::array<double, N> const& ys,
+             std::array<double, M * N> const& zs)
     {
       assert(xs.size() * ys.size() == zs.size());
       AllocateAndSet<M, N>(xs, ys, zs);
@@ -52,60 +53,60 @@ class Interp2D {
 
     Interp2D(double* xs, double* ys, double* zs, size_t cols, size_t rows)
     {
-        AllocateAndSet(xs, ys, zs, cols, rows);
+      AllocateAndSet(xs, ys, zs, cols, rows);
     }
-    
+
     void
     AllocateAndSet(double* xs, double* ys, double* zs, size_t cols, size_t rows)
     {
       _cols = cols;
       _rows = rows;
-      
-      interpT = ViewDouble("interpT", _cols*_rows);
+
+      interpT = ViewDouble("interpT", _cols * _rows);
       interpC = ViewDouble("interpC", _cols);
       interpR = ViewDouble("interpR", _rows);
-      
+
       ViewDouble::HostMirror x = Kokkos::create_mirror(interpC);
       ViewDouble::HostMirror y = Kokkos::create_mirror(interpR);
       ViewDouble::HostMirror z = Kokkos::create_mirror(interpT);
-      
-      for(size_t i = 0; i < _cols*_rows; ++i){
-        if(i < _cols)  
-            x[i] = xs[i];
-        if(i < _rows)
-            y[i] = ys[i];
+
+      for (size_t i = 0; i < _cols * _rows; ++i) {
+        if (i < _cols)
+          x[i] = xs[i];
+        if (i < _rows)
+          y[i] = ys[i];
         z[i] = zs[i];
       }
-      
+
       Kokkos::deep_copy(interpC, x);
       Kokkos::deep_copy(interpR, y);
       Kokkos::deep_copy(interpT, z);
     }
-    
-    
+
     template <size_t M, size_t N>
     void
-    AllocateAndSet(std::array<double, M> const& xs, 
-        std::array<double, N> const& ys, 
-        std::array<double, M*N> const& zs)
+    AllocateAndSet(std::array<double, M> const& xs,
+                   std::array<double, N> const& ys,
+                   std::array<double, M * N> const& zs)
     {
       _cols = M;
       _rows = N;
-      
-      interpT = ViewDouble("interpT", _cols*_rows);
+
+      interpT = ViewDouble("interpT", _cols * _rows);
       interpC = ViewDouble("interpC", _cols);
       interpR = ViewDouble("interpC", _rows);
-      
-      Kokkos::parallel_for(
-        "Copy_from_stdArray", _cols*_rows, [=,*this] __host__ __device__ (const size_t index) {
-          if(index < _rows){
-            interpR(index) = ys[index];
-          }
-          if(index < _cols){
-            interpC(index) = xs[index]; 
-          }
-          interpT(index) = zs[index];
-        });
+
+      Kokkos::parallel_for("Copy_from_stdArray",
+                           _cols * _rows,
+                           [=, *this] __host__ __device__(const size_t index) {
+                             if (index < _rows) {
+                               interpR(index) = ys[index];
+                             }
+                             if (index < _cols) {
+                               interpC(index) = xs[index];
+                             }
+                             interpT(index) = zs[index];
+                           });
     }
 
     __device__ bool
@@ -118,7 +119,7 @@ class Interp2D {
         return true;
       return false;
     }
-    
+
     __device__ void
     FindNeighbourIndices(const double val,
                          ViewDouble arr,

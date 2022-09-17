@@ -16,7 +16,8 @@ namespace quad {
 #endif
 
   //__host__ __device__
-  int Debug(int error, const char *filename, int line, bool silent = false)
+  int
+  Debug(int error, const char* filename, int line, bool silent = false)
   {
 
 #ifdef QUAD_STDERR
@@ -65,12 +66,14 @@ namespace quad {
 #define CUDA_ERROR_CHECK
 #define CudaCheckError() __cudaCheckError(__FILE__, __LINE__)
 
-  inline void __cudaCheckError(const char *file, const int line) try {
+  inline void
+  __cudaCheckError(const char* file, const int line)
+  try {
 #ifdef CUDA_ERROR_CHECK
     /*
-    
+
     *** This error check is not required. Left as omitted ~ Emmanuel ***
-    
+
     DPCT1010:0: SYCL uses exceptions to report errors and does not use the error
     codes. The call was replaced with 0. You need to rewrite this code.
     */
@@ -88,7 +91,7 @@ namespace quad {
 
     return;
   }
-  catch (sycl::exception const &exc) {
+  catch (sycl::exception const& exc) {
     std::cerr << exc.what() << "Exception caught at file:" << __FILE__
               << ", line:" << __LINE__ << std::endl;
     std::exit(1);

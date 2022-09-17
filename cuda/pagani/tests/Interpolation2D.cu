@@ -158,9 +158,7 @@ TEST_CASE("Interp2D on bilinear")
   }
 
   quad::Interp2D f(xs, ys, zs);
-  
+
   double interpResult = Evaluate(f, 2.5, 1.5);
   CHECK(interpResult == 4.5);
 }
-
-

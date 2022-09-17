@@ -24,12 +24,12 @@ __constant__ TYPE errcoeff[] = {5, 1, 5};
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
 
-class VerboseResults{
-	public:
-		std::vector<std::vector<double>> funcEvaluationPoints;
-		std::vector<double> results;
-		size_t numFuncEvals = 0;
-		size_t NDIM = 0;
+class VerboseResults {
+public:
+  std::vector<std::vector<double>> funcEvaluationPoints;
+  std::vector<double> results;
+  size_t numFuncEvals = 0;
+  size_t NDIM = 0;
 };
 
 template <typename T>

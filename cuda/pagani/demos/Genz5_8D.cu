@@ -47,12 +47,12 @@ main()
   PrintHeader();
 
   while (cu_time_and_call_100<detail::GENZ_5_8D, ndim>("8D f5",
-                                                   integrand,
-                                                   epsrel,
-                                                   true_value,
-                                                   "gpucuhre",
-                                                   std::cout,
-                                                   configuration) == true &&
+                                                       integrand,
+                                                       epsrel,
+                                                       true_value,
+                                                       "gpucuhre",
+                                                       std::cout,
+                                                       configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5;
   }
