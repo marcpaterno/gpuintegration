@@ -75,8 +75,8 @@ struct cuhreResult {
 };*/
 
 struct Result {
-  double avg, err;
-  int bisectdim;
+  double avg = 0., err = 0.;
+  int bisectdim = 0;
 };
 
 struct Bounds {
