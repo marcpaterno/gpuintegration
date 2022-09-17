@@ -24,6 +24,7 @@
 #include <stdlib.h>  
 #include <fstream>
 #include <string>
+#include <cuda_profiler_api.h>
 
 __constant__ size_t dFEvalPerRegion;
 
@@ -287,6 +288,7 @@ class Cubature_rules{
         constexpr size_t block_size = 64;
         
         double epsrel = 1.e-3, epsabs = 1.e-12;
+		cudaProfilerStart();
         quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size, debug><<<num_blocks, block_size>>>
             (d_integrand, 
             subregions.dLeftCoord, 
@@ -303,7 +305,7 @@ class Cubature_rules{
             generators,
 			dfevals);
         cudaDeviceSynchronize();
-		
+		cudaProfilerStop();
 		
 		print_verbose<debug>(generators, dfevals, subregion_estimates);
 		/*if constexpr(debug >= 2){
