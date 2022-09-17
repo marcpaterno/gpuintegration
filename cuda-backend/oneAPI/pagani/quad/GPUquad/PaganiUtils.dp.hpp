@@ -275,7 +275,7 @@ class Cubature_rules{
         Region_characteristics<ndim> region_characteristics(num_regions);
         Region_estimates<ndim> subregion_estimates(num_regions);
         
-        set_device_array<int>(region_characteristics.active_regions, num_regions, 1);
+        set_device_array<double>(region_characteristics.active_regions, num_regions, 1);
         
         /*auto integral_estimates = subregion_estimates->integral_estimates;
         auto error_estimates = subregion_estimates->error_estimates;
@@ -402,7 +402,6 @@ class Cubature_rules{
         constexpr size_t block_size = 64;
         double epsrel = 1.e-3, epsabs = 1.e-12;
         
-        
         quad::Func_Evals<ndim> dfevals;
         quad::Func_Evals<ndim>* hfevals;
         
@@ -411,7 +410,10 @@ class Cubature_rules{
             dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals);
         }
         
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+		sycl::queue q(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
+		
+        sycl::event e = q.submit([&](sycl::handler& cgh) {
+			
             sycl::accessor<double,
                            1,
                            sycl::access_mode::read_write,
@@ -490,8 +492,13 @@ class Cubature_rules{
                       dfevals);
                 });
         });
-        dpct::get_current_device().queues_wait_and_throw();
-        
+		
+		q.wait();
+		
+        //dpct::get_current_device().queues_wait_and_throw();
+        double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
+		e.template get_profiling_info<sycl::info::event_profiling::command_start>());
+		std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim << ","<< num_regions << std::endl;
         print_verbose<debug>(generators, dfevals, subregion_estimates);
         cuhreResult<double> res;
         res.estimate = reduction<double, use_custom>(subregion_estimates->integral_estimates, num_regions);
