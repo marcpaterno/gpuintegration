@@ -56,7 +56,8 @@ public:
 template <typename Generator>
 class Random_num_generator {
   Generator generator;
-
+  custom_seed = seed;
+  
 public:
   __device__
   Random_num_generator(unsigned int seed)
@@ -67,6 +68,13 @@ public:
   {
     return generator();
   }
+  
+   __device__ void
+  SetSeed(uint32_t seed)
+  {
+    custom_seed = seed;
+  }
+  
 };
 
 namespace mcubes {

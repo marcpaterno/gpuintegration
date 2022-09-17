@@ -596,7 +596,7 @@ namespace cuda_mcubes {
 
         if constexpr (mcubes::TypeChecker<GeneratorType, Custom_generator>::
                         is_custom_generator()) {
-          rand_num_generator->SetSeed(cube_id_offset + t);
+          rand_num_generator.SetSeed(cube_id_offset + t);
         }
 
         for (k = 1; k <= npg; k++) {
