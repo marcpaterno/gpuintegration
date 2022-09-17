@@ -43,19 +43,24 @@ main(int argc, char** argv)
   GENZ_5_8D integrand;
 
   print_mcubes_header();
-  // std::array<double, 10> required_ncall =
-  // {1.e7, 1.e7, 1.e7, 1.e7, 1.e9, 1.e9, 5.e9, 8.e9, 8.e9, 8.e9};
+   std::array<double, 10> required_ncall =
+   {1.e6, 1.e6, 1.e6, 1.e7, 1.e9, 1.e9, 5.e9, 8.e9, 8.e9, 8.e9};
 
   bool success = false;
+  size_t num_epsrels = 10;
+  size_t curr_epsrel = 0;
   do {
-    // params.ncall = ncall;//required_ncall[expID];
+    params.ncall = required_ncall[curr_epsrel];
     for (int run = 0; run < 100; run++) {
-      success = mcubes_time_and_call<GENZ_5_8D, ndim>(
-        integrand, epsrel, true_value, "f5 8D", params, &volume);
+      success = mcubes_time_and_call<GENZ_5_8D, ndim, false, Custom_generator>(
+        integrand, epsrel, true_value, "f5, 8", params, &volume);
       if (!success)
         break;
     }
     epsrel /= 5.;
+	curr_epsrel++;
+	if(curr_epsrel > required_ncall.size())
+		break;
   } while (epsrel >= epsrel_min && success == true);
   return 0;
 }
