@@ -130,7 +130,7 @@ namespace quad {
                      double* generators,
                      //int FEVAL,
                      T* sdata,
-                     sycl::nd_item<3> item_ct1,
+                     sycl::nd_item<1> item_ct1,
                      quad::Func_Evals<NDIM>& fevals)
   {
         
@@ -148,16 +148,16 @@ namespace quad {
     }
 	
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
-    sdata[item_ct1.get_local_id(2)] = fun; // target for reduction
+    sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
         /*
         DPCT1026:16: The call to __ldg was removed because there is no
         correspoinding API in DPC++.
         */
-        const int gIndex = constMem._gpuGenPermGIndex[pIndex];
+    const int gIndex = constMem._gpuGenPermGIndex[pIndex];
       
     if constexpr(debug >= 2){
-        fevals[item_ct1.get_group(2) * CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
-        fevals[item_ct1.get_group(2) * CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
+        fevals[item_ct1.get_group(0) * CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(x, sBound, b);
+        fevals[item_ct1.get_group(0) * CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(gpu::apply(*d_integrand, x), pIndex);
     }
       
       
@@ -187,7 +187,7 @@ namespace quad {
                     T range[],
                     T* jacobian,
                     double* generators,
-                    sycl::nd_item<3> item_ct1,
+                    sycl::nd_item<1> item_ct1,
                     T *shared,
                     T *sdata,
                     quad::Func_Evals<NDIM>& fevals)
@@ -205,7 +205,7 @@ namespace quad {
     // Compute first set of permutation outside for loop to extract the Function
     // values for the permutation used to compute
     // fourth dimension
-    int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+    int pIndex = perm * blockdim + item_ct1.get_local_id(0);
     constexpr int FEVAL = CuhreFuncEvalsPerRegion<NDIM>();
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -232,7 +232,7 @@ namespace quad {
     */
     item_ct1.barrier();
 
-    if (item_ct1.get_local_id(2) == 0) {
+    if (item_ct1.get_local_id(0) == 0) {
           /*
           DPCT1026:25: The call to __ldg was removed because there is no
           correspoinding API in DPC++.
@@ -267,7 +267,7 @@ namespace quad {
     item_ct1.barrier();
 
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
-      int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+      int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
@@ -286,9 +286,9 @@ namespace quad {
     }
     //__syncthreads();
     // Balance permutations
-    pIndex = perm * blockdim + item_ct1.get_local_id(2);
+    pIndex = perm * blockdim + item_ct1.get_local_id(0);
     if (pIndex < FEVAL) {
-      int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+      int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                           pIndex,
                                           region->bounds,
@@ -308,12 +308,12 @@ namespace quad {
     // __syncthreads();
 	
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum(sum[i], item_ct1, shared);
-	  //sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());
+      //sum[i] = blockReduceSum(sum[i], item_ct1, shared);
+	  sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());
       //__syncthreads();
     }
 
-    if (item_ct1.get_local_id(2) == 0) {
+    if (item_ct1.get_local_id(0) == 0) {
       Result* r = &region->result;
 	  
 	  #pragma unroll 4

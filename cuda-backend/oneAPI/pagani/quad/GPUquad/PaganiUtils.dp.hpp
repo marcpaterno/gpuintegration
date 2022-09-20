@@ -471,8 +471,8 @@ class Cubature_rules{
 
              
             cgh.parallel_for(
-              sycl::nd_range(sycl::range(1, 1, num_blocks*block_size) , sycl::range(1, 1, block_size)),
-              [=](sycl::nd_item<3> item_ct1)
+              sycl::nd_range(sycl::range(/*1, 1, */num_blocks*block_size) , sycl::range(/*1, 1, */block_size)),
+              [=](sycl::nd_item<1> item_ct1)
                 [[intel::reqd_sub_group_size(32)]] {
                     quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size, debug>(
                       d_integrand,
