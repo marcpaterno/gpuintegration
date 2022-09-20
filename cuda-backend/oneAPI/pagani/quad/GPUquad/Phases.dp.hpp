@@ -322,7 +322,7 @@ namespace quad {
     // may not be worth pre-computing
 
     if (item_ct1.get_local_id(2) == 0) {
-
+	
       *Jacobian = 1.;
           *vol = 1.;
       T maxRange = 0;

@@ -78,10 +78,58 @@ void set_true_for_larger_than(const T* arr, const T val, const size_t size, int*
     quad::CudaCheckError();
 }
 
+size_t total_device_mem(){
+    //return dpct::get_current_device().get_device_info().get_global_mem_size();
+	return 16e9; //ONLY FOR CUDA_BACKEND maybe adjust with a template argument?
+}
+
+size_t  
+num_ints_needed(size_t num_regions){//move to pagani utils, has nothing to do with classifying
+    const size_t scanned = num_regions;
+    const size_t subDivDim = 2 * num_regions;
+    const size_t activeBisectDim = num_regions;
+    return activeBisectDim + subDivDim + scanned;
+}
+
+size_t  
+num_doubles_needed(size_t num_regions, size_t ndim){//move to pagani utils, has nothing to do with classifying
+    const size_t newActiveRegions = num_regions * ndim;
+    const size_t newActiveRegionsLength = num_regions * ndim;
+    const size_t parentExpansionEstimate = num_regions;
+    const size_t parentExpansionErrorest = num_regions;
+    const size_t genRegions = num_regions * ndim * 2;
+    const size_t genRegionsLength = num_regions * ndim * 2;
+            
+    const size_t regions = 2 * num_regions * ndim;
+    const size_t regionsLength = 2 * num_regions * ndim;
+    const size_t regionsIntegral = 2 * num_regions;
+    const size_t regionsError = 2 * num_regions;
+    const size_t parentsIntegral = num_regions;
+    const size_t parentsError = num_regions;
+            
+    return parentsError + parentsIntegral+regionsError + regionsIntegral + regionsLength + regions + genRegionsLength + genRegions+parentExpansionErrorest + parentExpansionEstimate+newActiveRegionsLength + newActiveRegions;
+}
+
+size_t 
+device_mem_required_for_full_split(size_t num_regions, size_t ndim){
+    return 8 * num_doubles_needed(num_regions, ndim) + 4 * num_ints_needed(num_regions);
+}
+
+/*
 size_t free_device_mem(){
     size_t free_physmem, total_physmem;
     cudaMemGetInfo(&free_physmem, &total_physmem);
     return free_physmem;
+}*/
+
+size_t 
+free_device_mem(size_t num_regions, size_t ndim){
+	size_t total_physmem = total_device_mem();
+    size_t mem_occupied = device_mem_required_for_full_split(num_regions, ndim);
+	
+	//the 1 is so we don't divide by zero at any point when using this
+    size_t free_mem = total_physmem > mem_occupied ? total_physmem - mem_occupied : 1;
+	return free_mem;
 }
 
 template<size_t ndim, bool use_custom = false>
@@ -189,7 +237,7 @@ class Heuristic_classifier{
         }
         
         bool  enough_mem_for_next_split(const size_t num_regions){
-            return free_device_mem() > device_mem_required_for_full_split(num_regions);
+            return free_device_mem(num_regions, ndim) > device_mem_required_for_full_split(num_regions);
         }
                         
         bool need_further_classification(const size_t num_regions){
@@ -208,6 +256,9 @@ class Heuristic_classifier{
             set_true_for_larger_than<double>(errorests, res.threshold, num_regions, res.active_flags);
             res.num_active  = static_cast<size_t>(reduction<int, use_custom>(res.active_flags, num_regions));    
             res.percent_mem_active = int_division(res.num_active, num_regions);
+			//std::cout<<"res.num_active:"<< res.num_active << std::endl;
+			//std::cout<<"res.percent_mem_active:"<<res.percent_mem_active<<std::endl;
+			//std::cout<<"max_active_regions_percentage:"<<max_active_regions_percentage<<std::endl;
             res.pass_mem = res.percent_mem_active <= max_active_regions_percentage;
 			//std::cout<<"heuristic classifier reduction (num_active_regions:)"<< res.num_active << std::endl;
 
@@ -225,7 +276,10 @@ class Heuristic_classifier{
             const double max_percent_err_budget){
             
             const double extra_f_errorest = active_errorest - dot_product<double, int, use_custom>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
-            const double error_budget = target_error - total_f_errorest;
+            //std::cout<<"dot_product<double, double, use_custom>(error_estimates, active_flags, num_regions):"<<dot_product<double, int, use_custom>(error_estimates, active_flags, num_regions)<<std::endl;
+			//std::cout<<"extra_f_errorest:"<<extra_f_errorest<<std::endl;
+			//std::cout<<"iter_finished_errorest:"<<iter_finished_errorest<<std::endl;
+			const double error_budget = target_error - total_f_errorest;
             res.pass_errorest_budget = 
                 extra_f_errorest <= max_percent_err_budget * error_budget;
             res.finished_errorest =  extra_f_errorest;           
@@ -253,7 +307,7 @@ class Heuristic_classifier{
         
         bool 
 		classification_criteria_met(const size_t num_regions){
-            double ratio = static_cast<double>(device_mem_required_for_full_split(num_regions))/static_cast<double>(quad::GetAmountFreeMem());
+            double ratio = static_cast<double>(device_mem_required_for_full_split(num_regions))/static_cast<double>(/*quad::GetAmountFreeMem()*/free_device_mem(num_regions, ndim));
 					
             if(ratio > 1.)
                 return true;
@@ -286,9 +340,11 @@ class Heuristic_classifier{
             size_t max_thres_increases = 20;
             
             int threshold_changed = 0; //keeps track of where the threshold is being pulled (left or right)
-
+			//std::cout << "pass_mem:"<< thres_search.pass_mem << std::endl;
+			//std::cout<< "pass_error_budget:"<< thres_search.pass_errorest_budget << std::endl;
+			
             do{
-                //std::cout<<"classifying"<<std::endl;
+                std::cout<<"classifying"<<std::endl;
                 if(!thres_search.pass_mem && num_thres_increases <= max_thres_increases){
                     get_larger_threshold_results(thres_search, active_flags, errorests, num_regions);
                     num_thres_increases++;

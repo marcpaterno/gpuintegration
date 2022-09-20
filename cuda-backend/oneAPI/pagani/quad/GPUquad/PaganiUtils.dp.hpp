@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <fstream>
 #include <string>
-
 //dpct::constant_memory<size_t, 0> dFEvalPerRegion;
 
 template<size_t ndim, bool use_custom = false>
@@ -390,7 +389,9 @@ class Cubature_rules{
         size_t num_regions = subregions->size;
         
         set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
-        
+		//temporary
+        //set_device_array<int>(region_characteristics->sub_dividing_dim, num_regions, 0);
+
         auto integral_estimates = subregion_estimates->integral_estimates;
         auto error_estimates = subregion_estimates->error_estimates;
         auto active_regions = region_characteristics->active_regions;
@@ -402,6 +403,10 @@ class Cubature_rules{
         constexpr size_t block_size = 64;
         double epsrel = 1.e-3, epsabs = 1.e-12;
         
+		//temp addition
+
+		
+		
         quad::Func_Evals<ndim> dfevals;
         quad::Func_Evals<ndim>* hfevals;
         
@@ -409,7 +414,8 @@ class Cubature_rules{
             constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
             dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals);
         }
-        
+		
+		
 		sycl::queue q(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
 		
         sycl::event e = q.submit([&](sycl::handler& cgh) {
@@ -418,12 +424,15 @@ class Cubature_rules{
                            1,
                            sycl::access_mode::read_write,
                            sycl::access::target::local>
-              shared_acc_ct1(sycl::range(8), cgh);
+              shared_acc_ct1(sycl::range(8/*+block_size+1+1+ndim*/), cgh); //shared,    sdata,     jacobian,           vol,                     ranges
+																		//shared[0], shared[8], shared[8+blockDim], shared[8+blockDim +1] , shared[8 blockDIm + 2]
+			  
             sycl::accessor<double,
                            1,
                            sycl::access_mode::read_write,
                            sycl::access::target::local>
               sdata_acc_ct1(sycl::range(block_size), cgh);
+			  
             sycl::accessor<double,
                            0,
                            sycl::access_mode::read_write,
@@ -494,7 +503,6 @@ class Cubature_rules{
         });
 		
 		q.wait();
-		
         //dpct::get_current_device().queues_wait_and_throw();
         double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
 		e.template get_profiling_info<sycl::info::event_profiling::command_start>());

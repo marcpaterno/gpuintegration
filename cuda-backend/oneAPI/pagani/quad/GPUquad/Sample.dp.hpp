@@ -306,9 +306,10 @@ namespace quad {
                                           fevals);
     }
     // __syncthreads();
-
+	
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i], item_ct1, shared);
+	  //sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());
       //__syncthreads();
     }
 
