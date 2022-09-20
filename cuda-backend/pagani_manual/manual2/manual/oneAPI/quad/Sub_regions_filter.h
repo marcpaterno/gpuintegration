@@ -56,18 +56,19 @@ class Sub_regions_filter{
 
 template<size_t ndim>
 size_t Sub_regions_filter<ndim>::get_num_active_regions(sycl::queue& q, Region_characteristics<ndim>& regs){
-
     const size_t num_regions = regs.size;
     double* active_regions = regs.active_regions;
     dpl::experimental::exclusive_scan_async(oneapi::dpl::execution::make_device_policy(q),
         active_regions, active_regions + num_regions, scanned_array, 0.).wait();
-    size_t num_active = scanned_array[num_regions-1];
+    double num_active;
+	quad::copy_to_host<double>(&num_active, &scanned_array[num_regions-1], 1);
+	//scanned_array[num_regions-1];
 	
 	double last;
 	quad::copy_to_host<double>(&last, &active_regions[num_regions-1], 1);
     if (last == 1)
-        num_active++;
-    return num_active;
+        num_active+= 1.;
+    return static_cast<size_t>(num_active);
 }
 
 template<size_t ndim>
@@ -79,7 +80,7 @@ Sub_regions_filter<ndim>::compute_num_blocks(const size_t num_regions)const{
 
 template<size_t ndim>
 Sub_regions_filter<ndim>::Sub_regions_filter(sycl::queue& q, const size_t num_regions){
-    scanned_array = sycl::malloc_shared<double>(num_regions, q);
+    scanned_array = sycl::malloc_device<double>(num_regions, q);
     _q = &q;
 }
 
@@ -145,10 +146,9 @@ Sub_regions_filter<ndim>::filter(sycl::queue& q,
             return 0;
         }
 
-        double* filtered_leftCoord = sycl::malloc_shared<double>(num_active_regions*ndim, q);
-        double* filtered_length = sycl::malloc_shared<double>(num_active_regions*ndim, q);
-        int* filtered_sub_dividing_dim = sycl::malloc_shared<int>(num_active_regions, q);
-
+        double* filtered_leftCoord = sycl::malloc_device<double>(num_active_regions*ndim, q);
+        double* filtered_length = sycl::malloc_device<double>(num_active_regions*ndim, q);
+        int* filtered_sub_dividing_dim = sycl::malloc_device<int>(num_active_regions, q);
         parent_ests.reallocate(q, num_active_regions);
         const int numOfDivisionOnDimension = 1;
         const size_t num_blocks = compute_num_blocks(current_num_regions);
@@ -167,6 +167,7 @@ Sub_regions_filter<ndim>::filter(sycl::queue& q,
                                       current_num_regions,
                                       num_active_regions,
                                       numOfDivisionOnDimension);
+
         sycl::free(sub_regions.dLeftCoord, q);
         sycl::free(sub_regions.dLength, q);
         sycl::free(region_characteristics.sub_dividing_dim, q);
