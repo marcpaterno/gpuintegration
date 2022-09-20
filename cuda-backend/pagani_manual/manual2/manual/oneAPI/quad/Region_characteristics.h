@@ -22,7 +22,7 @@ public:
 
 template<size_t ndim>
 Region_characteristics<ndim>::Region_characteristics(sycl::queue& q, size_t num_regions){
-    active_regions = sycl::malloc_shared<double>(num_regions, q);  
+    active_regions = sycl::malloc_device<double>(num_regions, q);  
     sub_dividing_dim = sycl::malloc_shared<int>(num_regions, q);  
     size = num_regions;
     _q = &q;

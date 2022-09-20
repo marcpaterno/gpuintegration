@@ -62,7 +62,10 @@ size_t Sub_regions_filter<ndim>::get_num_active_regions(sycl::queue& q, Region_c
     dpl::experimental::exclusive_scan_async(oneapi::dpl::execution::make_device_policy(q),
         active_regions, active_regions + num_regions, scanned_array, 0.).wait();
     size_t num_active = scanned_array[num_regions-1];
-    if (active_regions[num_regions-1] == 1)
+	
+	double last;
+	quad::copy_to_host<double>(&last, &active_regions[num_regions-1], 1);
+    if (last == 1)
         num_active++;
     return num_active;
 }
