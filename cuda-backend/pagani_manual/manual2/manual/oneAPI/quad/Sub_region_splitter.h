@@ -37,8 +37,8 @@ void Sub_region_splitter<ndim>::split(sycl::queue& q, Sub_regions<ndim>& sub_reg
     //check if zero and return if that's the case    
     size_t children_per_region = 2;
         
-    double* children_left_coord = sycl::malloc_shared<double>(num_regions * ndim * children_per_region, q);
-    double* children_length = sycl::malloc_shared<double>(num_regions * ndim * children_per_region, q);
+    double* children_left_coord = sycl::malloc_device<double>(num_regions * ndim * children_per_region, q);
+    double* children_length = sycl::malloc_device<double>(num_regions * ndim * children_per_region, q);
     //std::cout<<"before divideIntervalsGPU\n";
     divideIntervalsGPU<double>(q, children_left_coord,
                                       children_length,
