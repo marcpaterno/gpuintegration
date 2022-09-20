@@ -61,6 +61,8 @@ class Cubature_rules{
                 rfevals.outfile  << "dim" + std::to_string(dim) << ",";
                 
             rfevals.outfile  << std::scientific << "feval, estimate, errorest"<< std::endl;
+			
+			rregions.outfile << "reg, estimate, errorest" << std::endl;
         };
         
        
@@ -179,7 +181,7 @@ class Cubature_rules{
        
     template<int debug = 0>
     void print_verbose(double* d_generators, quad::Func_Evals<ndim>& dfevals, Reg_estimates* estimates){
-
+		
         if constexpr(debug >= 1){
 
             print_generators(d_generators);
@@ -527,6 +529,7 @@ compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region
     cuhreResult<double> finished;
     finished.estimate = iter.estimate - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
     finished.errorest = iter.errorest - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.error_estimates, estimates.size);
+	
     return finished;
 }
 

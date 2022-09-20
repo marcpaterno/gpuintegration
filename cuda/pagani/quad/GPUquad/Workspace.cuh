@@ -52,8 +52,11 @@ Workspace<ndim, use_custom>::heuristic_classify(Classifier& classifier_a,
     const Res& iter, 
     const cuhreResult<double>& cummulative){
         
-        const double ratio = static_cast<double>(classifier_a.device_mem_required_for_full_split(characteristics.size))/static_cast<double>(quad::GetAmountFreeMem());
+        const double ratio = static_cast<double>(classifier_a.device_mem_required_for_full_split(characteristics.size))/static_cast<double>(free_device_mem(characteristics.size, ndim)/*quad::GetAmountFreeMem()*/);
         const bool classification_necessary = ratio > 1.;
+		//std::cout<<"free mem:"<<free_device_mem(characteristics.size, ndim) << std::endl;
+		//std::cout<<"mem_needed:"<<classifier_a.device_mem_required_for_full_split(characteristics.size) << std::endl;
+		//std::cout<<"ratio:"<< ratio<<std::endl;
         if(!classifier_a.classification_criteria_met(characteristics.size)){
             const bool must_terminate = classification_necessary;
             return must_terminate;
@@ -137,6 +140,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                                        
 				 if constexpr(debug > 0)
                     iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
+				 std::cout << it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
 
                 if(predict_split){
 					if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){
@@ -144,7 +148,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 					}
 				}
 				
-                if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
+                if(it == 17){
+				//if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
                     cummulative.status = 0;
@@ -155,7 +160,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 
                 quad::CudaCheckError();
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
-
+				
                 Res finished = compute_finished_estimates<ndim, use_custom>(estimates, characteristics, iter);   
                 fix_error_budget_overflow(characteristics, cummulative, iter, finished, epsrel);
                 if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){

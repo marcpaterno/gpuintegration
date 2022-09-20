@@ -378,8 +378,6 @@ namespace quad {
                    T* dRegionsLength,
                    size_t numRegions,
                    const Structures<double>& constMem,
-                   //int FEVAL,
-                   //int NSETS,
                    Region<NDIM> sRegionPool[],
                    GlobalBounds sBound[],
                    T* lows,
@@ -422,10 +420,7 @@ namespace quad {
 
     __syncthreads();
     SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
-                                                 //0,
                                                  constMem,
-                                                 //FEVAL,
-                                                 //NSETS,
                                                  sRegionPool,
                                                  sBound,
                                                  &vol,

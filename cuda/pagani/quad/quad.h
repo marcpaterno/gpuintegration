@@ -18,7 +18,7 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-__constant__ TYPE errcoeff[] = {5, 1, 5};
+//__constant__ TYPE errcoeff[] = {5, 1, 5};
 
 // Utilities
 #include "util/cudaArchUtil.h"
@@ -75,8 +75,8 @@ struct cuhreResult {
 };*/
 
 struct Result {
-  double avg, err;
-  int bisectdim;
+  double avg = 0., err = 0.;
+  int bisectdim = 0;
 };
 
 struct Bounds {

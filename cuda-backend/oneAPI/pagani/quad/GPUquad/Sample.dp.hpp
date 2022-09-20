@@ -231,7 +231,7 @@ namespace quad {
     performance if there is no access to global memory.
     */
     item_ct1.barrier();
-
+	
     if (item_ct1.get_local_id(0) == 0) {
           /*
           DPCT1026:25: The call to __ldg was removed because there is no
@@ -242,7 +242,7 @@ namespace quad {
       Result* r = &region->result;
       T* f1 = f;
       T base = *f1 * 2 * (1 - ratio);
-      T maxdiff = 0;
+      T maxdiff = 0.;
       int bisectdim = *maxdim;
       for (int dim = 0; dim < NDIM; ++dim) {
         T* fp = f1 + 1;
@@ -318,7 +318,7 @@ namespace quad {
 	  
 	  #pragma unroll 4
       for (int rul = 1; rul < NRULES - 1; ++rul) {
-        T maxerr = 0;
+        T maxerr = 0.;
 		
 		constexpr int NSETS = 9;
 		#pragma unroll 9
@@ -334,7 +334,7 @@ namespace quad {
       }
       
       r->avg = (*vol) * sum[0];
-	  const double errcoeff[3] = {5, 1, 5};
+	  const double errcoeff[3] = {5., 1., 5.};
       r->err =
         (*vol) *
         ((errcoeff[0] * sum[1] <= sum[2] && errcoeff[0] * sum[2] <= sum[3]) ?

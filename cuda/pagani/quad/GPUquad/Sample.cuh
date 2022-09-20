@@ -62,17 +62,16 @@ namespace quad {
   __device__ T
   blockReduceSum(T val)
   {
-
     static __shared__ T shared[8]; // why was this set to 8?
-    int lane = threadIdx.x % 32;   // 32 is for warp size
-    int wid = threadIdx.x >> 5 /* threadIdx.x / 32  */;
+    const int lane = threadIdx.x % 32;   // 32 is for warp size
+    const int wid = threadIdx.x >> 5 /* threadIdx.x / 32  */;
 
     val = warpReduceSum(val);
     if (lane == 0) {
       shared[wid] = val;
     }
     __syncthreads(); // Wait for all partial reductions
-
+	
     // read from shared memory only if that warp existed
     val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0;
 	__syncthreads();  
@@ -345,10 +344,7 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockdim, int debug>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
-                    //int sIndex,
                     const Structures<double>& constMem,
-                    //int FEVAL,
-                    //int NSETS,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
@@ -360,8 +356,6 @@ namespace quad {
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
     __shared__ T sdata[blockdim];
-    //T g[NDIM];
-    //gpu::cudaArray<T, NDIM> x;
     int perm = 0;
     constexpr int offset = 2 * NDIM;
 
@@ -423,14 +417,11 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          //g,
-                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          //FEVAL,
                                           sdata,
 										  fevals);
     }
@@ -462,32 +453,32 @@ namespace quad {
     }
 
     if (threadIdx.x == 0) {
-      Result* r = &region->result;
+      Result* r = &region->result; //ptr to shared Mem
 	  
-	  #pragma unroll 4
+	  //#pragma unroll 4
       for (int rul = 1; rul < NRULES - 1; ++rul) {
-        T maxerr = 0;
+        T maxerr = 0.;
 		
 		constexpr int NSETS = 9;
+		//branching for 9*3 for each thread 0
 		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
           maxerr =
             max(maxerr,
-                fabs(sum[rul + 1] +
-                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
-        }
+                fabs(sum[rul + 1] + constMem._GPUScale[s * NRULES + rul] * sum[rul]) * (constMem._GPUNorm[s * NRULES + rul]));
+		}
         sum[rul] = maxerr;
       }
       
       r->avg = (*vol) * sum[0];
+	  const double errcoeff[3] = {5., 1., 5.};
+	  //branching twice for each thread 0
       r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
     }
   }
-
 
   __device__
   double scale_point(const double val, double low, double high){
@@ -856,6 +847,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
       }
       
       r->avg = (*vol) * sum[0];
+	  const double errcoeff[3] = {5, 1, 5};
       r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :

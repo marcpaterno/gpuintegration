@@ -162,7 +162,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 Regs_characteristics characteristics(subregions.size);
                 Estimates estimates(subregions.size);
                 Res iter = rules.template apply_cubature_integration_rules<IntegT, collect_iters, debug>(d_integrand, it, &subregions, &estimates, &characteristics, compute_relerr_error_reduction);
-
+				
                 if(predict_split){
                     relerr_classification = subregions.size <= 15000000 && it < 15  && cummulative.nregions == 0 ? false : true;
                 }
@@ -178,9 +178,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 
                  if constexpr(debug > 0)
                     iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
-                //std::cout<< it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
-                if(it == 17){
-				//if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
+                std::cout<< it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
+				if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
                     
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
