@@ -371,7 +371,7 @@ Heuristic_classifier<ndim>::classify(sycl::queue& q,
             const double min_errorest = thres_search.threshold_range.low;
             const double max_errorest = thres_search.threshold_range.high;
             thres_search.threshold = iter_errorest/num_regions;
-            thres_search.active_flags = sycl::malloc_shared<double>(num_regions, q);
+            thres_search.active_flags = sycl::malloc_device<double>(num_regions, q);
             const double target_error = abs(estimates_from_last_iters[2]) * epsrel;
 
             const size_t max_num_thresholds_attempts = 20;
@@ -381,7 +381,7 @@ Heuristic_classifier<ndim>::classify(sycl::queue& q,
             
             int threshold_changed = 0; //keeps track of where the threshold is being pulled (left or right)
             do{
-				//std::cout<<"classifying"<<std::endl;
+				std::cout<<"classifying"<<std::endl;
                 if(!thres_search.pass_mem && num_thres_increases <= max_thres_increases){
                     
                     get_larger_threshold_results(q, thres_search, active_flags, errorests, num_regions);
