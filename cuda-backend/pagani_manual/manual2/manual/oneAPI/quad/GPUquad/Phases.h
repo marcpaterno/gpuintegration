@@ -32,9 +32,7 @@ namespace quad {
                    shared<double> vol,
                    shared<int> max_dim,
                    shared<double> ranges,
-                   shared<double> jacobian,
-                   //shared<double> scratch,
-                   sycl::stream str){
+                   shared<double> jacobian){
         
     size_t work_group_tid = item.get_local_id();
     const size_t work_group_id = item.get_group_linear_id();
@@ -87,7 +85,7 @@ namespace quad {
     F* integrand = malloc_shared<F>(1, q);
 	sycl::event e = q.submit([&](sycl::handler& cgh) {
 
-        sycl::stream str(0, 0, cgh);
+        //sycl::stream str(0, 0, cgh);
         shared<int> max_dim(sycl::range(1), cgh);
         shared<double> jacobian(sycl::range(1), cgh);
         shared<double> vol(sycl::range(1), cgh);
@@ -119,9 +117,9 @@ namespace quad {
                    vol,
                    max_dim,
                    ranges,
-                   jacobian,
+                   jacobian//,
                    //scratch,
-                   str);
+                   /*str*/);
             
             item.barrier(sycl::access::fence_space::local_space);  
             int sIndex = 0;
@@ -138,8 +136,7 @@ namespace quad {
                     ranges,
                     jacobian,
                     sdata,
-                    scratch,
-                    str);
+                    scratch);
             item.barrier(sycl::access::fence_space::local_space);  
             
             const size_t work_group_id = item.get_group_linear_id();

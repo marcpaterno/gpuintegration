@@ -69,8 +69,7 @@ namespace quad {
                      shared<double> jacobian,
                      size_t feval,
                      shared<double> sdata,
-                     shared<double> scratch,
-                     sycl::stream str)  {
+                     shared<double> scratch)  {
       
     auto sg = item.get_sub_group();
     const size_t work_group_tid = item.get_local_id();
@@ -107,8 +106,7 @@ namespace quad {
                     shared<double> range,
                     shared<double> jacobian,
                     shared<double> sdata,
-                    shared<double> scratch,
-                    sycl::stream str){
+                    shared<double> scratch){
      
      Region<ndim>* const region = (Region<ndim>*)&sRegionPool[sIndex];
      gpu::cudaArray<double, ndim> x = {0.};
@@ -134,8 +132,7 @@ namespace quad {
                                   jacobian,
                                   feval,
                                   sdata,
-                                  scratch,
-                                 str);
+                                  scratch);
         
     }
      
@@ -185,8 +182,7 @@ namespace quad {
                                   jacobian,
                                   feval,
                                   sdata,
-                                  scratch,
-                                  str);
+                                  scratch);
     }
      
    pIndex =  perm * blockdim + work_group_tid; 
@@ -203,8 +199,7 @@ namespace quad {
                                   jacobian,
                                   feval,
                                   sdata,
-                                  scratch,
-                                  str);
+                                  scratch);
    }
      
   //item.barrier(sycl::access::fence_space::local_space);   
@@ -212,8 +207,8 @@ namespace quad {
    auto wg = item.get_group(); 
    for (int i = 0; i < NRULES; i++) {
        
-      sum[i] =  block_reduce<double, blockdim>(item, sum[i], scratch, str); //last one to compile and run for P630
-      //sum[i] =  reduce_over_group(wg, sum[i], sycl::plus<>()); 
+      //sum[i] =  block_reduce<double, blockdim>(item, sum[i], scratch, str); //last one to compile and run for P630
+      sum[i] =  reduce_over_group(wg, sum[i], sycl::plus<>()); 
       //item.barrier(sycl::access::fence_space::local_space); 
    }  
     
