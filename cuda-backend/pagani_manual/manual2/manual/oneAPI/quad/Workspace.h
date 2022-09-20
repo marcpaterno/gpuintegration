@@ -144,13 +144,10 @@ cuhreResult<double>
                 d_integrand, lows, highs, epsrel, epsabs, subregions, estimates, chars, compute_relerr_error_reduction);
                
                 two_level_errorest_and_relerr_classify<ndim>(q, estimates, prev_iter_estimates, chars, epsrel, relerr_classification);
-				/*if(num_regions == 2066304){
-					for(int i = 0 ; i < num_regions; ++i)
-						printf("region_id %i, %f, %e, %e\n",  i, chars.active_regions[i], estimates.integral_estimates[i], estimates.error_estimates[i]);
-				}*/
+
                 iter.errorest = quad::reduction<double>(q, estimates.error_estimates, subregions.size);
 				std::cout << it << "," << cummulative.estimate + iter.estimate << "," << cummulative.errorest + iter.errorest << "," << subregions.size  << std::endl;
-			
+
                 if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){                    
                     free(d_integrand, q);
                     cummulative.estimate += iter.estimate;
@@ -161,10 +158,8 @@ cuhreResult<double>
                     return cummulative;
                 }
                 
-                
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
                 Res finished = compute_finished_estimates<ndim>(q, estimates, chars, iter);          
-                
                 fix_error_budget_overflow(q, chars, cummulative, iter, finished, epsrel);
 				
 
@@ -177,7 +172,7 @@ cuhreResult<double>
                     free(d_integrand, q);
                     return cummulative;
                 }               
-                
+
                 cummulative.estimate += finished.estimate;
                 cummulative.errorest += finished.errorest; 
                 Filter filter_obj(q, subregions.size);

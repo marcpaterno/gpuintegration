@@ -57,34 +57,37 @@ namespace quad {
     
   template <typename F, int ndim>
   void
-  computePermutation(sycl::nd_item<1> item,
+  computePermutation(
                      F* d_integrand,
                      int pIndex,
                      Bounds* b,
-                     shared<GlobalBounds> sBound,
-                     gpu::cudaArray<double, ndim>& x,
+                     GlobalBounds sBound[],
+                     //gpu::cudaArray<double, ndim>& x,
                      double* sum,
                      const Rule_Params<ndim>& constMem,
-                     shared<double> range,
-                     shared<double> jacobian,
-                     size_t feval,
-                     shared<double> sdata,
-                     shared<double> scratch)  {
-      
-    auto sg = item.get_sub_group();
-    const size_t work_group_tid = item.get_local_id();
-    const size_t work_group_id = item.get_group_linear_id();
+                     double* range,
+                     double* jacobian,
+					 double* generators,
+                     //size_t feval,
+                     double* sdata,
+					 sycl::nd_item<1> item)  {
+    gpu::cudaArray<double, ndim> x;  
+	
+    //auto sg = item.get_sub_group();
+    //const size_t work_group_tid = item.get_local_id();
+    //const size_t work_group_id = item.get_group_linear_id();
 		
-    int gIndex = constMem._gpuGenPermGIndex[pIndex];
+    
         
     for (size_t dim = 0; dim < ndim; ++dim) {
-            const double generator = (constMem._generators[feval * dim + pIndex]);
-            x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower + (.5 - generator) * b[dim].upper) * range[dim];
+        const double generator = (generators[CuhreFuncEvalsPerRegion<ndim>() * dim + pIndex]);
+        x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower + (.5 - generator) * b[dim].upper) * range[dim];
     }
     
     const double fun = gpu::apply(*d_integrand, x) * (jacobian[0]);
-    sdata[work_group_tid] = fun; // target for reduction
-       
+    sdata[item.get_local_id(0)] = fun; // target for reduction
+    const int gIndex = constMem._gpuGenPermGIndex[pIndex];   
+	#pragma unroll 5
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * constMem._cRuleWt[gIndex * NRULES + rul];
     }
@@ -93,58 +96,62 @@ namespace quad {
     
  template <typename F, int ndim, int blockdim>
  void
- sample_region_block(sycl::nd_item<1> item,
-                    F* d_integrand,
-                    int sIndex,
+ sample_region_block(F* d_integrand,
+                   
+                    //int sIndex,
                     const Rule_Params<ndim>& constMem,
-                    int feval,
-                    int nsets,
-                    shared<Region<ndim>> sRegionPool,
-                    shared<GlobalBounds> sBound,
-                    shared<double> vol,
-                    shared<int> maxdim,
-                    shared<double> range,
-                    shared<double> jacobian,
-                    shared<double> sdata,
-                    shared<double> scratch){
+                    //int feval,
+                    //int nsets,
+                    Region<ndim> sRegionPool[],
+                    GlobalBounds sBound[],
+                    double* vol,
+                    int* maxdim,
+                    double* range,
+                    double* jacobian,
+					double* generators,
+					sycl::nd_item<1> item,
+					double* shared,
+                    double* sdata){
      
-     Region<ndim>* const region = (Region<ndim>*)&sRegionPool[sIndex];
-     gpu::cudaArray<double, ndim> x = {0.};
+     Region<ndim>* const region = (Region<ndim>*)&sRegionPool[0];
      int perm = 0;
-     double ratio = Sq(constMem._gpuG[2 * ndim] / constMem._gpuG[1 * ndim]);
-     int offset = 2 * ndim;
+     constexpr int offset = 2 * ndim;
      double sum[NRULES] = {0.};
-     
-     const size_t work_group_tid = item.get_local_id();
-     const size_t work_group_id = item.get_group_linear_id();
-     int pIndex = perm * blockdim + work_group_tid;
-     
+     Zap(sum);
+	 
+     //const size_t work_group_tid = item.get_local_id();
+     //const size_t work_group_id = item.get_group_linear_id();
+	 
+     int pIndex = perm * blockdim + item.get_local_id(0);
+     constexpr int feval = CuhreFuncEvalsPerRegion<ndim>();
      if (pIndex < feval) {
-      computePermutation<F, ndim>(item,
+      computePermutation<F, ndim>(
                                   d_integrand,
                                   pIndex,
                                   region->bounds,
                                   sBound,
-                                  x,
+                                  //x,
                                   sum,
                                   constMem,
                                   range,
                                   jacobian,
-                                  feval,
+								  generators,
+                                  //feval,
                                   sdata,
-                                  scratch);
+								  item);
         
     }
      
      
  item.barrier(/*sycl::access::fence_space::local_space*/);    
      
- if (work_group_tid == 0) {
+ if (item.get_local_id(0) == 0) {
+	  const double ratio = Sq(constMem._gpuG[2 * ndim] / constMem._gpuG[1 * ndim]);
       double* f = &sdata[0];
       Result* r = &region->result;
       double* f1 = f;
       double base = *f1 * 2 * (1 - ratio);
-      double maxdiff = 0;
+      double maxdiff = 0.;
       int bisectdim = maxdim[0];
       for (int dim = 0; dim < ndim; ++dim) {
         double* fp = f1 + 1;
@@ -159,9 +166,9 @@ namespace quad {
         }
       }
 
-     for(int i = 0; i < 4; ++i){
+     /*for(int i = 0; i < 4; ++i){
         scratch[i] = 0.;
-     }
+     }*/
      
       r->bisectdim = bisectdim;
   }
@@ -169,66 +176,71 @@ namespace quad {
     item.barrier(/*sycl::access::fence_space::local_space*/);  
      
     for (perm = 1; perm < feval / blockdim; ++perm) {
-        int pIndex =  perm * blockdim + work_group_tid;
-        computePermutation<F, ndim>(item,
-                                  d_integrand,
+        int pIndex =  perm * blockdim + item.get_local_id(0);
+        computePermutation<F, ndim>(d_integrand,
                                   pIndex,
                                   region->bounds,
                                   sBound,
-                                  x,
+                                  //x,
                                   sum,
                                   constMem,
                                   range,
                                   jacobian,
-                                  feval,
+								  generators,
+                                  //feval,
                                   sdata,
-                                  scratch);
+								  item);
     }
      
-   pIndex =  perm * blockdim + work_group_tid; 
+   pIndex =  perm * blockdim + item.get_local_id(0); 
    if(pIndex < feval){
-       computePermutation<F, ndim>(item,
-                                  d_integrand,
+       computePermutation<F, ndim>(d_integrand,
                                   pIndex,
                                   region->bounds,
                                   sBound,
-                                  x,
+                                  //x,
                                   sum,
                                   constMem,
                                   range,
                                   jacobian,
-                                  feval,
+								  generators,
+                                  //feval,
                                   sdata,
-                                  scratch);
+								  item);
    }
      
   //item.barrier(sycl::access::fence_space::local_space);   
 
-   auto wg = item.get_group(); 
+   //auto wg = item.get_group(); 
    for (int i = 0; i < NRULES; i++) {
        
-      //sum[i] =  block_reduce<double, blockdim>(item, sum[i], scratch, str); //last one to compile and run for P630
-      sum[i] =  reduce_over_group(wg, sum[i], sycl::plus<>()); 
+      //sum[i] =  block_reduce<double, blockdim>(item, sum[i], shared, str); //last one to compile and run for P630
+      sum[i] =  reduce_over_group(item.get_group(), sum[i], sycl::plus<>()); 
       //item.barrier(sycl::access::fence_space::local_space); 
    }  
     
-   if(work_group_tid == 0){
+   if(item.get_local_id(0) == 0){
         Result* r = &region->result;
+		
+		#pragma unroll 4
         for (int rul = 1; rul < NRULES - 1; ++rul) {
             double maxerr = 0;
+			constexpr int nsets = 9;
+			#pragma unroll 9
             for (int s = 0; s < nsets; ++s) {
-                  maxerr = max(maxerr, fabs(sum[rul + 1] +
+                  maxerr = sycl::max(maxerr, sycl::fabs(sum[rul + 1] +
                      (constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
                   (constMem._GPUNorm[s * NRULES + rul]));
             }
             sum[rul] = maxerr;
        }
-       double errcoeff[3] = {5, 1, 5}; 
-       r->avg = (vol[0]) * sum[0];     
+	   
+		r->avg = (vol[0]) * sum[0];    
+		double errcoeff[3] = {5., 1., 5.}; 
         r->err = (vol[0]) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
-                           errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
+                           errcoeff[2] * sycl::max(sycl::max(sum[1], sum[2]), sum[3]));
      }
      
      

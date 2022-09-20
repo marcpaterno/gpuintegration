@@ -98,7 +98,7 @@ Cubature_rules<ndim>::apply_cubature_integration_rules(sycl::queue& q,
   const double val = 1.;
   constexpr int num_threads_per_work_group  = 64;
   quad::parallel_fill<double>(q, chars.active_regions, subregions.size, val);
-  quad::integrate_kernel<IntegT, ndim, num_threads_per_work_group, warp_size>(q,
+  quad::integrate_kernel<IntegT, ndim, num_threads_per_work_group/*, warp_size*/>(q,
                 integrand,
                 subregions.dLeftCoord,
                 subregions.dLength,
@@ -111,7 +111,8 @@ Cubature_rules<ndim>::apply_cubature_integration_rules(sycl::queue& q,
                 epsabs,
                 rule_params,
                 lows,
-                highs);
+                highs,
+				rule_params._generators);
 
 
  cuhreResult<double> res;
