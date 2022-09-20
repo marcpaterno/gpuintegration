@@ -22,22 +22,20 @@ namespace quad {
                    double* dRegions,
                    double* dRegionsLength,
                    size_t num_regions,
-                   const Rule_Params<ndim>& constMem,
+                   const Structures<double> constMem,
                    Region<ndim> sRegionPool[],
                    GlobalBounds sBound[],
                    double* lows,
                    double* highs,
 				   double* generators,
 				   sycl::nd_item<1> item,
-				   double* shared,
+				   double* scratch,
 				   double* sdata,
 				   double* jacobian,
                    int* max_dim,
-                   double* vol,
+                   double*vol,
                    double* ranges){
-        
-    //size_t work_group_tid = item.get_local_id();
-    //const size_t work_group_id = item.get_group_linear_id();
+     
      size_t index = item.get_group(0);    
     if (item.get_local_id(0) == 0) {
       vol[0] = 1.;
@@ -75,7 +73,7 @@ namespace quad {
                     jacobian,
 					generators,
 					item,
-					shared,
+					scratch,
                     sdata );
     item.barrier(sycl::access::fence_space::local_space);
   }
@@ -93,7 +91,7 @@ namespace quad {
                 int* subDividingDimension,
                 double epsrel,
                 double epsabs,
-                const Rule_Params<ndim>& constMem,
+                const Structures<double> constMem,
                 double* lows,
                 double* highs,
 				double* generators)
@@ -101,62 +99,15 @@ namespace quad {
 		//F* integrand = malloc_shared<F>(1, q);
 		sycl::event e = q.submit([&](sycl::handler& cgh) {
 		
-		sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              shared(sycl::range(8), cgh); 
-			  
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sdata(sycl::range(blockDim), cgh);
-			  
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              jacobian(cgh);
-            sycl::accessor<int,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              max_dim(cgh);
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              vol(cgh);
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              ranges(sycl::range(ndim), cgh);
-            sycl::accessor<Region<ndim>,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sRegionPool(sycl::range(1), cgh);
-            sycl::accessor<GlobalBounds,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sBound(sycl::range(ndim), cgh);
-		
-        //shared<int> max_dim(sycl::range(1), cgh);
-        //shared<double> jacobian(sycl::range(1), cgh);
-        //shared<double> vol(sycl::range(1), cgh);
-        //shared<double> ranges(sycl::range(ndim), cgh);
-        //shared<GlobalBounds> sBound(sycl::range(ndim), cgh);
-        //shared<Region<ndim>> sRegionPool(sycl::range(1), cgh);
-        //shared<double> sdata(sycl::range(blockDim), cgh);
+        shared<int> max_dim(sycl::range(1), cgh);
+        shared<double> jacobian(sycl::range(1), cgh);
+        shared<double> vol(sycl::range(1), cgh);
+        shared<double> ranges(sycl::range(ndim), cgh);
+        shared<GlobalBounds> sBound(sycl::range(ndim), cgh);
+        shared<Region<ndim>> sRegionPool(sycl::range(1), cgh);
+        shared<double> sdata(sycl::range(blockDim), cgh);
         
-        //size_t work_group_size = blockDim;
-        //const size_t num_sub_groups = blockDim/32;
-        //const size_t total_threads = num_regions * blockDim; 
-        
-        //shared<double> scratch(sycl::range(num_sub_groups), cgh); 
+        shared<double> shared(sycl::range(8), cgh); 
 		
         cgh.parallel_for(sycl::nd_range<1>(num_regions * blockDim, blockDim), [=](sycl::nd_item<1> item)[[intel::reqd_sub_group_size(32)]]{
             

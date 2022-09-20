@@ -31,6 +31,22 @@ size_t get_feval(){
                         4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
 }
 
+template <typename T>
+struct Structures {
+  
+  Structures() = default;
+
+  T* _gpuG = nullptr;
+  T* _cRuleWt = nullptr;
+  T* _GPUScale = nullptr;
+  T* _GPUNorm = nullptr;
+  int* _gpuGenPos = nullptr;
+  int* _gpuGenPermGIndex = nullptr;
+  int* _gpuGenPermVarCount = nullptr;
+  int* _gpuGenPermVarStart = nullptr;
+  size_t* _cGeneratorCount = nullptr;
+};
+
 template<size_t ndim>
 struct Rule_Params{  
   Rule_Params() = default;  

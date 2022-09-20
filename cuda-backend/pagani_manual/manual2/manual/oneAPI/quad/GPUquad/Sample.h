@@ -60,25 +60,16 @@ namespace quad {
   computePermutation(
                      F* d_integrand,
                      int pIndex,
-                     Bounds* b,
+                     Bounds b[],
                      GlobalBounds sBound[],
-                     //gpu::cudaArray<double, ndim>& x,
                      double* sum,
-                     const Rule_Params<ndim>& constMem,
+                     const Structures<double> constMem,
                      double* range,
                      double* jacobian,
 					 double* generators,
-                     //size_t feval,
                      double* sdata,
 					 sycl::nd_item<1> item)  {
     gpu::cudaArray<double, ndim> x;  
-	
-    //auto sg = item.get_sub_group();
-    //const size_t work_group_tid = item.get_local_id();
-    //const size_t work_group_id = item.get_group_linear_id();
-		
-    
-        
     for (size_t dim = 0; dim < ndim; ++dim) {
         const double generator = (generators[CuhreFuncEvalsPerRegion<ndim>() * dim + pIndex]);
         x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower + (.5 - generator) * b[dim].upper) * range[dim];
@@ -97,20 +88,16 @@ namespace quad {
  template <typename F, int ndim, int blockdim>
  void
  sample_region_block(F* d_integrand,
-                   
-                    //int sIndex,
-                    const Rule_Params<ndim>& constMem,
-                    //int feval,
-                    //int nsets,
-                    Region<ndim> sRegionPool[],
+					const Structures<double> constMem,
+					Region<ndim>* sRegionPool,
                     GlobalBounds sBound[],
-                    double* vol,
+					double* vol,
                     int* maxdim,
                     double* range,
                     double* jacobian,
 					double* generators,
 					sycl::nd_item<1> item,
-					double* shared,
+					double* scratch,
                     double* sdata){
      
      Region<ndim>* const region = (Region<ndim>*)&sRegionPool[0];
@@ -118,9 +105,6 @@ namespace quad {
      constexpr int offset = 2 * ndim;
      double sum[NRULES] = {0.};
      Zap(sum);
-	 
-     //const size_t work_group_tid = item.get_local_id();
-     //const size_t work_group_id = item.get_group_linear_id();
 	 
      int pIndex = perm * blockdim + item.get_local_id(0);
      constexpr int feval = CuhreFuncEvalsPerRegion<ndim>();
@@ -166,9 +150,9 @@ namespace quad {
         }
       }
 
-     /*for(int i = 0; i < 4; ++i){
+     for(int i = 0; i < 4; ++i){
         scratch[i] = 0.;
-     }*/
+     }
      
       r->bisectdim = bisectdim;
   }
@@ -214,7 +198,7 @@ namespace quad {
    //auto wg = item.get_group(); 
    for (int i = 0; i < NRULES; i++) {
        
-      //sum[i] =  block_reduce<double, blockdim>(item, sum[i], shared, str); //last one to compile and run for P630
+      //sum[i] =  block_reduce<double, blockdim>(item, sum[i], scratch, str); //last one to compile and run for P630
       sum[i] =  reduce_over_group(item.get_group(), sum[i], sycl::plus<>()); 
       //item.barrier(sycl::access::fence_space::local_space); 
    }  
