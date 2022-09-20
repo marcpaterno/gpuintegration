@@ -65,7 +65,7 @@ two_level_errorest_and_relerr_classify(sycl::queue& q, Region_estimates<ndim>& c
         return;
     }
         
-    double* new_two_level_errorestimates = sycl::malloc_shared<double>(reg_classifiers.size, q);  
+    double* new_two_level_errorestimates = sycl::malloc_device<double>(reg_classifiers.size, q);  
     RefineError<double>(q, current_iter_raw_estimates.integral_estimates,
         current_iter_raw_estimates.error_estimates,
         prev_iter_two_level_estimates.integral_estimates,
