@@ -28,7 +28,7 @@ template<size_t ndim>
 size_t get_num_active_regions(sycl::queue& q, Region_characteristics<ndim>& regs){
     const size_t num_regions = regs.size;
     double* active_regions = regs.active_regions;
-    double* scanned_array = sycl::malloc_shared<double>(num_regions, q);
+    double* scanned_array = sycl::malloc_device<double>(num_regions, q);
     
     dpl::experimental::exclusive_scan_async(oneapi::dpl::execution::make_device_policy(q), 
         active_regions, active_regions + num_regions, scanned_array, 0.).wait();

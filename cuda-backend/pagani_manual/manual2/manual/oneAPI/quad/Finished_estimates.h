@@ -18,16 +18,22 @@ compute_finished_estimates(sycl::queue& q, const Region_estimates<ndim>& estimat
     size_t stride = 1;
     size_t n = estimates.size;
     
-    double* dp_res = malloc_shared<double>(1, q);
-    
+	//CANNOT USE mkl::blas::column_major?
+	
+    double* dp_res = malloc_device<double>(1, q);
+	double* h_res = new double;
+	
     event est_ev = oneapi::mkl::blas::column_major::dot(q, n, estimates.integral_estimates, stride, classifiers.active_regions, stride , dp_res);
     est_ev.wait();
-    finished.estimate = iter.estimate - dp_res[0];
+	quad::copy_to_host<double>(h_res, dp_res, 1);
+    finished.estimate = iter.estimate - h_res[0];
 
     event errorest_ev = oneapi::mkl::blas::column_major::dot(q, n, estimates.error_estimates, stride, classifiers.active_regions, stride , dp_res);
     errorest_ev.wait();
-    finished.errorest = iter.errorest - dp_res[0];
-    
+	quad::copy_to_host<double>(h_res, dp_res, 1);
+    finished.errorest = iter.errorest - h_res[0];    
+	delete h_res;
+	sycl::free(dp_res, q);
     return finished;
 }
 
