@@ -23,8 +23,8 @@ class Region_estimates{
 
 template<size_t ndim>
 Region_estimates<ndim>::Region_estimates(sycl::queue& q, size_t num_regions){
-    integral_estimates = sycl::malloc_shared<double>(num_regions, q);  
-    error_estimates = sycl::malloc_shared<double>(num_regions, q);  
+    integral_estimates = sycl::malloc_device<double>(num_regions, q);  
+    error_estimates = sycl::malloc_device<double>(num_regions, q);  
     size = num_regions;
     _q = &q;
 }
@@ -41,8 +41,8 @@ Region_estimates<ndim>::reallocate(sycl::queue& q,size_t num_regions){
     sycl::free(integral_estimates, *_q);
     sycl::free(error_estimates, *_q);
     
-    integral_estimates = sycl::malloc_shared<double>(num_regions, *_q);  
-    error_estimates = sycl::malloc_shared<double>(num_regions, *_q);  
+    integral_estimates = sycl::malloc_device<double>(num_regions, *_q);  
+    error_estimates = sycl::malloc_device<double>(num_regions, *_q);  
     size = num_regions;
 }
 #endif
