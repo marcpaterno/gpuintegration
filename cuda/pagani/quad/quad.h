@@ -32,7 +32,7 @@ class VerboseResults{
 		size_t NDIM = 0;
 };
 
-template <typename T>
+/*template <typename T>
 struct Structures {
   __host__ __device__
   Structures()
@@ -47,8 +47,6 @@ struct Structures {
     , _GPUNorm(nullptr)
   {}
 
-  ~Structures() {}
-
   T* _gpuG;
   T* _cRuleWt;
   T* _GPUScale;
@@ -59,6 +57,33 @@ struct Structures {
   int* _gpuGenPermVarStart;
   size_t* _cGeneratorCount;
 };
+*/
+template <typename T>
+struct Structures {
+  
+  Structures() = default;
+   /* : _gpuG(nullptr)
+    , _cRuleWt(nullptr)
+    , _GPUScale(nullptr)
+    , _gpuGenPos(nullptr)
+    , _gpuGenPermGIndex(nullptr)
+    , _gpuGenPermVarCount(nullptr)
+    , _gpuGenPermVarStart(nullptr)
+    , _cGeneratorCount(nullptr)
+    , _GPUNorm(nullptr)
+  {}*/
+
+  T* _gpuG = nullptr;
+  T* _cRuleWt = nullptr;
+  T* _GPUScale = nullptr;
+  T* _GPUNorm = nullptr;
+  int* _gpuGenPos = nullptr;
+  int* _gpuGenPermGIndex = nullptr;
+  int* _gpuGenPermVarCount = nullptr;
+  int* _gpuGenPermVarStart = nullptr;
+  size_t* _cGeneratorCount = nullptr;
+};
+
 
 /*template <typename T>
 struct cuhreResult {

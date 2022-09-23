@@ -377,7 +377,7 @@ namespace quad {
                    T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
-                   const Structures<double>& constMem,
+                   Structures<double>& constMem,
                    Region<NDIM> sRegionPool[],
                    GlobalBounds sBound[],
                    T* lows,
@@ -398,6 +398,7 @@ namespace quad {
       Jacobian = 1.;
 	  vol = 1.;
       T maxRange = 0;
+	  
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
@@ -459,8 +460,6 @@ namespace quad {
                                                 dRegionsLength,
                                                 numRegions,
                                                 constMem,
-                                                //FEVAL,
-                                                //NSETS,
                                                 sRegionPool,
                                                 sBound,
                                                 lows,

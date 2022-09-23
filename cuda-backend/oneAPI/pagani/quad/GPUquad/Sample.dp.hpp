@@ -53,6 +53,72 @@ namespace quad {
 
   template <typename T>
   T
+  warpReduceSum(T val, sycl::nd_item<1> item_ct1)
+  {
+    /*
+    DPCT1023:8: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 16);
+    /*
+    DPCT1023:9: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 8);
+    /*
+    DPCT1023:10: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 4);
+    /*
+    DPCT1023:11: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 2);
+    /*
+    DPCT1023:12: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 1);
+    return val;
+  }
+
+  template <typename T>
+  T
+  blockReduceSum(T val, sycl::nd_item<1> item_ct1, T *shared)
+  {
+
+     // why was this set to 8?
+    int lane = item_ct1.get_local_id(0) % 32; // 32 is for warp size
+    int wid = item_ct1.get_local_id(0) >> 5 /* threadIdx.x / 32  */;
+
+    val = warpReduceSum(val, item_ct1);
+    if (lane == 0) {
+      shared[wid] = val;
+    }
+    /*
+    DPCT1065:13: Consider replacing sycl::nd_item::barrier() with
+    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
+    performance if there is no access to global memory.
+    */
+    item_ct1.barrier(); // Wait for all partial reductions
+
+    // read from shared memory only if that warp existed
+    val =
+      (item_ct1.get_local_id(0) < (item_ct1.get_local_range().get(0) >> 5)) ?
+        shared[lane] :
+        0;
+      
+    item_ct1.barrier();
+    
+    if (wid == 0)
+      val = warpReduceSum(val, item_ct1); // Final reduce within first warp
+
+    return val;
+  }
+	
+	  template <typename T>
+  T
   blockReduceSum(T val, sycl::nd_item<3> item_ct1, T *shared)
   {
 
@@ -73,7 +139,7 @@ namespace quad {
 
     // read from shared memory only if that warp existed
     val =
-      (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
+      (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(0) >> 5)) ?
         shared[lane] :
         0;
       
@@ -84,7 +150,8 @@ namespace quad {
 
     return val;
   }
-
+	
+	
   template <typename T>
   T
   computeReduce(T sum, T* sdata, sycl::nd_item<3> item_ct1)
@@ -176,10 +243,7 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockdim, int debug = 0>
   void
   SampleRegionBlock(IntegT* d_integrand,
-                    //int sIndex,
-                     Structures<double> constMem,
-                    //int FEVAL,
-                    //int NSETS,
+                    Structures<double> constMem,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
@@ -193,9 +257,6 @@ namespace quad {
                     quad::Func_Evals<NDIM>& fevals)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
-
-    //T g[NDIM];
-    //gpu::cudaArray<T, NDIM> x;
     int perm = 0;
     constexpr int offset = 2 * NDIM;
     
@@ -212,19 +273,16 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          // g,
-                                          // x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          // FEVAL,
                                           sdata,
                                           item_ct1,
                                           fevals);
     }
-
+	
     /*
     DPCT1065:23: Consider replacing sycl::nd_item::barrier() with
     sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
@@ -293,23 +351,20 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          // g,
-                                          // x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          // FEVAL,
                                           sdata,
                                           item_ct1,
                                           fevals);
     }
-    // __syncthreads();
 	
+	item_ct1.barrier();
     for (int i = 0; i < NRULES; ++i) {
-      //sum[i] = blockReduceSum(sum[i], item_ct1, shared);
-	  sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());
+      sum[i] = blockReduceSum(sum[i], item_ct1, shared);
+	  //sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());
       //__syncthreads();
     }
 

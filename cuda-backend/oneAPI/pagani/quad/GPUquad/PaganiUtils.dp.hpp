@@ -37,6 +37,8 @@ class Cubature_rules{
     std::ofstream outregions;
     std::ofstream outgenerators;
     
+	double total_time = 0.;
+	
     Recorder<true> rfevals;
     Recorder<true> rregions;
     Recorder<true> rgenerators;
@@ -295,7 +297,7 @@ class Cubature_rules{
                            1,
                            sycl::access_mode::read_write,
                            sycl::access::target::local>
-              shared_acc_ct1(sycl::range(8), cgh);
+            shared_acc_ct1(sycl::range(8), cgh);
             sycl::accessor<double,
                            1,
                            sycl::access_mode::read_write,
@@ -426,7 +428,7 @@ class Cubature_rules{
                            1,
                            sycl::access_mode::read_write,
                            sycl::access::target::local>
-              shared_acc_ct1(sycl::range(8/*+block_size+1+1+ndim*/), cgh); //shared,    sdata,     jacobian,           vol,                     ranges
+              shared_acc_ct1(sycl::range(8), cgh); //shared,    sdata,     jacobian,           vol,                     ranges
 																		//shared[0], shared[8], shared[8+blockDim], shared[8+blockDim +1] , shared[8 blockDIm + 2]
 			  
             sycl::accessor<double,
@@ -470,8 +472,7 @@ class Cubature_rules{
             auto integ_space_lows_ct11 = integ_space_lows;
             auto integ_space_highs_ct12 = integ_space_highs;
             auto generators_ct13 = generators;
-
-             
+			
             cgh.parallel_for(
               sycl::nd_range(sycl::range(/*1, 1, */num_blocks*block_size) , sycl::range(/*1, 1, */block_size)),
               [=](sycl::nd_item<1> item_ct1)
@@ -509,7 +510,8 @@ class Cubature_rules{
         double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
 		e.template get_profiling_info<sycl::info::event_profiling::command_start>());
 		std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim << ","<< num_regions << std::endl;
-        print_verbose<debug>(generators, dfevals, subregion_estimates);
+        total_time += time;
+		print_verbose<debug>(generators, dfevals, subregion_estimates);
         cuhreResult<double> res;
         res.estimate = reduction<double, use_custom>(subregion_estimates->integral_estimates, num_regions);
         res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates->error_estimates, num_regions) : std::numeric_limits<double>::infinity(); 

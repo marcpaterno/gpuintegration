@@ -218,8 +218,8 @@ namespace cuda_mcubes {
                        uint32_t cube_id,
                        double* randoms = nullptr)
   {
-    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int ndmx = 500/*Internal_Vegas_Params::get_NDMX()*/;
+    constexpr int ndmx1 = 501;//Internal_Vegas_Params::get_NDMX_p1();
 
 
     for (int j = 1; j <= ndim; j++) {
@@ -236,18 +236,6 @@ namespace cuda_mcubes {
       //  }
       // }
   
-
-      // kg[j]-ran00 this essentially determines how far left or how far right
-      // in the interval is the bin we are drawing randomly, but it's expressed
-      // as a percentage. random numbers close to zero mean to the right of the
-      // interval random numbers close to one mean to the left of the interval we
-      // multiply by dxg, which represents how many bins per interval there are
-      // this multiplication scales to which of the 500 bins this lands on.
-      // thus, we are essentially choosing randomly and with equal probability
-      // which of the bins that correspond to the interval, will we choose for
-      // the sample point we are trying to generate this means that when we are
-      // processing a sub-cube, we are choosing randomly selecting one of the
-      // available bins that overlap with the interval
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
@@ -289,7 +277,7 @@ namespace cuda_mcubes {
                       double& f2b,
                       uint32_t cube_id)
   {
-    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int mxdim_p1 = 21/*Internal_Vegas_Params::get_MXDIM_p1()*/;
 
     for (int k = 1; k <= npg; k++) {
 
@@ -331,7 +319,14 @@ namespace cuda_mcubes {
 
 #pragma unroll 2
       for (int j = 1; j <= ndim; j++) {
+		 // d[ia[j] * mxdim_p1 + j] += f2;
         dpct::atomic_fetch_add(&d[ia[j] * mxdim_p1 + j], f2);
+		/*auto v = sycl::atomic_ref<double, 
+			sycl::memory_order::relaxed, 
+			sycl::memory_scope::device,
+			sycl::access::address_space::global_space>(d[ia[j] * mxdim_p1 + j]);
+		v += f2;*/
+
       }
     }
   }
@@ -435,13 +430,13 @@ namespace cuda_mcubes {
                uint32_t totalNumThreads,
                int LastChunk,
                unsigned int seed_init,
-               sycl::nd_item<3> item_ct1,
+               sycl::nd_item<1> item_ct1,
                double *shared)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-                 item_ct1.get_local_id(2);
-    uint32_t tx = item_ct1.get_local_id(2);
+    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
+                 item_ct1.get_local_id(0);
+    uint32_t tx = item_ct1.get_local_id(0);
     double wgt;
     uint32_t kg[mxdim_p1];
     int ia[mxdim_p1];
@@ -451,8 +446,8 @@ namespace cuda_mcubes {
     if (m < totalNumThreads) {
 
       size_t cube_id_offset =
-          (item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-           item_ct1.get_local_id(2)) *
+          (item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
+           item_ct1.get_local_id(0)) *
           chunkSize;
 
       if (m == totalNumThreads - 1)
@@ -485,16 +480,26 @@ namespace cuda_mcubes {
     }
 
     // testing if synch is needed
- 
-    item_ct1.barrier();
-    fbg = blockReduceSum(fbg, item_ct1, shared);
-    f2bg = blockReduceSum(f2bg, item_ct1, shared);
+	
+    item_ct1.barrier(sycl::access::fence_space::local_space);
+    fbg = reduce_over_group(item_ct1.get_group(), fbg, sycl::plus<>());/*blockReduceSum(fbg, item_ct1, shared)*/;
+    f2bg = reduce_over_group(item_ct1.get_group(), f2bg, sycl::plus<>());/*blockReduceSum(f2bg, item_ct1, shared)*/;
 
     if (tx == 0) {
-
+		//result_dev[0] += fbg;
+		//result_dev[1] += f2bg;
       dpct::atomic_fetch_add(&result_dev[0], fbg);
-     
       dpct::atomic_fetch_add(&result_dev[1], f2bg);
+	  /*auto v = sycl::atomic_ref<double, 
+			sycl::memory_order::relaxed, 
+			sycl::memory_scope::device,
+			sycl::access::address_space::global_space>(result_dev[0]);
+	  v += fbg;
+	  auto v2 = sycl::atomic_ref<double, 
+			sycl::memory_order::relaxed, 
+			sycl::memory_scope::device,
+			sycl::access::address_space::global_space>(result_dev[1]);
+	  v2 += f2bg;*/
     }
     // end of subcube if
   }
@@ -648,7 +653,25 @@ namespace cuda_mcubes {
       xi[i] = xin[i];
     xi[nd] = 1.0;
   }
-
+	
+void ShowDevice(sycl::queue &q) {
+      using namespace sycl;
+      // Output platform and device information.
+      auto device = q.get_device();
+      auto p_name = device.get_platform().get_info<info::platform::name>();
+      std::cout << "Platform Name: " << p_name << "\n";
+      auto p_version = device.get_platform().get_info<info::platform::version>();
+      std::cout << "Platform Version: " << p_version << "\n";
+      auto d_name = device.get_info<info::device::name>();
+      std::cout << "Device Name: " << d_name << "\n";
+      auto max_work_group = device.get_info<info::device::max_work_group_size>();
+        
+      auto max_compute_units = device.get_info<info::device::max_compute_units>();
+      std::cout << "Max Compute Units: " << max_compute_units << "\n\n";
+      std::cout << "max_mem_alloc_size " << device.get_info<sycl::info::device::max_mem_alloc_size>() << std::endl;
+      std::cout << "local_mem_size " <<  device.get_info<sycl::info::device::local_mem_size>() << std::endl;
+}	
+	
   template <typename IntegT,
             int ndim>
   void
@@ -666,9 +689,11 @@ namespace cuda_mcubes {
         int skip,
         quad::Volume<double, ndim> const* vol)
   {
+  double total_time = 0.;
   dpct::device_ext &dev_ct1 = dpct::get_current_device();
-  sycl::queue &q_ct1 = dev_ct1.default_queue();
-  
+  //sycl::queue &q_ct1 = dev_ct1.default_queue();
+  sycl::queue q_ct1(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
+	ShowDevice(q_ct1);
   //Display Device Name
     // Mcubes_state mcubes_state(ncall, ndim);
     // all of the ofstreams below will be removed, replaced by DataLogger
@@ -819,14 +844,14 @@ namespace cuda_mcubes {
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
          
-      q_ct1.submit([&](sycl::handler &cgh) {
+      sycl::event e = q_ct1.submit([&](sycl::handler &cgh) {
          sycl::accessor<double, 1, sycl::access_mode::read_write,
                         sycl::access::target::local>
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) * sycl::range<3>(1, 1, nThreads), sycl::range<3>(1, 1, nThreads)),
-             [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) * sycl::range<1>(/*1, 1,*/ nThreads), sycl::range<1>(/*1, 1,*/ nThreads)),
+             [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernel<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
                     d_dev, dx_dev, regn_dev, ncubes, it, sc, sci, ing,
@@ -834,7 +859,13 @@ namespace cuda_mcubes {
                     shared_acc_ct1.get_pointer());
              });
       });
-
+	  q_ct1.wait();
+	  
+	  double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
+	  e.template get_profiling_info<sycl::info::event_profiling::command_start>());
+	  std::cout<< "time:" << std::scientific << 1 << "," << time/1.e6 << "," << ndim << ","<< ncall << std::endl;
+	  total_time += time;
+	  
       q_ct1.memcpy(xi, xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1)).wait();
       cudaCheckError();
 
@@ -924,7 +955,7 @@ namespace cuda_mcubes {
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
       
-      q_ct1.submit([&](sycl::handler &cgh) {
+      /*sycl::event e =*/ q_ct1.submit([&](sycl::handler &cgh) {
          sycl::accessor<double, 1, sycl::access_mode::read_write,
                         sycl::access::target::local>
              shared_acc_ct1(sycl::range<1>(32), cgh);
@@ -941,7 +972,10 @@ namespace cuda_mcubes {
                     shared_acc_ct1.get_pointer());
              });
       });
-
+	  q_ct1.wait();
+	  /*double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
+	  e.template get_profiling_info<sycl::info::event_profiling::command_start>());
+	  std::cout<< "time:" << std::scientific << 0 << "," << time/1.e6 << "," << ndim << ","<< ncall << std::endl;*/
       q_ct1.memcpy(result, result_dev, sizeof(double) * 2).wait();
 
       ti = result[0];
@@ -968,7 +1002,9 @@ namespace cuda_mcubes {
       // printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n",
       // it, *tgral, *sd, *chi2a);
     } // end of iterations
-
+	
+	std::cout<<"total_time:"<<total_time/1e6<<std::endl;
+	
     free(d);
     free(dt);
     free(dx);

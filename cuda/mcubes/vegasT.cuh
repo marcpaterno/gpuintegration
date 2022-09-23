@@ -52,6 +52,7 @@ Last three arguments are: total iterations, iteration
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <cuda_profiler_api.h>
 
 //#define TINY 1.0e-200
 #define WARP_SIZE 32
@@ -264,21 +265,7 @@ namespace cuda_mcubes {
       //      //randoms[index] = ran00;
       //  }
       // }
-      /*if(cube_id == 0)
-         printf("dim :%i kg:%i ran:%f dxg:%f xn:%f\n",
-           j, kg[j], ran00, dxg, (kg[j] - ran00) * dxg + 1.0);*/
 
-      // kg[j]-ran00 this essentially determines how far left or how far right
-      // in the interval is the bin we are drawing randomly, but it's expressed
-      // as a percentage. random numbers close to zero mean to the right of the
-      // interval random numbers close to one mean to the left of the interval we
-      // multiply by dxg, which represents how many bins per interval there are
-      // this multiplication scales to which of the 500 bins this lands on.
-      // thus, we are essentially choosing randomly and with equal probability
-      // which of the bins that correspond to the interval, will we choose for
-      // the sample point we are trying to generate this means that when we are
-      // processing a sub-cube, we are choosing randomly selecting one of the
-      // available bins that overlap with the interval
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
@@ -360,13 +347,14 @@ namespace cuda_mcubes {
       //         //funcevals[index] = f;
       //     }
       // }
-
+	
       double f2 = f * f;
       fb += f;
       f2b += f2;
 
 #pragma unroll 2
       for (int j = 1; j <= ndim; j++) {
+		  //d[ia[j] * mxdim_p1 + j] += f2;
         atomicAdd(&d[ia[j] * mxdim_p1 + j], f2);
       }
     }
@@ -432,7 +420,7 @@ namespace cuda_mcubes {
         d,
         fb,
         f2b,
-        /*_seed, temp,*/ /*t,*/ /*chunkSize,*/ cube_id,
+        cube_id,
         randoms,
         funcevals);
 
@@ -534,6 +522,8 @@ namespace cuda_mcubes {
     f2bg = blockReduceSum(f2bg);
 
     if (tx == 0) {
+		//result_dev[0] += fbg;
+		//result_dev[1] += f2bg;
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
     }
@@ -659,6 +649,8 @@ namespace cuda_mcubes {
 
     if (tx == 0) {
       // printf("Block %i done\n", blockIdx.x);
+	  //result_dev[0] += fbg;
+	  //result_dev[1] += f2bg;
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
     }
@@ -881,6 +873,7 @@ namespace cuda_mcubes {
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
+		cudaProfilerStart();						
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<nBlocks, nThreads>>>(d_integrand,
                                 ng,
@@ -904,7 +897,8 @@ namespace cuda_mcubes {
                                 seed + it,
                                 data_collector.randoms,
                                 data_collector.funcevals);
-
+	  cudaDeviceSynchronize();
+	  cudaProfilerStop();
       cudaMemcpy(xi,
                  xi_dev,
                  sizeof(double) * (mxdim_p1) * (ndmx_p1),
@@ -1049,7 +1043,7 @@ namespace cuda_mcubes {
                                 totalNumThreads,
                                 LastChunk,
                                 seed + it);
-
+		cudaDeviceSynchronize();
       cudaMemcpy(
         result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
 

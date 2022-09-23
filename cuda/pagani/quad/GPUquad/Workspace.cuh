@@ -122,7 +122,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
             }
 			
             for(size_t it = 0; it < 700 && subregions.size > 0; it++){
-                //std::cout<<" start of iteration quad::GetAmountFreeMem():"<<quad::GetAmountFreeMem()<<std::endl;
                 size_t num_regions = subregions.size;
                 Regs_characteristics characteristics(subregions.size);
                 Estimates estimates(subregions.size);
@@ -135,7 +134,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 					relerr_classification = subregions.size <= 15000000 && it < 15  && cummulative.nregions == 0 ? false : true;
 				}
                 two_level_errorest_and_relerr_classify<ndim>(estimates, prev_iter_estimates, characteristics, epsrel, relerr_classification);
-                
                 iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
                                        
 				 if constexpr(debug > 0)
@@ -148,8 +146,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 					}
 				}
 				
-                if(it == 17){
-				//if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
+				if(accuracy_reached(epsrel, epsabs, std::abs(cummulative.estimate + iter.estimate), cummulative.errorest + iter.errorest)){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
                     cummulative.status = 0;
@@ -160,7 +157,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
                 
                 quad::CudaCheckError();
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
-				
                 Res finished = compute_finished_estimates<ndim, use_custom>(estimates, characteristics, iter);   
                 fix_error_budget_overflow(characteristics, cummulative, iter, finished, epsrel);
                 if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){
@@ -173,12 +169,12 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<ndim
 
                 cummulative.estimate += finished.estimate;
                 cummulative.errorest += finished.errorest; 
-                                
+                quad::CudaCheckError();  
                 Filter filter_obj(subregions.size);
                 size_t num_active_regions = filter_obj.filter(subregions, characteristics, estimates, prev_iter_estimates);
                 cummulative.nregions += num_regions - num_active_regions;
                 subregions.size = num_active_regions;
-                  
+                quad::CudaCheckError();  
                 Splitter splitter(subregions.size);
                 splitter.split(subregions, characteristics);
                 cummulative.iters++;

@@ -188,7 +188,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                     d_integrand->~IntegT();
                     sycl::free(d_integrand, q_ct1);
                     dpct::get_current_device().queues_wait_and_throw(); //is this what stopped the error? REALLY?
-                    
+                    std::cout<<"total_time:"<<rules.total_time/1e6 << std::endl;
                     return cummulative;
                 }
 				
@@ -218,7 +218,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 splitter.split(&subregions, &characteristics);
                 cummulative.iters++;
             }
-            
+            std::cout<<"total_time:"<<rules.total_time << std::endl;
             d_integrand->~IntegT();
             cummulative.nregions += subregions.size;
             sycl::free(d_integrand, q_ct1);

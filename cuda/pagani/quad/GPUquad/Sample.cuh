@@ -70,7 +70,7 @@ namespace quad {
     if (lane == 0) {
       shared[wid] = val;
     }
-    __syncthreads(); // Wait for all partial reductions
+    __syncthreads(); // Wait for all partial reductions //I think it's safe to remove
 	
     // read from shared memory only if that warp existed
     val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0;
@@ -110,7 +110,7 @@ namespace quad {
                      //T* g,
                      //gpu::cudaArray<T, NDIM>& x,
                      T* sum,
-                     const Structures<double>& constMem,
+                     Structures<double>& constMem,
                      T range[],
                      T* jacobian,
                      double* generators,
@@ -344,7 +344,7 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockdim, int debug>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
-                    const Structures<double>& constMem,
+                    Structures<double>& constMem,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
@@ -372,14 +372,11 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          //g,
-                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          //FEVAL,
                                           sdata,
 										  fevals);
     }
@@ -434,18 +431,14 @@ namespace quad {
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          //g,
-                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          //FEVAL,
                                           sdata,
 										  fevals);
     }
-    // __syncthreads();
 
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i]);
@@ -455,12 +448,11 @@ namespace quad {
     if (threadIdx.x == 0) {
       Result* r = &region->result; //ptr to shared Mem
 	  
-	  //#pragma unroll 4
+	  #pragma unroll 4
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
 		
 		constexpr int NSETS = 9;
-		//branching for 9*3 for each thread 0
 		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
           maxerr =
@@ -809,14 +801,11 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          //g,
-                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          //FEVAL,
                                           sdata,
 										  fevals);
     }
