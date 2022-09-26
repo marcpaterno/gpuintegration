@@ -82,9 +82,9 @@ Rule_Params<ndim>::init(queue& q, quad::Rule<double>& rule)
   _gpuGenPermGIndex = sycl::malloc_device<int>(feval, q);
   _gpuGenPos = sycl::malloc_device<int>(permutations_size, q);
   //_gpuGenPermVarStart = quad::copy_to_shared<int>(q, rule.cpuGenPermVarStart,
-  //feval + 1); _gpuGenPermGIndex = quad::copy_to_shared<int>(q,
-  //rule.cpuGenPermGIndex, feval); _gpuGenPos = quad::copy_to_shared<int>(q,
-  //rule.genPtr, permutations_size);
+  // feval + 1); _gpuGenPermGIndex = quad::copy_to_shared<int>(q,
+  // rule.cpuGenPermGIndex, feval); _gpuGenPos = quad::copy_to_shared<int>(q,
+  // rule.genPtr, permutations_size);
 
   quad::copy_to_device<int>(
     _gpuGenPermVarStart, rule.cpuGenPermVarStart, feval + 1);
@@ -110,7 +110,7 @@ Rule_Params<ndim>::init(queue& q, quad::Rule<double>& rule)
   //_GPUScale = quad::copy_to_shared<double> (q, rule.CPUScale, nrules * nsets);
   //_GPUNorm = quad::copy_to_shared<double> (q, rule.CPUNorm, nrules * nsets);
   //_gpuGenPermVarCount = quad::copy_to_shared<int> (q, rule.cpuGenPermVarCount,
-  //feval);
+  // feval);
 
   _generators = sycl::malloc_device<double>(feval * ndim, q);
 }
