@@ -47,11 +47,7 @@ time_and_call(ALG const& a,
 }
 
 struct Config {
-  Config(int verbosity,
-         int heuristic,
-         int phaseT,
-         int deviceNum,
-         int finFlag)
+  Config(int verbosity, int heuristic, int phaseT, int deviceNum, int finFlag)
     : outfileVerbosity{verbosity}
     , phase_I_type(phaseT)
     , numdevices{deviceNum}
@@ -72,9 +68,9 @@ struct Config {
 void
 PrintHeader()
 {
-  std::cout
-    << "id, heuristicID, value, epsrel, epsabs, estimate, errorest, regions, finished_regions, "
-       "status, final, lastPhase, total_time\n";
+  std::cout << "id, heuristicID, value, epsrel, epsabs, estimate, errorest, "
+               "regions, finished_regions, "
+               "status, final, lastPhase, total_time\n";
 }
 
 namespace floatIntegrands {
@@ -189,102 +185,102 @@ cu_time_and_call(std::string id,
   return good;
 }
 
-template <typename F, int ndim, bool predict_split = false, bool collect_iters = false, bool debug = false>
+template <typename F,
+          int ndim,
+          bool predict_split = false,
+          bool collect_iters = false,
+          bool debug = false>
 bool
 cu_time_and_call_100(std::string id,
-                 F integrand,
-                 double epsrel,
-                 double true_value,
-                 char const* algname,
-                 std::ostream& outfile,
-                 Config config = Config(),
-                 quad::Volume<double, ndim>* vol = nullptr)
+                     F integrand,
+                     double epsrel,
+                     double true_value,
+                     char const* algname,
+                     std::ostream& outfile,
+                     Config config = Config(),
+                     quad::Volume<double, ndim>* vol = nullptr)
 {
-    bool good = false;
-    
+  bool good = false;
+
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
   quad::Pagani<double, ndim> alg;
-  
-                                         
-  for(int i=0; i < 50; i++){      
+
+  for (int i = 0; i < 50; i++) {
     auto const t0 = std::chrono::high_resolution_clock::now();
-  // nvtxRangePushA("init_host_data");
+    // nvtxRangePushA("init_host_data");
     cuhreResult const result = alg.integrate(integrand,
-                                           epsrel,
-                                           epsabs,
-                                           vol,
-                                           config.outfileVerbosity,
-                                           config._final,
-                                           config.heuristicID,
-                                           config.phase_I_type);
-                                    
-                                           
-  // nvtxRangePop();
-  MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-  double const absolute_error = std::abs(result.estimate - true_value);
-  
-  if (result.status == 0 || result.status == 2) {
-    good = true;
+                                             epsrel,
+                                             epsabs,
+                                             vol,
+                                             config.outfileVerbosity,
+                                             config._final,
+                                             config.heuristicID,
+                                             config.phase_I_type);
+
+    // nvtxRangePop();
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    double const absolute_error = std::abs(result.estimate - true_value);
+
+    if (result.status == 0 || result.status == 2) {
+      good = true;
+    }
+
+    std::string hID;
+
+    if (config.heuristicID == 0)
+      hID = "zero";
+    else if (config.heuristicID == 1)
+      hID = "no load-balancing";
+    else if (config.heuristicID == 2)
+      hID = "budget errorest";
+    else if (config.heuristicID == 4)
+      hID = "target errorest"; // default
+    else if (config.heuristicID == 7)
+      hID = "estimate budget";
+    // else if(config.heuristicID == 8)
+    //   hID = "extreme";
+    else if (config.heuristicID == 9)
+      hID = "aggressive";
+
+    outfile.precision(17);
+    outfile << std::fixed << std::scientific << id << "," << hID << ","
+            << true_value << "," << epsrel << "," << epsabs << ","
+            << result.estimate << "," << result.errorest << ","
+            << result.nregions << "," << result.nFinishedRegions << ","
+            << result.status << "," << config._final << "," << result.lastPhase
+            << "," << dt.count() << std::endl;
   }
 
-  std::string hID;
-
-  if (config.heuristicID == 0)
-    hID = "zero";
-  else if (config.heuristicID == 1)
-    hID = "no load-balancing";
-  else if (config.heuristicID == 2)
-    hID = "budget errorest";
-  else if (config.heuristicID == 4)
-    hID = "target errorest"; // default
-  else if (config.heuristicID == 7)
-    hID = "estimate budget";
-  // else if(config.heuristicID == 8)
-  //   hID = "extreme";
-  else if (config.heuristicID == 9)
-    hID = "aggressive";
-
-  outfile.precision(17);
-  outfile << std::fixed << std::scientific << id << "," << hID << ","
-          << true_value << "," << epsrel << "," << epsabs << ","
-          << result.estimate << "," << result.errorest << "," << result.nregions
-          << "," << result.nFinishedRegions << "," << result.status << ","
-          << config._final << "," << result.lastPhase << "," << dt.count()
-          << std::endl;
-  }
-  
   return good;
 }
 
 template <typename F, int ndim>
 bool
 common_header_pagani_time_and_call(std::string alg_id,
-                 std::string integ_id, 
-                 F integrand,
-                 double epsrel,
-                 double true_value,
-                 double difficulty,
-                 char const* algname,
-                 std::ostream& outfile,
-                 Config config = Config(),
-                 quad::Volume<double, ndim>* vol = nullptr)
+                                   std::string integ_id,
+                                   F integrand,
+                                   double epsrel,
+                                   double true_value,
+                                   double difficulty,
+                                   char const* algname,
+                                   std::ostream& outfile,
+                                   Config config = Config(),
+                                   quad::Volume<double, ndim>* vol = nullptr)
 {
-    bool good = false;
-    
+  bool good = false;
+
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
   quad::Pagani<double, ndim> alg;
-  
-                                         
 
-    auto const t0 = std::chrono::high_resolution_clock::now();
+  auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
-    cuhreResult const result = alg.integrate(integrand,
+  cuhreResult const result = alg.integrate(integrand,
                                            epsrel,
                                            epsabs,
                                            vol,
@@ -292,33 +288,23 @@ common_header_pagani_time_and_call(std::string alg_id,
                                            config._final,
                                            config.heuristicID,
                                            config.phase_I_type);
-                                    
-                                           
+
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
-  
+
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
 
   std::string hID;
 
-
-
   outfile.precision(17);
-  outfile << std::fixed << std::scientific << integ_id << ","    
-          << std::scientific << alg_id << "," 
-          << difficulty << ","
-          << epsrel << "," 
-          << epsabs << ","
-          << std::scientific << true_value << "," 
-          << std::scientific << result.estimate << "," 
-          << std::scientific << result.errorest << "," 
-          << dt.count() << ","
-          << result.status 
-          << std::endl;
-  
-  
+  outfile << std::fixed << std::scientific << integ_id << "," << std::scientific
+          << alg_id << "," << difficulty << "," << epsrel << "," << epsabs
+          << "," << std::scientific << true_value << "," << std::scientific
+          << result.estimate << "," << std::scientific << result.errorest << ","
+          << dt.count() << "," << result.status << std::endl;
+
   return good;
 }

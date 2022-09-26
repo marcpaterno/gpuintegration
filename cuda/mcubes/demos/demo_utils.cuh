@@ -160,13 +160,13 @@ template <typename F,
           typename GeneratorType = Curand_generator>
 bool
 common_header_mcubes_time_and_call(F integrand,
-                     double epsrel,
-                     double correct_answer,
-                     double difficulty,
-                     std::string alg_id,
-                    std::string integ_id, 
-                     VegasParams& params,
-                     quad::Volume<double, ndim>* volume)
+                                   double epsrel,
+                                   double correct_answer,
+                                   double difficulty,
+                                   std::string alg_id,
+                                   std::string integ_id,
+                                   VegasParams& params,
+                                   quad::Volume<double, ndim>* volume)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -191,16 +191,11 @@ common_header_mcubes_time_and_call(F integrand,
     std::cout.precision(17);
 
     if (success)
-      std::cout << integ_id << ","    
-                << std::scientific << alg_id << "," 
-                << difficulty << ","
-                << epsrel << "," 
-                << epsabs << "," 
-                << std::scientific<< correct_answer << "," 
-                << std::scientific << res.estimate
-                << "," << std::scientific  << res.errorest << "," 
-                << dt.count() << ","
-                << res.status << "\n";
+      std::cout << integ_id << "," << std::scientific << alg_id << ","
+                << difficulty << "," << epsrel << "," << epsabs << ","
+                << std::scientific << correct_answer << "," << std::scientific
+                << res.estimate << "," << std::scientific << res.errorest << ","
+                << dt.count() << "," << res.status << "\n";
 
     if (run == 0 && !success)
       AdjustParams(params.ncall, params.t_iter);

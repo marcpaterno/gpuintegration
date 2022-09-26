@@ -69,8 +69,6 @@ public:
   {
     return curand_uniform_double(&localState);
   }
-  
-  
 };
 
 template <typename Generator>
@@ -87,13 +85,12 @@ public:
   {
     return generator();
   }
-  
+
   __device__ void
   SetSeed(uint32_t seed)
   {
     generator.SetSeed(seed);
   }
-  
 };
 
 namespace mcubes {

@@ -12,7 +12,7 @@
 #include <utility>
 
 namespace quad {
-  
+
   class Interp2D {
     // change names to xs, ys, zs to fit with y3_cluster_cpp::Interp2D
     size_t _rows = 0;
@@ -20,19 +20,19 @@ namespace quad {
     double* interpT = nullptr;
     double* interpR = nullptr;
     double* interpC = nullptr;
-    
+
     void
     Alloc(size_t cols, size_t rows)
     {
       CudaCheckError();
       if ((cols > 100000) || (rows > 100000)) {
-       std::cerr << "InterpD::Alloc called with cols="
-          << cols << " and rows=" << rows << '\n';
+        std::cerr << "InterpD::Alloc called with cols=" << cols
+                  << " and rows=" << rows << '\n';
         std::abort();
-      } 
-      if ( cols*rows > 1000000 ) {
-       std::cerr << "Interp2D::Alloc called with cols="
-          << cols << " and rows=" << rows << '\n';
+      }
+      if (cols * rows > 1000000) {
+        std::cerr << "Interp2D::Alloc called with cols=" << cols
+                  << " and rows=" << rows << '\n';
         std::abort();
       }
       _rows = rows;
@@ -44,17 +44,20 @@ namespace quad {
       interpT = cuda_malloc<double>(_rows * _cols);
       CudaCheckError();
     }
-    
+
   public:
-    
-    size_t get_device_mem_footprint(){
-      return 8*(_cols*_rows + _cols + _rows);
+    size_t
+    get_device_mem_footprint()
+    {
+      return 8 * (_cols * _rows + _cols + _rows);
     }
 
-    size_t get_device_mem_footprint()const{
-      return 8*(_cols*_rows + _cols + _rows);
+    size_t
+    get_device_mem_footprint() const
+    {
+      return 8 * (_cols * _rows + _cols + _rows);
     }
-    
+
     void
     swap(Interp2D& other)
     {
@@ -74,8 +77,9 @@ namespace quad {
       _cols = source._cols;
       _rows = source._rows;
       Alloc(_cols, _rows);
-      
-      cuda_memcpy_device_to_device<double>(interpT, source.interpT, _cols * _rows);
+
+      cuda_memcpy_device_to_device<double>(
+        interpT, source.interpT, _cols * _rows);
       cuda_memcpy_device_to_device<double>(interpC, source.interpC, _cols);
       cuda_memcpy_device_to_device<double>(interpR, source.interpR, _rows);
       CudaCheckError();
@@ -89,7 +93,7 @@ namespace quad {
       swap(tmp);
       return *this;
     }
-    
+
     Interp2D(Interp2D&&) = delete;
     Interp2D& operator=(Interp2D&&) = delete;
 
@@ -140,20 +144,20 @@ namespace quad {
              std::array<double, N> ys,
              std::array<std::array<double, N>, M> zs)
     {
-      
+
       CudaCheckError();
       Alloc(M, N);
       cuda_memcpy_to_device<double>(interpR, ys.data(), N);
       cuda_memcpy_to_device<double>(interpC, xs.data(), M);
 
-      std::vector<double> buffer(N*M);
+      std::vector<double> buffer(N * M);
       for (std::size_t i = 0; i < M; ++i) {
         std::array<double, N> const& row = zs[i];
         for (std::size_t j = 0; j < N; ++j) {
           buffer[i + j * M] = row[j];
         }
       }
-      cuda_memcpy_to_device<double>(interpT, buffer.data(), N*M);
+      cuda_memcpy_to_device<double>(interpT, buffer.data(), N * M);
       CudaCheckError();
     }
 
@@ -178,9 +182,9 @@ namespace quad {
       std::getline(is, buffer);
       std::vector<double> zs = str_to_doubles(buffer);
 
-      //why is this done?
+      // why is this done?
       cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
-      
+
       interp._cols = xs.size();
       interp._rows = ys.size();
 

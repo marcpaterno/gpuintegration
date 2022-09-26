@@ -223,7 +223,7 @@ namespace quad {
     int* h_a = (int*)malloc(bytes);
     int* d_a;
     cudaMalloc((int**)&d_a, bytes);
-    
+
     memset(h_a, 0, bytes);
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
@@ -240,10 +240,9 @@ namespace quad {
 
     T* curr_hRegions;
     T* curr_hRegionsLength;
-    
+
     T* dParentsError;
     T* dParentsIntegral;
-
 
     //-----------------------------------
 
@@ -300,7 +299,6 @@ namespace quad {
     double* generators = nullptr;
 
   public:
-
     void
     GetPtrsToArrays(T*& regions,
                     T*& regionsLength,
@@ -335,7 +333,7 @@ namespace quad {
       lowBounds = lows;
       highBounds = highs;
     }
-    
+
     T
     GetIntegral()
     {
@@ -426,7 +424,7 @@ namespace quad {
       errorest_change = 0.;
       estimate_change = 0.;
       estimateHasConverged = false;
-    
+
       ConfigureMemoryUtilization();
 
       lastErr = 0;
@@ -609,11 +607,11 @@ namespace quad {
                    T iter_estimate,
                    T iter_errorest,
                    T iter_finished_estimate,
-                   T iter_finished_errorest/*,
-                   T queued_estimate,
-                   T queued_errorest,
-                   size_t unevaluated_nregions*/
-                   )
+                   T iter_finished_errorest /*,
+                    T queued_estimate,
+                    T queued_errorest,
+                    size_t unevaluated_nregions*/
+    )
     {
 
       int* scannedArray = 0;
@@ -654,7 +652,8 @@ namespace quad {
                       << leaves_errorest << "," << iter_nregions << ","
                       << iter_estimate << "," << iter_errorest << ","
                       << iter_finished_estimate << "," << iter_finished_errorest
-                      << "," << dnumInActiveRegions /*<< "," << queued_estimate*/
+                      << ","
+                      << dnumInActiveRegions /*<< "," << queued_estimate*/
                       //<< "," << queued_errorest << "," << unevaluated_nregions
                       << "\n";
 
@@ -664,7 +663,8 @@ namespace quad {
                 << iter_estimate << "," << iter_errorest << ","
                 << iter_finished_estimate << "," << iter_finished_errorest
                 << "," << dnumInActiveRegions /*<< "," << queued_estimate << ","
-                << queued_errorest << "," << unevaluated_nregions*/ << "\n";
+                << queued_errorest << "," << unevaluated_nregions*/
+                << "\n";
       Device.ReleaseMemory(scannedArray);
     }
 
@@ -875,7 +875,7 @@ namespace quad {
       Host.ReleaseMemory(h_highs);
       Host.ReleaseMemory(h_lows);
     }
-    
+
     template <class K, size_t numArrays>
     void
     display(size_t arraySize, ...)
@@ -1030,7 +1030,7 @@ namespace quad {
     void
     GenerateInitialRegions()
     {
-      //reset variables before allocating Host memory
+      // reset variables before allocating Host memory
       mustFinish = false;
       numPolishedRegions = 0;
       dParentsError = nullptr;
@@ -1039,7 +1039,7 @@ namespace quad {
       errorest_change = 0.;
       estimate_change = 0.;
       estimateHasConverged = false;
-    
+
       ConfigureMemoryUtilization();
 
       lastErr = 0;
@@ -1050,7 +1050,7 @@ namespace quad {
       numFunctionEvaluations = 0;
       KEY = 0;
       h_numRegions = 0;
-      
+
       curr_hRegions = (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * NDIM);
       curr_hRegionsLength =
         (T*)Host.AllocateMemory(&curr_hRegionsLength, sizeof(T) * NDIM);
@@ -1064,13 +1064,11 @@ namespace quad {
 #endif
       }
 
-dRegions = cuda_malloc<T>(NDIM);
+      dRegions = cuda_malloc<T>(NDIM);
       dRegionsLength = cuda_malloc<T>(NDIM);
       CudaCheckError();
-      QuadDebug(cudaMemcpy(dRegions,
-			   curr_hRegions,
-			   sizeof(T) * NDIM,
-			   cudaMemcpyHostToDevice));
+      QuadDebug(cudaMemcpy(
+        dRegions, curr_hRegions, sizeof(T) * NDIM, cudaMemcpyHostToDevice));
       QuadDebug(cudaMemcpy(dRegionsLength,
                            curr_hRegionsLength,
                            sizeof(T) * NDIM,
@@ -1089,12 +1087,12 @@ dRegions = cuda_malloc<T>(NDIM);
         numOfDivisionPerRegionPerDimension = 2;
       if (NDIM > 10)
         numOfDivisionPerRegionPerDimension = 1;
-      
+
       depthBeingProcessed = log2(numOfDivisionPerRegionPerDimension) * NDIM;
       // size_t numOfDivisionPerRegionPerDimension = 1;
       CudaCheckError();
       size_t numBlocks = (size_t)ceil(
-				      pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
+        pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM) / numThreads);
       numRegions = (size_t)pow((T)numOfDivisionPerRegionPerDimension, (T)NDIM);
 
       T* newRegions = cuda_malloc<T>(numRegions * NDIM);
@@ -1102,17 +1100,17 @@ dRegions = cuda_malloc<T>(NDIM);
       CudaCheckError();
 
       generateInitialRegions<T><<<numBlocks, numThreads, NDIM * sizeof(T)>>>(
-									     dRegions,
-									     dRegionsLength,
-									     1,
-									     newRegions,
-									     newRegionsLength,
-									     numRegions,
-									     numOfDivisionPerRegionPerDimension,
-									     NDIM);
+        dRegions,
+        dRegionsLength,
+        1,
+        newRegions,
+        newRegionsLength,
+        numRegions,
+        numOfDivisionPerRegionPerDimension,
+        NDIM);
       cudaFree(dRegions);
       cudaFree(dRegionsLength);
-      
+
       dRegions = newRegions;
       dRegionsLength = newRegionsLength;
 
@@ -1164,7 +1162,6 @@ dRegions = cuda_malloc<T>(NDIM);
 
       numInActiveRegions = numRegions - numActiveRegions;
 
-      
       if (outLevel >= 4)
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
@@ -1183,8 +1180,7 @@ dRegions = cuda_malloc<T>(NDIM);
         cudaMalloc((void**)&newActiveRegionsBisectDim,
                    sizeof(int) * numActiveRegions * numOfDivisionOnDimension);
         CudaCheckError();
-        
-        
+
         ExpandcuArray(dParentsIntegral, numRegions / 2, numActiveRegions);
         CudaCheckError();
         ExpandcuArray(dParentsError, numRegions / 2, numActiveRegions);
@@ -1222,7 +1218,7 @@ dRegions = cuda_malloc<T>(NDIM);
         QuadDebug(Device.ReleaseMemory(dRegions));
         QuadDebug(Device.ReleaseMemory(dRegionsLength));
         QuadDebug(Device.ReleaseMemory(scannedArray));
-	
+
         nvtxRangePush("dividing Intervals");
         QuadDebug(cudaMalloc((void**)&genRegions,
                              sizeof(T) * numActiveRegions * NDIM *
@@ -1231,7 +1227,7 @@ dRegions = cuda_malloc<T>(NDIM);
                              sizeof(T) * numActiveRegions * NDIM *
                                numOfDivisionOnDimension));
         CudaCheckError();
-	
+
         divideIntervalsGPU<T, NDIM>
           <<<numBlocks, numThreads>>>(genRegions,
                                       genRegionsLength,
@@ -1367,7 +1363,10 @@ dRegions = cuda_malloc<T>(NDIM);
       estimateHasConverged =
         estimateHasConverged == false ?
           //(iteration >= 2 ?
-          (iteration >= 10 ? sigDigitsSame(lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) : false) :
+          (iteration >= 10 ?
+             sigDigitsSame(
+               lastAvg, secondTolastAvg, leaves_estimate, requiredDigits) :
+             false) :
           true;
 
       secondTolastAvg = lastAvg;
@@ -1378,7 +1377,11 @@ dRegions = cuda_malloc<T>(NDIM);
         (double)GetGPUMemNeededForNextIteration_CallBeforeSplit() /
         ((double)Device.GetAmountFreeMem());
       bool enoughMemForNextIter = mem_need_have_ratio < 1.;
-      //printf("Heuristic classification mem_need_have_ratio:%f estimateHasConverged:%i enoughMemForNextIter:%i lastAvg:%e, secondToLast:%e, leaves_estimate:%e\n", mem_need_have_ratio, estimateHasConverged, enoughMemForNextIter, lastAvg, secondTolastAvg, leaves_estimate);
+      // printf("Heuristic classification mem_need_have_ratio:%f
+      // estimateHasConverged:%i enoughMemForNextIter:%i lastAvg:%e,
+      // secondToLast:%e, leaves_estimate:%e\n", mem_need_have_ratio,
+      // estimateHasConverged, enoughMemForNextIter, lastAvg, secondTolastAvg,
+      // leaves_estimate);
       if (enoughMemForNextIter &&
           !estimateHasConverged) // don't filter if we haven't converged and we
                                  // have enough mem
@@ -1386,8 +1389,10 @@ dRegions = cuda_malloc<T>(NDIM);
 
       if (mem_need_have_ratio < .1)
         return;
-      
-      // printf("Will attempt Filtering at iter:%i with %lu regions estimateHasConverged:%i\n", iteration, numRegions, estimateHasConverged);
+
+      // printf("Will attempt Filtering at iter:%i with %lu regions
+      // estimateHasConverged:%i\n", iteration, numRegions,
+      // estimateHasConverged);
       T targetError = abs(leaves_estimate) * epsrel;
       size_t numThreads = BLOCK_SIZE;
 
@@ -1525,12 +1530,12 @@ dRegions = cuda_malloc<T>(NDIM);
       if (numActiveRegions == numRegions) {
         mustFinish = true;
         QuadDebug(Device.ReleaseMemory(unpolishedRegions));
-        //printf("must finish triggered\n");
+        // printf("must finish triggered\n");
       } else {
-        //printf("worked now have %lu active regions\n", numActiveRegions);
+        // printf("worked now have %lu active regions\n", numActiveRegions);
         QuadDebug(Device.ReleaseMemory(activeRegions));
         activeRegions = unpolishedRegions;
-        //CudaCheckError();
+        // CudaCheckError();
       }
       CudaCheckError();
     }
@@ -1827,27 +1832,26 @@ dRegions = cuda_malloc<T>(NDIM);
       }*/
 
       // nvtxRangePush("INTEGRATE_GPU_PHASE1");
-	  quad::Func_Evals<NDIM> fevals;
-	  bool constexpr debug = false;
+      quad::Func_Evals<NDIM> fevals;
+      bool constexpr debug = false;
       quad::INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE, debug>
-        <<<numBlocks, numThreads>>>(
-          d_integrand,
-          dRegions,
-          dRegionsLength,
-          numRegions,
-          dRegionsIntegral,
-          dRegionsError,
-          activeRegions,
-          subDividingDimension,
-          epsrel,
-          epsabs,
-          constMem,
-          //rule.GET_FEVAL(),
-          //rule.GET_NSETS(),
-          lows,
-          highs,
-          generators,
-		  fevals);
+        <<<numBlocks, numThreads>>>(d_integrand,
+                                    dRegions,
+                                    dRegionsLength,
+                                    numRegions,
+                                    dRegionsIntegral,
+                                    dRegionsError,
+                                    activeRegions,
+                                    subDividingDimension,
+                                    epsrel,
+                                    epsabs,
+                                    constMem,
+                                    // rule.GET_FEVAL(),
+                                    // rule.GET_NSETS(),
+                                    lows,
+                                    highs,
+                                    generators,
+                                    fevals);
 
       neval += numRegions * fEvalPerRegion;
       cudaDeviceSynchronize();
@@ -1859,8 +1863,7 @@ dRegions = cuda_malloc<T>(NDIM);
       // nvtxRangePop();
       T leaves_estimate = integral + iter_estimate;
       nvtxRangePush("Rel Error Classify");
-      RelErrClassify(
-        activeRegions, nregions, epsrel, iteration);
+      RelErrClassify(activeRegions, nregions, epsrel, iteration);
       nvtxRangePop();
       // printf("Reduction 2 %lu regions\n", numRegions);
       T iter_finished_estimate = 0, iter_finished_errorest = 0;
@@ -1898,7 +1901,9 @@ dRegions = cuda_malloc<T>(NDIM);
                              iter_finished_errorest,
                              leaves_estimate,
                              epsrel);
-      //printf("%i, iter estimates: %.15e, %.15e (%.15e +- %.15e),numRegions:%lu\n", iteration, iter_estimate, iter_errorest, iter_finished_estimate, iter_finished_errorest, numRegions);
+      // printf("%i, iter estimates: %.15e, %.15e (%.15e +-
+      // %.15e),numRegions:%lu\n", iteration, iter_estimate, iter_errorest,
+      // iter_finished_estimate, iter_finished_errorest, numRegions);
       if (/*GetGPUMemNeededForNextIteration_CallBeforeSplit() >=
        Device.GetAmountFreeMem() && mustFinish == true && */
           CheckTerminationCondition(leaves_estimate,
@@ -2071,8 +2076,7 @@ dRegions = cuda_malloc<T>(NDIM);
       int iteration = 0;
       fail = 1;
 
-      for (iteration = 0; iteration < 700 &&
-                          fail == 1 && mustFinish == false;
+      for (iteration = 0; iteration < 700 && fail == 1 && mustFinish == false;
            iteration++) {
         CudaCheckError();
         FirstPhaseIteration<IntegT>(d_integrand,
@@ -2096,14 +2100,21 @@ dRegions = cuda_malloc<T>(NDIM);
       CudaCheckError();
 
       StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
-      QuadDebug(Device.ReleaseMemory(dRegions));CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dRegionsLength));CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dParentsIntegral));CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dParentsError));CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(lows));CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(highs));CudaCheckError();
-      QuadDebug(cudaFree(generators));CudaCheckError();
-      
+      QuadDebug(Device.ReleaseMemory(dRegions));
+      CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dRegionsLength));
+      CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dParentsIntegral));
+      CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(dParentsError));
+      CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(lows));
+      CudaCheckError();
+      QuadDebug(Device.ReleaseMemory(highs));
+      CudaCheckError();
+      QuadDebug(cudaFree(generators));
+      CudaCheckError();
+
       bool convergence = false;
       convergence = error <= MaxErr(integral, epsrel, epsabs);
       return !convergence;

@@ -1,7 +1,8 @@
 
-#include <math.h>       /* atan */
+#include <math.h> /* atan */
 
-double r8_abs ( double x )
+double
+r8_abs(double x)
 
 //****************************************************************************80
 //
@@ -26,12 +27,9 @@ double r8_abs ( double x )
 {
   double value;
 
-  if ( 0.0 <= x )
-  {
+  if (0.0 <= x) {
     value = x;
-  } 
-  else
-  {
+  } else {
     value = -x;
   }
   return value;
@@ -78,10 +76,11 @@ double r8_abs ( double x )
 //
 //  Local parameters:
 //
-//    Local, double ROOTPI, despite the name, is actually the 
+//    Local, double ROOTPI, despite the name, is actually the
 //    square root of TWO * pi.
 //
-double genz_phi ( double z )
+double
+genz_phi(double z)
 {
   double expntl;
   double p;
@@ -103,117 +102,104 @@ double genz_phi ( double z )
   const double rootpi = 2.506628274631001;
   double zabs;
 
-  zabs = r8_abs ( z );
-//
-//  12 < |Z|.
-//
-  if ( 12.0 < zabs )
-  {
+  zabs = r8_abs(z);
+  //
+  //  12 < |Z|.
+  //
+  if (12.0 < zabs) {
     p = 0.0;
-  }
-  else
-  {
-//
-//  |Z| <= 12
-//
-    expntl = exp ( - zabs * zabs / 2.0 );
-//
-//  |Z| < 7
-//
-    if ( zabs < 7.0 )
-    {
-      p = expntl * (((((( 
-                  p6 
-         * zabs + p5 ) 
-         * zabs + p4 ) 
-         * zabs + p3 ) 
-         * zabs + p2 ) 
-         * zabs + p1 ) 
-         * zabs + p0 ) / ((((((( 
-                  q7 
-         * zabs + q6 ) 
-         * zabs + q5 ) 
-         * zabs + q4 ) 
-         * zabs + q3 ) 
-         * zabs + q2 ) 
-         * zabs + q1 ) 
-         * zabs + q0 );
+  } else {
+    //
+    //  |Z| <= 12
+    //
+    expntl = exp(-zabs * zabs / 2.0);
+    //
+    //  |Z| < 7
+    //
+    if (zabs < 7.0) {
+      p = expntl *
+          ((((((p6 * zabs + p5) * zabs + p4) * zabs + p3) * zabs + p2) * zabs +
+            p1) *
+             zabs +
+           p0) /
+          (((((((q7 * zabs + q6) * zabs + q5) * zabs + q4) * zabs + q3) * zabs +
+             q2) *
+              zabs +
+            q1) *
+             zabs +
+           q0);
     }
-//
-//  CUTOFF <= |Z|
-//
-    else
-    {
-      p = expntl / ( 
-        zabs + 1.0 / (
-        zabs + 2.0 / ( 
-        zabs + 3.0 / ( 
-        zabs + 4.0 / ( 
-        zabs + 0.65 ))))) / rootpi;
+    //
+    //  CUTOFF <= |Z|
+    //
+    else {
+      p = expntl /
+          (zabs +
+           1.0 / (zabs + 2.0 / (zabs + 3.0 / (zabs + 4.0 / (zabs + 0.65))))) /
+          rootpi;
     }
   }
 
-  if ( 0.0 < z )
-  {
+  if (0.0 < z) {
     p = 1.0 - p;
   }
 
   return p;
 }
 
-
-template<size_t ndim>
-double compute_product_peak(std::array<double, ndim> alphas, std::array<double, ndim> betas){
-    double value = 1.0;
-
-    for (size_t j = 0; j < ndim; j++ )
-    {
-      value = value * alphas[j] * ( 
-          atan ( ( 1.0 - betas[j] ) * alphas[j] ) 
-        + atan (       + betas[j]   * alphas[j] ) );
-    }
-    
-    return value;
-}
-
-template<size_t ndim>
-double compute_gaussian(std::array<double, ndim> alphas, std::array<double, ndim> betas)
-{
-    
-    double value = 1.0;
-    const double pi = 3.14159265358979323844;
-    double ab = sqrt ( 2.0 );
-    for (size_t j = 0; j < ndim; j++ )
-    {
-      value = value * ( sqrt ( pi ) / alphas[j] ) * 
-        (   genz_phi ( ( 1.0 - betas[j] ) * ab * alphas[j] ) 
-          - genz_phi (       - betas[j]   * ab * alphas[j] ) );
-    }
-    return value;
-}
-
-template<size_t ndim>
-double compute_c_zero(std::array<double, ndim> alphas, std::array<double, ndim> betas)
-{
-    double value = 1.0;
-    for (size_t j = 0; j < ndim; j++ )
-    {
-      double ab = alphas[j] * betas[j];
-      value = value * 
-        ( 2.0 - exp ( - ab ) - exp ( ab - alphas[j] ) ) / alphas[j];
-    }
-    return value;
-}
-
-template<size_t ndim>
+template <size_t ndim>
 double
-compute_discontinuous(std::array<double, ndim> alphas, std::array<double, ndim> betas){
-  
-    double value = 1.0;
-    for (size_t j = 0; j < ndim; j++ )
-    {
-      value = value * ( exp ( alphas[j] * betas[j] ) - 1.0 ) / alphas[j];
-    }
-    return value;
+compute_product_peak(std::array<double, ndim> alphas,
+                     std::array<double, ndim> betas)
+{
+  double value = 1.0;
+
+  for (size_t j = 0; j < ndim; j++) {
+    value = value * alphas[j] *
+            (atan((1.0 - betas[j]) * alphas[j]) + atan(+betas[j] * alphas[j]));
+  }
+
+  return value;
 }
 
+template <size_t ndim>
+double
+compute_gaussian(std::array<double, ndim> alphas,
+                 std::array<double, ndim> betas)
+{
+
+  double value = 1.0;
+  const double pi = 3.14159265358979323844;
+  double ab = sqrt(2.0);
+  for (size_t j = 0; j < ndim; j++) {
+    value = value * (sqrt(pi) / alphas[j]) *
+            (genz_phi((1.0 - betas[j]) * ab * alphas[j]) -
+             genz_phi(-betas[j] * ab * alphas[j]));
+  }
+  return value;
+}
+
+template <size_t ndim>
+double
+compute_c_zero(std::array<double, ndim> alphas, std::array<double, ndim> betas)
+{
+  double value = 1.0;
+  for (size_t j = 0; j < ndim; j++) {
+    double ab = alphas[j] * betas[j];
+    value = value * (2.0 - exp(-ab) - exp(ab - alphas[j])) / alphas[j];
+  }
+  return value;
+}
+
+template <size_t ndim>
+double
+compute_discontinuous(std::array<double, ndim> alphas,
+                      std::array<double, ndim> betas)
+{
+
+  double value = 1.0;
+  for (size_t j = 0; j < ndim; j++) {
+    value = value * (exp(alphas[j] * betas[j]) - 1.0) / alphas[j];
+  }
+  return value;
+}

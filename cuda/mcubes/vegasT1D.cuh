@@ -80,7 +80,7 @@ namespace mcubes1D {
   __inline__ __device__ void
   get_indx(int ms, uint32_t* da, int ND, int NINTV)
   {
-    int dp[/*Internal_Vegas_Params::get_MXDIM()*/21];
+    int dp[/*Internal_Vegas_Params::get_MXDIM()*/ 21];
     int j, t0, t1;
     int m = ms;
     dp[0] = 1;

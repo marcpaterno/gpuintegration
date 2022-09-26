@@ -162,10 +162,10 @@ namespace quad {
                 size_t feval_index,
                 size_t total_feval)
   {
-	 for (int dim = 0; dim < NDIM; ++dim) {
+    for (int dim = 0; dim < NDIM; ++dim) {
       g[dim] = 0.;
     }
-  
+
     int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
                  __ldg(&constMem._gpuGenPermVarStart[feval_index]);
     int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);
@@ -383,7 +383,7 @@ namespace quad {
                    T* lows,
                    T* highs,
                    double* generators,
-				   quad::Func_Evals<NDIM>& fevals)
+                   quad::Func_Evals<NDIM>& fevals)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -392,24 +392,25 @@ namespace quad {
     __shared__ T vol;
 
     __shared__ T ranges[NDIM];
-	
+
     if (threadIdx.x == 0) {
 
       Jacobian = 1.;
-	  vol = 1.;
+      vol = 1.;
       T maxRange = 0;
-	  
+
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-		vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
-		
+        vol *=
+          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
+
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
         ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-		
+
         T range = sRegionPool[0].bounds[dim].upper - lower;
         Jacobian = Jacobian * ranges[dim];
         if (range > maxRange) {
@@ -421,51 +422,52 @@ namespace quad {
 
     __syncthreads();
     SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
-                                                 constMem,
-                                                 sRegionPool,
-                                                 sBound,
-                                                 &vol,
-                                                 &maxDim,
-                                                 ranges,
-                                                 &Jacobian,
-                                                 generators,
-												 fevals);
+                                                        constMem,
+                                                        sRegionPool,
+                                                        sBound,
+                                                        &vol,
+                                                        &maxDim,
+                                                        ranges,
+                                                        &Jacobian,
+                                                        generators,
+                                                        fevals);
     __syncthreads();
   }
-  
-  
+
   template <typename IntegT, typename T, int NDIM, int blockDim, int debug = 0>
   __global__ void
-  INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
-                       T* dRegions,
-                       T* dRegionsLength,
-                       size_t numRegions,
-                       T* dRegionsIntegral,
-                       T* dRegionsError,
-                       int* activeRegions,
-                       int* subDividingDimension,
-                       T epsrel,
-                       T epsabs,
-                       Structures<double> constMem, //switch to const ptr:  Structures<double> const * const constMem,
-                       T* lows,
-                       T* highs,
-                       double* generators,
-					   quad::Func_Evals<NDIM> fevals)
+  INTEGRATE_GPU_PHASE1(
+    IntegT* d_integrand,
+    T* dRegions,
+    T* dRegionsLength,
+    size_t numRegions,
+    T* dRegionsIntegral,
+    T* dRegionsError,
+    int* activeRegions,
+    int* subDividingDimension,
+    T epsrel,
+    T epsabs,
+    Structures<double> constMem, // switch to const ptr:  Structures<double>
+                                 // const * const constMem,
+    T* lows,
+    T* highs,
+    double* generators,
+    quad::Func_Evals<NDIM> fevals)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
 
     INIT_REGION_POOL<IntegT, T, NDIM, blockDim, debug>(d_integrand,
-                                                dRegions,
-                                                dRegionsLength,
-                                                numRegions,
-                                                constMem,
-                                                sRegionPool,
-                                                sBound,
-                                                lows,
-                                                highs,
-                                                generators,
-												fevals);
+                                                       dRegions,
+                                                       dRegionsLength,
+                                                       numRegions,
+                                                       constMem,
+                                                       sRegionPool,
+                                                       sBound,
+                                                       lows,
+                                                       highs,
+                                                       generators,
+                                                       fevals);
 
     if (threadIdx.x == 0) {
       activeRegions[blockIdx.x] = 1;
@@ -525,24 +527,23 @@ namespace quad {
     return (2 * blockIdx.x / numRegions) < 1 ? blockIdx.x + numRegions :
                                                blockIdx.x - numRegions;
   }
-  
-  
+
   template <typename IntegT, typename T, int NDIM, int blockDim>
   __device__ void
   VEGAS_ASSISTED_INIT_REGION_POOL(IntegT* d_integrand,
-                   T* dRegions,
-                   T* dRegionsLength,
-                   size_t numRegions,
-                   Structures<double>& constMem,
-                   //int FEVAL,
-                   //int NSETS,
-                   Region<NDIM> sRegionPool[],
-                   GlobalBounds sBound[],
-                   T* lows,
-                   T* highs,
-                   double* generators,
-				   quad::Func_Evals<NDIM>& fevals,
-				   unsigned int seed_init)
+                                  T* dRegions,
+                                  T* dRegionsLength,
+                                  size_t numRegions,
+                                  Structures<double>& constMem,
+                                  // int FEVAL,
+                                  // int NSETS,
+                                  Region<NDIM> sRegionPool[],
+                                  GlobalBounds sBound[],
+                                  T* lows,
+                                  T* highs,
+                                  double* generators,
+                                  quad::Func_Evals<NDIM>& fevals,
+                                  unsigned int seed_init)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -551,23 +552,24 @@ namespace quad {
     __shared__ T vol;
 
     __shared__ T ranges[NDIM];
-	
+
     if (threadIdx.x == 0) {
 
       Jacobian = 1.;
-	  vol = 1.;
+      vol = 1.;
       T maxRange = 0;
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-		vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
-		
+        vol *=
+          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
+
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
         ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-		
+
         T range = sRegionPool[0].bounds[dim].upper - lower;
         Jacobian = Jacobian * ranges[dim];
         if (range > maxRange) {
@@ -579,55 +581,55 @@ namespace quad {
 
     __syncthreads();
     Vegas_assisted_SampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
-                                                 constMem,
-                                                 sRegionPool,
-                                                 sBound,
-                                                 &vol,
-                                                 &maxDim,
-                                                 ranges,
-                                                 &Jacobian,
-                                                 generators,
-												 fevals,
-												 seed_init);
+                                                                constMem,
+                                                                sRegionPool,
+                                                                sBound,
+                                                                &vol,
+                                                                &maxDim,
+                                                                ranges,
+                                                                &Jacobian,
+                                                                generators,
+                                                                fevals,
+                                                                seed_init);
     __syncthreads();
-  }	
-	
- template <typename IntegT, typename T, int NDIM, int blockDim>
+  }
+
+  template <typename IntegT, typename T, int NDIM, int blockDim>
   __global__ void
   VEGAS_ASSISTED_INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
-                       T* dRegions,
-                       T* dRegionsLength,
-                       size_t numRegions,
-                       T* dRegionsIntegral,
-                       T* dRegionsError,
-                       int* activeRegions,
-                       int* subDividingDimension,
-                       T epsrel,
-                       T epsabs,
-                       Structures<double> constMem,
-                       //int FEVAL,
-                       //int NSETS,
-                       T* lows,
-                       T* highs,
-                       double* generators,
-					   quad::Func_Evals<NDIM> fevals,
-					   unsigned int seed_init)
+                                      T* dRegions,
+                                      T* dRegionsLength,
+                                      size_t numRegions,
+                                      T* dRegionsIntegral,
+                                      T* dRegionsError,
+                                      int* activeRegions,
+                                      int* subDividingDimension,
+                                      T epsrel,
+                                      T epsabs,
+                                      Structures<double> constMem,
+                                      // int FEVAL,
+                                      // int NSETS,
+                                      T* lows,
+                                      T* highs,
+                                      double* generators,
+                                      quad::Func_Evals<NDIM> fevals,
+                                      unsigned int seed_init)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
 
     VEGAS_ASSISTED_INIT_REGION_POOL<IntegT, T, NDIM, blockDim>(d_integrand,
-                                                dRegions,
-                                                dRegionsLength,
-                                                numRegions,
-                                                constMem,
-                                                sRegionPool,
-                                                sBound,
-                                                lows,
-                                                highs,
-                                                generators,
-												fevals,
-												seed_init);
+                                                               dRegions,
+                                                               dRegionsLength,
+                                                               numRegions,
+                                                               constMem,
+                                                               sRegionPool,
+                                                               sBound,
+                                                               lows,
+                                                               highs,
+                                                               generators,
+                                                               fevals,
+                                                               seed_init);
 
     if (threadIdx.x == 0) {
       activeRegions[blockIdx.x] = 1;
@@ -635,8 +637,8 @@ namespace quad {
       dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;
     }
-  }	
-  
+  }
+
 }
 
 #endif
