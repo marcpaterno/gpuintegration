@@ -20,7 +20,7 @@ int main(){
     double const epsrel_min = 1.0240000000000002e-10;
     constexpr int ndim = 6;
     GENZ_6_6D integrand;
-	double true_value = 0.010846560846560846561;
+	double true_value = 1.5477367885091207413e8;
 	
 	
 	
@@ -32,9 +32,10 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 			epsrel /= 5.0;
+			break;
 	}
 	
-	epsrel = 1.0e-3;
+	/*epsrel = 1.0e-3;
 	while (clean_time_and_call<GENZ_6_6D, ndim, true>("f6",
                                            integrand,
                                            epsrel,
@@ -43,7 +44,7 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 			epsrel /= 5.0;
-	}
+	}*/
     return 0;
 }
 

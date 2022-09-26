@@ -13,24 +13,14 @@
 using namespace quad;
 
 namespace detail {
-  class GENZ_5_8D {
+  class GENZ_3_3D {
   public:
     double
-       operator()(double x,
-               double y,
-               double z,
-               double k,
-               double m,
-               double n,
-               double p,
-               double q)
+    operator()(double x, double y, double z)
     {
-      double beta = .5;
-      double t1 = -10. * sycl::fabs(x - beta) - 10. * fabs(y - beta) -
-                  10. * sycl::fabs(z - beta) - 10. * fabs(k - beta) -
-                  10. * fabs(m - beta) - 10. * fabs(n - beta) -
-                  10. * fabs(p - beta) - 10. * fabs(q - beta);
-      return sycl::exp(t1);
+		//return -.1;
+	  //double expo = -4;
+      return sycl::pown(1 + 3 * x + 2 * y + z, -4);
     }
   };
 }
@@ -41,13 +31,14 @@ main()
   ShowDevice(dpct::get_default_queue());
   double epsrel = 1.e-3;
   double const epsrel_min = 1.0240000000000002e-10;
-  double true_value = 2.425217625641885e-06;
-  detail::GENZ_5_8D integrand;
+  double true_value = 0.010846560846560846561;
+  detail::GENZ_3_3D integrand;
   
-  constexpr int ndim = 8;
+  constexpr int ndim = 3;
   bool relerr_classification = true;
   
-  while (clean_time_and_call<detail::GENZ_5_8D, ndim, false>("f5",
+  constexpr bool debug = false;
+  while (clean_time_and_call<detail::GENZ_3_3D, ndim, false, debug>("3D f3",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -55,12 +46,12 @@ main()
                                                    std::cout,
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
-		break;
     epsrel /= 5.0;
+	break;
   }
     
-   /*  epsrel = 1.e-3;
-    while (clean_time_and_call<detail::GENZ_5_8D, ndim, true>("f5",
+     epsrel = 1.e-3;
+    /*while (clean_time_and_call<detail::GENZ_3_3D, ndim, true>("3D f3",
                                                    integrand,
                                                    epsrel,
                                                    true_value,

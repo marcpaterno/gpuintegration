@@ -102,7 +102,7 @@ namespace cuda_mcubes {
   }
 
   __inline__ double
-  warpReduceSum(double val, sycl::nd_item<3> item_ct1)
+  warpReduceSum(double val, sycl::nd_item<1> item_ct1)
   {
 
     // could there be an issue if block has fewer than 32 threads running?
@@ -123,13 +123,13 @@ namespace cuda_mcubes {
   }
 
   __inline__ double
-  blockReduceSum(double val, sycl::nd_item<3> item_ct1, double *shared)
+  blockReduceSum(double val, sycl::nd_item<1> item_ct1, double *shared)
   {
 
      // Shared mem for 32 partial sums
-    int lane = item_ct1.get_local_id(2) %
+    int lane = item_ct1.get_local_id(0) %
                item_ct1.get_sub_group().get_local_range().get(0);
-    int wid = item_ct1.get_local_id(2) /
+    int wid = item_ct1.get_local_id(0) /
               item_ct1.get_sub_group().get_local_range().get(0);
 
     val = warpReduceSum(val, item_ct1); // Each warp performs partial reduction
@@ -140,8 +140,8 @@ namespace cuda_mcubes {
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
-    val = (item_ct1.get_local_id(2) <
-           item_ct1.get_local_range().get(2) /
+    val = (item_ct1.get_local_id(0) <
+           item_ct1.get_local_range().get(0) /
                item_ct1.get_sub_group().get_local_range().get(0))
               ? shared[lane]
               : 0;
@@ -527,7 +527,7 @@ namespace cuda_mcubes {
                 uint32_t totalNumThreads,
                 int LastChunk,
                 unsigned int seed_init,
-                sycl::nd_item<3> item_ct1,
+                sycl::nd_item<1> item_ct1,
                 double *shared)
   {
 
@@ -535,12 +535,12 @@ namespace cuda_mcubes {
     constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
-    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-                 item_ct1.get_local_id(2);
-    int tx = item_ct1.get_local_id(2);
+    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
+                 item_ct1.get_local_id(0);
+    int tx = item_ct1.get_local_id(0);
     size_t cube_id_offset =
-        (item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-         item_ct1.get_local_id(2)) *
+        (item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
+         item_ct1.get_local_id(0)) *
         chunkSize;
 
     double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
@@ -845,12 +845,12 @@ void ShowDevice(sycl::queue &q) {
                           static_cast<unsigned int>(it);
          
       sycl::event e = q_ct1.submit([&](sycl::handler &cgh) {
-         sycl::accessor<double, 1, sycl::access_mode::read_write,
+sycl::accessor<double, 1, sycl::access_mode::read_write,
                         sycl::access::target::local>
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) * sycl::range<1>(/*1, 1,*/ nThreads), sycl::range<1>(/*1, 1,*/ nThreads)),
+             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) * sycl::range<1>(/*1, 1, */nThreads), sycl::range<1>(/*1, 1, */nThreads)),
              [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernel<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
@@ -961,10 +961,10 @@ void ShowDevice(sycl::queue &q) {
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) *
-                                   sycl::range<3>(1, 1, nThreads),
-                               sycl::range<3>(1, 1, nThreads)),
-             [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) *
+                                   sycl::range<1>(/*1, 1,*/ nThreads),
+                               sycl::range<1>(/*1, 1, */nThreads)),
+             [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernelF<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
                     d_dev, dx_dev, regn_dev, ncubes, it, sc, sci, ing,

@@ -533,7 +533,7 @@ namespace quad {
                    T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
-                   const Structures<double>& constMem,
+                   Structures<double>& constMem,
                    //int FEVAL,
                    //int NSETS,
                    Region<NDIM> sRegionPool[],
@@ -579,10 +579,7 @@ namespace quad {
 
     __syncthreads();
     Vegas_assisted_SampleRegionBlock<IntegT, T, NDIM, blockDim>(d_integrand,
-                                                 //0,
                                                  constMem,
-                                                 //FEVAL,
-                                                 //NSETS,
                                                  sRegionPool,
                                                  sBound,
                                                  &vol,

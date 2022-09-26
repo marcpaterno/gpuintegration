@@ -25,7 +25,7 @@ main(int argc, char** argv)
   double epsrel_min = 1e-9;
   constexpr int ndim = 8;
 
-  double ncall = 1.0e6;
+  double ncall = 1.0e7;
   int titer = 100;
   int itmax = 20;
   int skip = 5;
@@ -43,12 +43,13 @@ main(int argc, char** argv)
   size_t expID = 0;
   bool success = false;
   do {
-    for (int run = 0; run < 100; run++) {
+    for (int run = 0; run < 1; run++) {
       success = mcubes_time_and_call<GENZ_3_8D, ndim>(
         integrand, epsrel, true_value, "f3 8D", params, &volume);
       if (!success)
         break;
     }
+	break;
     epsrel /= 5.;
     expID++;
   } while (success == true && epsrel >= epsrel_min);

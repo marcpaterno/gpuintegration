@@ -8,3 +8,5 @@ build/
 *.pdf
 \#*
 *.yaml
+.ipynb_checkpoints
+*.csv

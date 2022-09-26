@@ -35,20 +35,21 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_4_5D integrand;
    std::array<double, 6> required_ncall =
-   {1.e6, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
-
+   //{1.e6, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
+	{1.e7, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
   print_mcubes_header();
   bool success = false;
   size_t num_epsrels = 10;
   size_t curr_epsrel = 0;
   do {
     params.ncall = required_ncall[curr_epsrel];
-    for (int run = 0; run < 100; run++) {
+    for (int run = 0; run < 1; run++) {
       success = mcubes_time_and_call<GENZ_4_5D, ndim, false, Custom_generator>(
         integrand, epsrel, true_value, "f4, 5", params, &volume);
       if (!success)
         break;
     }
+	break;
     epsrel /= 5.;
 	curr_epsrel++;
 	if(curr_epsrel > required_ncall.size())

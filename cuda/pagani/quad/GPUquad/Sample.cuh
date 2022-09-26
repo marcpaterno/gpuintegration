@@ -107,14 +107,11 @@ namespace quad {
                      int pIndex,
                      Bounds* b,
                      GlobalBounds sBound[],
-                     //T* g,
-                     //gpu::cudaArray<T, NDIM>& x,
                      T* sum,
                      Structures<double>& constMem,
                      T range[],
                      T* jacobian,
                      double* generators,
-                     //int FEVAL,
                      T* sdata,
 					 quad::Func_Evals<NDIM>& fevals)
   {
@@ -590,9 +587,9 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 				
 				double rand_point_in_bin = scale_point((rand_num_generator)(), region_scaled_b_low, region_scaled_b_high);
 				
-				if(threadIdx.x == 0 && blockIdx.x == 15)
+				/*if(threadIdx.x == 0 && blockIdx.x == 15)
 					printf("sample %lu bin %i dim %i scaled bin bounds:%f,%f point:%e\n", 
-						sample, bin, dim, region_scaled_b_low, region_scaled_b_high, rand_point_in_bin);
+						sample, bin, dim, region_scaled_b_low, region_scaled_b_high, rand_point_in_bin);*/
 				x_random[dim-1] = rand_point_in_bin;
 			}
 			
@@ -626,7 +623,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 		
 		if(threadIdx.x == 0){
 							
-			if(blockIdx.x == 15){
+			/*if(blockIdx.x == 15){
 				printf("---------------------------------\n");
 				for(int dim=1; dim <= NDIM; ++dim){
 					for(int bin = 1; bin <= nbins; ++bin){
@@ -638,7 +635,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 					printf("---------------------------------\n");
 				}
 				printf("========================\n");
-			}
+			}*/
 			
 			
 			for (int j = 1; j <= NDIM; j++) {
@@ -695,7 +692,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 	template <typename IntegT, typename T, int NDIM, int blockdim, bool debug = false>
 	__device__ void
 	Vegas_assisted_SampleRegionBlock(IntegT* d_integrand,
-                    const Structures<double>& constMem,
+                    Structures<double>& constMem,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
@@ -736,14 +733,11 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
                                           pIndex,
                                           region->bounds,
                                           sBound,
-                                          //g,
-                                          //x,
                                           sum,
                                           constMem,
                                           range,
                                           jacobian,
                                           generators,
-                                          //FEVAL,
                                           sdata,
 										  fevals);
     }
@@ -844,7 +838,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 	}
 	__syncthreads();
 	
-	size_t num_samples = 1000000;
+	size_t num_samples = 100000;
 	size_t num_passes = 2;
 	double ran_sum = 0.;
 	double sq_sum = 0.;
