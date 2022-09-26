@@ -57,7 +57,7 @@ public:
                                 Sub_regions<ndim>& subregions,
                                 double epsrel,
                                 double epsabs,
-                                quad::Volume<double, ndim>& vol,
+                                quad::Volume<double, ndim> const& vol,
                                 bool relerr_classification = true);
 
   template <typename IntegT,
@@ -67,7 +67,7 @@ public:
   cuhreResult<double> integrate(const IntegT& integrand,
                                 double epsrel,
                                 double epsabs,
-                                quad::Volume<double, ndim>& vol,
+                                quad::Volume<double, ndim> const& vol,
                                 bool relerr_classification = true);
 };
 
@@ -157,7 +157,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                                        Sub_regions<ndim>& subregions,
                                        double epsrel,
                                        double epsabs,
-                                       quad::Volume<double, ndim>& vol,
+                                       quad::Volume<double, ndim> const& vol,
                                        bool relerr_classification)
 {
   using MilliSeconds =
@@ -277,7 +277,7 @@ cuhreResult<double>
 Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                                        double epsrel,
                                        double epsabs,
-                                       quad::Volume<double, ndim>& vol,
+                                       quad::Volume<double, ndim> const& vol,
                                        bool relerr_classification)
 {
   using MilliSeconds =
