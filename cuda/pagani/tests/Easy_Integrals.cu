@@ -54,10 +54,7 @@ public:
 TEST_CASE("Constant Positive Value Function")
 {
   constexpr int ndim = 2;
-  size_t numRegions = 16;
   PTest integrand;
-  size_t maxIters = 1;
-  int heuristicID = 0;
   double epsrel = 1.0e-3;
   double epsabs = 1.0e-12;
   constexpr bool use_custom = false;
@@ -71,6 +68,6 @@ TEST_CASE("Constant Positive Value Function")
   double error = res.errorest;
 
   // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f\n", integral);
+  printf("ttotalEstimate:%.15f %.15f\n", integral, error);
   CHECK(integral == Approx(15.37));
 }

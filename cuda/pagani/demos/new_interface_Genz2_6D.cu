@@ -30,7 +30,7 @@ int main(){
 	double true_value = 1.286889807581113e+13;
 	constexpr bool use_custom_false = false;
 	constexpr bool debug = false;
-    /*while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_false, debug>("f2",
+  while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_false, debug>("f2",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -38,7 +38,7 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
 		epsrel /= 5.0;
-	}*/
+	}
 	
 	constexpr bool use_custom_true = true;
 	epsrel = 8.0e-6;

@@ -872,7 +872,7 @@ rebin(double rc, int nd, double r[], double xin[], double xi[])
 		double mean = ran_sum / static_cast<double>(64* num_samples * num_passes);
 		double var = sq_sum / static_cast<double>(64*num_passes * num_samples) - mean* mean;
 		//printf("sum:%e (squared:%e) sq_sum:%e\n", ran_sum, ran_sum*ran_sum, sq_sum);
-		printf("region %i mcubes:%e +- %e (sum:%e) nsamples:%i\n", blockIdx.x, vol[0]*mean, var, ran_sum, num_samples*num_passes*64);
+		printf("region %ul mcubes:%e +- %e (sum:%e) nsamples:%ul\n", blockIdx.x, vol[0]*mean, var, ran_sum, num_samples*num_passes*64);
 		//printf("region %i pagani:%e +- %e mcubes:%e +- %e (ran_sum:%e)\n", blockIdx.x, r->avg, r->err, vol[0]*mean, var, ran_sum);
 		r->avg = vol[0]*mean;
 		r->err = sqrt(var);

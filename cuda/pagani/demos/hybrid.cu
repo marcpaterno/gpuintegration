@@ -20,8 +20,6 @@
 int main(){
 	double epsrel = 1.0e-3;
 	double epsabs = 1.e-20;
-    double const epsrel_min = 1.0240000000000002e-10;
-    constexpr int ndim = 5;
     GENZ_4_5D integrand;
     double true_value = 1.79132603674879e-06;
 	
@@ -38,7 +36,7 @@ int main(){
 	std::cout<<"end\n";
 	*/
 	
-	
+  int const ndim = 5;	
 	using Reg_estimates = Region_estimates<ndim>;
     using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;	
