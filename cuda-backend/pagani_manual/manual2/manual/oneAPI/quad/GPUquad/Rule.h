@@ -11,7 +11,7 @@ using namespace sycl;
 namespace quad {
   template <typename T>
   class Rule {
-    public:
+  public:
     T* cpuG;
     T* CPURuleWt;
     T *CPUScale, *CPUNorm;
@@ -22,7 +22,7 @@ namespace quad {
 
     // int NRULES;
     size_t fEvalPerRegion;
-    //DeviceMemory<T> Device;
+    // DeviceMemory<T> Device;
     HostMemory<T> Host;
 
     void
@@ -319,7 +319,7 @@ namespace quad {
         }
       }
     }
-    
+
   public:
     inline int
     GET_FEVAL()
@@ -408,10 +408,7 @@ namespace quad {
     }
 
     void
-    Init(size_t ndim,
-         size_t fEval,
-         int key,
-         int verbose)
+    Init(size_t ndim, size_t fEval, int key, int verbose)
     {
       NDIM = ndim;
       KEY = key;

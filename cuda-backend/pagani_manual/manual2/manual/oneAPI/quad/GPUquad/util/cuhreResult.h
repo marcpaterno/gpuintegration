@@ -5,8 +5,7 @@
 
 template <typename T>
 struct cuhreResult {
-     
-  
+
   T estimate = 0.;
   T errorest = 0.;
   size_t neval = 0;
@@ -19,14 +18,13 @@ struct cuhreResult {
   size_t iters = 0;
 };
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, cuhreResult<T> const& res){
-    os << res.estimate << ","
-       << res.errorest << ","
-       << res.nregions << ","
-       << res.chi_sq << ","
-       << res.status;
-    return os;
+template <typename T>
+std::ostream&
+operator<<(std::ostream& os, cuhreResult<T> const& res)
+{
+  os << res.estimate << "," << res.errorest << "," << res.nregions << ","
+     << res.chi_sq << "," << res.status;
+  return os;
 }
 
 #endif

@@ -2,6 +2,7 @@
 #define QUAD_UTIL_CUDA_CUSTOM_FUNCTIONS_CUH
 
 #include <iostream>
+#include <limits>
 #include <cuda.h>
 #include "cuda/pagani/quad/GPUquad/Sample.cuh"
 #include "cuda/pagani/quad/util/cudaDebugUtil.h"
@@ -184,8 +185,8 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max)
 	const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 	const int total_num_threads = blockDim.x * gridDim.x;
 	
-    T localMax = 0.f;
-    T localMin = DBL_MAX;
+    T localMax = 0;
+    T localMin = std::numeric_limits<T>::max();
 	
 	for (size_t i = tid; i < size; i += total_num_threads){
         T val = input[tid];

@@ -6,36 +6,39 @@
 #include "oneAPI/pagani/quad/util/cudaDebugUtil.h"
 
 namespace quad {
-	
-	template<typename T>
-	T*
-	copy_to_host(T* device_arr, size_t size){
-		T* host_arr = new T[size];
-		dpct::get_default_queue().memcpy(host_arr, device_arr, sizeof(T) * size).wait();
-		return host_arr;
-	}
-	
-	size_t
-      GetAmountFreeMem()
-     try {
-      size_t free_physmem, total_physmem;
-      /*
-      DPCT1003:44: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      /*
-      DPCT1072:45: DPC++ currently does not support getting the available memory
-      on the curren
-	  t device. You may need to adjust the code.
-      */
-	  return 16e9;
-	  
-      QuadDebugExit(
-        (total_physmem =
-           dpct::get_current_device().get_device_info().get_global_mem_size(),
-         0));
-      return free_physmem;
-    }
+
+  template <typename T>
+  T*
+  copy_to_host(T* device_arr, size_t size)
+  {
+    T* host_arr = new T[size];
+    dpct::get_default_queue()
+      .memcpy(host_arr, device_arr, sizeof(T) * size)
+      .wait();
+    return host_arr;
+  }
+
+  size_t
+  GetAmountFreeMem()
+  try {
+    size_t free_physmem, total_physmem;
+    /*
+    DPCT1003:44: Migrated API does not return error code. (*, 0) is inserted.
+    You may need to rewrite this code.
+    */
+    /*
+    DPCT1072:45: DPC++ currently does not support getting the available memory
+    on the curren
+        t device. You may need to adjust the code.
+    */
+    return 16e9;
+
+    QuadDebugExit(
+      (total_physmem =
+         dpct::get_current_device().get_device_info().get_global_mem_size(),
+       0));
+    return free_physmem;
+  }
   catch (sycl::exception const& exc) {
     std::cerr << exc.what() << "Exception caught at file:" << __FILE__
               << ", line:" << __LINE__ << std::endl;
@@ -44,45 +47,49 @@ namespace quad {
 
   class Managed {
   public:
-    void *operator new(size_t len) {
-      void *ptr;
+    void*
+    operator new(size_t len)
+    {
+      void* ptr;
       ptr = (void*)sycl::malloc_shared(len, dpct::get_default_queue());
       dpct::get_current_device().queues_wait_and_throw();
       return ptr;
     }
 
-    void operator delete(void *ptr) {
+    void
+    operator delete(void* ptr)
+    {
       dpct::get_current_device().queues_wait_and_throw();
       sycl::free(ptr, dpct::get_default_queue());
     }
   };
-  
-  template <typename T>
-    class MemoryUtil {};
 
   template <typename T>
-    class HostMemory : public MemoryUtil<T> {
+  class MemoryUtil {};
+
+  template <typename T>
+  class HostMemory : public MemoryUtil<T> {
   public:
     void*
-      AllocateMemory(void* ptr, size_t n)
+    AllocateMemory(void* ptr, size_t n)
     {
       ptr = malloc(n);
       return ptr;
     }
 
     void
-      ReleaseMemory(void* ptr)
+    ReleaseMemory(void* ptr)
     {
       free(ptr);
     }
   };
 
   template <typename T>
-    class DeviceMemory : public MemoryUtil<T> {
+  class DeviceMemory : public MemoryUtil<T> {
   public:
     double
-      GetFreeMemPercentage()
-     try {
+    GetFreeMemPercentage()
+    try {
       size_t free_physmem, total_physmem;
       /*
       DPCT1003:46: Migrated API does not return error code. (*, 0) is inserted.
@@ -105,8 +112,8 @@ namespace quad {
     }
 
     size_t
-      GetAmountFreeMem()
-     try {
+    GetAmountFreeMem()
+    try {
       size_t free_physmem, total_physmem;
       /*
       DPCT1003:48: Migrated API does not return error code. (*, 0) is inserted.
@@ -130,7 +137,7 @@ namespace quad {
 
     int
     AllocateMemory(void** d_ptr, size_t n)
-     try {
+    try {
       /*
       DPCT1003:50: Migrated API does not return error code. (*, 0) is inserted.
       You may need to rewrite this code.
@@ -146,7 +153,7 @@ namespace quad {
 
     int
     AllocateUnifiedMemory(void** d_ptr, size_t n)
-     try {
+    try {
       /*
       DPCT1003:51: Migrated API does not return error code. (*, 0) is inserted.
       You may need to rewrite this code.
@@ -162,7 +169,7 @@ namespace quad {
 
     int
     ReleaseMemory(void* d_ptr)
-     try {
+    try {
       /*
       DPCT1003:52: Migrated API does not return error code. (*, 0) is inserted.
       You may need to rewrite this code.
@@ -177,7 +184,7 @@ namespace quad {
 
     int
     SetHeapSize(size_t hSize = (size_t)2 * 1024 * 1024 * 1024)
-     try {
+    try {
       /*
       DPCT1027:53: The call to cudaDeviceSetLimit was replaced with 0 because
       DPC++ currently does not support setting resource limits on devices.
@@ -189,11 +196,11 @@ namespace quad {
                 << ", line:" << __LINE__ << std::endl;
       std::exit(1);
     }
-	
+
     //@brief Initialize Device
     int
     DeviceInit(int dev = -1, int verbose = 0)
-     try {
+    try {
       int error = 0;
 
       do {
@@ -222,7 +229,7 @@ namespace quad {
           dev = 0;
         }
 
-        //error = QuadDebug(cudaSetDevice(dev));
+        // error = QuadDebug(cudaSetDevice(dev));
         /*
         DPCT1000:59: Error handling if-stmt was detected but could not be
         rewritten.
@@ -305,83 +312,90 @@ namespace quad {
   };
 
   template <class T>
-    T*
-    cuda_malloc_managed(size_t size)
-    {
-      CudaCheckError();
-      T* temp = nullptr;
-	  temp = sycl::malloc_shared<T>(size, dpct::get_default_queue());
-      return temp;
-    }
-
-  template <class T>
-    T*
-    cuda_malloc_managed()
-    {
-      T* temp = nullptr;
-      temp = sycl::malloc_shared<T>(1, dpct::get_default_queue());
-      return temp;
-    }
-
-  template <class T>
-    T*
-    cuda_copy_to_managed(T const& on_host)
-    {
-      T* buffer = cuda_malloc_managed<T>();
-	  new (buffer) T(on_host);
-      return buffer;
-    }
+  T*
+  cuda_malloc_managed(size_t size)
+  {
+    CudaCheckError();
+    T* temp = nullptr;
+    temp = sycl::malloc_shared<T>(size, dpct::get_default_queue());
+    return temp;
+  }
 
   template <class T>
   T*
-  cuda_malloc(size_t size){
+  cuda_malloc_managed()
+  {
+    T* temp = nullptr;
+    temp = sycl::malloc_shared<T>(1, dpct::get_default_queue());
+    return temp;
+  }
+
+  template <class T>
+  T*
+  cuda_copy_to_managed(T const& on_host)
+  {
+    T* buffer = cuda_malloc_managed<T>();
+    new (buffer) T(on_host);
+    return buffer;
+  }
+
+  template <class T>
+  T*
+  cuda_malloc(size_t size)
+  {
     T* temp;
 
     temp = sycl::malloc_device<T>(size, dpct::get_default_queue());
     return temp;
   }
 
-  template<typename T>
-    void
-    cuda_memcpy_to_device(T* dest, T* src, size_t size){
-		dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  template <typename T>
+  void
+  cuda_memcpy_to_device(T* dest, T* src, size_t size)
+  {
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
   }
 
-  template<typename T>
-    void
-    cuda_memcpy_to_device(T* dest, const T* src, size_t size){
+  template <typename T>
+  void
+  cuda_memcpy_to_device(T* dest, const T* src, size_t size)
+  {
 
-		dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
-	}
-
-  template<typename T>
-    void
-    cuda_memcpy_device_to_device(T* dest, const T* src, size_t size){
-		dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
   }
 
-  template<typename T>
-    void
-    cuda_memcpy_device_to_device(T* dest, T* src, size_t size){
+  template <typename T>
+  void
+  cuda_memcpy_device_to_device(T* dest, const T* src, size_t size)
+  {
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  }
 
-		dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
-	}
-    
-    template<typename T>
-    void
-    cuda_memcpy_device_to_host(T* dest, T* src, size_t size){
-		dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
-	}  
-    
-  template<class T>
-    T*
-    cuda_copy_to_device(T const& on_host){
-      T* buffer = cuda_malloc<T>(1);
-      const T* hp = &on_host;
-      cuda_memcpy_to_device<T>(buffer, hp, 1);
-      CudaCheckError();
-      return buffer;
-    }
+  template <typename T>
+  void
+  cuda_memcpy_device_to_device(T* dest, T* src, size_t size)
+  {
+
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  }
+
+  template <typename T>
+  void
+  cuda_memcpy_device_to_host(T* dest, T* src, size_t size)
+  {
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  }
+
+  template <class T>
+  T*
+  cuda_copy_to_device(T const& on_host)
+  {
+    T* buffer = cuda_malloc<T>(1);
+    const T* hp = &on_host;
+    cuda_memcpy_to_device<T>(buffer, hp, 1);
+    CudaCheckError();
+    return buffer;
+  }
 }
 
 #endif

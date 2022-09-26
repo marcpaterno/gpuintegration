@@ -13,7 +13,7 @@ make_gpu_arr(std::array<T, size> arr){
 	return d_arr;
 }
 
-int main(){
+int main() {
     
 	constexpr size_t size = 512;
 	std::array<int, size> arr;

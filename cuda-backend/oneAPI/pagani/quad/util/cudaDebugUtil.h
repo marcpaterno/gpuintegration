@@ -9,52 +9,53 @@
 #include <stdlib.h>
 #include <string>
 
-
 #include <execinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <fstream>
 
-template<int debug = 0>
-class Recorder{
-  public:
-    std::ofstream outfile;
-    
-    Recorder() = default;
-    
-    Recorder(std::string filename){
-        if constexpr(debug > 0)
-            outfile.open(filename.c_str());
-    }
-    
-    ~Recorder(){
-        if constexpr(debug > 0)
-            outfile.close();
-    }
+template <int debug = 0>
+class Recorder {
+public:
+  std::ofstream outfile;
+
+  Recorder() = default;
+
+  Recorder(std::string filename)
+  {
+    if constexpr (debug > 0)
+      outfile.open(filename.c_str());
+  }
+
+  ~Recorder()
+  {
+    if constexpr (debug > 0)
+      outfile.close();
+  }
 };
 
-
 /* Obtain a backtrace and print it to stdout. */
-/* This is a hideous C function taken from 
+/* This is a hideous C function taken from
  * https://www.gnu.org/software/libc/manual/html_node/Backtraces.html
  * and modified slightly.
  */
-void print_trace() {
-  int const MAX_FRAMES =100;
-  void *array[MAX_FRAMES];
-  char **strings;
+void
+print_trace()
+{
+  int const MAX_FRAMES = 100;
+  void* array[MAX_FRAMES];
+  char** strings;
   int size, i;
 
-  size = backtrace (array, MAX_FRAMES);
-  strings = backtrace_symbols (array, size);
-  if (strings != NULL)
-  {
-    printf ("Obtained %d stack frames.\n", size);
+  size = backtrace(array, MAX_FRAMES);
+  strings = backtrace_symbols(array, size);
+  if (strings != NULL) {
+    printf("Obtained %d stack frames.\n", size);
     for (i = 0; i < size; i++)
-      printf ("%s\n", strings[i]);
+      printf("%s\n", strings[i]);
   }
-  free (strings);
+  free(strings);
 }
 
 namespace quad {
@@ -116,7 +117,7 @@ namespace quad {
 
   inline void
   __cudaCheckError(const char* file, const int line)
-   try {
+  try {
 #ifdef CUDA_ERROR_CHECK
     /*
     DPCT1010:4: SYCL uses exceptions to report errors and does not use the error

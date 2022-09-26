@@ -6,6 +6,7 @@ target_include_directories(easy PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
+target_compile_options(easy PRIVATE "--expt-relaxed-constexpr")
 add_test(easy easy)
 
 
@@ -15,6 +16,7 @@ target_include_directories(min_max PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
+target_compile_options(min_max PRIVATE "--expt-relaxed-constexpr")
 add_test(min_max min_max)
 
 add_executable(prefix_sum prefix_sum.cu)

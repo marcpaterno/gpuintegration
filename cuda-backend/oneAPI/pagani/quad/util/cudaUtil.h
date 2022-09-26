@@ -32,13 +32,13 @@ MaxErr(double avg, double epsrel, double epsabs)
   return sycl::max(epsrel * sycl::fabs(avg), epsabs);
 }
 
-template<size_t ndim>
-constexpr 
-size_t CuhreFuncEvalsPerRegion(){
-    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
-                        2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
-                        4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
+template <size_t ndim>
+constexpr size_t
+CuhreFuncEvalsPerRegion()
+{
+  return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+          2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+          4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
 }
-
 
 #endif

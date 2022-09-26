@@ -24,12 +24,12 @@ static int FIRST_PHASE_MAXREGIONS = (1 << 14);
 #include "util/cudaArchUtil.h"
 #include "util/cudaDebugUtil.h"
 
-class VerboseResults{
-	public:
-		std::vector<std::vector<double>> funcEvaluationPoints;
-		std::vector<double> results;
-		size_t numFuncEvals = 0;
-		size_t NDIM = 0;
+class VerboseResults {
+public:
+  std::vector<std::vector<double>> funcEvaluationPoints;
+  std::vector<double> results;
+  size_t numFuncEvals = 0;
+  size_t NDIM = 0;
 };
 
 /*template <typename T>
@@ -60,18 +60,18 @@ struct Structures {
 */
 template <typename T>
 struct Structures {
-  
+
   Structures() = default;
-   /* : _gpuG(nullptr)
-    , _cRuleWt(nullptr)
-    , _GPUScale(nullptr)
-    , _gpuGenPos(nullptr)
-    , _gpuGenPermGIndex(nullptr)
-    , _gpuGenPermVarCount(nullptr)
-    , _gpuGenPermVarStart(nullptr)
-    , _cGeneratorCount(nullptr)
-    , _GPUNorm(nullptr)
-  {}*/
+  /* : _gpuG(nullptr)
+   , _cRuleWt(nullptr)
+   , _GPUScale(nullptr)
+   , _gpuGenPos(nullptr)
+   , _gpuGenPermGIndex(nullptr)
+   , _gpuGenPermVarCount(nullptr)
+   , _gpuGenPermVarStart(nullptr)
+   , _cGeneratorCount(nullptr)
+   , _GPUNorm(nullptr)
+ {}*/
 
   T* _gpuG = nullptr;
   T* _cRuleWt = nullptr;
@@ -83,7 +83,6 @@ struct Structures {
   int* _gpuGenPermVarStart = nullptr;
   size_t* _cGeneratorCount = nullptr;
 };
-
 
 /*template <typename T>
 struct cuhreResult {
@@ -171,15 +170,15 @@ struct Region {
 
 #define NRULES 5
 
-namespace pagani{
-	template<size_t ndim>
-	__host__ __device__
-	constexpr 
-	size_t CuhreFuncEvalsPerRegion(){
-		return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
-							2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
-							4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
-	}
+namespace pagani {
+  template <size_t ndim>
+  __host__ __device__ constexpr size_t
+  CuhreFuncEvalsPerRegion()
+  {
+    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+            2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+            4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
+  }
 }
 
 template <int NDIM>

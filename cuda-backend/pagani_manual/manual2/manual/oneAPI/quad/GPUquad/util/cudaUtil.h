@@ -1,7 +1,6 @@
 #ifndef ONE_API_QUAD_UTIL_CUDA_UTIL_H
 #define ONE_API_QUAD_UTIL_CUDA_UTIL_H
 
-
 #include <float.h>
 #include <stdio.h>
 
@@ -13,7 +12,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 
 #define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
