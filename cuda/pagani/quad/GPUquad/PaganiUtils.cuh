@@ -94,7 +94,7 @@ public:
   }
 
   void
-  set_device_volume(double* lows = nullptr, double* highs = nullptr)
+  set_device_volume(double const* lows = nullptr, double const* highs = nullptr)
   {
 
     if (lows == nullptr && highs == nullptr) {
