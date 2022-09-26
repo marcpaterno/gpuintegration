@@ -14,7 +14,7 @@
 
 template <typename T>
 void
-cuda_memcpy_to_host(T* dest, T* src, size_t size)
+cuda_memcpy_to_host(T* dest, T const* src, size_t size)
 {
   auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyDeviceToHost);
   if (rc != cudaSuccess)
@@ -23,7 +23,7 @@ cuda_memcpy_to_host(T* dest, T* src, size_t size)
 
 template <typename T>
 void
-cuda_memcpy_to_device(T* dest, T* src, size_t size)
+cuda_memcpy_to_device(T* dest, T const* src, size_t size)
 {
   auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyHostToDevice);
   if (rc != cudaSuccess)
@@ -32,7 +32,7 @@ cuda_memcpy_to_device(T* dest, T* src, size_t size)
 
 template <typename T>
 void
-cuda_memcpy_device_to_device(T* dest, T* src, size_t size)
+cuda_memcpy_device_to_device(T* dest, T const* src, size_t size)
 {
   auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyDeviceToDevice);
   if (rc != cudaSuccess)
