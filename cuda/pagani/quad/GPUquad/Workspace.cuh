@@ -342,9 +342,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
                             << "," << subregions.size << std::endl;
-    std::cout << it << "," << cummulative.estimate + iter.estimate << ","
-              << cummulative.errorest + iter.errorest << "," << subregions.size
-              << std::endl;
 
     if (predict_split) {
       if(cummulative.nregions == 0 && it == 15 /*&& subregions.size <= (size_t)(pow((double)2, double(ndim+20)))*/){
