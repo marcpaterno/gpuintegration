@@ -37,7 +37,7 @@ private:
                                  const cuhreResult<double>& iter,
                                  cuhreResult<double>& iter_finished,
                                  const double epsrel);
-  bool heuristic_classify(Classifier& classifier_a,
+  bool heuristic_classify(Classifier& classifier,
                           Regs_characteristics& characteristics,
                           const Estimates& estimates,
                           cuhreResult<double>& finished,
@@ -74,7 +74,7 @@ public:
 template <size_t ndim, bool use_custom>
 bool
 Workspace<ndim, use_custom>::heuristic_classify(
-  Classifier& classifier_a,
+  Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
   cuhreResult<double>& finished,
@@ -84,21 +84,21 @@ Workspace<ndim, use_custom>::heuristic_classify(
 
   const double ratio =
     static_cast<double>(
-      classifier_a.device_mem_required_for_full_split(characteristics.size)) /
+      classifier.device_mem_required_for_full_split(characteristics.size)) /
     static_cast<double>(
       free_device_mem(characteristics.size, ndim) /*quad::GetAmountFreeMem()*/);
   const bool classification_necessary = ratio > 1.;
   // std::cout<<"free mem:"<<free_device_mem(characteristics.size, ndim) <<
   // std::endl;
-  // std::cout<<"mem_needed:"<<classifier_a.device_mem_required_for_full_split(characteristics.size)
+  // std::cout<<"mem_needed:"<<classifier.device_mem_required_for_full_split(characteristics.size)
   // << std::endl; std::cout<<"ratio:"<< ratio<<std::endl;
-  if (!classifier_a.classification_criteria_met(characteristics.size)) {
+  if (!classifier.classification_criteria_met(characteristics.size)) {
     const bool must_terminate = classification_necessary;
     return must_terminate;
   }
 
   Classification_res hs_results =
-    classifier_a.classify(characteristics.active_regions,
+    classifier.classify(characteristics.active_regions,
                           estimates.error_estimates,
                           estimates.size,
                           iter.errorest,

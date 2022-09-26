@@ -19,8 +19,7 @@ doubleToString(double val, int prec_level)
 
 // needs renaming
 
-class Classification_res {
-public:
+struct Classification_res {
   Classification_res() = default;
   Classification_res(Range<double> some_range) : threshold_range(some_range) {}
 
@@ -176,7 +175,7 @@ public:
   }
 
   bool
-  sigDigitsSame()
+  sigDigitsSame() const
   {
     // std::cout<<"required_digits:"<<required_digits<<std::endl;
     double third = abs(estimates_from_last_iters[0]);
@@ -212,7 +211,7 @@ public:
   }
 
   bool
-  estimate_converged()
+  estimate_converged() const
   {
     // the -1 is because iters_collected++ is 1 at iteration 0 and I don't want
     // to start counting at -1 printf("min_iters_for_convergence for
@@ -234,7 +233,7 @@ public:
   }
 
   size_t
-  num_doubles_needed(const size_t num_regions)
+  num_doubles_needed(const size_t num_regions) const
   { // move to pagani utils, has nothing to do with classifying
     const size_t newActiveRegions = num_regions * ndim;
     const size_t newActiveRegionsLength = num_regions * ndim;
@@ -257,7 +256,7 @@ public:
   }
 
   size_t
-  num_ints_needed(const size_t num_regions)
+  num_ints_needed(const size_t num_regions) const
   { // move to pagani utils, has nothing to do with classifying
     const size_t scanned = num_regions;
     const size_t subDivDim = 2 * num_regions;
@@ -266,21 +265,21 @@ public:
   }
 
   size_t
-  device_mem_required_for_full_split(const size_t num_regions)
+  device_mem_required_for_full_split(const size_t num_regions)  const
   {
     return 8 * num_doubles_needed(num_regions) +
            4 * num_ints_needed(num_regions);
   }
 
   bool
-  enough_mem_for_next_split(const size_t num_regions)
+  enough_mem_for_next_split(const size_t num_regions) const
   {
     return free_device_mem(num_regions, ndim) >
            device_mem_required_for_full_split(num_regions);
   }
 
   bool
-  need_further_classification(const size_t num_regions)
+  need_further_classification(const size_t num_regions) const
   {
     if (estimate_converged() == false ||
         enough_mem_for_next_split(num_regions) == true)
@@ -291,7 +290,7 @@ public:
   void
   apply_threshold(Classification_res& res,
                   const double* errorests,
-                  const size_t num_regions)
+                  const size_t num_regions) const
   {
 
     auto int_division = [](int x, int y) {
@@ -320,7 +319,7 @@ public:
                         const double active_errorest,
                         const double iter_finished_errorest,
                         const double total_f_errorest,
-                        const double max_percent_err_budget)
+                        const double max_percent_err_budget) const
   {
 
     const double extra_f_errorest =
@@ -343,7 +342,7 @@ public:
   get_larger_threshold_results(Classification_res& thres_search,
                                const int* active_flags,
                                const double* errorests,
-                               const size_t num_regions)
+                               const size_t num_regions) const
   {
 
     thres_search.pass_mem = false;
@@ -361,7 +360,7 @@ public:
   }
 
   bool
-  classification_criteria_met(const size_t num_regions)
+  classification_criteria_met(const size_t num_regions) const
   {
     double ratio =
       static_cast<double>(device_mem_required_for_full_split(num_regions)) /
