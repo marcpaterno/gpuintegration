@@ -1,5 +1,14 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(easy Easy_Integrals.cu)
+set_target_properties(easy PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_include_directories(easy PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(easy easy)
+
+
 add_executable(min_max min_max.cu)
 set_target_properties(min_max PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_include_directories(min_max PRIVATE
