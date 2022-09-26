@@ -47,8 +47,7 @@ template <int NDIM>
 void
 PrepKernel(quad::Kernel<double, NDIM>* kernel)
 {
-  int KEY = 0, VERBOSE = 0, heuristicID = 0, numDevices = 1,
-      Final = 1;
+  int KEY = 0, VERBOSE = 0, heuristicID = 0, numDevices = 1, Final = 1;
   kernel->InitKernel(KEY, VERBOSE, numDevices);
   kernel->SetFinal(Final);
   kernel->SetVerbosity(VERBOSE);
@@ -186,7 +185,7 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
       lows,
       highs,
       generators,
-	  fevals);
+      fevals);
   cudaDeviceSynchronize();
   CudaCheckError();
   double* regionsIntegral = nullptr;
@@ -223,7 +222,7 @@ TEST_CASE("Constant Positive Value Function")
     constexpr int block_size = 256;
     result = EvaluateRegions<PTest, ndim, block_size>(&kernel,
                                                       gpu_invocable_integrand);
-	std::cout<<"result:"<<result.estimate << std::endl;
+    std::cout << "result:" << result.estimate << std::endl;
     CHECK(abs(result.estimate - 15.37) <= .00000000000001);
   }
 
@@ -243,7 +242,6 @@ TEST_CASE("Constant Positive Value Function")
     CHECK(abs(result.estimate - 15.37) <= .00000000000001);
   }
 }
-
 
 TEST_CASE("Constant Negative Value Function")
 {

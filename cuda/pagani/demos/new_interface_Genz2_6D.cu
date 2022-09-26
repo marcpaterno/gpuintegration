@@ -21,36 +21,31 @@ public:
   }
 };
 
-int main(){
-    
-    double epsrel = 1.0e-3;
-    double const epsrel_min = 1.0240000000000002e-10;
-    constexpr int ndim = 6;
-    GENZ_2_6D integrand;
-	double true_value = 1.286889807581113e+13;
-	constexpr bool use_custom_false = false;
-	constexpr bool debug = false;
-  while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_false, debug>("f2",
-                                           integrand,
-                                           epsrel,
-                                           true_value,
-                                           "gpucuhre",
-                                           std::cout) == true &&
-         epsrel >= epsrel_min) {
-		epsrel /= 5.0;
-	}
-	
-	constexpr bool use_custom_true = true;
-	epsrel = 8.0e-6;
-	while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_true>("f2",
-                                           integrand,
-                                           epsrel,
-                                           true_value,
-                                           "gpucuhre",
-                                           std::cout) == true &&
-         epsrel >= epsrel_min) {
-		epsrel /= 5.0;
-	}
-    return 0;
-}
+int
+main()
+{
 
+  double epsrel = 1.0e-3;
+  double const epsrel_min = 1.0240000000000002e-10;
+  constexpr int ndim = 6;
+  GENZ_2_6D integrand;
+  double true_value = 1.286889807581113e+13;
+  constexpr bool use_custom_false = false;
+  constexpr bool debug = false;
+  while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_false, debug>(
+           "f2", integrand, epsrel, true_value, "gpucuhre", std::cout) ==
+           true &&
+         epsrel >= epsrel_min) {
+    epsrel /= 5.0;
+  }
+
+  constexpr bool use_custom_true = true;
+  epsrel = 8.0e-6;
+  while (clean_time_and_call<GENZ_2_6D, ndim, use_custom_true>(
+           "f2", integrand, epsrel, true_value, "gpucuhre", std::cout) ==
+           true &&
+         epsrel >= epsrel_min) {
+    epsrel /= 5.0;
+  }
+  return 0;
+}

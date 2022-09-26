@@ -36,13 +36,13 @@ main(int argc, char** argv)
 
   print_mcubes_header();
   std::array<double, 10> required_ncall =
-  //{1.e6, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
-	{1.e7, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
+    //{1.e6, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
+    {1.e7, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
   bool success = false;
   size_t num_epsrels = 10;
   size_t curr_epsrel = 0;
   do {
-	
+
     params.ncall = required_ncall[curr_epsrel];
     for (int run = 0; run < 1; run++) {
       success = mcubes_time_and_call<GENZ_6_6D, ndim, false, Custom_generator>(
@@ -50,11 +50,11 @@ main(int argc, char** argv)
       if (!success)
         break;
     }
-	break;
+    break;
     epsrel /= 5.;
-	curr_epsrel++;
-	if(curr_epsrel > required_ncall.size())
-		break;
+    curr_epsrel++;
+    if (curr_epsrel > required_ncall.size())
+      break;
   } while (epsrel >= epsrel_min && success == true);
 
   return 0;

@@ -44,12 +44,12 @@ main()
   // configuration.heuristicID = 0;
   // configuration.phase_2 = true;
   while (cu_time_and_call_100<detail::GENZ_4_8D, ndim>("8D f4",
-                                                   integrand,
-                                                   epsrel,
-                                                   true_value,
-                                                   "gpucuhre",
-                                                   std::cout,
-                                                   configuration) == true &&
+                                                       integrand,
+                                                       epsrel,
+                                                       true_value,
+                                                       "gpucuhre",
+                                                       std::cout,
+                                                       configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
   }

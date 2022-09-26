@@ -38,7 +38,6 @@ main()
   // configuration.heuristicID = 0;
   // configuration.phase_2 = false;
 
-  
   while (cu_time_and_call<detail::GENZ_4_5D, ndim>("5D f4",
                                                    integrand,
                                                    epsrel,
@@ -48,6 +47,6 @@ main()
                                                    configuration) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-    //break;
+    // break;
   }
 }

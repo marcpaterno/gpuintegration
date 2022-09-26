@@ -34,9 +34,9 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   GENZ_4_5D integrand;
-   std::array<double, 6> required_ncall =
-   //{1.e6, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
-	{1.e7, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
+  std::array<double, 6> required_ncall =
+    //{1.e6, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
+    {1.e7, 1.e6, 1.e6, 1.e7, 1.e9, 8.e9};
   print_mcubes_header();
   bool success = false;
   size_t num_epsrels = 10;
@@ -49,11 +49,11 @@ main(int argc, char** argv)
       if (!success)
         break;
     }
-	break;
+    break;
     epsrel /= 5.;
-	curr_epsrel++;
-	if(curr_epsrel > required_ncall.size())
-		break;
+    curr_epsrel++;
+    if (curr_epsrel > required_ncall.size())
+      break;
   } while (success == true && epsrel >= epsrel_min);
 
   return 0;

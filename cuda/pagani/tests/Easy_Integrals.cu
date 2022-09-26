@@ -61,7 +61,6 @@ TEST_CASE("Constant Positive Value Function")
   Workspace<ndim, use_custom> pagani;
   quad::Volume<double, ndim> vol;
 
-  
   cuhreResult res = pagani.integrate(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
