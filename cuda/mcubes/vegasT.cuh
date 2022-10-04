@@ -725,8 +725,8 @@ namespace cuda_mcubes {
       regn[j + ndim] = vol->highs[j - 1];
     }
 
-    int i, it, j, nd, ndo, ng, npg;
-    double calls, dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
+    int i, it, j, nd, ndo;
+    double dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
     double k, ncubes;
     double schi, si, swgt;
     double result[2];
@@ -755,8 +755,7 @@ namespace cuda_mcubes {
 
     si = swgt = schi = 0.0;
     nd = ndmx;
-    ng = 1;
-    ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
+    int const ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
     for (k = 1, i = 1; i < ndim; i++) {
       k *= ng;
     }
@@ -766,12 +765,12 @@ namespace cuda_mcubes {
     k *= ng;
     ncubes = k;
 
-    npg = IMAX(ncall / k, 2);
+    int const npg = IMAX(ncall / k, 2);
     // assert(npg == Compute_samples_per_cube(ncall, ncubes)); //to replace line
     // directly above assert(ncubes == ComputeNcubes(ncall, ndim)); //to replace
     // line directly above
 
-    calls = (double)npg * (double)k;
+    double const calls = (double)npg * (double)k;
     dxg = 1.0 / ng;
 
     double ing = dxg;
@@ -838,23 +837,6 @@ namespace cuda_mcubes {
       ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
       1; // compute blocks based on chunk_size, ncubes, and block_dim_x
     uint32_t nThreads = BLOCK_DIM_X;
-
-    // std::cout.precision(15);
-    /*std::cout<<"ng:"<<ng<<"\n";
-    std::cout<<"ncubes:"<<ncubes<<"\n";
-    std::cout<<"ncall:"<<ncall<<"\n";
-    std::cout<<"k:"<<k<<"\n";
-    std::cout<<"npg:"<<npg<<"\n";
-    std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
-    //std::cout<<"_totalNumThreads:"<<_totalNumThreads<<"\n";
-    std::cout<<"totalCubes:"<<totalCubes<<"\n";
-    std::cout<<"chunkSize:"<<chunkSize<<"\n";
-    std::cout<<"dv2g:"<<dv2g<<"\n";
-    std::cout<<"extra:"<<extra<<"\n";
-    std::cout<<"LastChunk:"<<LastChunk<<"\n";
-    std::cout<<"nBlocks:"<<nBlocks<<"\n";
-    std::cout<<"dxg:"<<dxg<<"\n";
-    std::cout<<"-------------------\n";*/
 
     IterDataLogger<DEBUG_MCUBES> data_collector(
       totalNumThreads, chunkSize, extra, npg, ndim);
