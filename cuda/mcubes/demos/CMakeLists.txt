@@ -1,3 +1,7 @@
+add_executable(mcubes_one_hard_integrand one_hard_integrand.cu)
+target_compile_options(mcubes_one_hard_integrand PRIVATE "-O2" "-DCURAND")
+set_target_properties(mcubes_one_hard_integrand PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
 add_executable(mcubes_SinSum6D SinSum6D.cu)
 target_compile_options(mcubes_SinSum6D PRIVATE "-O2" "-DCURAND")
 set_target_properties(mcubes_SinSum6D PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
