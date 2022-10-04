@@ -277,30 +277,6 @@ public:
     constMem->_gpuGenPermVarCount = _gpuGenPermVarCount;
     constMem->_gpuGenPermGIndex = _gpuGenPermGIndex;
     constMem->_gpuGenPermVarStart = _gpuGenPermVarStart;
-
-    /*constMem->_gpuG = ViewVectorDouble("_gpuG", NDIM * NSETS);
-            constMem->_cRuleWt = ViewVectorDouble("_cRuleWt", NRULES * NSETS);
-
-            constMem->_cGeneratorCount = ViewVectorSize_t("_cGeneratorCount",
-       NSETS); constMem->_GPUScale = ViewVectorDouble("_GPUScale", NSETS *
-       NRULES); constMem->_GPUNorm = ViewVectorDouble("_GPUNorm", NSETS *
-       NRULES); constMem->_gpuGenPos = ViewVectorInt("_gpuGenPos",
-       PERMUTATIONS_POS_ARRAY_SIZE); constMem->_gpuGenPermVarCount =
-       ViewVectorInt("_gpuGenPermVarCount", FEVAL); constMem->_gpuGenPermGIndex
-       = ViewVectorInt("_gpuGenPermGIndex", FEVAL);
-            constMem->_gpuGenPermVarStart = ViewVectorInt("_gpuGenPermVarStart",
-       FEVAL + 1);*/
-
-    /*Kokkos::deep_copy(constMem->_gpuG, cpuG);
-            Kokkos::deep_copy(constMem->_cRuleWt, CPURuleWt);
-            Kokkos::deep_copy(constMem->_cGeneratorCount, CPUGeneratorCount);
-            Kokkos::deep_copy(constMem->_GPUScale, CPUScale);
-            Kokkos::deep_copy(constMem->_GPUNorm, CPUNorm);
-            Kokkos::deep_copy(constMem->_gpuGenPos, genPtr);
-            Kokkos::deep_copy(constMem->_gpuGenPermVarCount,
-       cpuGenPermVarCount); Kokkos::deep_copy(constMem->_gpuGenPermGIndex,
-       cpuGenPermGIndex); Kokkos::deep_copy(constMem->_gpuGenPermVarStart,
-       cpuGenPermVarStart);*/
   }
 
   void

@@ -33,6 +33,7 @@ namespace quad {
       indxCnt9[5] = 2;
       indxCnt9[6] = 2;
 
+
       T cRule9Wt[] = {
         NDIM * (NDIM * (NDIM * (-.002361170967785511788400941242259231309691) +
                         .1141539002385732526821323741697655347686) +
@@ -357,18 +358,8 @@ namespace quad {
     }
 
     void
-    loadDeviceConstantMemory(Structures<T>* constMem, int device = 0)
+    loadDeviceConstantMemory(Structures<T>* constMem)
     {
-      Device.DeviceInit(device, VERBOSE);
-
-      /*printf("Const Memory size:%lu\n", sizeof(T) * NDIM * NSETS+
-                                                                            sizeof(T)
-         * NRULES * NSETS+ sizeof(size_t) * NSETS+ sizeof(T) * NSETS * NRULES+
-                                                                            sizeof(T)
-         * NSETS * NRULES+ sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE+
-                                                                            sizeof(int)
-         * FEVAL+ sizeof(int) * FEVAL+ sizeof(int) * (FEVAL + 1));*/
-
       QuadDebug(cudaMalloc((void**)&constMem->_gpuG, sizeof(T) * NDIM * NSETS));
       QuadDebug(
         cudaMalloc((void**)&constMem->_cRuleWt, sizeof(T) * NRULES * NSETS));
