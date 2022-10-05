@@ -7,6 +7,14 @@
 
 using namespace quad;
 
+__host__ __device__ double
+inline
+diagonal_ridge2D(double u, double v)
+{
+  double k = 0.01890022674239546529975841;
+  return 4 * k * u * u / (.01 + pow(u - v - (1. / 3.), 2));
+}
+
 class Diagonal_ridge2D {
 public:
   // correct answer: 1 on integration volume (-1,1)
@@ -14,19 +22,9 @@ public:
   __device__ __host__ double
   operator()(double u, double v)
   {
-    // if(u > 0.1 || v > 0.1)
-    //     printf("%f, %f\n", u, v);
-    double k = 0.01890022674239546529975841;
-    return 4 * k * u * u / (.01 + pow(u - v - (1. / 3.), 2));
+    return diagonal_ridge2D(u, v);
   }
 };
-
-__host__ __device__ double
-diagonal_ridge2D(double u, double v)
-{
-  double k = 0.01890022674239546529975841;
-  return 4 * k * u * u / (.01 + pow(u - v - (1. / 3.), 2));
-}
 
 int
 main()
@@ -45,8 +43,10 @@ main()
   double highs[] = {1., 1.};
   quad::Volume<double, ndim> vol(lows, highs);
 
+  Diagonal_ridge2D integrand;
+
   cu_time_and_call("Diagonal_Ridge2D",
-                   diagonal_ridge2D,
+                   integrand,
                    epsrel,
                    true_value,
                    "gpucuhre",
