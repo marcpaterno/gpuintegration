@@ -7,9 +7,7 @@
 
 using namespace quad;
 
-__host__ __device__ double
-inline
-diagonal_ridge2D(double u, double v)
+__host__ __device__ double inline diagonal_ridge2D(double u, double v)
 {
   double k = 0.01890022674239546529975841;
   return 4 * k * u * u / (.01 + pow(u - v - (1. / 3.), 2));
