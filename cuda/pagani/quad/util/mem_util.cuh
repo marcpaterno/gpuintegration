@@ -2,8 +2,10 @@
 #define MEM_UTIL_CUH
 
 #include <iostream>
+#include <new>
 #include <cuda.h>
 
+#if 0
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
@@ -11,12 +13,13 @@
 #include <thrust/inner_product.h>
 #include <thrust/pair.h>
 #include <thrust/transform_reduce.h>
+#endif
 
 template <typename T>
 void
-cuda_memcpy_to_host(T* dest, T const* src, size_t size)
+cuda_memcpy_to_host(T* dest, T const* src, size_t n_elements)
 {
-  auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyDeviceToHost);
+  auto rc = cudaMemcpy(dest, src, sizeof(T) * n_elements, cudaMemcpyDeviceToHost);
   if (rc != cudaSuccess)
     throw std::bad_alloc();
 }
@@ -69,7 +72,6 @@ T*
 host_alloc(size_t size)
 {
   T* temp = new T[size];
-  ;
   if (temp == nullptr) {
     throw std::bad_alloc();
   }
