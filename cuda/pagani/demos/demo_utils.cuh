@@ -9,11 +9,6 @@
 #include "cuda/pagani/quad/util/cudaUtil.h"
 #include "nvToolsExt.h"
 
-//#ifdef USE_NVTX
-
-using std::cout;
-using std::chrono::duration;
-using std::chrono::high_resolution_clock;
 
 template <typename ALG, typename F>
 bool
