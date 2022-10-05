@@ -39,7 +39,6 @@ main(int argc, char** argv)
     //{1.e6, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
     {1.e7, 1.e6, 1.e8, 2.e9, 2.e9, 8.e9, 8.e9, 8.e9, 8.e9, 8.e9};
   bool success = false;
-  size_t num_epsrels = 10;
   size_t curr_epsrel = 0;
   do {
 

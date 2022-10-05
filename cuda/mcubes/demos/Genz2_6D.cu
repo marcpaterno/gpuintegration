@@ -44,7 +44,6 @@ main(int argc, char** argv)
     {1.e7, 1.e8, 1.e8, 1.e8, 1.e8, 1.e9};
   print_mcubes_header();
   bool success = false;
-  size_t num_epsrels = 10;
   size_t curr_epsrel = 0;
   do {
     params.ncall = required_ncall[curr_epsrel];
