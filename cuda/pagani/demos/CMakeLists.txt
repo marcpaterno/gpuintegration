@@ -1,5 +1,41 @@
 find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(new_interface_Genz4_6D new_interface_Genz4_6D.cu)
+set_target_properties(new_interface_Genz4_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz4_6D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz4_6D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz4_6D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(atomic_addition atomic_addition.cu)
+set_target_properties(atomic_addition PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(atomic_addition util ${NVTX_LIBRARY})
+target_compile_options(atomic_addition PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(atomic_addition PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(new_interface_SinSum6D new_interface_SinSum_6D.cu)
+set_target_properties(new_interface_SinSum6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_SinSum6D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_SinSum6D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_SinSum6D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(new_interface_Genz1_8D new_interface_Genz1_8D.cu)
+set_target_properties(new_interface_Genz1_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+target_link_libraries(new_interface_Genz1_8D util ${NVTX_LIBRARY})
+target_compile_options(new_interface_Genz1_8D PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(new_interface_Genz1_8D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(custom_funcs custom_funcs.cu)
 set_target_properties(custom_funcs PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(custom_funcs util ${NVTX_LIBRARY})
