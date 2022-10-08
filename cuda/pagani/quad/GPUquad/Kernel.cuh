@@ -204,7 +204,6 @@ namespace quad {
     std::stringstream out5;
 
     bool estimateHasConverged;
-    int Final; // delete, not being used anymore
     int heuristicID;
     int fail; // 0 for satisfying ratio, 1 for not satisfying ratio, 2 for
               // running out of bad regions
@@ -312,12 +311,6 @@ namespace quad {
     }
 
     void
-    SetFinal(const int _Final)
-    {
-      Final = _Final;
-    }
-
-    void
     ExpandcuArray(T*& array, int currentSize, int newSize)
     {
       T* temp = 0;
@@ -370,7 +363,6 @@ namespace quad {
 
       lastErr = 0;
       lastAvg = 0;
-      Final = 0;
       fail = 1;
       numRegions = 0;
       numFunctionEvaluations = 0;
@@ -985,7 +977,6 @@ namespace quad {
 
       lastErr = 0;
       lastAvg = 0;
-      Final = 0;
       fail = 1;
       numRegions = 0;
       numFunctionEvaluations = 0;

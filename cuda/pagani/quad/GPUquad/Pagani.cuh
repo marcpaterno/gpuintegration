@@ -98,7 +98,6 @@ namespace quad {
 
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-      kernel.SetFinal(Final);
       kernel.SetVerbosity(verbosity);
       kernel.SetHeuristicID(heuristicID);
 
