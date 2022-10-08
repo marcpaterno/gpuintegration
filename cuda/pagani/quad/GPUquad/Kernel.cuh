@@ -81,9 +81,10 @@ namespace quad {
     }
   }
 
-  template <typename T, int NDIM>
+  template <typename T>
   __global__ void
-  alignRegions(T* dRegions,
+  alignRegions(int ndim,
+               T* dRegions,
                T* dRegionsLength,
                int* activeRegions,
                T* dRegionsIntegral,
@@ -105,7 +106,7 @@ namespace quad {
     if (tid < numRegions && activeRegions[tid] == 1) {
       size_t interval_index = scannedArray[tid];
 
-      for (int i = 0; i < NDIM; ++i) {
+      for (int i = 0; i < ndim; ++i) {
         newActiveRegions[i * newNumRegions + interval_index] =
           dRegions[i * numRegions + tid];
         newActiveRegionsLength[i * newNumRegions + interval_index] =
@@ -1012,7 +1013,7 @@ namespace quad {
 
       for (int dim = 0; dim < NDIM; ++dim) {
         curr_hRegions[dim] = 0;
-        curr_hRegionsLength[dim] = 1
+        curr_hRegionsLength[dim] = 1;
       }
 
       dRegions = cuda_malloc<T>(NDIM);
@@ -1143,8 +1144,9 @@ namespace quad {
 
         cudaDeviceSynchronize();
 
-        alignRegions<T, NDIM>
-          <<<numBlocks, numThreads>>>(dRegions,
+        alignRegions<T>
+          <<<numBlocks, numThreads>>>(NDIM,
+                                      dRegions,
                                       dRegionsLength,
                                       activeRegions,
                                       dRegionsIntegral,
