@@ -26,12 +26,11 @@
 #include <string>
 
 namespace quad {
-  using namespace cooperative_groups;
 
   //===========
   // FOR DEBUGGINGG
   void
-  PrintToFile(std::string outString, std::string filename, bool appendMode = 0)
+  print_to_file(std::string outString, std::string filename, bool appendMode = 0)
   {
     if (appendMode) {
       std::ofstream outfile(filename, std::ios::app);
@@ -53,32 +52,32 @@ namespace quad {
                          T* newRegionsLength,
                          size_t newNumOfRegions,
                          int numOfDivisionsPerRegionPerDimension,
-                         int NDIM)
+                         int ndim)
   {
-
     extern __shared__ T slength[];
     size_t threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (threadIdx.x < NDIM) {
+    if (threadIdx.x < ndim) {
       slength[threadIdx.x] =
         dRegionsLength[threadIdx.x] / numOfDivisionsPerRegionPerDimension;
     }
     __syncthreads();
 
-    if (threadId < newNumOfRegions) {
-      size_t interval_index =
-        threadId / pow((T)numOfDivisionsPerRegionPerDimension, (T)NDIM);
-      size_t local_id =
-        threadId % (size_t)pow((T)numOfDivisionsPerRegionPerDimension, (T)NDIM);
-      for (int dim = 0; dim < NDIM; ++dim) {
-        size_t id =
-          (size_t)(local_id /
-                   pow((T)numOfDivisionsPerRegionPerDimension, (T)dim)) %
-          numOfDivisionsPerRegionPerDimension;
-        newRegions[newNumOfRegions * dim + threadId] =
-          dRegions[numRegions * dim + interval_index] + id * slength[dim];
-        newRegionsLength[newNumOfRegions * dim + threadId] = slength[dim];
-      }
+    if (threadId >= newNumOfRegions) return;
+
+    size_t interval_index =
+      threadId / pow((T)numOfDivisionsPerRegionPerDimension, (T)ndim);
+    size_t local_id =
+      threadId % (size_t)pow((T)numOfDivisionsPerRegionPerDimension, (T)ndim);
+    for (int dim = 0; dim < ndim; ++dim) {
+      size_t id =
+        (size_t)(local_id /
+                 pow((T)numOfDivisionsPerRegionPerDimension, (T)dim)) %
+        numOfDivisionsPerRegionPerDimension;
+
+      newRegions[newNumOfRegions * dim + threadId] =
+        dRegions[numRegions * dim + interval_index] + id * slength[dim];
+      newRegionsLength[newNumOfRegions * dim + threadId] = slength[dim];
     }
   }
 
@@ -418,14 +417,14 @@ namespace quad {
     {
       switch (verbosity) {
         case 1:
-          PrintToFile(per_iteration,
+          print_to_file(per_iteration,
                       "h" + std::to_string(heuristicID) + "_Per_iteration.csv");
           break;
         case 2:
           printf("Printing for verbosity 2\n");
-          PrintToFile(per_iteration,
+          print_to_file(per_iteration,
                       "h" + std::to_string(heuristicID) + "_Per_iteration.csv");
-          PrintToFile(per_region, "Phase_1_regions.csv");
+          print_to_file(per_region, "Phase_1_regions.csv");
           break;
         default:
           break;
@@ -512,7 +511,7 @@ namespace quad {
 
       if (outLevel >= 1) {
         printf("OutLevel 1\n");
-        PrintToFile(out1.str(), "Level_1.csv");
+        print_to_file(out1.str(), "Level_1.csv");
       }
 
       if (outLevel >= 3) {
@@ -549,7 +548,7 @@ namespace quad {
           out3 << val << "," << err << "," << err / MaxErr(val, epsrel, epsabs)
                << std::endl;
         }
-        PrintToFile(out3.str(), "start_ratio.csv");
+        print_to_file(out3.str(), "start_ratio.csv");
         free(tmp);
       }
     }
@@ -1013,11 +1012,7 @@ namespace quad {
 
       for (int dim = 0; dim < NDIM; ++dim) {
         curr_hRegions[dim] = 0;
-#if GENZ_TEST == 1
-        curr_hRegionsLength[dim] = b[dim];
-#else
-        curr_hRegionsLength[dim] = 1;
-#endif
+        curr_hRegionsLength[dim] = 1
       }
 
       dRegions = cuda_malloc<T>(NDIM);
