@@ -8,9 +8,6 @@
 #include "cuda/pagani/quad/util/Volume.cuh"
 
 namespace quad {
-#if TIMING_DEBUG == 1
-  timer::event_pair timer_one;
-#endif
 
   template <typename T, int NDIM>
   class Pagani {
