@@ -228,10 +228,6 @@ namespace quad {
     DeviceMemory<T> device;
     Rule<double> rule;
     Structures<double> constMem;
-    // Debug Msg
-    char msg[256];
-
-    //std::ostream& log;
     double* generators = nullptr;
 
   public:
