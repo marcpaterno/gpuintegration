@@ -12,9 +12,9 @@ namespace quad {
   template <typename T, int NDIM>
   class Pagani {
 
-    int KEY;
+    int key;
 
-    int VERBOSE;
+    int verbose;
     int numDevices;
 
     T epsrel;
@@ -25,14 +25,14 @@ namespace quad {
   public:
     // Note that this also acts as the default constructor.
     explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1)
-      : KEY(key)
-      , VERBOSE(verbose)
+      : key(key)
+      , verbose(verbose)
       , numDevices(numDevices)
       , epsrel(0.0)
       , epsabs(0.0)
       , kernel(new Kernel<T, NDIM>(std::cout))
     {
-      kernel->InitKernel(KEY, VERBOSE, numDevices);
+      kernel->InitKernel(key, verbose, numDevices);
     }
 
     Pagani(Pagani const&) = delete;            // no copying
