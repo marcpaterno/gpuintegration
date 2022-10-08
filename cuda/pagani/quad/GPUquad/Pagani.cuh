@@ -19,7 +19,7 @@ namespace quad {
 
     T epsrel;
     T epsabs;
-    Kernel<T, NDIM>* kernel;
+    Kernel<T, NDIM> kernel;
     std::ofstream log;
 
   public:
@@ -30,9 +30,9 @@ namespace quad {
       , numDevices(numDevices)
       , epsrel(0.0)
       , epsabs(0.0)
-      , kernel(new Kernel<T, NDIM>(std::cout))
+      , kernel(std::cout)
     {
-      kernel->InitKernel(key, verbose, numDevices);
+      kernel.InitKernel(key, verbose, numDevices);
     }
 
     Pagani(Pagani const&) = delete;            // no copying
@@ -40,7 +40,6 @@ namespace quad {
     Pagani& operator=(Pagani const&) = delete; // no assignment
     Pagani& operator=(Pagani&&) = delete;      // no move assignment
 
-    ~Pagani() { delete kernel; }
 
     template <typename IntegT>
     int
@@ -49,7 +48,7 @@ namespace quad {
                   Volume<T, NDIM> const* volume)
     {
 
-      return kernel->IntegrateFirstPhase(d_integrand,
+      return kernel.IntegrateFirstPhase(d_integrand,
                                          epsrel,
                                          epsabs,
                                          res.estimate,
@@ -76,10 +75,10 @@ namespace quad {
     {
       IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
       CudaCheckError();
-      kernel->GenerateInitialRegions();
+      kernel.GenerateInitialRegions();
       VerboseResults resultsObj;
       resultsObj.NDIM = NDIM;
-      kernel->EvaluateAtCuhrePoints(d_integrand, resultsObj, volume);
+      kernel.EvaluateAtCuhrePoints(d_integrand, resultsObj, volume);
 
       return resultsObj;
     }
@@ -99,14 +98,14 @@ namespace quad {
 
       this->epsrel = epsrel;
       this->epsabs = epsabs;
-      kernel->SetFinal(Final);
-      kernel->SetVerbosity(verbosity);
-      kernel->SetHeuristicID(heuristicID);
+      kernel.SetFinal(Final);
+      kernel.SetVerbosity(verbosity);
+      kernel.SetHeuristicID(heuristicID);
 
       IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
       CudaCheckError();
 
-      kernel->GenerateInitialRegions();
+      kernel.GenerateInitialRegions();
       FIRST_PHASE_MAXREGIONS *= numDevices;
 
       res.status = ExecutePhaseI(d_integrand, res, volume);
