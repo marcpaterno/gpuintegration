@@ -211,7 +211,7 @@ TEST_CASE("Constant Positive Value Function")
 {
   constexpr int ndim = 2;
   PTest integrand;
-  Kernel<double, ndim> kernel(std::cout);
+  Kernel<double, ndim> kernel;
   PrepKernel<ndim>(&kernel);
   PTest* gpu_invocable_integrand = Make_GPU_Integrand(&integrand);
   detail::Result result;
@@ -246,7 +246,7 @@ TEST_CASE("Constant Negative Value Function")
 {
   constexpr int ndim = 2;
   NTest integrand;
-  Kernel<double, ndim> kernel(std::cout);
+  Kernel<double, ndim> kernel;
   PrepKernel<ndim>(&kernel);
   NTest* gpu_invocable_integrand = Make_GPU_Integrand(&integrand);
   detail::Result result;
@@ -280,7 +280,7 @@ TEST_CASE("Constant Zero Value Function")
 {
   constexpr int ndim = 2;
   ZTest integrand;
-  Kernel<double, ndim> kernel(std::cout);
+  Kernel<double, ndim> kernel;
   PrepKernel<ndim>(&kernel);
   ZTest* gpu_invocable_integrand = Make_GPU_Integrand(&integrand);
   detail::Result result;

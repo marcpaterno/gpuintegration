@@ -28,7 +28,7 @@ namespace quad {
       , verbose(verbose)
       , epsrel(0.0)
       , epsabs(0.0)
-      , kernel(std::cout)
+      , kernel()
     {
       kernel.InitKernel(key, verbose);
     }

@@ -231,7 +231,7 @@ namespace quad {
     // Debug Msg
     char msg[256];
 
-    std::ostream& log;
+    //std::ostream& log;
     double* generators = nullptr;
 
   public:
@@ -344,7 +344,7 @@ namespace quad {
       max_globalpool_size = MAX_GLOBALPOOL_SIZE;
     }
 
-    Kernel(std::ostream& logerr = std::cout) : log(logerr)
+    Kernel()
     {
       mustFinish = false;
       dParentsError = nullptr;
