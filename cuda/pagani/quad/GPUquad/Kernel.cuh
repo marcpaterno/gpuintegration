@@ -211,7 +211,6 @@ namespace quad {
     T lastAvg;
     T secondTolastAvg;
 
-    T errorest_change; // delete, not doing anything useful anymore
     T estimate_change;
 
     int KEY, VERBOSE, outLevel;
@@ -355,7 +354,6 @@ namespace quad {
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
-      errorest_change = 0.;
       estimate_change = 0.;
       estimateHasConverged = false;
 
@@ -969,7 +967,6 @@ namespace quad {
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
-      errorest_change = 0.;
       estimate_change = 0.;
       estimateHasConverged = false;
 
