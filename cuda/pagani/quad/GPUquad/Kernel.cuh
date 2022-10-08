@@ -213,10 +213,8 @@ namespace quad {
 
     T estimate_change;
 
-    int KEY, VERBOSE, outLevel;
-    // delete numPolishedRegions, numFunctionEvaluations
-    size_t numRegions, numPolishedRegions, h_numRegions, numFunctionEvaluations,
-      numInActiveRegions;
+    int key, verbose, outLevel;
+    size_t numRegions, h_numRegions, numInActiveRegions;
     size_t fEvalPerRegion;
     int first_phase_maxregions;
     int max_globalpool_size;
@@ -350,7 +348,6 @@ namespace quad {
     Kernel(std::ostream& logerr = std::cout) : log(logerr)
     {
       mustFinish = false;
-      numPolishedRegions = 0;
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
@@ -363,8 +360,7 @@ namespace quad {
       lastAvg = 0;
       fail = 1;
       numRegions = 0;
-      numFunctionEvaluations = 0;
-      KEY = 0;
+      key = 0;
       h_numRegions = 0;
     }
 
@@ -444,7 +440,7 @@ namespace quad {
     }
 
     void
-    InitKernel(int key, int verbose, int numDevices = 1)
+    InitKernel(int key, int new_verbosity, int numDevices = 1)
     {
       // QuadDebug(cudaDeviceReset());
       // NDIM = dim;
@@ -455,8 +451,8 @@ namespace quad {
       curr_hRegions = nullptr;
       curr_hRegionsLength = nullptr;
       depthBeingProcessed = 0;
-      KEY = key;
-      VERBOSE = verbose;
+      key = key;
+      verbose = new_verbosity;
       NUM_DEVICES = numDevices;
       fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
                         2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
@@ -466,7 +462,7 @@ namespace quad {
                                    sizeof(size_t),
                                    0,
                                    cudaMemcpyHostToDevice));*/
-      rule.Init(NDIM, fEvalPerRegion, KEY, VERBOSE, &constMem);
+      rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
       // QuadDebug(Device.SetHeapSize());
     }
 
@@ -963,7 +959,6 @@ namespace quad {
     {
       // reset variables before allocating Host memory
       mustFinish = false;
-      numPolishedRegions = 0;
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
       gRegionPool = nullptr;
@@ -976,8 +971,7 @@ namespace quad {
       lastAvg = 0;
       fail = 1;
       numRegions = 0;
-      numFunctionEvaluations = 0;
-      KEY = 0;
+      key = 0;
       h_numRegions = 0;
 
       curr_hRegions = (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * NDIM);
