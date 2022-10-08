@@ -224,8 +224,8 @@ namespace quad {
     size_t nextAvailParentID; // same goes here
     size_t* parentIDs;        // same goes here
 
-    HostMemory<T> Host;
-    DeviceMemory<T> Device;
+    HostMemory<T> host;
+    DeviceMemory<T> device;
     Rule<double> rule;
     Structures<double> constMem;
     int NUM_DEVICES;
@@ -313,9 +313,9 @@ namespace quad {
       T* temp = 0;
       int copy_size = std::min(currentSize, newSize);
       // printf("current size:%i, newSize:%i\n", currentSize, newSize);
-      QuadDebug(Device.AllocateMemory((void**)&temp, sizeof(T) * newSize));
+      QuadDebug(device.AllocateMemory((void**)&temp, sizeof(T) * newSize));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(array));
+      QuadDebug(device.ReleaseMemory(array));
       array = temp;
     }
 
@@ -421,7 +421,7 @@ namespace quad {
     getRegions(size_t size, int startIndex)
     {
       T* newcurr_hRegionsAndLength = 0;
-      newcurr_hRegionsAndLength = (T*)Host.AllocateMemory(
+      newcurr_hRegionsAndLength = (T*)host.AllocateMemory(
         &newcurr_hRegionsAndLength, 2 * sizeof(T) * size * NDIM);
       T *newcurr_hRegions = &newcurr_hRegionsAndLength[0],
         *newcurr_hRegionsLength = &newcurr_hRegionsAndLength[size * NDIM];
@@ -463,7 +463,7 @@ namespace quad {
                                    0,
                                    cudaMemcpyHostToDevice));*/
       rule.Init(NDIM, fEvalPerRegion, key, verbose, &constMem);
-      // QuadDebug(Device.SetHeapSize());
+      // QuadDebug(device.SetHeapSize());
     }
 
     void
@@ -542,7 +542,7 @@ namespace quad {
     {
 
       int* scannedArray = 0;
-      QuadDebug(Device.AllocateMemory((void**)&scannedArray,
+      QuadDebug(device.AllocateMemory((void**)&scannedArray,
                                       sizeof(int) * iter_nregions));
 
       thrust::device_ptr<int> d_ptr =
@@ -592,7 +592,7 @@ namespace quad {
                 << "," << dnumInActiveRegions /*<< "," << queued_estimate << ","
                 << queued_errorest << "," << unevaluated_nregions*/
                 << "\n";
-      Device.ReleaseMemory(scannedArray);
+      device.ReleaseMemory(scannedArray);
     }
 
     void
@@ -628,7 +628,7 @@ namespace quad {
 
       size_t numActiveRegions = 0;
       int* h_activeRegions = nullptr;
-      h_activeRegions = (int*)Host.AllocateMemory(
+      h_activeRegions = (int*)host.AllocateMemory(
         h_activeRegions,
         sizeof(int) *
           iter_nregions); //(int*)malloc(sizeof(int) * iter_nregions);
@@ -641,16 +641,16 @@ namespace quad {
       T* h_highs = nullptr;
       T* h_lows = nullptr;
 
-      curr_hRegionsIntegral = (T*)Host.AllocateMemory(
+      curr_hRegionsIntegral = (T*)host.AllocateMemory(
         curr_hRegionsIntegral, sizeof(T) * iter_nregions);
       curr_hRegionsError =
-        (T*)Host.AllocateMemory(curr_hRegionsError, sizeof(T) * iter_nregions);
-      curr_ParentsIntegral = (T*)Host.AllocateMemory(
+        (T*)host.AllocateMemory(curr_hRegionsError, sizeof(T) * iter_nregions);
+      curr_ParentsIntegral = (T*)host.AllocateMemory(
         curr_ParentsIntegral, sizeof(T) * ceil(iter_nregions / 2));
-      curr_ParentsError = (T*)Host.AllocateMemory(
+      curr_ParentsError = (T*)host.AllocateMemory(
         curr_ParentsError, sizeof(T) * ceil(iter_nregions / 2));
-      h_highs = (T*)Host.AllocateMemory(h_highs, sizeof(T) * NDIM);
-      h_lows = (T*)Host.AllocateMemory(h_lows, sizeof(T) * NDIM);
+      h_highs = (T*)host.AllocateMemory(h_highs, sizeof(T) * NDIM);
+      h_lows = (T*)host.AllocateMemory(h_lows, sizeof(T) * NDIM);
 
       CudaCheckError();
       QuadDebug(cudaMemcpy(curr_hRegionsIntegral,
@@ -688,9 +688,9 @@ namespace quad {
 
       CudaCheckError();
 
-      curr_hRegions = (T*)Host.AllocateMemory(curr_hRegions,
+      curr_hRegions = (T*)host.AllocateMemory(curr_hRegions,
                                               sizeof(T) * iter_nregions * NDIM);
-      curr_hRegionsLength = (T*)Host.AllocateMemory(
+      curr_hRegionsLength = (T*)host.AllocateMemory(
         curr_hRegionsLength, sizeof(T) * iter_nregions * NDIM);
 
       QuadDebug(cudaMemcpy(curr_hRegions,
@@ -778,10 +778,10 @@ namespace quad {
 
       CudaCheckError();
       if (iteration != 0) {
-        Host.ReleaseMemory(parentIDs);
+        host.ReleaseMemory(parentIDs);
       }
 
-      parentIDs = (size_t*)Host.AllocateMemory(
+      parentIDs = (size_t*)host.AllocateMemory(
         parentIDs, sizeof(size_t) * numActiveRegions);
       CudaCheckError();
 
@@ -792,15 +792,15 @@ namespace quad {
       }
       nextAvailRegionID += iter_nregions;
 
-      Host.ReleaseMemory(curr_hRegionsError);
-      Host.ReleaseMemory(curr_hRegionsIntegral);
-      Host.ReleaseMemory(curr_hRegions);
-      Host.ReleaseMemory(curr_hRegionsLength);
-      Host.ReleaseMemory(curr_ParentsIntegral);
-      Host.ReleaseMemory(curr_ParentsError);
-      Host.ReleaseMemory(h_activeRegions);
-      Host.ReleaseMemory(h_highs);
-      Host.ReleaseMemory(h_lows);
+      host.ReleaseMemory(curr_hRegionsError);
+      host.ReleaseMemory(curr_hRegionsIntegral);
+      host.ReleaseMemory(curr_hRegions);
+      host.ReleaseMemory(curr_hRegionsLength);
+      host.ReleaseMemory(curr_ParentsIntegral);
+      host.ReleaseMemory(curr_ParentsError);
+      host.ReleaseMemory(h_activeRegions);
+      host.ReleaseMemory(h_highs);
+      host.ReleaseMemory(h_lows);
     }
 
     template <class K, size_t numArrays>
@@ -957,7 +957,7 @@ namespace quad {
     void
     GenerateInitialRegions()
     {
-      // reset variables before allocating Host memory
+      // reset variables before allocating host memory
       mustFinish = false;
       dParentsError = nullptr;
       dParentsIntegral = nullptr;
@@ -974,9 +974,9 @@ namespace quad {
       key = 0;
       h_numRegions = 0;
 
-      curr_hRegions = (T*)Host.AllocateMemory(&curr_hRegions, sizeof(T) * NDIM);
+      curr_hRegions = (T*)host.AllocateMemory(&curr_hRegions, sizeof(T) * NDIM);
       curr_hRegionsLength =
-        (T*)Host.AllocateMemory(&curr_hRegionsLength, sizeof(T) * NDIM);
+        (T*)host.AllocateMemory(&curr_hRegionsLength, sizeof(T) * NDIM);
 
       for (int dim = 0; dim < NDIM; ++dim) {
         curr_hRegions[dim] = 0;
@@ -1033,8 +1033,8 @@ namespace quad {
       dRegions = newRegions;
       dRegionsLength = newRegionsLength;
 
-      Host.ReleaseMemory(curr_hRegions);
-      Host.ReleaseMemory(curr_hRegionsLength);
+      host.ReleaseMemory(curr_hRegions);
+      host.ReleaseMemory(curr_hRegionsLength);
     }
 
     size_t
@@ -1048,7 +1048,7 @@ namespace quad {
       nvtxRangePush("Compute numActive Regions");
       int* scannedArray = 0; // de-allocated at the end of this function
       QuadDebug(
-        Device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
+        device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
 
       thrust::device_ptr<int> d_ptr =
         thrust::device_pointer_cast(activeRegions);
@@ -1135,9 +1135,9 @@ namespace quad {
         numBlocks = numActiveRegions / numThreads +
                     ((numActiveRegions % numThreads) ? 1 : 0);
 
-        QuadDebug(Device.ReleaseMemory(dRegions));
-        QuadDebug(Device.ReleaseMemory(dRegionsLength));
-        QuadDebug(Device.ReleaseMemory(scannedArray));
+        QuadDebug(device.ReleaseMemory(dRegions));
+        QuadDebug(device.ReleaseMemory(dRegionsLength));
+        QuadDebug(device.ReleaseMemory(scannedArray));
 
         nvtxRangePush("dividing Intervals");
         QuadDebug(cudaMalloc((void**)&genRegions,
@@ -1160,9 +1160,9 @@ namespace quad {
 
         CudaCheckError();
 
-        QuadDebug(Device.ReleaseMemory(newActiveRegions));
-        QuadDebug(Device.ReleaseMemory(newActiveRegionsLength));
-        QuadDebug(Device.ReleaseMemory(newActiveRegionsBisectDim));
+        QuadDebug(device.ReleaseMemory(newActiveRegions));
+        QuadDebug(device.ReleaseMemory(newActiveRegionsLength));
+        QuadDebug(device.ReleaseMemory(newActiveRegionsBisectDim));
         CudaCheckError();
         numRegions = numActiveRegions * numOfDivisionOnDimension;
 
@@ -1296,7 +1296,7 @@ namespace quad {
 
       double mem_need_have_ratio =
         (double)GetGPUMemNeededForNextIteration_CallBeforeSplit() /
-        ((double)Device.GetAmountFreeMem());
+        ((double)device.GetAmountFreeMem());
       bool enoughMemForNextIter = mem_need_have_ratio < 1.;
       // printf("Heuristic classification mem_need_have_ratio:%f
       // estimateHasConverged:%i enoughMemForNextIter:%i lastAvg:%e,
@@ -1334,7 +1334,7 @@ namespace quad {
       T iter_polished_estimate = 0.;
       int numDirectionChanges = 0;
 
-      QuadDebug(Device.AllocateMemory((void**)&unpolishedRegions,
+      QuadDebug(device.AllocateMemory((void**)&unpolishedRegions,
                                       sizeof(int) * numRegions));
 
       thrust::device_ptr<int> d_ptr =
@@ -1435,10 +1435,10 @@ namespace quad {
 
         if (numDirectionChanges == maxDirectionChanges &&
             acceptableThreshold == 0.) {
-          QuadDebug(Device.ReleaseMemory(unpolishedRegions));
+          QuadDebug(device.ReleaseMemory(unpolishedRegions));
           if (!estimateHasConverged ||
               GetGPUMemNeededForNextIteration_CallBeforeSplit() >=
-                Device.GetAmountFreeMem())
+                device.GetAmountFreeMem())
             mustFinish = true;
           return;
         }
@@ -1450,11 +1450,11 @@ namespace quad {
 
       if (numActiveRegions == numRegions) {
         mustFinish = true;
-        QuadDebug(Device.ReleaseMemory(unpolishedRegions));
+        QuadDebug(device.ReleaseMemory(unpolishedRegions));
         // printf("must finish triggered\n");
       } else {
         // printf("worked now have %lu active regions\n", numActiveRegions);
-        QuadDebug(Device.ReleaseMemory(activeRegions));
+        QuadDebug(device.ReleaseMemory(activeRegions));
         activeRegions = unpolishedRegions;
         // CudaCheckError();
       }
@@ -1500,7 +1500,7 @@ namespace quad {
 
       T* newErrs = 0;
       QuadDebug(
-        Device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions));
+        device.AllocateMemory((void**)&newErrs, sizeof(T) * numRegions));
       // printf("Refine Err Relerr classify %lu regions\n", numRegions);
       RefineError<T><<<numBlocks, BLOCK_SIZE>>>(dRegionsIntegral,
                                                 dRegionsError,
@@ -1578,20 +1578,20 @@ namespace quad {
     {
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
 
-      QuadDebug(Device.AllocateMemory((void**)&dRegionsIntegral,
+      QuadDebug(device.AllocateMemory((void**)&dRegionsIntegral,
                                       sizeof(T) * numRegions));
       QuadDebug(
-        Device.AllocateMemory((void**)&dRegionsError, sizeof(T) * numRegions));
+        device.AllocateMemory((void**)&dRegionsError, sizeof(T) * numRegions));
       if (iteration == 0) {
-        QuadDebug(Device.AllocateMemory((void**)&dParentsIntegral,
+        QuadDebug(device.AllocateMemory((void**)&dParentsIntegral,
                                         sizeof(T) * numRegions));
-        QuadDebug(Device.AllocateMemory((void**)&dParentsError,
+        QuadDebug(device.AllocateMemory((void**)&dParentsError,
                                         sizeof(T) * numRegions));
       }
 
-      QuadDebug(Device.AllocateMemory((void**)&activeRegions,
+      QuadDebug(device.AllocateMemory((void**)&activeRegions,
                                       sizeof(int) * numRegions));
-      QuadDebug(Device.AllocateMemory((void**)&subDividingDimension,
+      QuadDebug(device.AllocateMemory((void**)&subDividingDimension,
                                       sizeof(int) * numRegions));
     }
 
@@ -1732,7 +1732,7 @@ namespace quad {
       size_t numThreads = BLOCK_SIZE;
       size_t numBlocks = numRegions;
       // printf("Amount of free memory at start of iteration:%lu\n",
-      // Device.GetAmountFreeMem());
+      // device.GetAmountFreeMem());
 
       // nvtxRangePush("Iteration Allocations");
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
@@ -1826,7 +1826,7 @@ namespace quad {
       // %.15e),numRegions:%lu\n", iteration, iter_estimate, iter_errorest,
       // iter_finished_estimate, iter_finished_errorest, numRegions);
       if (/*GetGPUMemNeededForNextIteration_CallBeforeSplit() >=
-       Device.GetAmountFreeMem() && mustFinish == true && */
+       device.GetAmountFreeMem() && mustFinish == true && */
           CheckTerminationCondition(leaves_estimate,
                                     leaves_errorest,
                                     integral,
@@ -1910,7 +1910,7 @@ namespace quad {
         quad::cuda_malloc_managed<double>(NDIM * rule.GET_FEVAL());
       double* results = quad::cuda_malloc_managed<double>(rule.GET_FEVAL());
 
-      QuadDebug(Device.AllocateMemory((void**)&generators,
+      QuadDebug(device.AllocateMemory((void**)&generators,
                                       sizeof(double) * NDIM * fEvalPerRegion));
       ComputeGenerators<double, NDIM>
         <<<1, BLOCK_SIZE>>>(generators, fEvalPerRegion, constMem);
@@ -1982,7 +1982,7 @@ namespace quad {
                         size_t& neval,
                         Volume<T, NDIM> const* vol = nullptr)
     {
-      QuadDebug(Device.AllocateMemory((void**)&generators,
+      QuadDebug(device.AllocateMemory((void**)&generators,
                                       sizeof(double) * NDIM * fEvalPerRegion));
       CudaCheckError();
       ComputeGenerators<double, NDIM>
@@ -2021,17 +2021,17 @@ namespace quad {
       CudaCheckError();
 
       StringstreamToFile(finishedOutfile.str(), phase1out.str(), outLevel);
-      QuadDebug(Device.ReleaseMemory(dRegions));
+      QuadDebug(device.ReleaseMemory(dRegions));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dRegionsLength));
+      QuadDebug(device.ReleaseMemory(dRegionsLength));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dParentsIntegral));
+      QuadDebug(device.ReleaseMemory(dParentsIntegral));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(dParentsError));
+      QuadDebug(device.ReleaseMemory(dParentsError));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(lows));
+      QuadDebug(device.ReleaseMemory(lows));
       CudaCheckError();
-      QuadDebug(Device.ReleaseMemory(highs));
+      QuadDebug(device.ReleaseMemory(highs));
       CudaCheckError();
       QuadDebug(cudaFree(generators));
       CudaCheckError();
