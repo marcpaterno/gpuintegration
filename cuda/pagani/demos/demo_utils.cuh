@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <utility>
 
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
@@ -43,8 +44,8 @@ time_and_call(ALG const& a,
 
 struct Config {
   Config(int verbosity, int heuristic, int phaseT, int deviceNum, int finFlag)
-    : outfileVerbosity{verbosity}
-    , phase_I_type(phaseT)
+    : phase_I_type(phaseT)
+    , outfileVerbosity{verbosity}
     , numdevices{deviceNum}
     , heuristicID{heuristic}
     , _final(finFlag)
@@ -72,7 +73,7 @@ namespace floatIntegrands {
 
   template <typename F, int ndim>
   bool
-  cu_time_and_call(std::string id,
+  cu_time_and_call(char const* id,
                    F integrand,
                    float epsrel,
                    float true_value,
@@ -119,7 +120,7 @@ namespace floatIntegrands {
 
 template <typename F, int ndim>
 bool
-cu_time_and_call(std::string id,
+cu_time_and_call(char const* id,
                  F integrand,
                  double epsrel,
                  double true_value,
@@ -186,7 +187,7 @@ template <typename F,
           bool collect_iters = false,
           bool debug = false>
 bool
-cu_time_and_call_100(std::string id,
+cu_time_and_call_100(char const* id,
                      F integrand,
                      double epsrel,
                      double true_value,
