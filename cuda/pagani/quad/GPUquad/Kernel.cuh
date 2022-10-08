@@ -129,9 +129,10 @@ namespace quad {
     }
   }
 
-  template <typename T, int NDIM>
+  template <typename T>
   __global__ void
-  divideIntervalsGPU(T* genRegions,
+  divideIntervalsGPU(int ndim,
+                     T* genRegions,
                      T* genRegionsLength,
                      T* activeRegions,
                      T* activeRegionsLength,
@@ -147,7 +148,7 @@ namespace quad {
       size_t data_size = numActiveRegions * numOfDivisionOnDimension;
 
       for (int i = 0; i < numOfDivisionOnDimension; ++i) {
-        for (int dim = 0; dim < NDIM; ++dim) {
+        for (int dim = 0; dim < ndim; ++dim) {
           genRegions[i * numActiveRegions + dim * data_size + tid] =
             activeRegions[dim * numActiveRegions + tid];
           genRegionsLength[i * numActiveRegions + dim * data_size + tid] =
@@ -170,6 +171,7 @@ namespace quad {
     }
   }
 
+  inline
   bool
   cudaMemoryTest()
   {
@@ -1181,8 +1183,9 @@ namespace quad {
                                numOfDivisionOnDimension));
         CudaCheckError();
 
-        divideIntervalsGPU<T, NDIM>
-          <<<numBlocks, numThreads>>>(genRegions,
+        divideIntervalsGPU<T>
+          <<<numBlocks, numThreads>>>(NDIM,
+                                      genRegions,
                                       genRegionsLength,
                                       newActiveRegions,
                                       newActiveRegionsLength,
