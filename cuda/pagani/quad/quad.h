@@ -32,15 +32,15 @@ template <typename T>
 struct Structures {
 
   Structures() = default;
-  T* _gpuG = nullptr;
-  T* _cRuleWt = nullptr;
-  T* _GPUScale = nullptr;
-  T* _GPUNorm = nullptr;
-  int* _gpuGenPos = nullptr;
-  int* _gpuGenPermGIndex = nullptr;
-  int* _gpuGenPermVarCount = nullptr;
-  int* _gpuGenPermVarStart = nullptr;
-  size_t* _cGeneratorCount = nullptr;
+  T* gpuG = nullptr;
+  T* cRuleWt = nullptr;
+  T* GPUScale = nullptr;
+  T* GPUNorm = nullptr;
+  int* gpuGenPos = nullptr;
+  int* gpuGenPermGIndex = nullptr;
+  int* gpuGenPermVarCount = nullptr;
+  int* gpuGenPermVarStart = nullptr;
+  size_t* cGeneratorCount = nullptr;
 };
 
 

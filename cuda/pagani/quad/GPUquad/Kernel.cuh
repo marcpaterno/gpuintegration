@@ -365,15 +365,15 @@ namespace quad {
       // dRegions and dRegionsLength need to be freed after phase 1, since all
       // the info is stored in host memory
 
-      QuadDebug(cudaFree(constMem._gpuG));
-      QuadDebug(cudaFree(constMem._cRuleWt));
-      QuadDebug(cudaFree(constMem._GPUScale));
-      QuadDebug(cudaFree(constMem._GPUNorm));
-      QuadDebug(cudaFree(constMem._gpuGenPos));
-      QuadDebug(cudaFree(constMem._gpuGenPermGIndex));
-      QuadDebug(cudaFree(constMem._gpuGenPermVarStart));
-      QuadDebug(cudaFree(constMem._gpuGenPermVarCount));
-      QuadDebug(cudaFree(constMem._cGeneratorCount));
+      QuadDebug(cudaFree(constMem.gpuG));
+      QuadDebug(cudaFree(constMem.cRuleWt));
+      QuadDebug(cudaFree(constMem.GPUScale));
+      QuadDebug(cudaFree(constMem.GPUNorm));
+      QuadDebug(cudaFree(constMem.gpuGenPos));
+      QuadDebug(cudaFree(constMem.gpuGenPermGIndex));
+      QuadDebug(cudaFree(constMem.gpuGenPermVarStart));
+      QuadDebug(cudaFree(constMem.gpuGenPermVarCount));
+      QuadDebug(cudaFree(constMem.cGeneratorCount));
       CudaCheckError();
     }
 

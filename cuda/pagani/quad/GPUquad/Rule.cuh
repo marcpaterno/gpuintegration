@@ -360,56 +360,56 @@ namespace quad {
     void
     loadDeviceConstantMemory(Structures<T>* constMem)
     {
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuG, sizeof(T) * NDIM * NSETS));
+      QuadDebug(cudaMalloc((void**)&constMem->gpuG, sizeof(T) * NDIM * NSETS));
       QuadDebug(
-        cudaMalloc((void**)&constMem->_cRuleWt, sizeof(T) * NRULES * NSETS));
-      QuadDebug(cudaMalloc((void**)&constMem->_cGeneratorCount,
+        cudaMalloc((void**)&constMem->cRuleWt, sizeof(T) * NRULES * NSETS));
+      QuadDebug(cudaMalloc((void**)&constMem->cGeneratorCount,
                            sizeof(size_t) * NSETS));
       QuadDebug(
-        cudaMalloc((void**)&constMem->_GPUScale, sizeof(T) * NSETS * NRULES));
+        cudaMalloc((void**)&constMem->GPUScale, sizeof(T) * NSETS * NRULES));
       QuadDebug(
-        cudaMalloc((void**)&constMem->_GPUNorm, sizeof(T) * NSETS * NRULES));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPos,
+        cudaMalloc((void**)&constMem->GPUNorm, sizeof(T) * NSETS * NRULES));
+      QuadDebug(cudaMalloc((void**)&constMem->gpuGenPos,
                            sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarCount,
+      QuadDebug(cudaMalloc((void**)&constMem->gpuGenPermVarCount,
                            sizeof(int) * FEVAL));
       QuadDebug(
-        cudaMalloc((void**)&constMem->_gpuGenPermGIndex, sizeof(int) * FEVAL));
-      QuadDebug(cudaMalloc((void**)&constMem->_gpuGenPermVarStart,
+        cudaMalloc((void**)&constMem->gpuGenPermGIndex, sizeof(int) * FEVAL));
+      QuadDebug(cudaMalloc((void**)&constMem->gpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1)));
-      QuadDebug(cudaMemcpy(constMem->_gpuG,
+      QuadDebug(cudaMemcpy(constMem->gpuG,
                            cpuG,
                            sizeof(T) * NDIM * NSETS,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_cRuleWt,
+      QuadDebug(cudaMemcpy(constMem->cRuleWt,
                            CPURuleWt,
                            sizeof(T) * NRULES * NSETS,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_cGeneratorCount,
+      QuadDebug(cudaMemcpy(constMem->cGeneratorCount,
                            CPUGeneratorCount,
                            sizeof(size_t) * NSETS,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_GPUScale,
+      QuadDebug(cudaMemcpy(constMem->GPUScale,
                            CPUScale,
                            sizeof(T) * NSETS * NRULES,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_GPUNorm,
+      QuadDebug(cudaMemcpy(constMem->GPUNorm,
                            CPUNorm,
                            sizeof(T) * NSETS * NRULES,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_gpuGenPos,
+      QuadDebug(cudaMemcpy(constMem->gpuGenPos,
                            genPtr,
                            sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_gpuGenPermVarCount,
+      QuadDebug(cudaMemcpy(constMem->gpuGenPermVarCount,
                            cpuGenPermVarCount,
                            sizeof(int) * FEVAL,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_gpuGenPermGIndex,
+      QuadDebug(cudaMemcpy(constMem->gpuGenPermGIndex,
                            cpuGenPermGIndex,
                            sizeof(int) * FEVAL,
                            cudaMemcpyHostToDevice));
-      QuadDebug(cudaMemcpy(constMem->_gpuGenPermVarStart,
+      QuadDebug(cudaMemcpy(constMem->gpuGenPermVarStart,
                            cpuGenPermVarStart,
                            sizeof(int) * (FEVAL + 1),
                            cudaMemcpyHostToDevice));

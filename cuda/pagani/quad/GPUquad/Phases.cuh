@@ -166,20 +166,20 @@ namespace quad {
       g[dim] = 0.;
     }
 
-    int posCnt = __ldg(&constMem._gpuGenPermVarStart[feval_index + 1]) -
-                 __ldg(&constMem._gpuGenPermVarStart[feval_index]);
-    int gIndex = __ldg(&constMem._gpuGenPermGIndex[feval_index]);
+    int posCnt = __ldg(&constMem.gpuGenPermVarStart[feval_index + 1]) -
+                 __ldg(&constMem.gpuGenPermVarStart[feval_index]);
+    int gIndex = __ldg(&constMem.gpuGenPermGIndex[feval_index]);
 
     for (int posIter = 0; posIter < posCnt; ++posIter) {
       int pos =
         (constMem
-           ._gpuGenPos[(constMem._gpuGenPermVarStart[feval_index]) + posIter]);
+           .gpuGenPos[(constMem.gpuGenPermVarStart[feval_index]) + posIter]);
       int absPos = abs(pos);
 
       if (pos == absPos) {
-        g[absPos - 1] = __ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = __ldg(&constMem.gpuG[gIndex * NDIM + posIter]);
       } else {
-        g[absPos - 1] = -__ldg(&constMem._gpuG[gIndex * NDIM + posIter]);
+        g[absPos - 1] = -__ldg(&constMem.gpuG[gIndex * NDIM + posIter]);
       }
     }
 

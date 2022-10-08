@@ -124,7 +124,7 @@ namespace quad {
 
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[threadIdx.x] = fun; // target for reduction
-    const int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
+    const int gIndex = __ldg(&constMem.gpuGenPermGIndex[pIndex]);
 
     if constexpr (debug >= 2) {
       // assert(fevals != nullptr);
@@ -136,7 +136,7 @@ namespace quad {
 
 #pragma unroll 5
     for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
+      sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
     }
   }
 
@@ -164,7 +164,7 @@ namespace quad {
       x[dim] = 0;
     }
 
-    // int gIndex = __ldg(&constMem._gpuGenPermGIndex[pIndex]);
+    // int gIndex = __ldg(&constMem.gpuGenPermGIndex[pIndex]);
 
     for (int dim = 0; dim < NDIM; ++dim) {
       T generator = __ldg(&generators[FEVAL * dim + pIndex]);
@@ -182,7 +182,7 @@ namespace quad {
     }
     // we only care about func evaluations and results
     /*for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * __ldg(&constMem._cRuleWt[gIndex * NRULES + rul]);
+      sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
     }*/
   }
 
@@ -210,7 +210,7 @@ namespace quad {
     int perm = 0;
 
     T ratio =
-      Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
+      Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
     int offset = 2 * NDIM;
 
     T sum[NRULES];
@@ -322,8 +322,8 @@ namespace quad {
           maxerr =
             max(maxerr,
                 fabs(sum[rul + 1] +
-                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
+                     __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  __ldg(&constMem.GPUNorm[s * NRULES + rul]));
         }
         sum[rul] = maxerr;
       }
@@ -381,7 +381,7 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       const T ratio =
-        Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
+        Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
       T* f = &sdata[0];
       Result* r = &region->result;
       T* f1 = f;
@@ -454,8 +454,8 @@ namespace quad {
         for (int s = 0; s < NSETS; ++s) {
           maxerr = max(maxerr,
                        fabs(sum[rul + 1] +
-                            constMem._GPUScale[s * NRULES + rul] * sum[rul]) *
-                         (constMem._GPUNorm[s * NRULES + rul]));
+                            constMem.GPUScale[s * NRULES + rul] * sum[rul]) *
+                         (constMem.GPUNorm[s * NRULES + rul]));
         }
         sum[rul] = maxerr;
       }
@@ -756,7 +756,7 @@ namespace quad {
 
     if (threadIdx.x == 0) {
       const T ratio =
-        Sq(__ldg(&constMem._gpuG[2 * NDIM]) / __ldg(&constMem._gpuG[1 * NDIM]));
+        Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
       T* f = &sdata[0];
       Result* r = &region->result;
       T* f1 = f;
@@ -834,8 +834,8 @@ namespace quad {
           maxerr =
             max(maxerr,
                 fabs(sum[rul + 1] +
-                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
+                     __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  __ldg(&constMem.GPUNorm[s * NRULES + rul]));
         }
         sum[rul] = maxerr;
       }
