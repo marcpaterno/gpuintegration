@@ -2,10 +2,7 @@
 #define CUDACUHRE_QUAD_QUAD_h
 
 #define TIMING_DEBUG 1
-//#define BLOCK_SIZE 256
-//#define BLOCK_SIZE 128
 #define BLOCK_SIZE 64
-//#define BLOCK_SIZE 32
 #define SM_REGION_POOL_SIZE 128
 
 #define GLOBAL_ERROR 1
@@ -18,7 +15,6 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-//__constant__ TYPE errcoeff[] = {5, 1, 5};
 
 // Utilities
 #include "util/cudaArchUtil.h"
@@ -32,47 +28,10 @@ public:
   size_t NDIM = 0;
 };
 
-/*template <typename T>
-struct Structures {
-  __host__ __device__
-  Structures()
-    : _gpuG(nullptr)
-    , _cRuleWt(nullptr)
-    , _GPUScale(nullptr)
-    , _gpuGenPos(nullptr)
-    , _gpuGenPermGIndex(nullptr)
-    , _gpuGenPermVarCount(nullptr)
-    , _gpuGenPermVarStart(nullptr)
-    , _cGeneratorCount(nullptr)
-    , _GPUNorm(nullptr)
-  {}
-
-  T* _gpuG;
-  T* _cRuleWt;
-  T* _GPUScale;
-  T* _GPUNorm;
-  int* _gpuGenPos;
-  int* _gpuGenPermGIndex;
-  int* _gpuGenPermVarCount;
-  int* _gpuGenPermVarStart;
-  size_t* _cGeneratorCount;
-};
-*/
 template <typename T>
 struct Structures {
 
   Structures() = default;
-  /* : _gpuG(nullptr)
-   , _cRuleWt(nullptr)
-   , _GPUScale(nullptr)
-   , _gpuGenPos(nullptr)
-   , _gpuGenPermGIndex(nullptr)
-   , _gpuGenPermVarCount(nullptr)
-   , _gpuGenPermVarStart(nullptr)
-   , _cGeneratorCount(nullptr)
-   , _GPUNorm(nullptr)
- {}*/
-
   T* _gpuG = nullptr;
   T* _cRuleWt = nullptr;
   T* _GPUScale = nullptr;
@@ -84,19 +43,6 @@ struct Structures {
   size_t* _cGeneratorCount = nullptr;
 };
 
-/*template <typename T>
-struct cuhreResult {
-  T estimate {};
-  T errorest {};
-  size_t neval = 0;
-  size_t nregions = 0;
-  size_t nFinishedRegions = 0;
-  int status = -1;
-  int lastPhase = 0;
-  // size_t activeRegions;    // is not currently being set
-  size_t phase2_failedblocks = 0; // is not currently being set
-  double chi_sq = 0.;
-};*/
 
 struct Result {
   double avg = 0., err = 0.;
