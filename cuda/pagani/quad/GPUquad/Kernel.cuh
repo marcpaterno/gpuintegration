@@ -25,8 +25,6 @@
 #include <string.h>
 #include <string>
 
-//#define startRegions 256 //for 8D
-#define startRegions 1 // if starting with 1 region
 namespace quad {
   using namespace cooperative_groups;
 
@@ -44,48 +42,6 @@ namespace quad {
       outfile << outString << std::endl;
       outfile.close();
     }
-  }
-
-  //==========
-  //__constant__ size_t dFEvalPerRegion;
-
-  // delete, the display function does this now
-
-  // delete, now used anymore
-  template <typename T>
-  void
-  FinalDataPrint(std::stringstream& outfile,
-                 std::string id,
-                 T true_value,
-                 T epsrel,
-                 T epsabs,
-                 T value,
-                 T error,
-                 T nregions,
-                 T status,
-                 int _final,
-                 T time,
-                 std::string filename,
-                 bool appendMode = 0)
-  {
-
-    std::ostringstream streamObj;
-    std::ostringstream streamObj2;
-    streamObj << value;
-    streamObj2 << error;
-
-    if (appendMode == 0)
-      outfile << "id, value, epsrel, epsabs, estimate, errorest, regions, "
-                 "converge, final, total_time"
-              << std::endl;
-    outfile << std::setprecision(18);
-    outfile << id << ",\t" << std::to_string(true_value) << ",\t" << epsrel
-            << ",\t" << epsabs << ",\t" << value << ",\t" << error << ",\t"
-            << nregions << ",\t" << status << ",\t" << _final << ",\t" << time
-            << std::endl;
-
-    // std::cout<<outfile.str()<<std::endl;
-    PrintToFile(outfile.str(), filename, appendMode);
   }
 
   template <typename T>
