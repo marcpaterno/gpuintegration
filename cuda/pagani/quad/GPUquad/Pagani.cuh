@@ -15,7 +15,6 @@ namespace quad {
     int key;
 
     int verbose;
-    int numDevices;
 
     T epsrel;
     T epsabs;
@@ -24,15 +23,14 @@ namespace quad {
 
   public:
     // Note that this also acts as the default constructor.
-    explicit Pagani(int key = 0, int verbose = 0, int numDevices = 1)
+    explicit Pagani(int key = 0, int verbose = 0)
       : key(key)
       , verbose(verbose)
-      , numDevices(numDevices)
       , epsrel(0.0)
       , epsabs(0.0)
       , kernel(std::cout)
     {
-      kernel.InitKernel(key, verbose, numDevices);
+      kernel.InitKernel(key, verbose);
     }
 
     Pagani(Pagani const&) = delete;            // no copying
@@ -105,7 +103,6 @@ namespace quad {
       CudaCheckError();
 
       kernel.GenerateInitialRegions();
-      FIRST_PHASE_MAXREGIONS *= numDevices;
 
       res.status = ExecutePhaseI(d_integrand, res, volume);
       res.lastPhase = 1;

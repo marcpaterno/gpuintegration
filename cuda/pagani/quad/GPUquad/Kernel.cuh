@@ -228,7 +228,6 @@ namespace quad {
     DeviceMemory<T> device;
     Rule<double> rule;
     Structures<double> constMem;
-    int NUM_DEVICES;
     // Debug Msg
     char msg[256];
 
@@ -440,7 +439,7 @@ namespace quad {
     }
 
     void
-    InitKernel(int key, int new_verbosity, int numDevices = 1)
+    InitKernel(int key, int new_verbosity)
     {
       // QuadDebug(cudaDeviceReset());
       // NDIM = dim;
@@ -453,7 +452,6 @@ namespace quad {
       depthBeingProcessed = 0;
       key = key;
       verbose = new_verbosity;
-      NUM_DEVICES = numDevices;
       fEvalPerRegion = (1 + 2 * NDIM + 2 * NDIM + 2 * NDIM + 2 * NDIM +
                         2 * NDIM * (NDIM - 1) + 4 * NDIM * (NDIM - 1) +
                         4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3 + (1 << NDIM));
