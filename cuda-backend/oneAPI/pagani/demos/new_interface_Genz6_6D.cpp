@@ -12,7 +12,6 @@
 
 using namespace quad;
 
-namespace detail {
 	class GENZ_6_6D {
 	  public:
 		double
@@ -25,7 +24,7 @@ namespace detail {
 					   5 * u) /*/1.5477367885091207413e8*/;
 		}
 	};
-}
+
 
 int
 main()
@@ -34,12 +33,16 @@ main()
   double epsrel = 1.e-3;
   double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1.5477367885091207413e8;
-  detail::GENZ_6_6D integrand;
+  GENZ_6_6D integrand;
   
   constexpr int ndim = 6;
   bool relerr_classification = true;
   
-  while (clean_time_and_call<detail::GENZ_6_6D, ndim, false>("f6",
+  quad::Volume<double, ndim>  vol;
+  
+  for(int i=0; i < 10; ++i)
+    call_cubature_rules<GENZ_6_6D, ndim>(integrand, vol);
+  /*while (clean_time_and_call<detail::GENZ_6_6D, ndim, false>("f6",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -49,7 +52,7 @@ main()
          epsrel > epsrel_min) {
     epsrel /= 5.0;
 	break;
-  }
+  }*/
     
     /* epsrel = 1.e-3;
     while (clean_time_and_call<detail::GENZ_6_6D, ndim, true>("f6",
@@ -63,3 +66,4 @@ main()
     epsrel /= 5.0;
   }*/
 }
+>>>>>>> c6eba3a (oneAPI demos update with function to invoke the main kernel only)

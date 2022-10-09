@@ -12,7 +12,6 @@
 
 using namespace quad;
 
-namespace detail {
   class GENZ_2_6D {
   public:
     double
@@ -32,7 +31,7 @@ namespace detail {
         return val;
     }
   };
-}
+
 
 int
 main()
@@ -41,31 +40,14 @@ main()
   double epsrel = 1.e-3;
   double const epsrel_min = 1.0240000000000002e-10;
   double true_value = 1.286889807581113e+13;
-  detail::GENZ_2_6D integrand;
+  GENZ_2_6D integrand;
   
   constexpr int ndim = 6;
   bool relerr_classification = true;
   constexpr bool debug = false;
-  while (clean_time_and_call<detail::GENZ_2_6D, ndim, false, debug>("f2",
-                                                   integrand,
-                                                   epsrel,
-                                                   true_value,
-                                                   "oneAPI_pagani",
-                                                   std::cout,
-                                                   relerr_classification) == true &&
-         epsrel > epsrel_min) {
-    epsrel /= 5.0;
-  }
-    
-   /* epsrel = 1.e-3;
-    while (clean_time_and_call<detail::GENZ_2_6D, ndim, true>("f2",
-                                                   integrand,
-                                                   epsrel,
-                                                   true_value,
-                                                   "oneAPI_pagani",
-                                                   std::cout,
-                                                   relerr_classification) == true &&
-         epsrel > epsrel_min) {
-        epsrel /= 5.0;
-  }*/
+  quad::Volume<double, ndim>  vol;
+  
+  for(int i=0; i < 10; ++i)
+    call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol);
+
 }
