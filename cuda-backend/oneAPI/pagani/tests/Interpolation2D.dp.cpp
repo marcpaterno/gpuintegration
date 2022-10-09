@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "oneAPI/catch2/catch.hpp"
+#include "catch2/catch.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Interp2D.hpp"
 #include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
