@@ -1,7 +1,7 @@
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/async>
 #define CATCH_CONFIG_MAIN
-#include "oneAPI/catch2/catch.hpp"
+#include "catch2/catch.hpp"
 
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
