@@ -143,7 +143,7 @@ namespace quad {
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
-  template <typename IntegT, typename T, int NDIM, int blockdim, int debug>
+  template <typename IntegT, typename T, int NDIM, int blockdim, int debug = 0>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
                     Structures<T>& constMem,
@@ -242,27 +242,29 @@ namespace quad {
                                                  sdata,
                                                  fevals);
     }
-
+	
+	__syncthreads();
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i]);
       //__syncthreads();
     }
 
     if (threadIdx.x == 0) {
-      Result* r = &region->result; // ptr to shared Mem
 
-#pragma unroll 4
+      Result* r = &region->result; //ptr to shared Mem
+	  
+	  #pragma unroll 3
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
-
-        constexpr int NSETS = 9;
-#pragma unroll 9
+		
+		//__ldg is missing from the loop below
+		constexpr int NSETS = 9;
+		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
-          maxerr = max(maxerr,
-                       fabs(sum[rul + 1] +
-                            constMem.GPUScale[s * NRULES + rul] * sum[rul]) *
-                         (constMem.GPUNorm[s * NRULES + rul]));
-        }
+          maxerr =
+            max(maxerr,
+                fabs(sum[rul + 1] + __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) * __ldg(&constMem.GPUNorm[s * NRULES + rul]));
+		}
         sum[rul] = maxerr;
       }
 
