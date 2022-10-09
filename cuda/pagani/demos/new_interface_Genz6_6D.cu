@@ -9,8 +9,7 @@ public:
     if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
       return 0.;
     else
-      return exp(10 * z + 9 * y + 8 * x + 7 * w + 6 * v +
-                 5 * u) /*/1.5477367885091207413e8*/;
+      return exp(10 * z + 9 * y + 8 * x + 7 * w + 6 * v + 5 * u);
   }
 };
 
@@ -23,9 +22,10 @@ main()
   constexpr int ndim = 6;
   GENZ_6_6D integrand;
   double true_value = 1.5477367885091207413e8;
+  quad::Volume<double, ndim> vol;
 
-  while (clean_time_and_call<GENZ_6_6D, ndim, false>(
-           "f6", integrand, epsrel, true_value, "gpucuhre", std::cout) ==
+  while (clean_time_and_call<GENZ_6_6D, double, ndim, false>(
+           "f6", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
            true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;

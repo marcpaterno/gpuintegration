@@ -20,20 +20,14 @@ main()
   GENZ_3_3D integrand;
   double true_value = 0.010846560846560846561;
   constexpr int debug = 1;
+  quad::Volume<double, ndim> vol;
 
-  while (clean_time_and_call<GENZ_3_3D, ndim, false, debug>(
-           "f3", integrand, epsrel, true_value, "gpucuhre", std::cout) ==
+  while (clean_time_and_call<GENZ_3_3D, double, ndim, false, debug>(
+           "f3", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
            true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }
 
-  epsrel = 1.0e-3;
-  while (clean_time_and_call<GENZ_3_3D, ndim, true>(
-           "f3", integrand, epsrel, true_value, "gpucuhre", std::cout) ==
-           true &&
-         epsrel >= epsrel_min) {
-    epsrel /= 5.0;
-  }
   return 0;
 }
