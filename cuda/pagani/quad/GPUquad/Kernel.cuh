@@ -233,7 +233,6 @@ namespace quad {
     // Debug Msg
     char msg[256];
 
-    std::ostream& log;
     T* generators = nullptr;
 
   public:
@@ -1293,7 +1292,6 @@ namespace quad {
       secondTolastAvg = lastAvg;
       lastAvg = leaves_estimate;
       lastErr = leaves_errorest;
-
 
       T mem_need_have_ratio =
         (T)GetGPUMemNeededForNextIteration_CallBeforeSplit() /

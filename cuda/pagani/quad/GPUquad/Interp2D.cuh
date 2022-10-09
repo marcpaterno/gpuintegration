@@ -152,7 +152,6 @@ namespace quad {
       cuda_memcpy_to_device<T>(interpR, ys.data(), N);
       cuda_memcpy_to_device<T>(interpC, xs.data(), M);
 
-
       std::vector<T> buffer(N*M);
       for (std::size_t i = 0; i < M; ++i) {
         std::array<T, N> const& row = zs[i];
@@ -160,7 +159,7 @@ namespace quad {
           buffer[i + j * M] = row[j];
         }
       }
-
+	  
       cuda_memcpy_to_device<T>(interpT, buffer.data(), N*M);
       CudaCheckError();
     }

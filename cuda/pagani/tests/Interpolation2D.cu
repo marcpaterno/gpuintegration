@@ -162,14 +162,18 @@ void test_on_bilinear(){
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   quad::Interp2D f(xs, ys, zs);
 
   double interpResult = Evaluate(f, 2.5, 1.5);
 =======
+=======
+>>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
   quad::Interp2D<T> f(xs, ys, zs);
   using IntegType = quad::Interp2D<T>;
   
   T interpResult = Evaluate<T>(f, 2.5, 1.5);
+<<<<<<< HEAD
 >>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
   CHECK(interpResult == 4.5);
 }
@@ -191,14 +195,26 @@ void test_on_bilinear(){
     std::cout << "end"
               << "," << run << "," << free_physmem << std::endl;
   }
+=======
+  CHECK(interpResult == 4.5);
+}
+
+
+TEST_CASE("clamp interface works"){
+	test_clamp_interface<double>();
+	test_clamp_interface<float>();
+>>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
 }
 =======
 
+<<<<<<< HEAD
 TEST_CASE("clamp interface works"){
 	test_clamp_interface<double>();
 	test_clamp_interface<float>();
 }
 
+=======
+>>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
 TEST_CASE("Interp2D exact at knots"){
 	test_interpolation_at_knots<double>();
 	test_interpolation_at_knots<float>();
