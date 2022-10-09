@@ -34,11 +34,11 @@ private:
   void fix_error_budget_overflow(Region_characteristics<ndim>& classifiers, const cuhreResult<T>& finished, const cuhreResult<T>& iter, cuhreResult<T>& iter_finished, const T epsrel);
   bool heuristic_classify(Classifier& classifier_a, Regs_characteristics& characteristics, const Estimates& estimates, cuhreResult<T>& finished, const cuhreResult<T>& iter, const cuhreResult<T>& cummulative);
   
-  Cubature_rules<ndim> rules;
+  Cubature_rules<T, ndim> rules;
                 
 public:
   Workspace() = default;
-  Workspace(T* lows, T* highs):Cubature_rules<ndim>(lows, highs){}
+  Workspace(T* lows, T* highs):Cubature_rules<T, ndim>(lows, highs){}
   template<typename IntegT, bool predict_split = false, bool collect_iters = false, int debug = 0>
   cuhreResult<T> integrate(const IntegT& integrand, Sub_regions<ndim>& subregions, T epsrel, T epsabs, quad::Volume<T, ndim>& vol, bool relerr_classification = true);
 
@@ -160,7 +160,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand, Sub_regions<n
                 
     quad::CudaCheckError();
     classifier_a.store_estimate(cummulative.estimate + iter.estimate);
-    Res finished = compute_finished_estimates<ndim, use_custom>(estimates, characteristics, iter);   
+    Res finished = compute_finished_estimates<T, ndim, use_custom>(estimates, characteristics, iter);   
     fix_error_budget_overflow(characteristics, cummulative, iter, finished, epsrel);
     if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){
       cummulative.estimate += iter.estimate;
