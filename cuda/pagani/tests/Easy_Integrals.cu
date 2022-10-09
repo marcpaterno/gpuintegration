@@ -58,7 +58,7 @@ TEST_CASE("Constant Positive Value Function")
   double epsrel = 1.0e-3;
   double epsabs = 1.0e-12;
   constexpr bool use_custom = false;
-  Workspace<ndim, use_custom> pagani;
+  Workspace<double, ndim, use_custom> pagani;
   quad::Volume<double, ndim> vol;
 
   cuhreResult res = pagani.integrate(integrand, epsrel, epsabs, vol);

@@ -11,16 +11,18 @@
 #include <cmath>
 #include <curand_kernel.h>
 
-namespace pagani {
-  class Curand_generator {
-    curandState localState;
+namespace pagani{
+	
+template<typename T>	
+class Curand_generator {
+  curandState localState;
 
-  public:
-    __device__
-    Curand_generator()
-    {
-      curand_init(0, blockIdx.x, threadIdx.x, &localState);
-    }
+public:
+  __device__
+  Curand_generator()
+  {
+    curand_init(0, blockIdx.x, threadIdx.x, &localState);
+  }
 
     __device__
     Curand_generator(unsigned int seed)
@@ -28,12 +30,12 @@ namespace pagani {
       curand_init(seed, blockIdx.x, threadIdx.x, &localState);
     }
 
-    __device__ double
-    operator()()
-    {
-      return curand_uniform_double(&localState);
-    }
-  };
+  __device__ T
+  operator()()
+  {
+    return curand_uniform_double(&localState);
+  }
+};
 }
 
 namespace quad {
@@ -106,10 +108,10 @@ namespace quad {
                      Bounds* b,
                      GlobalBounds sBound[],
                      T* sum,
-                     Structures<double>& constMem,
+                     Structures<T>& constMem,
                      T range[],
                      T* jacobian,
-                     double* generators,
+                     T* generators,
                      T* sdata,
                      quad::Func_Evals<NDIM>& fevals)
   {
@@ -140,215 +142,20 @@ namespace quad {
     }
   }
 
-  template <typename IntegT, typename T, int NDIM>
-  __device__ void
-  verboseComputePermutation(IntegT* d_integrand,
-                            int pIndex,
-                            Bounds* b,
-                            GlobalBounds sBound[],
-                            // T* g,
-                            gpu::cudaArray<T, NDIM>& x,
-                            // T* sum,
-                            // const Structures<double>& constMem,
-                            T range[],
-                            // T* jacobian,
-                            double* generators,
-                            int FEVAL,
-                            // int iteration,
-                            // T* sdata,
-                            double* results,
-                            double* funcEvals)
-  {
-
-    for (int dim = 0; dim < NDIM; ++dim) {
-      x[dim] = 0;
-    }
-
-    // int gIndex = __ldg(&constMem.gpuGenPermGIndex[pIndex]);
-
-    for (int dim = 0; dim < NDIM; ++dim) {
-      T generator = __ldg(&generators[FEVAL * dim + pIndex]);
-      x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
-                                            (.5 - generator) * b[dim].upper) *
-                                             range[dim];
-    }
-
-    T fun = gpu::apply(*d_integrand, x) /** (*jacobian)*/;
-    results[pIndex] = fun; // target for reduction
-
-    size_t index = pIndex * NDIM;
-    for (int i = 0; i < NDIM; i++) {
-      funcEvals[index + i] = x[i];
-    }
-    // we only care about func evaluations and results
-    /*for (int rul = 0; rul < NRULES; ++rul) {
-      sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
-    }*/
-  }
-
-  template <typename IntegT, typename T, int NDIM, int blockdim>
-  __device__ void
-  verboseSampleRegionBlock(IntegT* d_integrand,
-                           int sIndex,
-                           const Structures<double>& constMem,
-                           int FEVAL,
-                           int NSETS,
-                           Region<NDIM> sRegionPool[],
-                           GlobalBounds sBound[],
-                           T* vol,
-                           int* maxdim,
-                           T range[],
-                           T* jacobian,
-                           double* generators,
-                           double* results,
-                           double* funcEvals)
-  {
-    Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
-    __shared__ T sdata[blockdim];
-    // T g[NDIM];
-    gpu::cudaArray<T, NDIM> x;
-    int perm = 0;
-
-    T ratio =
-      Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
-    int offset = 2 * NDIM;
-
-    T sum[NRULES];
-    Zap(sum);
-
-    // Compute first set of permutation outside for loop to extract the Function
-    // values for the permutation used to compute
-    // fourth dimension
-    int pIndex = perm * blockdim + threadIdx.x;
-
-    if (pIndex < FEVAL) {
-      verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                                 pIndex,
-                                                 region->bounds,
-                                                 sBound,
-                                                 // g,
-                                                 x,
-                                                 // sum,
-                                                 // constMem,
-                                                 range,
-                                                 // jacobian,
-                                                 generators,
-                                                 FEVAL,
-                                                 // iteration,
-                                                 // sdata,
-                                                 results,
-                                                 funcEvals);
-    }
-
-    __syncthreads();
-
-    if (threadIdx.x == 0) {
-      T* f = &sdata[0];
-      Result* r = &region->result;
-      T* f1 = f;
-      T base = *f1 * 2 * (1 - ratio);
-      T maxdiff = 0;
-      int bisectdim = *maxdim;
-      for (int dim = 0; dim < NDIM; ++dim) {
-        T* fp = f1 + 1;
-        T* fm = fp + 1;
-        T fourthdiff =
-          fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
-
-        f1 = fm;
-        if (fourthdiff > maxdiff) {
-          maxdiff = fourthdiff;
-          bisectdim = dim;
-        }
-      }
-
-      r->bisectdim = bisectdim;
-    }
-    __syncthreads();
-
-    for (perm = 1; perm < FEVAL / blockdim; ++perm) {
-      int pIndex = perm * blockdim + threadIdx.x;
-      verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                                 pIndex,
-                                                 region->bounds,
-                                                 sBound,
-                                                 // g,
-                                                 x,
-                                                 // sum,
-                                                 // constMem,
-                                                 range,
-                                                 // jacobian,
-                                                 generators,
-                                                 FEVAL,
-                                                 // iteration,
-                                                 // sdata,
-                                                 results,
-                                                 funcEvals);
-    }
-    //__syncthreads();
-    // Balance permutations
-    pIndex = perm * blockdim + threadIdx.x;
-    if (pIndex < FEVAL) {
-      int pIndex = perm * blockdim + threadIdx.x;
-      verboseComputePermutation<IntegT, T, NDIM>(d_integrand,
-                                                 pIndex,
-                                                 region->bounds,
-                                                 sBound,
-                                                 // g,
-                                                 x,
-                                                 // sum,
-                                                 // constMem,
-                                                 range,
-                                                 // jacobian,
-                                                 generators,
-                                                 FEVAL,
-                                                 // iteration,
-                                                 // sdata,
-                                                 results,
-                                                 funcEvals);
-    }
-    // __syncthreads();
-
-    // for (int i = 0; i < NRULES; ++i) {
-    // sum[i] = blockReduceSum /*computeReduce*/ (sum[i] /*, sdata*/);
-    //__syncthreads();
-    //}
-
-    /*if (threadIdx.x == 0) {
-      Result* r = &region->result;
-      for (int rul = 1; rul < NRULES - 1; ++rul) {
-        T maxerr = 0;
-        for (int s = 0; s < NSETS; ++s) {
-          maxerr =
-            max(maxerr,
-                fabs(sum[rul + 1] +
-                     __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem.GPUNorm[s * NRULES + rul]));
-        }
-        sum[rul] = maxerr;
-      }
-
-      r->avg = (*vol) * sum[0];
-      r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
-                          errcoeff[0] * sum[2] <= sum[3]) ?
-                           errcoeff[1] * sum[1] :
-                           errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
-    }*/
-  }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
   template <typename IntegT, typename T, int NDIM, int blockdim, int debug>
   __device__ void
   SampleRegionBlock(IntegT* d_integrand,
-                    Structures<double>& constMem,
+                    Structures<T>& constMem,
                     Region<NDIM> sRegionPool[],
                     GlobalBounds sBound[],
                     T* vol,
                     int* maxdim,
                     T range[],
                     T* jacobian,
-                    double* generators,
-                    quad::Func_Evals<NDIM>& fevals)
+                    T* generators,
+					quad::Func_Evals<NDIM>& fevals)
   {
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
     __shared__ T sdata[blockdim];
@@ -461,8 +268,8 @@ namespace quad {
       }
 
       r->avg = (*vol) * sum[0];
-      const double errcoeff[3] = {5., 1., 5.};
-      // branching twice for each thread 0
+	  const T errcoeff[3] = {5., 1., 5.};
+	  //branching twice for each thread 0
       r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
@@ -470,17 +277,19 @@ namespace quad {
     }
   }
 
-  __device__ double
-  scale_point(const double val, double low, double high)
-  {
-    return low + (high - low) * val;
+  template<typename T>
+  __device__
+  T scale_point(const T val, T low, T high){
+	  return low + (high - low) * val;
   }
-
-  __device__ void
-  rebin(double rc, int nd, double r[], double xin[], double xi[])
-  {
+  
+  template<typename T>
+  __device__
+  void
+rebin(T rc, int nd, T r[], T xin[], T xi[])
+{
     int i, k = 0;
-    double dr = 0.0, xn = 0.0, xo = 0.0;
+    T dr = 0.0, xn = 0.0, xo = 0.0;
 
     // dr is the cummulative contribution
 
@@ -506,29 +315,29 @@ namespace quad {
 
   template <typename IntegT, typename T, int NDIM>
   __device__ void
-  Vegas_assisted_computePermutation(
-    IntegT* d_integrand,
-    size_t num_samples,
-    size_t num_passes,
-    Bounds* b,
-    GlobalBounds sBound[],
-    T range[],
-    T* jacobian,
-    pagani::Curand_generator& rand_num_generator,
-    double& sum,
-    double& sq_sum,
-    double vol)
-  {	
+  Vegas_assisted_computePermutation(IntegT* d_integrand,
+					 size_t num_samples, 
+					 size_t num_passes,
+                     Bounds* b,
+                     GlobalBounds sBound[],
+                     T range[],
+                     T* jacobian,
+					 pagani::Curand_generator<T>& rand_num_generator,
+					 T& sum,
+					 T& sq_sum,
+					 T vol)
+  {
+	
 	//random number generation for bin selection
 	gpu::cudaArray<T, NDIM> x_random;
 	constexpr size_t nbins = 100;
 	int ndmx_p1 = nbins+1;
-	__shared__ double xi[(nbins+1)*(NDIM+1)];
-	__shared__ double d[(nbins+1) * (NDIM+1)];
-	double dt[NDIM+1];   
+	__shared__ T xi[(nbins+1)*(NDIM+1)];
+	__shared__ T d[(nbins+1) * (NDIM+1)];
+	T dt[NDIM+1];   
 	const int mxdim_p1 = NDIM + 1;
-	double r[nbins+1];
-	double xin[nbins+1];
+	T r[nbins+1];
+	T xin[nbins+1];
 	
 	//size_t FEVAL = CuhreFuncEvalsPerRegion<NDIM>();
 	//size_t num_passes = num_samples/FEVAL;
@@ -566,48 +375,39 @@ namespace quad {
 		
 	for(size_t pass = 0; pass < num_passes; ++pass){
 		
-		double local_sq_sum = 0;
-		double local_sum = 0;
+		T local_sq_sum = 0;
+		T local_sum = 0;
 		
 		for(size_t sample = 0; sample < num_samples; ++sample){
 			//use one thread to see what contribution gets marked
 			int bins[NDIM+1];
 			
-			double wgt = 1.;
+			T wgt = 1.;
 			
 			for (int dim = 1; dim <= NDIM; ++dim) {
 				//draw random number
-				const double random = (rand_num_generator)();
+				const T random = (rand_num_generator)();
 				
 				//select bin with that random number
-				const double probability = 1./static_cast<double>(nbins);
+				const T probability = 1./static_cast<T>(nbins);
 				const int bin = static_cast<int>(random/probability) + 1;
 				bins[dim] = bin;
 				
-				const double bin_high = xi[(dim)*(nbins+1) + bin];
-				const double bin_low = xi[(dim)*(nbins+1) + bin - 1];
+				const T bin_high = xi[(dim)*(nbins+1) + bin];
+				const T bin_low = xi[(dim)*(nbins+1) + bin - 1];
 						
 				//get the true bounds
-				const double region_scaled_b_high = scale_point(bin_high, b[dim-1].lower, b[dim-1].upper);
-				const double region_scaled_b_low = scale_point(bin_low, b[dim-1].lower, b[dim-1].upper);
+				const T region_scaled_b_high = scale_point(bin_high, b[dim-1].lower, b[dim-1].upper);
+				const T region_scaled_b_low = scale_point(bin_low, b[dim-1].lower, b[dim-1].upper);
 				//scale a random point at those bounds
 				
-				double rand_point_in_bin = scale_point((rand_num_generator)(), region_scaled_b_low, region_scaled_b_high);
+				T rand_point_in_bin = scale_point((rand_num_generator)(), region_scaled_b_low, region_scaled_b_high);
 				x_random[dim-1] = rand_point_in_bin;
 				wgt *= nbins * (bin_high - bin_low);
 			}
 			
-			double calls = 64. * num_passes * num_samples;
-			double f =  gpu::apply(*d_integrand, x_random) * (*jacobian) * wgt/calls;
-			
-			//the jacobian variable in shared memory is for the global bounds
-			//the volume variable in shared memory is the one about the sub-region
-			
-			/*
-				in mcubes double f = wgt * gpu::apply(*d_integrand, xx);
-				wgt = xjac * (xo * xnd)^ndim where xnd = the # of bins, xo is the length of the bin
-					xjac = (1/calls) * jacobian of global bounds (in this case jacobian would be for region bounds)
-			*/
+			T calls = 64. * num_passes * num_samples;
+			T f =  gpu::apply(*d_integrand, x_random) * (*jacobian) * wgt/calls;
 			
 			local_sum += f;
 			local_sq_sum +=  f*f;
@@ -629,9 +429,9 @@ namespace quad {
 		sum += local_sum;
 		sq_sum += local_sq_sum;
 		
-		double xo = 0.;
-		double xn = 0.;
-		double rc = 0.;
+		T xo = 0.;
+		T xn = 0.;
+		T rc = 0.;
 		
 		__syncthreads();
 		
@@ -699,25 +499,21 @@ namespace quad {
 	}
   }
 
-  template <typename IntegT,
-            typename T,
-            int NDIM,
-            int blockdim,
-            bool debug = false>
-  __device__ void
-  Vegas_assisted_SampleRegionBlock(IntegT* d_integrand,
-                                   Structures<double>& constMem,
-                                   Region<NDIM> sRegionPool[],
-                                   GlobalBounds sBound[],
-                                   T* vol,
-                                   int* maxdim,
-                                   T range[],
-                                   T* jacobian,
-                                   double* generators,
-                                   quad::Func_Evals<NDIM>& fevals,
-                                   unsigned int seed_init)
+	template <typename IntegT, typename T, int NDIM, int blockdim, bool debug = false>
+	__device__ void
+	Vegas_assisted_SampleRegionBlock(IntegT* d_integrand,
+                    Structures<T>& constMem,
+                    Region<NDIM> sRegionPool[],
+                    GlobalBounds sBound[],
+                    T* vol,
+                    int* maxdim,
+                    T range[],
+                    T* jacobian,
+                    T* generators,
+					quad::Func_Evals<NDIM>& fevals,
+					unsigned int seed_init)
   {
-    pagani::Curand_generator rand_num_generator(seed_init);
+	pagani::Curand_generator<T> rand_num_generator(seed_init);  
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
     __shared__ T sdata[blockdim];
 
@@ -835,7 +631,8 @@ namespace quad {
       }
 
       r->avg = (*vol) * sum[0];
-      const double errcoeff[3] = {5, 1, 5};
+
+	  const T errcoeff[3] = {5, 1, 5};
       r->err = (*vol) * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
@@ -845,8 +642,8 @@ namespace quad {
 	
 	size_t num_samples = 100;
 	size_t num_passes = 10;
-	double ran_sum = 0.;
-	double sq_sum = 0.;
+	T ran_sum = 0.;
+	T sq_sum = 0.;
 	
 	
 	Vegas_assisted_computePermutation<IntegT, T, NDIM>(d_integrand,
@@ -872,9 +669,9 @@ namespace quad {
 		//double var = sq_sum / static_cast<double>(64*num_passes * num_samples) - mean* mean;
 		//printf("region %i mcubes:%e +- %e (sum:%e) nsamples:%i\n", blockIdx.x, vol[0]*mean, var, ran_sum, num_samples*num_passes*64);
 		
-		double dxg = 1.0 / (num_passes*num_samples*64);
-		double dv2g, i;
-		double calls = num_passes*num_samples*64;
+		T dxg = 1.0 / (num_passes*num_samples*64);
+		T dv2g, i;
+		T calls = num_passes*num_samples*64;
 		for (dv2g = 1, i = 1; i <= NDIM; i++)
 			dv2g *= dxg;
 		dv2g = (calls * dv2g * calls * dv2g) / num_samples / num_samples / (num_samples - 1.0);

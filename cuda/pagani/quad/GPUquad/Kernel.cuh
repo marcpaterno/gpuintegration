@@ -227,7 +227,7 @@ namespace quad {
     HostMemory<T> host;
     DeviceMemory<T> device;
     Rule<double> rule;
-    Structures<double> constMem;
+    Structures<T> constMem;
     double* generators = nullptr;
 
   public:
@@ -1887,7 +1887,7 @@ namespace quad {
       QuadDebug(cudaFree(subDividingDimension));
     }
 
-    template <typename IntegT>
+    /*template <typename IntegT>
     void
     EvaluateAtCuhrePoints(IntegT* d_integrand,
                           VerboseResults& resultsObj,
@@ -1962,7 +1962,7 @@ namespace quad {
         }
         resultsObj.funcEvaluationPoints.push_back(evalPoints);
       }
-    }
+    }*/
 
     template <typename IntegT>
     bool

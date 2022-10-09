@@ -361,6 +361,7 @@ namespace quad {
     loadDeviceConstantMemory(Structures<T>* constMem)
     {
       QuadDebug(cudaMalloc((void**)&constMem->gpuG, sizeof(T) * NDIM * NSETS));
+	  
       QuadDebug(
         cudaMalloc((void**)&constMem->cRuleWt, sizeof(T) * NRULES * NSETS));
       QuadDebug(cudaMalloc((void**)&constMem->cGeneratorCount,
