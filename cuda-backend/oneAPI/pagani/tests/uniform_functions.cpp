@@ -2,7 +2,7 @@
 #include <oneapi/dpl/async>
 
 #define CATCH_CONFIG_MAIN
-#include "oneAPI/catch2/catch.hpp"
+#include "catch2/catch.hpp"
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 
