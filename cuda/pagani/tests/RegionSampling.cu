@@ -176,7 +176,6 @@ EvaluateRegions(quad::Kernel<double, NDIM>* kernel, IntegT* d_integrand)
       numRegions,
       dRegionsIntegral,
       dRegionsError,
-      activeRegions,
       subDividingDimension,
       epsrel,
       epsabs,
