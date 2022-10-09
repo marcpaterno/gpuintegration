@@ -161,68 +161,20 @@ void test_on_bilinear(){
     }
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  quad::Interp2D f(xs, ys, zs);
 
-  double interpResult = Evaluate(f, 2.5, 1.5);
-=======
-=======
->>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
   quad::Interp2D<T> f(xs, ys, zs);
   using IntegType = quad::Interp2D<T>;
   
   T interpResult = Evaluate<T>(f, 2.5, 1.5);
-<<<<<<< HEAD
->>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
   CHECK(interpResult == 4.5);
 }
 
-<<<<<<< HEAD
-  constexpr int ndim = 2;
-  quad::Pagani<double, ndim> pagani;
-  std::array<double, ndim> lows = {1., 1.};
-  std::array<double, ndim> highs = {3., 4.};
-  quad::Volume<double, ndim> vol(lows, highs);
-
-  size_t free_physmem, total_physmem;
-
-  for (int run = 0; run < 1; ++run) {
-    cudaMemGetInfo(&free_physmem, &total_physmem);
-    std::cout << "start"
-              << "," << run << "," << free_physmem << std::endl;
-    pagani.integrate<quad::Interp2D>(f, 1.e-3, 1.e-12, &vol);
-    std::cout << "end"
-              << "," << run << "," << free_physmem << std::endl;
-  }
-=======
-  CHECK(interpResult == 4.5);
-}
-
-
-TEST_CASE("clamp interface works"){
-	test_clamp_interface<double>();
-	test_clamp_interface<float>();
->>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
-}
-=======
-
-<<<<<<< HEAD
 TEST_CASE("clamp interface works"){
 	test_clamp_interface<double>();
 	test_clamp_interface<float>();
 }
 
-=======
->>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)
 TEST_CASE("Interp2D exact at knots"){
 	test_interpolation_at_knots<double>();
 	test_interpolation_at_knots<float>();
 }
-
-TEST_CASE("Interp2D on bilinear"){
-	test_on_bilinear<double>();
-	test_on_bilinear<float>();
-}
-
->>>>>>> 7a11a52 (flaoting point template argument wip, added on Interpolation Objects)

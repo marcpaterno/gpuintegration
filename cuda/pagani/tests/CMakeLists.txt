@@ -32,14 +32,6 @@ set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on C
 target_link_libraries(pagani_loop_test ${NVTX_LIBRARY})
 # This is not added as a test for ctest, because it is to be run using memory diagnostic tools
 
-add_executable(CuhrePointsEvaluation CuhrePointsEvaluation.cu)
-set_target_properties(CuhrePointsEvaluation PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_include_directories(CuhrePointsEvaluation PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(CuhrePointsEvaluation CuhrePointsEvaluation)
-
 add_executable(cudaUnifiedArray cudaUnifiedArray.cu)
 target_link_libraries(cudaUnifiedArray cpu_model gpu_model)
 set_target_properties(cudaUnifiedArray PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})

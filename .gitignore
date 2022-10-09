@@ -10,3 +10,4 @@ build/
 *.yaml
 .ipynb_checkpoints
 *.csv
+*.out
