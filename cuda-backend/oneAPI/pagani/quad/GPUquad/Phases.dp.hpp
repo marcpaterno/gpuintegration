@@ -335,7 +335,6 @@ namespace quad {
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-
         *vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
 
         sBound[dim].unScaledLower = lows[dim];

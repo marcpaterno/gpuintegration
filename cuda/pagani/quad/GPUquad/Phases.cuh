@@ -484,7 +484,6 @@ namespace quad {
                        size_t numRegions,
                        T* dRegionsIntegral,
                        T* dRegionsError,
-                       int* activeRegions,
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
@@ -512,7 +511,6 @@ namespace quad {
                                                                seed_init);
 
     if (threadIdx.x == 0) {
-      activeRegions[blockIdx.x] = 1;
       subDividingDimension[blockIdx.x] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[blockIdx.x] = sRegionPool[0].result.avg;
       dRegionsError[blockIdx.x] = sRegionPool[0].result.err;

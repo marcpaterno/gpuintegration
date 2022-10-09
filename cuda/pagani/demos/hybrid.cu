@@ -2,17 +2,19 @@
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 #include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 
-class GENZ_4_2D {
-public:
-  __device__ __host__ double
-  operator()(double x, double y)
-  {
-    // double alpha = 25.;
-    double beta = .5;
-    return exp(-1.0 *
-               (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2)));
-  }
-};
+  class GENZ_4_2D {
+  public:
+    __device__ __host__ double
+    operator()(double x, double y)
+    {
+      // double alpha = 25.;
+      double beta = .5;
+	  return exp(
+        -1.0 * (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2)));
+    
+	}
+  };
+
 
 int
 main()
@@ -75,7 +77,6 @@ main()
                                sub_regions.size,
                                estimates.integral_estimates,
                                estimates.error_estimates,
-                               region_characteristics.active_regions,
                                region_characteristics.sub_dividing_dim,
                                epsrel,
                                epsabs,
@@ -110,7 +111,6 @@ main()
                                sub_regions.size,
                                estimates.integral_estimates,
                                estimates.error_estimates,
-                               region_characteristics.active_regions,
                                region_characteristics.sub_dividing_dim,
                                epsrel,
                                epsabs,
