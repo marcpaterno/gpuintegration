@@ -55,56 +55,6 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
-struct PhaseII_output {
-  // perhaps activeRegions belongs here based on what attributes Region has
-  PhaseII_output()
-  {
-    estimate = 0.;
-    errorest = 0.;
-    regions = 0;
-    num_failed_blocks = 0;
-    num_starting_blocks = 0;
-  }
-
-  double estimate;
-  double errorest;
-  int regions;
-  int num_failed_blocks;
-  int num_starting_blocks;
-
-  PhaseII_output
-  operator+(const PhaseII_output& b)
-  {
-    PhaseII_output addedObj;
-    addedObj.estimate = estimate + b.estimate;
-    addedObj.errorest = errorest + b.errorest;
-    addedObj.regions = regions + b.regions;
-    addedObj.num_failed_blocks = num_failed_blocks + b.num_failed_blocks;
-    addedObj.num_starting_blocks = regions + b.num_starting_blocks;
-    return addedObj;
-  }
-
-  void
-  operator=(const PhaseII_output& b)
-  {
-    estimate = b.estimate;
-    errorest = b.errorest;
-    regions = b.regions;
-    num_failed_blocks = b.num_failed_blocks;
-    num_starting_blocks = b.num_starting_blocks;
-  }
-
-  void
-  operator+=(const PhaseII_output& b)
-  {
-    estimate += b.estimate;
-    errorest += b.errorest;
-    regions += b.regions;
-    num_failed_blocks += b.num_failed_blocks;
-    num_starting_blocks += b.num_starting_blocks;
-  }
-};
-
 template <int dim>
 struct Region {
   int div;
