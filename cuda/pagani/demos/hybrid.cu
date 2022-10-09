@@ -92,6 +92,16 @@ main()
   double mcubes_err =
     reduction<double>(estimates.error_estimates, sub_regions.size);
 
+  double* h_regions_estimates =
+    copy_to_host(estimates.integral_estimates, sub_regions.size);
+  double* h_regions_errorests =
+    copy_to_host(estimates.error_estimates, sub_regions.size);
+  std::cout << "num_regions:" << sub_regions.size << std::endl;
+  for (int i = 0; i < sub_regions.size; ++i) {
+    std::cout << "region " << i << ":" << h_regions_estimates[i] << "+-"
+              << h_regions_errorests[i] << std::endl;
+  }
+
   quad::Func_Evals<ndim> fevals_vanilla;
   quad::INTEGRATE_GPU_PHASE1<GENZ_4_2D, double, ndim, 64>
     <<<sub_regions.size, 64>>>(d_integrand,
@@ -115,5 +125,19 @@ main()
     reduction<double>(estimates.integral_estimates, sub_regions.size);
   double pagani_err =
     reduction<double>(estimates.error_estimates, sub_regions.size);
+
+  std::cout << "true value:" << true_value << std::endl;
+  std::cout << "pagani:" << pagani_est << "+-" << pagani_err << std::endl;
+  std::cout << "mcubes:" << mcubes_est << "+-" << mcubes_err << std::endl;
+
+  h_regions_estimates =
+    copy_to_host(estimates.integral_estimates, sub_regions.size);
+  h_regions_errorests =
+    copy_to_host(estimates.error_estimates, sub_regions.size);
+  std::cout << "num_regions:" << sub_regions.size << std::endl;
+  for (int i = 0; i < sub_regions.size; ++i) {
+    std::cout << "region " << i << ":" << h_regions_estimates[i] << "+-"
+              << h_regions_errorests[i] << std::endl;
+  }
   return 0;
 }

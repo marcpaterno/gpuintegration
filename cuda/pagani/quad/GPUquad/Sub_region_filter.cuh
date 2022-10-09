@@ -149,4 +149,5 @@ public:
 
   int* scanned_array = nullptr;
 };
+
 #endif

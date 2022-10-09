@@ -16,10 +16,22 @@
 #endif
 
 template <typename T>
+T*
+copy_to_host(T* src, size_t size)
+{
+  T* dest = new T[size];
+  auto rc = cudaMemcpy(dest, src, sizeof(T) * size, cudaMemcpyDeviceToHost);
+  if (rc != cudaSuccess)
+    throw std::bad_alloc();
+  return dest;
+}
+
+template <typename T>
 void
 cuda_memcpy_to_host(T* dest, T const* src, size_t n_elements)
 {
-  auto rc = cudaMemcpy(dest, src, sizeof(T) * n_elements, cudaMemcpyDeviceToHost);
+  auto rc =
+    cudaMemcpy(dest, src, sizeof(T) * n_elements, cudaMemcpyDeviceToHost);
   if (rc != cudaSuccess)
     throw std::bad_alloc();
 }

@@ -409,6 +409,7 @@ namespace quad {
   {
 
     INIT_REGION_POOL<IntegT, T, NDIM, blockDim, debug>(d_integrand,
+
                                                        dRegions,
                                                        dRegionsLength,
                                                        numRegions,
@@ -432,6 +433,7 @@ namespace quad {
       subDividingDimension[item_ct1.get_group(0)] =
         sRegionPool[0].result.bisectdim;
       dRegionsIntegral[item_ct1.get_group(0)] = sRegionPool[0].result.avg;
+
       dRegionsError[item_ct1.get_group(0)] = sRegionPool[0].result.err;
     }
   }
