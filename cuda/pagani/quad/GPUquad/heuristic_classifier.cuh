@@ -8,8 +8,9 @@
 
 #include <string>
 
+template <typename T>
 std::string
-doubleToString(double val, int prec_level)
+doubleToString(T val, int prec_level)
 {
   std::ostringstream out;
   out.precision(prec_level);
@@ -18,40 +19,41 @@ doubleToString(double val, int prec_level)
 }
 
 // needs renaming
-
+template <typename T>
 struct Classification_res {
+public:
   Classification_res() = default;
-  Classification_res(Range<double> some_range) : threshold_range(some_range) {}
+  Classification_res(Range<T> some_range) : threshold_range(some_range) {}
 
   ~Classification_res() {}
 
   void
   decrease_threshold()
   {
-    const double diff = abs(threshold_range.low - threshold);
+    const T diff = abs(threshold_range.low - threshold);
     threshold -= diff * .5;
   }
 
   void
   increase_threshold()
   {
-    const double diff = abs(threshold_range.high - threshold);
+    const T diff = abs(threshold_range.high - threshold);
     threshold += diff * .5;
   }
 
   bool pass_mem = false;
   bool pass_errorest_budget = false;
 
-  double threshold = 0.;
-  double errorest_budget_covered = 0.;
-  double percent_mem_active = 0.;
-  Range<double> threshold_range; // change to threshold_range
+  T threshold = 0.;
+  T errorest_budget_covered = 0.;
+  T percent_mem_active = 0.;
+  Range<T> threshold_range; // change to threshold_range
   int* active_flags = nullptr;
   size_t num_active = 0;
-  double finished_errorest = 0.;
+  T finished_errorest = 0.;
 
-  double max_budget_perc_to_cover = .25;
-  double max_active_perc = .5;
+  T max_budget_perc_to_cover = .25;
+  T max_active_perc = .5;
   bool data_allocated = false;
 };
 
@@ -132,13 +134,6 @@ device_mem_required_for_full_split(size_t num_regions, size_t ndim)
          4 * num_ints_needed(num_regions);
 }
 
-/*
-size_t free_device_mem(){
-    size_t free_physmem, total_physmem;
-    cudaMemGetInfo(&free_physmem, &total_physmem);
-    return free_physmem;
-}*/
-
 size_t
 free_device_mem(size_t num_regions, size_t ndim)
 {
@@ -151,25 +146,24 @@ free_device_mem(size_t num_regions, size_t ndim)
   return free_mem;
 }
 
-template <size_t ndim, bool use_custom = false>
+template <typename T, size_t ndim, bool use_custom = false>
 class Heuristic_classifier {
 
-  double epsrel = 0.;
-  double epsabs = 0.;
+  T epsrel = 0.;
+  T epsabs = 0.;
   int required_digits = 0;
-  std::array<double, 3> estimates_from_last_iters;
+  std::array<T, 3> estimates_from_last_iters;
   size_t iters_collected = 0;
   const size_t min_iters_for_convergence = 1;
-  double max_percent_error_budget = .25;
-  double max_active_regions_percentage = .5;
+  T max_percent_error_budget = .25;
+  T max_active_regions_percentage = .5;
 
-  friend class Classification_res;
+  friend class Classification_res<T>;
 
 public:
   Heuristic_classifier() = default;
 
-  Heuristic_classifier(double rel_tol, double abs_tol)
-    : epsrel(rel_tol), epsabs(abs_tol)
+  Heuristic_classifier(T rel_tol, T abs_tol) : epsrel(rel_tol), epsabs(abs_tol)
   {
     required_digits = ceil(log10(1 / epsrel));
   }
@@ -178,9 +172,9 @@ public:
   sigDigitsSame() const
   {
     // std::cout<<"required_digits:"<<required_digits<<std::endl;
-    double third = abs(estimates_from_last_iters[0]);
-    double second = abs(estimates_from_last_iters[1]);
-    double first = abs(estimates_from_last_iters[2]);
+    T third = abs(estimates_from_last_iters[0]);
+    T second = abs(estimates_from_last_iters[1]);
+    T first = abs(estimates_from_last_iters[2]);
 
     while (first != 0. && first < 1.) {
       first *= 10;
@@ -224,7 +218,7 @@ public:
   }
 
   void
-  store_estimate(const double estimate)
+  store_estimate(const T estimate)
   {
     estimates_from_last_iters[0] = estimates_from_last_iters[1];
     estimates_from_last_iters[1] = estimates_from_last_iters[2];
@@ -265,14 +259,14 @@ public:
   }
 
   size_t
-  device_mem_required_for_full_split(const size_t num_regions)  const
+  device_mem_required_for_full_split(const size_t num_regions) const
   {
     return 8 * num_doubles_needed(num_regions) +
            4 * num_ints_needed(num_regions);
   }
 
   bool
-  enough_mem_for_next_split(const size_t num_regions) const
+  enough_mem_for_next_split(const size_t num_regions)
   {
     return free_device_mem(num_regions, ndim) >
            device_mem_required_for_full_split(num_regions);
@@ -288,16 +282,16 @@ public:
   }
 
   void
-  apply_threshold(Classification_res& res,
-                  const double* errorests,
+  apply_threshold(Classification_res<T>& res,
+                  const T* errorests,
                   const size_t num_regions) const
   {
 
     auto int_division = [](int x, int y) {
-      return static_cast<double>(x) / static_cast<double>(y);
+      return static_cast<T>(x) / static_cast<T>(y);
     };
 
-    set_true_for_larger_than<double>(
+    set_true_for_larger_than<T>(
       errorests, res.threshold, num_regions, res.active_flags);
     res.num_active = static_cast<size_t>(
       reduction<int, use_custom>(res.active_flags, num_regions));
@@ -311,37 +305,31 @@ public:
   }
 
   void
-  evaluate_error_budget(Classification_res& res,
-                        double* error_estimates,
+  evaluate_error_budget(Classification_res<T>& res,
+                        T* error_estimates,
                         int* active_flags,
                         const size_t num_regions,
-                        const double target_error,
-                        const double active_errorest,
-                        const double iter_finished_errorest,
-                        const double total_f_errorest,
-                        const double max_percent_err_budget) const
+                        const T target_error,
+                        const T active_errorest,
+                        const T iter_finished_errorest,
+                        const T total_f_errorest,
+                        const T max_percent_err_budget) const
   {
 
-    const double extra_f_errorest =
-      active_errorest -
-      dot_product<double, int, use_custom>(
-        error_estimates, active_flags, num_regions) -
-      iter_finished_errorest;
-    // std::cout<<"dot_product<double, double, use_custom>(error_estimates,
-    // active_flags, num_regions):"<<dot_product<double, int,
-    // use_custom>(error_estimates, active_flags, num_regions)<<std::endl;
-    // std::cout<<"extra_f_errorest:"<<extra_f_errorest<<std::endl;
-    // std::cout<<"iter_finished_errorest:"<<iter_finished_errorest<<std::endl;
-    const double error_budget = target_error - total_f_errorest;
+    const T extra_f_errorest = active_errorest -
+                               dot_product<T, int, use_custom>(
+                                 error_estimates, active_flags, num_regions) -
+                               iter_finished_errorest;
+    const T error_budget = target_error - total_f_errorest;
     res.pass_errorest_budget =
       extra_f_errorest <= max_percent_err_budget * error_budget;
     res.finished_errorest = extra_f_errorest;
   }
 
   void
-  get_larger_threshold_results(Classification_res& thres_search,
+  get_larger_threshold_results(Classification_res<T>& thres_search,
                                const int* active_flags,
-                               const double* errorests,
+                               const T* errorests,
                                const size_t num_regions) const
   {
 
@@ -362,37 +350,42 @@ public:
   bool
   classification_criteria_met(const size_t num_regions) const
   {
-    double ratio =
-      static_cast<double>(device_mem_required_for_full_split(num_regions)) /
-      static_cast<double>(
-        /*quad::GetAmountFreeMem()*/ free_device_mem(num_regions, ndim));
+    T ratio = static_cast<T>(device_mem_required_for_full_split(num_regions)) /
+              static_cast<T>(free_device_mem(num_regions, ndim));
 
-    if (ratio > 1.)
+    printf("Ratio:%f estimate_convergence:%i mem_neededed:%lu estimated "
+           "free_mem:%lu\n",
+           ratio,
+           estimate_converged(),
+           device_mem_required_for_full_split(num_regions),
+           free_device_mem(num_regions, ndim));
+    if (ratio > 1.) {
       return true;
-    else if (ratio > .1 && estimate_converged())
+    } else if (ratio > .1 && estimate_converged()) {
       return true;
-    else
+    } else {
       return false;
+    }
   }
 
-  Classification_res
+  Classification_res<T>
   classify(int* active_flags, // remove this param, it's unused
-           double* errorests,
+           T* errorests,
            const size_t num_regions,
-           const double iter_errorest,
-           const double iter_finished_errorest,
-           const double total_finished_errorest)
+           const T iter_errorest,
+           const T iter_finished_errorest,
+           const T total_finished_errorest)
   {
 
-    Classification_res thres_search =
-      (device_array_min_max<double, use_custom>(errorests, num_regions));
+    Classification_res<T> thres_search =
+      (device_array_min_max<T, use_custom>(errorests, num_regions));
     thres_search.data_allocated = true;
 
-    const double min_errorest = thres_search.threshold_range.low;
-    const double max_errorest = thres_search.threshold_range.high;
+    const T min_errorest = thres_search.threshold_range.low;
+    const T max_errorest = thres_search.threshold_range.high;
     thres_search.threshold = iter_errorest / num_regions;
     thres_search.active_flags = cuda_malloc<int>(num_regions);
-    const double target_error = abs(estimates_from_last_iters[2]) * epsrel;
+    const T target_error = abs(estimates_from_last_iters[2]) * epsrel;
 
     const size_t max_num_thresholds_attempts = 20;
     size_t num_thres_increases = 0;
@@ -406,7 +399,7 @@ public:
          // << std::endl;
 
     do {
-      std::cout << "classifying" << std::endl;
+      // std::cout<<"classifying"<<std::endl;
       if (!thres_search.pass_mem &&
           num_thres_increases <= max_thres_increases) {
         get_larger_threshold_results(

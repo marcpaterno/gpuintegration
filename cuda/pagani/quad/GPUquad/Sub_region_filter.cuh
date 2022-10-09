@@ -46,12 +46,12 @@ alignRegions(T* dRegions,
   }
 }
 
-template <size_t ndim, bool use_custom = false>
+template <typename T, size_t ndim, bool use_custom = false>
 class Sub_regions_filter {
 public:
-  using Regions = Sub_regions<ndim>;
+  using Regions = Sub_regions<T, ndim>;
   using Region_char = Region_characteristics<ndim>;
-  using Region_ests = Region_estimates<ndim>;
+  using Region_ests = Region_estimates<T, ndim>;
 
   Sub_regions_filter(const size_t num_regions)
   {
@@ -100,15 +100,15 @@ public:
     // I dont' create Regions filtered_regions, because upon destruction it
     // would deallocate and for performance reasons, I don't want a deep_copy to
     // occur here
-    double* filtered_leftCoord = cuda_malloc<double>(num_active_regions * ndim);
-    double* filtered_length = cuda_malloc<double>(num_active_regions * ndim);
+    T* filtered_leftCoord = cuda_malloc<T>(num_active_regions * ndim);
+    T* filtered_length = cuda_malloc<T>(num_active_regions * ndim);
     int* filtered_sub_dividing_dim = cuda_malloc<int>(num_active_regions);
 
     parent_ests.reallocate(num_active_regions);
     const int numOfDivisionOnDimension = 1;
     const size_t num_blocks = compute_num_blocks(current_num_regions);
 
-    alignRegions<double, static_cast<int>(ndim)>
+    alignRegions<T, static_cast<int>(ndim)>
       <<<num_blocks, BLOCK_SIZE>>>(sub_regions.dLeftCoord,
                                    sub_regions.dLength,
                                    region_characteristics.active_regions,
@@ -149,5 +149,4 @@ public:
 
   int* scanned_array = nullptr;
 };
-
 #endif

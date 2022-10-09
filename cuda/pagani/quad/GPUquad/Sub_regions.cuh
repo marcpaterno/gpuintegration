@@ -8,10 +8,11 @@
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include <cuda.h>
 
+template <typename T>
 __global__ void
-create_uniform_split(const double length,
-                     double* newRegions,
-                     double* newRegionsLength,
+create_uniform_split(const T length,
+                     T* newRegions,
+                     T* newRegionsLength,
                      const size_t newNumOfRegions,
                      const size_t numOfDivisionsPerRegionPerDimension,
                      size_t ndim)
@@ -20,14 +21,13 @@ create_uniform_split(const double length,
 
   if (threadId < newNumOfRegions) {
     size_t interval_index =
-      threadId / pow((double)numOfDivisionsPerRegionPerDimension, (double)ndim);
+      threadId / pow((T)numOfDivisionsPerRegionPerDimension, (T)ndim);
     size_t local_id =
-      threadId %
-      (size_t)pow((double)numOfDivisionsPerRegionPerDimension, (double)ndim);
+      threadId % (size_t)pow((T)numOfDivisionsPerRegionPerDimension, (T)ndim);
     for (int dim = 0; dim < ndim; ++dim) {
       size_t id =
-        (size_t)(local_id / pow((double)numOfDivisionsPerRegionPerDimension,
-                                (double)dim)) %
+        (size_t)(local_id /
+                 pow((T)numOfDivisionsPerRegionPerDimension, (T)dim)) %
         numOfDivisionsPerRegionPerDimension;
       newRegions[newNumOfRegions * dim + threadId] = id * length;
       newRegionsLength[newNumOfRegions * dim + threadId] = length;
@@ -35,7 +35,7 @@ create_uniform_split(const double length,
   }
 }
 
-template <size_t ndim>
+template <typename T, size_t ndim>
 struct Sub_regions {
 
   // constructor should probably just allocate
@@ -60,11 +60,11 @@ struct Sub_regions {
   void
   host_device_init(const size_t numRegions)
   {
-    LeftCoord = host_alloc<double>(numRegions * ndim);
-    Length = host_alloc<double>(numRegions * ndim);
+    LeftCoord = host_alloc<T>(numRegions * ndim);
+    Length = host_alloc<T>(numRegions * ndim);
 
-    dLeftCoord = cuda_malloc<double>(numRegions * ndim);
-    dLength = cuda_malloc<double>(numRegions * ndim);
+    dLeftCoord = cuda_malloc<T>(numRegions * ndim);
+    dLength = cuda_malloc<T>(numRegions * ndim);
 
     size = numRegions;
     host_data_size = numRegions;
@@ -73,15 +73,15 @@ struct Sub_regions {
   void
   refresh_host_device()
   {
-    cuda_memcpy_to_host<double>(LeftCoord, dLeftCoord, size * ndim);
-    cuda_memcpy_to_host<double>(Length, dLength, size * ndim);
+    cuda_memcpy_to_host<T>(LeftCoord, dLeftCoord, size * ndim);
+    cuda_memcpy_to_host<T>(Length, dLength, size * ndim);
   }
 
   void
   refresh_device_from_host()
   {
-    cuda_memcpy_to_device<double>(dLeftCoord, LeftCoord, size * ndim);
-    cuda_memcpy_to_device<double>(dLength, Length, size * ndim);
+    cuda_memcpy_to_device<T>(dLeftCoord, LeftCoord, size * ndim);
+    cuda_memcpy_to_device<T>(dLength, Length, size * ndim);
   }
 
   void
@@ -94,8 +94,8 @@ struct Sub_regions {
     free(LeftCoord);
     free(Length);
     host_data_size = size;
-    LeftCoord = host_alloc<double>(size * ndim);
-    Length = host_alloc<double>(size * ndim);
+    LeftCoord = host_alloc<T>(size * ndim);
+    Length = host_alloc<T>(size * ndim);
   }
 
   void
@@ -104,8 +104,8 @@ struct Sub_regions {
     cudaFree(dLeftCoord);
     cudaFree(dLength);
     size = numRegions;
-    dLeftCoord = cuda_malloc<double>(numRegions * ndim);
-    dLength = cuda_malloc<double>(numRegions * ndim);
+    dLeftCoord = cuda_malloc<T>(numRegions * ndim);
+    dLength = cuda_malloc<T>(numRegions * ndim);
   }
 
   void
@@ -125,10 +125,10 @@ struct Sub_regions {
     }
   }
 
-  double
+  T
   compute_region_volume(size_t const regionID)
   {
-    double reg_vol = 1.;
+    T reg_vol = 1.;
     for (size_t dim = 0; dim < ndim; dim++) {
       size_t region_index = size * dim + regionID;
 
@@ -137,13 +137,13 @@ struct Sub_regions {
     return reg_vol;
   }
 
-  double
+  T
   compute_total_volume()
   {
     host_init();
     refresh_host_device();
 
-    double total_vol = 0.;
+    T total_vol = 0.;
     for (size_t regID = 0; regID < size; regID++) {
       total_vol += compute_region_volume(regID);
     }
@@ -155,15 +155,13 @@ struct Sub_regions {
   uniform_split(size_t numOfDivisionPerRegionPerDimension)
   {
     size_t num_starting_regions =
-      pow((double)numOfDivisionPerRegionPerDimension, (double)ndim);
-    double starting_axis_length =
-      1. / (double)numOfDivisionPerRegionPerDimension;
+      pow((T)numOfDivisionPerRegionPerDimension, (T)ndim);
+    T starting_axis_length = 1. / (T)numOfDivisionPerRegionPerDimension;
 
     device_init(num_starting_regions);
 
     size_t numThreads = 512;
-    size_t numBlocks =
-      (size_t)ceil((double)num_starting_regions / (double)numThreads);
+    size_t numBlocks = (size_t)ceil((T)num_starting_regions / (T)numThreads);
 
     create_uniform_split<<<numBlocks, numThreads>>>(
       starting_axis_length,
@@ -176,7 +174,7 @@ struct Sub_regions {
     size = num_starting_regions;
   }
 
-  quad::Volume<double, ndim>
+  quad::Volume<T, ndim>
   extract_region(size_t const regionID)
   {
 
@@ -185,7 +183,7 @@ struct Sub_regions {
       host_init();
     }
     refresh_host_device();
-    quad::Volume<double, ndim> regionID_bounds;
+    quad::Volume<T, ndim> regionID_bounds;
     for (size_t dim = 0; dim < ndim; dim++) {
       size_t region_index = size * dim + regionID;
       regionID_bounds.lows[dim] = LeftCoord[region_index];
@@ -196,7 +194,7 @@ struct Sub_regions {
   }
 
   void
-  set_ptr_to_estimates(Region_estimates<ndim>* estimates)
+  set_ptr_to_estimates(Region_estimates<T, ndim>* estimates)
   {
     assert(estimates != nullptr && estimates->size == this->size);
     region_estimates = estimates;
@@ -213,12 +211,11 @@ struct Sub_regions {
   take_snapshot()
   {
     snapshot_size = size;
-    snapshot_dLeftCoord = cuda_malloc<double>(size * ndim);
-    snapshot_dLength = cuda_malloc<double>(size * ndim);
-    cuda_memcpy_device_to_device<double>(
+    snapshot_dLeftCoord = cuda_malloc<T>(size * ndim);
+    snapshot_dLength = cuda_malloc<T>(size * ndim);
+    cuda_memcpy_device_to_device<T>(
       snapshot_dLeftCoord, dLeftCoord, size * ndim);
-    cuda_memcpy_device_to_device<double>(
-      snapshot_dLength, dLength, size * ndim);
+    cuda_memcpy_device_to_device<T>(snapshot_dLength, dLength, size * ndim);
   }
 
   void
@@ -233,17 +230,17 @@ struct Sub_regions {
 
   // for accessing on the host side, may need to invoke refresh_host_device() to
   // do copy
-  double* LeftCoord = nullptr;
-  double* Length = nullptr;
+  T* LeftCoord = nullptr;
+  T* Length = nullptr;
 
   // device side variables
-  double* dLeftCoord = nullptr;
-  double* dLength = nullptr;
+  T* dLeftCoord = nullptr;
+  T* dLength = nullptr;
 
-  double* snapshot_dLeftCoord = nullptr;
-  double* snapshot_dLength;
+  T* snapshot_dLeftCoord = nullptr;
+  T* snapshot_dLength;
   Region_characteristics<ndim>* characteristics;
-  Region_estimates<ndim>* region_estimates;
+  Region_estimates<T, ndim>* region_estimates;
 
   size_t size = 0;
   size_t host_data_size = 0;

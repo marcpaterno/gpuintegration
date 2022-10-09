@@ -61,13 +61,12 @@ TEST_CASE("Constant Positive Value Function with type double")
   Workspace<double, ndim, use_custom> pagani;
   quad::Volume<double, ndim> vol;
 
-
-  
   cuhreResult<double> res = pagani.integrate(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
+
   // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f %.15f\n", integral, error);
+  printf("ttotalEstimate:%.15f\n", integral);
   CHECK(integral == Approx(15.37));
 }
 

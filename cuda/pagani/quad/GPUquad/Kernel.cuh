@@ -30,7 +30,9 @@ namespace quad {
   //===========
   // FOR DEBUGGINGG
   void
-  print_to_file(std::string outString, std::string filename, bool appendMode = 0)
+  print_to_file(std::string outString,
+                std::string filename,
+                bool appendMode = 0)
   {
     if (appendMode) {
       std::ofstream outfile(filename, std::ios::app);
@@ -63,7 +65,8 @@ namespace quad {
     }
     __syncthreads();
 
-    if (threadId >= newNumOfRegions) return;
+    if (threadId >= newNumOfRegions)
+      return;
 
     size_t interval_index =
       threadId / pow((T)numOfDivisionsPerRegionPerDimension, (T)ndim);
@@ -223,7 +226,6 @@ namespace quad {
                               // need to bloat the class
     size_t nextAvailParentID; // same goes here
     size_t* parentIDs;        // same goes here
-
 
     HostMemory<T> Host;
     DeviceMemory<T> Device;
@@ -390,12 +392,14 @@ namespace quad {
       switch (verbosity) {
         case 1:
           print_to_file(per_iteration,
-                      "h" + std::to_string(heuristicID) + "_Per_iteration.csv");
+                        "h" + std::to_string(heuristicID) +
+                          "_Per_iteration.csv");
           break;
         case 2:
           printf("Printing for verbosity 2\n");
           print_to_file(per_iteration,
-                      "h" + std::to_string(heuristicID) + "_Per_iteration.csv");
+                        "h" + std::to_string(heuristicID) +
+                          "_Per_iteration.csv");
           print_to_file(per_region, "Phase_1_regions.csv");
           break;
         default:
@@ -1110,23 +1114,22 @@ namespace quad {
 
         cudaDeviceSynchronize();
 
-        alignRegions<T>
-          <<<numBlocks, numThreads>>>(NDIM,
-                                      dRegions,
-                                      dRegionsLength,
-                                      activeRegions,
-                                      dRegionsIntegral,
-                                      dRegionsError,
-                                      dParentsIntegral,
-                                      dParentsError,
-                                      subDividingDimension,
-                                      scannedArray,
-                                      newActiveRegions,
-                                      newActiveRegionsLength,
-                                      newActiveRegionsBisectDim,
-                                      numRegions,
-                                      numActiveRegions,
-                                      numOfDivisionOnDimension);
+        alignRegions<T><<<numBlocks, numThreads>>>(NDIM,
+                                                   dRegions,
+                                                   dRegionsLength,
+                                                   activeRegions,
+                                                   dRegionsIntegral,
+                                                   dRegionsError,
+                                                   dParentsIntegral,
+                                                   dParentsError,
+                                                   subDividingDimension,
+                                                   scannedArray,
+                                                   newActiveRegions,
+                                                   newActiveRegionsLength,
+                                                   newActiveRegionsBisectDim,
+                                                   numRegions,
+                                                   numActiveRegions,
+                                                   numOfDivisionOnDimension);
 
         CudaCheckError();
         nvtxRangePop();
@@ -1297,11 +1300,7 @@ namespace quad {
         (T)GetGPUMemNeededForNextIteration_CallBeforeSplit() /
         ((T)Device.GetAmountFreeMem());
       bool enoughMemForNextIter = mem_need_have_ratio < 1.;
-      // printf("Heuristic classification mem_need_have_ratio:%f
-      // estimateHasConverged:%i enoughMemForNextIter:%i lastAvg:%e,
-      // secondToLast:%e, leaves_estimate:%e\n", mem_need_have_ratio,
-      // estimateHasConverged, enoughMemForNextIter, lastAvg, secondTolastAvg,
-      // leaves_estimate);
+
       if (enoughMemForNextIter &&
           !estimateHasConverged) // don't filter if we haven't converged and we
                                  // have enough mem
@@ -1310,9 +1309,6 @@ namespace quad {
       if (mem_need_have_ratio < .1)
         return;
 
-      // printf("Will attempt Filtering at iter:%i with %lu regions
-      // estimateHasConverged:%i\n", iteration, numRegions,
-      // estimateHasConverged);
       T targetError = abs(leaves_estimate) * epsrel;
       size_t numThreads = BLOCK_SIZE;
 

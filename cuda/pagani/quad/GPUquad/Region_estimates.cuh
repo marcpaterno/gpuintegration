@@ -4,15 +4,15 @@
 #include <iostream>
 #include "cuda/pagani/quad/util/mem_util.cuh"
 
-template <size_t ndim>
+template <typename T, size_t ndim>
 class Region_estimates {
 public:
   Region_estimates() {}
 
   Region_estimates(size_t num_regions)
   {
-    integral_estimates = cuda_malloc<double>(num_regions);
-    error_estimates = cuda_malloc<double>(num_regions);
+    integral_estimates = cuda_malloc<T>(num_regions);
+    error_estimates = cuda_malloc<T>(num_regions);
     size = num_regions;
   }
 
@@ -21,8 +21,8 @@ public:
   {
     cudaFree(integral_estimates);
     cudaFree(error_estimates);
-    integral_estimates = cuda_malloc<double>(num_regions);
-    error_estimates = cuda_malloc<double>(num_regions);
+    integral_estimates = cuda_malloc<T>(num_regions);
+    error_estimates = cuda_malloc<T>(num_regions);
     size = num_regions;
   }
 
@@ -32,9 +32,8 @@ public:
     cudaFree(error_estimates);
   }
 
-  double* integral_estimates = nullptr;
-  double* error_estimates = nullptr;
+  T* integral_estimates = nullptr;
+  T* error_estimates = nullptr;
   size_t size = 0;
 };
-
 #endif

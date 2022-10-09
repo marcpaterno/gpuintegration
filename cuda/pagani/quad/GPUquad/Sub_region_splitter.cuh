@@ -3,7 +3,7 @@
 
 #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "cuda/pagani/quad/util/mem_util.cuh"
-//#include "cuda/pagani/quad/GPUquad/Kernel.cuh"
+// #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
 #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
 
 template <typename T, int NDIM>
@@ -46,37 +46,7 @@ divideIntervalsGPU(T* genRegions,
   }
 }
 
-/*
-template<size_t ndim>
-void split(Sub_regions<ndim>& sub_regions, const Region_characteristics<ndim>&
-classifiers){ size_t num_regions = classifiers.size; size_t num_threads =
-BLOCK_SIZE; size_t success = false; size_t num_blocks = num_regions /
-num_threads + ((num_regions % num_threads) ? 1 : 0);
-
-    size_t children_per_region = 2;
-
-    double* children_left_coord = cuda_malloc<double>(num_regions * ndim *
-children_per_region); double* children_length = cuda_malloc<double>(num_regions
-* ndim * children_per_region);
-
-    quad::divideIntervalsGPU<double, ndim>
-        <<<num_blocks, num_threads>>>(children_left_coord,
-                                      children_length,
-                                      sub_regions.dLeftCoord,
-                                      sub_regions.dLength,
-                                      classifiers.sub_dividing_dim,
-                                      num_regions,
-                                      children_per_region);
-    cudaDeviceSynchronize();
-    cudaFree(sub_regions.dLeftCoord);
-    cudaFree(sub_regions.dLength);
-    sub_regions.size = num_regions * children_per_region;
-    sub_regions.dLeftCoord = children_left_coord;
-    sub_regions.dLength = children_length;
-    quad::CudaCheckError();
-}
-*/
-template <size_t ndim>
+template <typename T, size_t ndim>
 class Sub_region_splitter {
 
 public:
@@ -84,7 +54,7 @@ public:
   Sub_region_splitter(size_t size) : num_regions(size) {}
 
   void
-  split(Sub_regions<ndim>& sub_regions,
+  split(Sub_regions<T, ndim>& sub_regions,
         const Region_characteristics<ndim>& classifiers)
   {
     if (num_regions == 0)
@@ -95,12 +65,12 @@ public:
       num_regions / num_threads + ((num_regions % num_threads) ? 1 : 0);
     size_t children_per_region = 2;
 
-    double* children_left_coord =
-      cuda_malloc<double>(num_regions * ndim * children_per_region);
-    double* children_length =
-      cuda_malloc<double>(num_regions * ndim * children_per_region);
+    T* children_left_coord =
+      cuda_malloc<T>(num_regions * ndim * children_per_region);
+    T* children_length =
+      cuda_malloc<T>(num_regions * ndim * children_per_region);
 
-    divideIntervalsGPU<double, ndim>
+    divideIntervalsGPU<T, ndim>
       <<<num_blocks, num_threads>>>(children_left_coord,
                                     children_length,
                                     sub_regions.dLeftCoord,
@@ -117,5 +87,4 @@ public:
     quad::CudaCheckError();
   }
 };
-
 #endif
