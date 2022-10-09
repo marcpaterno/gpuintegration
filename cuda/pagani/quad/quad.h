@@ -30,8 +30,6 @@ public:
 
 template <typename T>
 struct Structures {
-
-  Structures() = default;
   T* gpuG = nullptr;
   T* cRuleWt = nullptr;
   T* GPUScale = nullptr;
