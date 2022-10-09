@@ -21,25 +21,46 @@ public:
   }
 };
 
-int
-main()
-{
-
-  double epsrel = 1.0e-3;
-  double const epsrel_min = 1.0240000000000002e-10;
-  constexpr int ndim = 6;
-  GENZ_2_6D integrand;
-  double true_value = 1.286889807581113e+13;
-  constexpr bool use_custom_false = false;
-  constexpr bool debug = false;
-  quad::Volume<double, ndim> vol;
-
-  while (clean_time_and_call<GENZ_2_6D, double, ndim, use_custom_false, debug>(
-           "f2", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
-           true &&
+int main(){
+    
+    double epsrel = 1.0e-3;
+    double const epsrel_min = 1.0240000000000002e-10;
+    constexpr int ndim = 6;
+    GENZ_2_6D integrand;
+	double true_value = 1.286889807581113e+13;
+	constexpr bool use_custom_false = false;
+	constexpr bool debug = false;
+	quad::Volume<double, ndim>  vol;
+	bool relerr_classification = true;
+	
+	for(int i=0; i < 10; ++i)
+		call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol);
+	
+    while (clean_time_and_call<GENZ_2_6D, double, ndim, use_custom_false, debug>("f2",
+                                           integrand,
+                                           epsrel,
+                                           true_value,
+                                           "gpucuhre",
+                                           std::cout,
+										   vol,
+										   relerr_classification) == true &&
          epsrel >= epsrel_min) {
-    epsrel /= 5.0;
-  }
-
-  return 0;
+		epsrel /= 5.0;
+		break;
+	}
+	
+	constexpr bool use_custom_true = true;
+	epsrel = 8.0e-6;
+	while (clean_time_and_call<GENZ_2_6D, double, ndim, use_custom_true>("f2",
+                                           integrand,
+                                           epsrel,
+                                           true_value,
+                                           "gpucuhre",
+										   std::cout,
+										   vol,
+										   relerr_classification) == true &&
+         epsrel >= epsrel_min) {
+		epsrel /= 5.0;
+	}
+    return 0;
 }
