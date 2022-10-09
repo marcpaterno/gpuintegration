@@ -306,7 +306,7 @@ namespace quad {
                    T* dRegions,
                    T* dRegionsLength,
                    size_t numRegions,
-                   Structures<double> constMem,
+                   Structures<double>& constMem,
                    Region<NDIM> sRegionPool[],
                    GlobalBounds sBound[],
                    T* lows,
@@ -321,7 +321,7 @@ namespace quad {
                    T* ranges,
                    quad::Func_Evals<NDIM>& fevals)
   {
-    size_t index = item_ct1.get_group(0);
+    const size_t index = item_ct1.get_group(0);
     // may not be worth pre-computing
 
     if (item_ct1.get_local_id(0) == 0) {
@@ -329,13 +329,14 @@ namespace quad {
       *Jacobian = 1.;
       *vol = 1.;
       T maxRange = 0;
+	  
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-        *vol *=
-          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
+
+        *vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
 
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
@@ -388,7 +389,7 @@ namespace quad {
                        size_t numRegions,
                        T* dRegionsIntegral,
                        T* dRegionsError,
-                       double* activeRegions,
+                       //double* activeRegions,
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
@@ -429,9 +430,7 @@ namespace quad {
                                                        fevals);
 
     if (item_ct1.get_local_id(0) == 0) {
-      activeRegions[item_ct1.get_group(0)] = 1.;
-      subDividingDimension[item_ct1.get_group(0)] =
-        sRegionPool[0].result.bisectdim;
+      subDividingDimension[item_ct1.get_group(0)] = sRegionPool[0].result.bisectdim;
       dRegionsIntegral[item_ct1.get_group(0)] = sRegionPool[0].result.avg;
 
       dRegionsError[item_ct1.get_group(0)] = sRegionPool[0].result.err;

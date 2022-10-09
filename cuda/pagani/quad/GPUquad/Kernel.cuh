@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include "cuda/pagani/quad/util/mem_util.cuh"
+
 
 namespace quad {
 
@@ -1741,6 +1743,7 @@ namespace quad {
                            iteration);
       CudaCheckError();
       // nvtxRangePop();
+	 set_device_array<int>(activeRegions, numRegions, 1.);
 
       /*if(iteration == 14){
           printf("about to display\n");
@@ -1751,23 +1754,23 @@ namespace quad {
       quad::Func_Evals<NDIM> fevals;
       bool constexpr debug = false;
       quad::INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE, debug>
-        <<<numBlocks, numThreads>>>(d_integrand,
-                                    dRegions,
-                                    dRegionsLength,
-                                    numRegions,
-                                    dRegionsIntegral,
-                                    dRegionsError,
-                                    activeRegions,
-                                    subDividingDimension,
-                                    epsrel,
-                                    epsabs,
-                                    constMem,
-                                    // rule.GET_FEVAL(),
-                                    // rule.GET_NSETS(),
-                                    lows,
-                                    highs,
-                                    generators,
-                                    fevals);
+        <<<numBlocks, numThreads>>>(
+          d_integrand,
+          dRegions,
+          dRegionsLength,
+          numRegions,
+          dRegionsIntegral,
+          dRegionsError,
+          subDividingDimension,
+          epsrel,
+          epsabs,
+          constMem,
+          //rule.GET_FEVAL(),
+          //rule.GET_NSETS(),
+          lows,
+          highs,
+          generators,
+		  fevals);
 
       neval += numRegions * fEvalPerRegion;
       cudaDeviceSynchronize();

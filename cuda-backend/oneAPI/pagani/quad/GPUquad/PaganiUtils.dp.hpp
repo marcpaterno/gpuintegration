@@ -352,7 +352,7 @@ class Cubature_rules{
                       num_regions,
                       subregion_estimates->integral_estimates,
                       subregion_estimates->error_estimates,
-                      region_characteristics->active_regions,
+                      //region_characteristics->active_regions,
                       region_characteristics->sub_dividing_dim,
                       epsrel,
                       epsabs,
@@ -393,9 +393,7 @@ class Cubature_rules{
         size_t num_regions = subregions->size;
         
         set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
-		//temporary
-        //set_device_array<int>(region_characteristics->sub_dividing_dim, num_regions, 0);
-
+		
         auto integral_estimates = subregion_estimates->integral_estimates;
         auto error_estimates = subregion_estimates->error_estimates;
         auto active_regions = region_characteristics->active_regions;
@@ -474,7 +472,7 @@ class Cubature_rules{
             auto generators_ct13 = generators;
 			
             cgh.parallel_for(
-              sycl::nd_range(sycl::range(/*1, 1, */num_blocks*block_size) , sycl::range(/*1, 1, */block_size)),
+              sycl::nd_range(sycl::range(num_blocks*block_size) , sycl::range(block_size)),
               [=](sycl::nd_item<1> item_ct1)
                 [[intel::reqd_sub_group_size(32)]] {
                     quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size, debug>(
@@ -484,7 +482,6 @@ class Cubature_rules{
                       num_regions,
                       integral_estimates,
                       error_estimates,
-                      active_regions,
                       sub_dividing_dim,
                       epsrel,
                       epsabs,

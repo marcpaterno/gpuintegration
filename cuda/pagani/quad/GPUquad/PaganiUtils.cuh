@@ -55,7 +55,27 @@ public:
     rgenerators.outfile.open("cuda_generators.csv");
     rregions.outfile.open("cuda_regions.csv");
 
-    auto print_header = [=]() {
+    auto print_aser = [=]() {
+      rfevals.outfile << "reg, fid,";
+      for (size_t dim = 0; dim < ndim; ++dim)
+        rfevals.outfile << "dim" + std::to_string(dim) << +"low"
+                        << ","
+                        << "dim" + std::to_string(dim) + "high,";
+
+      for (size_t dim = 0; dim < ndim; ++dim)
+        rfevals.outfile << "gdim" + std::to_string(dim) << +"low"
+                        << ","
+                        << "gdim" + std::to_string(dim) + "high"
+                        << ",";
+
+      for (size_t dim = 0; dim < ndim; ++dim)
+        rfevals.outfile << "dim" + std::to_string(dim) << ",";
+
+      rfevals.outfile << std::scientific << "feval, estimate, errorest"
+                      << std::endl;
+    };
+
+	auto print_header = [=]() {
       rfevals.outfile << "reg, fid,";
       for (size_t dim = 0; dim < ndim; ++dim)
         rfevals.outfile << "dim" + std::to_string(dim) << +"low"
@@ -271,7 +291,7 @@ public:
       constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
       dfevals.fevals_list =
         cuda_malloc<quad::Feval<ndim>>(num_regions * num_fevals);
-    }
+  }
 
     set_device_array<int>(
       region_characteristics.active_regions, num_regions, 1.);
