@@ -115,54 +115,15 @@ public:
     cudaFree(generators);
     cudaFree(integ_space_lows);
     cudaFree(integ_space_highs);
-  }
-
-  void
-  Print_func_evals(quad::Func_Evals<ndim> fevals,
-                   T* ests,
-                   T* errs,
-                   const size_t num_regions)
-  {
-    if (num_regions >= 1024)
-      return;
-
-    constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
-
-    auto print_reg = [=](const Bounds* sub_region) {
-      for (size_t dim = 0; dim < ndim; ++dim) {
-        rfevals.outfile << std::scientific << sub_region[dim].lower << ","
-                        << sub_region[dim].upper << ",";
-      }
-    };
-
-    auto print_global_bounds = [=](const GlobalBounds* sub_region) {
-      for (size_t dim = 0; dim < ndim; ++dim) {
-        rfevals.outfile << std::scientific << sub_region[dim].unScaledLower
-                        << "," << sub_region[dim].unScaledUpper << ",";
-      }
-    };
-
-    auto print_feval_point = [=](T* x) {
-      for (size_t dim = 0; dim < ndim; ++dim) {
-        rfevals.outfile << std::scientific << x[dim] << ",";
-      }
-    };
-
-    for (size_t reg = 0; reg < num_regions; ++reg) {
-      for (int feval = 0; feval < fevals.num_fevals; ++feval) {
-        size_t index = reg * fevals.num_fevals + feval;
-
-        rfevals.outfile << reg << "," << fevals[index].feval_index << ",";
-
-        print_reg(fevals[index].region_bounds);
-        print_global_bounds(fevals[index].global_bounds);
-        print_feval_point(fevals[index].point);
-
-        rfevals.outfile << std::scientific << fevals[index].feval << ",";
-        rfevals.outfile << std::scientific << ests[reg] << "," << errs[reg];
-        rfevals.outfile << std::endl;
-      }
-    }
+    cudaFree(constMem.gpuG);
+    cudaFree(constMem.cRuleWt);
+    cudaFree(constMem.GPUScale);
+    cudaFree(constMem.GPUNorm);
+    cudaFree(constMem.gpuGenPos);
+    cudaFree(constMem.gpuGenPermGIndex);
+    cudaFree(constMem.gpuGenPermVarCount);
+    cudaFree(constMem.gpuGenPermVarStart);
+    cudaFree(constMem.cGeneratorCount);
   }
 
   void
