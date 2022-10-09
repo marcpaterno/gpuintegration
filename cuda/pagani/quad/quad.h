@@ -41,7 +41,6 @@ struct Structures {
   size_t* cGeneratorCount = nullptr;
 };
 
-
 struct Result {
   double avg = 0., err = 0.;
   int bisectdim = 0;

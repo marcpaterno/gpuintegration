@@ -8,6 +8,8 @@
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "nvToolsExt.h"
 #include <string>
+#include <iostream>
+#include <iomanip>
 
 template <typename F, int ndim>
 void
@@ -31,16 +33,6 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
     estimates,
     characteristics,
     compute_relerr_error_reduction);
-
-  /*double* h_estimates = copy_to_host<double>(estimates.integral_estimates,
-  sub_regions.size); double* h_errorests =
-  copy_to_host<double>(estimates.error_estimates, sub_regions.size);
-
-  delete[] h_estimates;
-  delete[] h_errorests;
-
-  for(int i = 0; i < sub_regions.size; ++i)
-          printf("estimates %i, %e, %e\n", i, h_estimates[i], h_errorests[i]);*/
 
   std::cout << iter.estimate << "," << iter.errorest << std::endl;
   cudaFree(d_integrand);
