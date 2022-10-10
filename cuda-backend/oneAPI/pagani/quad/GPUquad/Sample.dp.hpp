@@ -329,6 +329,7 @@ namespace quad {
                                                  sdata,
                                                  item_ct1,
                                                  fevals);
+
     }
     //__syncthreads();
     // Balance permutations
