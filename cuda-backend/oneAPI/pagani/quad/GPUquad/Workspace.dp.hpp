@@ -244,7 +244,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
         partitions_per_axis = 1;
 
     Sub_regions<ndim> sub_regions(partitions_per_axis);
-    sub_regions.uniform_split(partitions_per_axis);
+    //sub_regions.uniform_split(partitions_per_axis);
      
      constexpr bool predict_split = false;
      constexpr bool collect_iters = false;
@@ -254,5 +254,4 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
         (integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
     return result;
 }
-
 #endif
