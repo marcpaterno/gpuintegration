@@ -54,7 +54,7 @@ Last three arguments are: total iterations, iteration
 #include <string>
 #include <cuda_profiler_api.h>
 
-//#define TINY 1.0e-200
+// #define TINY 1.0e-200
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
@@ -88,51 +88,6 @@ namespace cuda_mcubes {
 #define NDIV (1 + IMM1 / NTAB)
 #define EPS 1.2e-7
 #define RNMX (1.0 - EPS)
-
-  // __device__ double
-  // ran2(long* idum)
-  // {
-  //   int j;
-  //   long k;
-  //   static long idum2 = 123456789;
-  //   static long iy = 0;
-  //   static long iv[NTAB];
-  //   double temp;
-
-  //   if (*idum <= 0) {
-  //     if (-(*idum) < 1)
-  //       *idum = 1;
-  //     else
-  //       *idum = -(*idum);
-  //     idum2 = (*idum);
-  //     for (j = NTAB + 7; j >= 0; j--) {
-  //       k = (*idum) / IQ1;
-  //       *idum = IA1 * (*idum - k * IQ1) - k * IR1;
-  //       if (*idum < 0)
-  //         *idum += IM1;
-  //       if (j < NTAB)
-  //         iv[j] = *idum;
-  //     }
-  //     iy = iv[0];
-  //   }
-  //   k = (*idum) / IQ1;
-  //   *idum = IA1 * (*idum - k * IQ1) - k * IR1;
-  //   if (*idum < 0)
-  //     *idum += IM1;
-  //   k = idum2 / IQ2;
-  //   idum2 = IA2 * (idum2 - k * IQ2) - k * IR2;
-  //   if (idum2 < 0)
-  //     idum2 += IM2;
-  //   j = iy / NDIV;
-  //   iy = iv[j] - idum2;
-  //   iv[j] = *idum;
-  //   if (iy < 1)
-  //     iy += IMM1;
-  //   if ((temp = AM * iy) > RNMX)
-  //     return RNMX;
-  //   else
-  //     return temp;
-  // }
 
   __inline__ __device__ double
   warpReduceSum(double val)
@@ -826,27 +781,13 @@ namespace cuda_mcubes {
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
 
-    uint32_t nBlocks =
-      ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
-      1; // compute blocks based on chunk_size, ncubes, and block_dim_x
-    uint32_t nThreads = BLOCK_DIM_X;
+    Kernel_Params params(ncall, chunkSize, ndim);
+    // uint32_t nBlocks =
+    //   ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
+    //   1; // compute blocks based on chunk_size, ncubes, and block_dim_x
 
-    // std::cout.precision(15);
-    /*std::cout<<"ng:"<<ng<<"\n";
-    std::cout<<"ncubes:"<<ncubes<<"\n";
-    std::cout<<"ncall:"<<ncall<<"\n";
-    std::cout<<"k:"<<k<<"\n";
-    std::cout<<"npg:"<<npg<<"\n";
-    std::cout<<"totalNumThreads:"<<totalNumThreads<<"\n";
-    //std::cout<<"_totalNumThreads:"<<_totalNumThreads<<"\n";
-    std::cout<<"totalCubes:"<<totalCubes<<"\n";
-    std::cout<<"chunkSize:"<<chunkSize<<"\n";
-    std::cout<<"dv2g:"<<dv2g<<"\n";
-    std::cout<<"extra:"<<extra<<"\n";
-    std::cout<<"LastChunk:"<<LastChunk<<"\n";
-    std::cout<<"nBlocks:"<<nBlocks<<"\n";
-    std::cout<<"dxg:"<<dxg<<"\n";
-    std::cout<<"-------------------\n";*/
+    // uint32_t nBlocks = ncubes % BLOCK_DIM_X == 0 ? (ncubes/BLOCK_DIM_X) :
+    // (ncubes/BLOCK_DIM_X) + 1; uint32_t nThreads = BLOCK_DIM_X;
 
     IterDataLogger<DEBUG_MCUBES> data_collector(
       totalNumThreads, chunkSize, extra, npg, ndim);
@@ -875,28 +816,28 @@ namespace cuda_mcubes {
                           static_cast<unsigned int>(it);
       cudaProfilerStart();
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
-        <<<nBlocks, nThreads>>>(d_integrand,
-                                ng,
-                                npg,
-                                xjac,
-                                dxg,
-                                result_dev,
-                                xnd,
-                                xi_dev,
-                                d_dev,
-                                dx_dev,
-                                regn_dev,
-                                ncubes,
-                                it,
-                                sc,
-                                sci,
-                                ing,
-                                chunkSize,
-                                totalNumThreads,
-                                LastChunk,
-                                seed + it,
-                                data_collector.randoms,
-                                data_collector.funcevals);
+        <<<params.nBlocks, params.nThreads>>>(d_integrand,
+                                              ng,
+                                              npg,
+                                              xjac,
+                                              dxg,
+                                              result_dev,
+                                              xnd,
+                                              xi_dev,
+                                              d_dev,
+                                              dx_dev,
+                                              regn_dev,
+                                              ncubes,
+                                              it,
+                                              sc,
+                                              sci,
+                                              ing,
+                                              chunkSize,
+                                              totalNumThreads,
+                                              LastChunk,
+                                              seed + it,
+                                              data_collector.randoms,
+                                              data_collector.funcevals);
       cudaDeviceSynchronize();
       cudaProfilerStop();
       cudaMemcpy(xi,
@@ -917,27 +858,6 @@ namespace cuda_mcubes {
       ti = result[0];
       tsi = result[1];
       tsi *= dv2g;
-
-      /*
-      dxg = (1.0 / ng) * (xnd);
-      for (dv2g = 1, i = 1; i <= ndim; i++)
-              dv2g *= dxg;
-      //which means that up till now ,dvg =
-      (1/calls)*(1/calls)*(1/calls)***(1/calls) dv2g = (calls * dv2g * calls *
-      dv2g) / npg / npg / (npg - 1.0);
-
-      ti = T_n/n
-              (because of wgt,
-                      which we multiply every funceval with,
-                              contains xo*numBins*(1/calls)
-
-      then
-      tsi is ((Q_n)^2)
-
-      */
-      // printf("-------------------------------------------\n");
-      // printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it,
-      // ti, sqrt(tsi), tsi, dv2g);
 
       if (it > skip) {
         wgt = 1.0 / tsi;
@@ -1023,26 +943,26 @@ namespace cuda_mcubes {
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
       vegas_kernelF<IntegT, ndim, GeneratorType>
-        <<<nBlocks, nThreads>>>(d_integrand,
-                                ng,
-                                npg,
-                                xjac,
-                                dxg,
-                                result_dev,
-                                xnd,
-                                xi_dev,
-                                d_dev,
-                                dx_dev,
-                                regn_dev,
-                                ncubes,
-                                it,
-                                sc,
-                                sci,
-                                ing,
-                                chunkSize,
-                                totalNumThreads,
-                                LastChunk,
-                                seed + it);
+        <<<params.nBlocks, params.nThreads>>>(d_integrand,
+                                              ng,
+                                              npg,
+                                              xjac,
+                                              dxg,
+                                              result_dev,
+                                              xnd,
+                                              xi_dev,
+                                              d_dev,
+                                              dx_dev,
+                                              regn_dev,
+                                              ncubes,
+                                              it,
+                                              sc,
+                                              sci,
+                                              ing,
+                                              chunkSize,
+                                              totalNumThreads,
+                                              LastChunk,
+                                              seed + it);
       cudaDeviceSynchronize();
       cudaMemcpy(
         result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);

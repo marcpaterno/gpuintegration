@@ -131,20 +131,6 @@ namespace mcubes {
       return true;
     }
   };
-
-  /*template<typename Custom_generator>
-  __device__
-  constexpr bool
-  is_custom_generator(){
-      return true;
-  }
-
-  template<typename Curand_generator>
-  __device__
-  constexpr bool
-  is_custom_generator(){
-      return false;
-  }*/
 }
 
 class Internal_Vegas_Params {
@@ -218,12 +204,13 @@ struct Kernel_Params {
     ncubes = ComputeNcubes(ncall, ndim);
     npg = Compute_samples_per_cube(ncall, ncubes);
 
-    totalNumThreads = (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
+    totalNumThreads = (uint32_t)((ncubes) / chunkSize);
     totalCubes = totalNumThreads * chunkSize;
     extra = totalCubes - ncubes;
     LastChunk = chunkSize - extra;
-    nBlocks =
-      ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
+    nBlocks = totalNumThreads % BLOCK_DIM_X == 0 ?
+                totalNumThreads / BLOCK_DIM_X :
+                totalNumThreads / BLOCK_DIM_X + 1;
     nThreads = BLOCK_DIM_X;
   }
 };

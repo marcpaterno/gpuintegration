@@ -28,23 +28,22 @@ run_block_reduce_sum(int32_t totalNumThreads,
   }
 }
 
-TEST_CASE("Aligned reduction")
-{
-  std::array<double, 6> ncalls = {1.e6, 1.e7, 1.e8, 1.e9, 2.e9, 4.e9};
-  std::array<int, 7> ndims = {2, 3, 4, 5, 6, 7, 8};
-  std::array<int, 3> chunkSizes = {2048, 1024, 32};
-
-  for (auto ncall : ncalls) {
-    for (auto ndim : ndims) {
-      for (auto chunkSize : chunkSizes) {
+TEST_CASE("Cubes distributed evenly to threads")
+{	
+	const double ncall = 1.e6;
+	const int ndim = 6;
+    std::array<int, 3> chunkSizes = {2048, 1024, 32};
+	
+    for (auto chunkSize : chunkSizes) 
+	  {
         Kernel_Params kernel_params(ncall, chunkSize, ndim);
-
+		
         double* d_result = cuda_malloc<double>(1);
-
+		
         double* block_reductions = cuda_malloc_managed<double>(
           static_cast<size_t>(kernel_params.nBlocks));
         double fgb = 1.1;
-
+	    
         run_block_reduce_sum<<<kernel_params.nBlocks, kernel_params.nThreads>>>(
           kernel_params.totalNumThreads,
           d_result,
@@ -53,18 +52,68 @@ TEST_CASE("Aligned reduction")
 
         double result = 0.0;
         cuda_memcpy_to_host(&result, d_result, 1); // newly allocated
+		
+		double computed_sum = 0.;
+		
+		for (uint32_t i = 0; i < kernel_params.nBlocks; ++i) {
+		
+			bool last_block = i == (kernel_params.nBlocks - 1);
+			bool last_block_aligned = kernel_params.totalNumThreads % 128 == 0;
+			double true_val = last_block & !last_block_aligned ? (kernel_params.totalNumThreads % 128) * fgb : BLOCK_DIM_X * fgb;	 
+			computed_sum += block_reductions[i];
+			CHECK(block_reductions[i] == Approx(true_val));
+		}
 
-        for (uint32_t i = 0; i < kernel_params.nBlocks - 1; i++) {
-          CHECK(block_reductions[i] == Approx(BLOCK_DIM_X * fgb));
-        }
-
+		
+		CHECK(computed_sum == Approx(kernel_params.totalNumThreads * fgb));
         CHECK(result == Approx(kernel_params.totalNumThreads * fgb));
+		
       }
-    }
-  }
 }
 
-TEST_CASE("misaigned reduction")
+
+TEST_CASE("Cubes uneven among threads")
 {
-  // do something here
+  const int ndim = 7;
+  double ncall = 1.e9;
+  
+  std::array<int, 3> chunkSizes = {2048, 1024, 32};
+
+      for (auto chunkSize : chunkSizes) 
+	  {
+        Kernel_Params kernel_params(ncall, chunkSize, ndim);
+		
+        double* d_result = cuda_malloc<double>(1);
+		
+        double* block_reductions = cuda_malloc_managed<double>(
+          static_cast<size_t>(kernel_params.nBlocks));
+        double fgb = 1.1;
+	    
+        run_block_reduce_sum<<<kernel_params.nBlocks, kernel_params.nThreads>>>(
+          kernel_params.totalNumThreads,
+          d_result,
+          block_reductions);
+        cudaDeviceSynchronize();
+
+        double result = 0.0;
+        cuda_memcpy_to_host(&result, d_result, 1); // newly allocated
+		
+		double computed_sum = 0.;
+		
+		for (uint32_t i = 0; i < kernel_params.nBlocks; ++i) {
+		
+			bool last_block = i == (kernel_params.nBlocks - 1);
+			bool last_block_aligned = kernel_params.totalNumThreads % 128 == 0;
+			double true_val = last_block & !last_block_aligned ? (kernel_params.totalNumThreads % 128) * fgb : BLOCK_DIM_X * fgb;	 
+			computed_sum += block_reductions[i];
+			CHECK(block_reductions[i] == Approx(true_val));
+		}
+
+		
+		CHECK(computed_sum == Approx(kernel_params.totalNumThreads * fgb));
+        CHECK(result == Approx(kernel_params.totalNumThreads * fgb));
+		
+      }
+    
+  
 }
