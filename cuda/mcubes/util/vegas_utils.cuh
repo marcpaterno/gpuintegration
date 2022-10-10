@@ -218,7 +218,7 @@ struct Kernel_Params {
     ncubes = ComputeNcubes(ncall, ndim);
     npg = Compute_samples_per_cube(ncall, ncubes);
 
-    totalNumThreads = (uint32_t)((ncubes + chunkSize - 1) / chunkSize);
+    totalNumThreads = (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
     totalCubes = totalNumThreads * chunkSize;
     extra = totalCubes - ncubes;
     LastChunk = chunkSize - extra;
