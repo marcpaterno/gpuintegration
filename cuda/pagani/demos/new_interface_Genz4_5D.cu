@@ -17,11 +17,11 @@
 
 int main(){
     
-    double epsrel = 1.0e-3;
-    double const epsrel_min = 1.0240000000000002e-10;
+    //double epsrel = 1.0e-3;
+    //double const epsrel_min = 1.0240000000000002e-10;
     constexpr int ndim = 5;
     GENZ_4_5D integrand;
-    double true_value = 1.79132603674879e-06;
+    //double true_value = 1.79132603674879e-06;
 	quad::Volume<double, ndim> vol;
 	
 	for(int i=0; i < 10; ++i)
