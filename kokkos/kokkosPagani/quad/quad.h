@@ -123,7 +123,7 @@ typedef Kokkos::View<Structures<double>*, Kokkos::Cuda> ViewStructures;
 #define NRULES 5
 
 inline
-  /*__device__*/ __host__ double
+  __device__ __host__ double
   MaxErr(double avg, double epsrel, double epsabs)
 {
   return max(epsrel * std::abs(avg), epsabs);
