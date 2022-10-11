@@ -1,12 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
-#include "cuda/pagani/quad/quad.h" // for cuhreResult
-
-//#include "fun6.cuh"
-
-// double constexpr integral = 6.371054e-01; // Value is approximate
-// double constexpr normalization = 1./integral;
+#include "common/integration_result.hh"
 
 static double const fun6_normalization =
   12.0 / (7.0 - 6 * log(2.0) * std::log(2.0) + log(64.0));
@@ -89,7 +84,7 @@ double previous_error_estimate = 1.0; // larger than ever should be returned
 Fun6 integrand;
 while (epsrel > 1.0e-6) {
   printf("About to call alg.integrate\n");
-  cuhreResult const res =
+  numint::integration_result const res =
     alg.integrate<Fun6>(integrand, epsrel, epsabs, &vol, 0, 1, 0);
   // The integration should have converged.
   bool good = false;
@@ -119,42 +114,3 @@ while (epsrel > 1.0e-6) {
 }
 }
 ;
-
-/*TEST_CASE("genz_1abs_5d")
-{
-  SECTION("decreasing epsrel results in non-increasing error estimate")
-  {
-    // We start with a very large error tolerance, and will
-    // repeatedly decrease the tolerance.
-    double epsrel = 1.0e-3;
-
-    double constexpr epsabs = 1.0e-40;
-
-    double lows[] = {0., 0., 0., 0., 0.};
-    double highs[] = {1., 1., 1., 1., 1.};
-    constexpr int ndim = 5;
-    quad::Volume<double, ndim> vol(lows, highs);
-    quad::Cuhre<double, ndim> alg(0, nullptr, 0, 0, 1);
-
-    Genz_1abs_5d integrand;
-    double previous_error_estimate = 1.0; // larger than ever should be returned
-
-    while (epsrel > 1.0e-6) {
-      cuhreResult const res = alg.integrate(integrand, epsrel, epsabs, &vol);
-      // The integration should have converged.
-      CHECK(res.status);
-
-      // The fractional error error estimate should be
-      // no larger than the specified fractional error
-      // tolerance
-      CHECK(res.errorest/res.estimate <= epsrel);
-
-      // The error estimate should be no larger than the previous iteration.
-      CHECK(res.errorest <= previous_error_estimate);
-
-      // Prepare for the next loop.
-      previous_error_estimate = res.errorest;
-      epsrel /= 2.0;
-    }
-  }
-};*/

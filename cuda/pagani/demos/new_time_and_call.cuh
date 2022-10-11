@@ -4,7 +4,7 @@
 #include <chrono>
 #include "cuda/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
-#include "cuda/pagani/quad/util/cuhreResult.cuh"
+#include "common/integration_result.hh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "nvToolsExt.h"
 #include <string>
@@ -26,7 +26,7 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
   rules.set_device_volume(vol.lows, vol.highs);
   int iteration = 0;
   bool compute_relerr_error_reduction = false;
-  cuhreResult iter = rules.template apply_cubature_integration_rules<F>(
+  numint::integration_result iter = rules.template apply_cubature_integration_rules<F>(
     d_integrand,
     iteration,
     sub_regions,
@@ -80,7 +80,7 @@ clean_time_and_call(std::string id,
     constexpr bool predict_split = false;
     constexpr bool collect_iters = false;
 
-    cuhreResult result =
+    numint::integration_result result =
       workspace.template integrate<F, predict_split, collect_iters, debug>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;

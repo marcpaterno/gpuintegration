@@ -7,6 +7,8 @@
 #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 
+#include "common/integration_result.hh"
+
 namespace quad {
 
   template <typename T, int NDIM>
@@ -42,7 +44,7 @@ namespace quad {
     template <typename IntegT>
     int
     ExecutePhaseI(IntegT* d_integrand,
-                  cuhreResult& res,
+                  numint::integration_result& res,
                   Volume<T, NDIM> const* volume)
     {
 
@@ -82,7 +84,7 @@ namespace quad {
     }
 
     template <typename IntegT>
-    cuhreResult
+    numint::integration_result
     integrate(IntegT& integrand,
               T epsrel,
               T epsabs,
@@ -92,7 +94,7 @@ namespace quad {
               int heuristicID = 0,
               int phase1type = 0)
     {
-      cuhreResult res;
+      numint::integration_result res;
 
       this->epsrel = epsrel;
       this->epsabs = epsabs;

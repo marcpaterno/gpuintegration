@@ -15,7 +15,7 @@ adjusting the intervals
    to avoid differnt cases */
 
 #include "cuda/pagani/quad/util/Volume.cuh"
-#include "cuda/pagani/quad/util/cuhreResult.cuh"
+#include "common/integration_result.hh"
 #include "cuda/mcubes/seqCodesDefs.hh"
 
 #include <stdio.h>
@@ -480,7 +480,7 @@ vegas_mcubes(IntegT integrand,
 }
 
 template <typename IntegT, int NDIM>
-cuhreResult
+numint::integration_result
 seq_mcubes_integrate(IntegT integrand,
                      int ndim,
                      double epsrel,
@@ -490,7 +490,7 @@ seq_mcubes_integrate(IntegT integrand,
                      int itmx)
 {
   // declaring the variables
-  cuhreResult result;
+  numint::integration_result result;
   int init, j /*, ncall*/, nprn;
   double avgi, chi2a, sd;
   double* regn;

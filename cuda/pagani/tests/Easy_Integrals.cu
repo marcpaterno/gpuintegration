@@ -17,10 +17,11 @@
 
 #include "cuda/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
-#include "cuda/pagani/quad/util/cuhreResult.cuh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 
-using namespace quad;
+#include "common/integration_result.hh"
+
+using numint::integration_result;
 
 class PTest {
 public:
@@ -61,12 +62,12 @@ TEST_CASE("Constant Positive Value Function")
   Workspace<double, ndim, use_custom> pagani;
   quad::Volume<double, ndim> vol;
 
-  cuhreResult res = pagani.integrate(integrand, epsrel, epsabs, vol);
+  integration_result res = pagani.integrate(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
 
   // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f\n", integral);
+  printf("totalEstimate: %.15f\n", integral);
   CHECK(integral == Approx(15.37));
 }
 

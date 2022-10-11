@@ -34,6 +34,8 @@ Last three arguments are: total iterations, iteration
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "common/integration_result.hh"
+
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
@@ -735,7 +737,7 @@ namespace mcubes1D {
             int ndim,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = Curand_generator>
-  cuhreResult
+  numint::integration_result
   integrate1D(IntegT integrand,
               double epsrel,
               double epsabs,
@@ -745,7 +747,7 @@ namespace mcubes1D {
               int itmax,
               int skip)
   {
-    cuhreResult res;
+    numint::integration_result res;
     res.status = 1;
 
     vegas1D<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(integrand,
@@ -768,7 +770,7 @@ namespace mcubes1D {
             int ndim,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = Curand_generator>
-  cuhreResult
+  numint::integration_result
   simple_integrate1D(IntegT integrand,
                      double epsrel,
                      double epsabs,
@@ -778,7 +780,7 @@ namespace mcubes1D {
                      int itmax,
                      int skip)
   {
-    cuhreResult res;
+    numint::integration_result res;
     res.status = 1;
     do {
       vegas1D<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(integrand,

@@ -10,6 +10,8 @@
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 
+#include "common/integration_result.hh"
+
 using namespace quad;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
@@ -36,7 +38,7 @@ main(int argc, char** argv)
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   auto t0 = std::chrono::high_resolution_clock::now();
-  cuhreResult result = pagani.integrate<BoxIntegral8_22>(
+  numint::integration_result result = pagani.integrate<BoxIntegral8_22>(
     integrand, epsrel, EPSABS, &vol, outfileVerbosity, _final, phase_I_type);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 

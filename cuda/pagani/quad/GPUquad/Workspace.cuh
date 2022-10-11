@@ -9,7 +9,7 @@
 #include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
 #include "cuda/pagani/quad/GPUquad/Sub_region_filter.cuh"
 #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
-#include "cuda/pagani/quad/util/cuhreResult.cuh"
+#include "common/integration_result.hh"
 #include "cuda/pagani/quad/util/Volume.cuh"
 
 template <bool debug_ters = false>
@@ -32,16 +32,16 @@ class Workspace {
 
 private:
   void fix_error_budget_overflow(Region_characteristics<ndim>& classifiers,
-                                 const cuhreResult& finished,
-                                 const cuhreResult& iter,
-                                 cuhreResult& iter_finished,
+                                 const numint::integration_result& finished,
+                                 const numint::integration_result& iter,
+                                 numint::integration_result& iter_finished,
                                  const T epsrel);
   bool heuristic_classify(Classifier& classifier,
                           Regs_characteristics& characteristics,
                           const Estimates& estimates,
-                          cuhreResult& finished,
-                          const cuhreResult& iter,
-                          const cuhreResult& cummulative);
+                          numint::integration_result& finished,
+                          const numint::integration_result& iter,
+                          const numint::integration_result& cummulative);
 
   Cubature_rules<T, ndim> rules;
 
@@ -52,7 +52,7 @@ public:
             bool predict_split = false,
             bool collect_iters = false,
             int debug = 0>
-  cuhreResult integrate(const IntegT& integrand,
+  numint::integration_result integrate(const IntegT& integrand,
                            Sub_regions<T, ndim>& subregions,
                            T epsrel,
                            T epsabs,
@@ -63,7 +63,7 @@ public:
             bool predict_split = false,
             bool collect_iters = false,
             int debug = 0>
-  cuhreResult integrate(const IntegT& integrand,
+  numint::integration_result integrate(const IntegT& integrand,
                            T epsrel,
                            T epsabs,
                            quad::Volume<T, ndim>& vol,
@@ -76,9 +76,9 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
   Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
-  cuhreResult& finished,
-  const cuhreResult& iter,
-  const cuhreResult& cummulative)
+  numint::integration_result& finished,
+  const numint::integration_result& iter,
+  const numint::integration_result& cummulative)
 {
 
   const T ratio = static_cast<T>(classifier.device_mem_required_for_full_split(
@@ -126,9 +126,9 @@ template <typename T, size_t ndim, bool use_custom>
 void
 Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
   Region_characteristics<ndim>& characteristics,
-  const cuhreResult& cummulative_finished,
-  const cuhreResult& iter,
-  cuhreResult& iter_finished,
+  const numint::integration_result& cummulative_finished,
+  const numint::integration_result& iter,
+  numint::integration_result& iter_finished,
   const T epsrel)
 {
 
@@ -151,7 +151,7 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
 
 template <typename T, size_t ndim, bool use_custom>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
-cuhreResult
+numint::integration_result
 Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
@@ -164,7 +164,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
-  cuhreResult cummulative;
+  numint::integration_result cummulative;
   Recorder<debug> iter_recorder("cuda_iters.csv");
 
   Classifier classifier(epsrel, epsabs);
@@ -184,7 +184,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    cuhreResult iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
+    numint::integration_result iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
       d_integrand,
       it,
       subregions,
@@ -235,7 +235,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    cuhreResult finished = compute_finished_estimates<T, ndim, use_custom>(
+    numint::integration_result finished = compute_finished_estimates<T, ndim, use_custom>(
       estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);
@@ -272,7 +272,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
 template <typename T, size_t ndim, bool use_custom>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
-cuhreResult
+numint::integration_result
 Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
@@ -284,7 +284,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
-  cuhreResult cummulative;
+  numint::integration_result cummulative;
   Recorder<debug> iter_recorder("cuda_iters.csv");
 
   size_t partitions_per_axis = 2;
@@ -314,7 +314,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    cuhreResult iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
+    numint::integration_result iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
       d_integrand,
       it,
       subregions,
@@ -365,7 +365,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    cuhreResult finished = compute_finished_estimates<T, ndim, use_custom>(
+    numint::integration_result finished = compute_finished_estimates<T, ndim, use_custom>(
       estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);

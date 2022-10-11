@@ -1,3 +1,4 @@
+#error Include common/integration_result.hh instead
 #ifndef CUDA_PAGANI_QUAD_UTIL_CUHRE_RESULT_CUH
 #define CUDA_PAGANI_QUAD_UTIL_CUHRE_RESULT_CUH
 

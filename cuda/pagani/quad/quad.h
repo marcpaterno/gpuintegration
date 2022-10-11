@@ -11,7 +11,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "cuda/pagani/quad/util/cuhreResult.cuh"
+#include "common/integration_result.hh"
+
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);

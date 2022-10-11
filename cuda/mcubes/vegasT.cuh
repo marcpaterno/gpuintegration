@@ -54,7 +54,8 @@ Last three arguments are: total iterations, iteration
 #include <string>
 #include <cuda_profiler_api.h>
 
-// #define TINY 1.0e-200
+#include "common/integration_result.hh"
+
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
@@ -1021,7 +1022,7 @@ namespace cuda_mcubes {
             int NDIM,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
-  cuhreResult
+  numint::integration_result
   integrate(IntegT& ig,
             double epsrel,
             double epsabs,
@@ -1032,7 +1033,7 @@ namespace cuda_mcubes {
             int skipIters = 5)
   {
 
-    cuhreResult result;
+    numint::integration_result result;
     result.status = 1;
     vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(ig,
                                                      epsrel,
@@ -1054,7 +1055,7 @@ namespace cuda_mcubes {
             int NDIM,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
-  cuhreResult
+  numint::integration_result
   simple_integrate(IntegT const& integrand,
                    double epsrel,
                    double epsabs,
@@ -1065,7 +1066,7 @@ namespace cuda_mcubes {
                    int skipIters = 5)
   {
 
-    cuhreResult result;
+    numint::integration_result result;
     result.status = 1;
 
     do {

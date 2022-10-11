@@ -2,8 +2,10 @@
 #include "catch2/catch.hpp"
 #include "cuda/pagani/demos/function.cuh"
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
-#include "cuda/pagani/quad/quad.h" // for cuhreResult
+//#include "cuda/pagani/quad/quad.h" // for numint::integration_result
 #include <array>
+
+#include "common/integration_result.hh"
 
 TEST_CASE("Transform to Non-default Volume")
 {
@@ -23,7 +25,7 @@ TEST_CASE("Transform to Non-default Volume")
     std::array<double, ndim> highs = {1., 1.};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
@@ -50,7 +52,7 @@ TEST_CASE("Transform to Non-default Volume")
     double highs[] = {1., 1.};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
@@ -78,7 +80,7 @@ TEST_CASE("Transform to Non-default Volume")
     double highs[] = {.5, .5};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
@@ -105,7 +107,7 @@ TEST_CASE("Transform to Non-default Volume")
     double highs[] = {.5, .75};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
@@ -133,7 +135,7 @@ TEST_CASE("Transform to Non-default Volume")
     double highs[] = {.8, .9};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
@@ -161,7 +163,7 @@ TEST_CASE("Transform to Non-default Volume")
     double highs[] = {.5, .75, .6, .3, .8, .4};
     quad::Volume<double, ndim> vol(lows, highs);
 
-    cuhreResult const res =
+    numint::integration_result const res =
       alg.integrate(integrand, epsrel, epsabs, &vol, verbose, _final);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;

@@ -10,6 +10,7 @@
 #include "cuda/pagani/quad/util/cudaUtil.h"
 #include "nvToolsExt.h"
 
+#include "common/integration_result.hh"
 
 template <typename ALG, typename F>
 bool
@@ -90,7 +91,7 @@ namespace floatIntegrands {
 
     auto const t0 = std::chrono::high_resolution_clock::now();
     // nvtxRangePushA("init_host_data");
-    cuhreResult const result = alg.integrate(integrand,
+    numint::integration_result const result = alg.integrate(integrand,
                                              epsrel,
                                              epsabs,
                                              vol,
@@ -137,7 +138,7 @@ cu_time_and_call(char const* id,
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
-  cuhreResult const result = alg.integrate(integrand,
+  numint::integration_result const result = alg.integrate(integrand,
                                            epsrel,
                                            epsabs,
                                            vol,
@@ -207,7 +208,7 @@ cu_time_and_call_100(char const* id,
   for (int i = 0; i < 50; i++) {
     auto const t0 = std::chrono::high_resolution_clock::now();
     // nvtxRangePushA("init_host_data");
-    cuhreResult const result = alg.integrate(integrand,
+    numint::integration_result const result = alg.integrate(integrand,
                                              epsrel,
                                              epsabs,
                                              vol,
@@ -276,7 +277,7 @@ common_header_pagani_time_and_call(std::string alg_id,
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
-  cuhreResult const result = alg.integrate(integrand,
+  numint::integration_result const result = alg.integrate(integrand,
                                            epsrel,
                                            epsabs,
                                            vol,
