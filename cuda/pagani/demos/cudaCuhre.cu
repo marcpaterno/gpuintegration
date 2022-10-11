@@ -41,7 +41,7 @@ main(int argc, char** argv)
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
   printf("%.20f +- %.20f epsrel:%e, nregions:%lu flag:%i time:%f error:%.17f, "
-         "ratio:%.17f failed phase2 blocks:%i\n",
+         "ratio:%.17f\n",
          result.estimate,
          result.errorest,
          epsrel,
@@ -49,7 +49,6 @@ main(int argc, char** argv)
          result.status,
          dt.count(),
          abs(true_value - result.estimate),
-         result.errorest / MaxErr(result.estimate, epsrel, EPSABS),
-         result.phase2_failedblocks);
+         result.errorest / MaxErr(result.estimate, epsrel, EPSABS));
   return 0;
 }

@@ -25,7 +25,6 @@ class Workspace {
   using Estimates = Region_estimates<T, ndim>;
   using Sub_regs = Sub_regions<T, ndim>;
   using Regs_characteristics = Region_characteristics<ndim>;
-  using Res = cuhreResult<T>;
   using Filter = Sub_regions_filter<T, ndim, use_custom>;
   using Splitter = Sub_region_splitter<T, ndim>;
   using Classifier = Heuristic_classifier<T, ndim>;
@@ -33,16 +32,16 @@ class Workspace {
 
 private:
   void fix_error_budget_overflow(Region_characteristics<ndim>& classifiers,
-                                 const cuhreResult<T>& finished,
-                                 const cuhreResult<T>& iter,
-                                 cuhreResult<T>& iter_finished,
+                                 const cuhreResult& finished,
+                                 const cuhreResult& iter,
+                                 cuhreResult& iter_finished,
                                  const T epsrel);
   bool heuristic_classify(Classifier& classifier,
                           Regs_characteristics& characteristics,
                           const Estimates& estimates,
-                          cuhreResult<T>& finished,
-                          const cuhreResult<T>& iter,
-                          const cuhreResult<T>& cummulative);
+                          cuhreResult& finished,
+                          const cuhreResult& iter,
+                          const cuhreResult& cummulative);
 
   Cubature_rules<T, ndim> rules;
 
@@ -53,7 +52,7 @@ public:
             bool predict_split = false,
             bool collect_iters = false,
             int debug = 0>
-  cuhreResult<T> integrate(const IntegT& integrand,
+  cuhreResult integrate(const IntegT& integrand,
                            Sub_regions<T, ndim>& subregions,
                            T epsrel,
                            T epsabs,
@@ -64,7 +63,7 @@ public:
             bool predict_split = false,
             bool collect_iters = false,
             int debug = 0>
-  cuhreResult<T> integrate(const IntegT& integrand,
+  cuhreResult integrate(const IntegT& integrand,
                            T epsrel,
                            T epsabs,
                            quad::Volume<T, ndim>& vol,
@@ -77,9 +76,9 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
   Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
-  cuhreResult<T>& finished,
-  const Res& iter,
-  const cuhreResult<T>& cummulative)
+  cuhreResult& finished,
+  const cuhreResult& iter,
+  const cuhreResult& cummulative)
 {
 
   const T ratio = static_cast<T>(classifier.device_mem_required_for_full_split(
@@ -127,9 +126,9 @@ template <typename T, size_t ndim, bool use_custom>
 void
 Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
   Region_characteristics<ndim>& characteristics,
-  const cuhreResult<T>& cummulative_finished,
-  const cuhreResult<T>& iter,
-  cuhreResult<T>& iter_finished,
+  const cuhreResult& cummulative_finished,
+  const cuhreResult& iter,
+  cuhreResult& iter_finished,
   const T epsrel)
 {
 
@@ -152,7 +151,7 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
 
 template <typename T, size_t ndim, bool use_custom>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
-cuhreResult<T>
+cuhreResult
 Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
@@ -165,7 +164,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
-  Res cummulative;
+  cuhreResult cummulative;
   Recorder<debug> iter_recorder("cuda_iters.csv");
 
   Classifier classifier(epsrel, epsabs);
@@ -185,7 +184,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    Res iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
+    cuhreResult iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
       d_integrand,
       it,
       subregions,
@@ -236,7 +235,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    Res finished = compute_finished_estimates<T, ndim, use_custom>(
+    cuhreResult finished = compute_finished_estimates<T, ndim, use_custom>(
       estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);
@@ -273,7 +272,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
 template <typename T, size_t ndim, bool use_custom>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
-cuhreResult<T>
+cuhreResult
 Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
@@ -285,7 +284,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
-  Res cummulative;
+  cuhreResult cummulative;
   Recorder<debug> iter_recorder("cuda_iters.csv");
 
   size_t partitions_per_axis = 2;
@@ -315,7 +314,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    Res iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
+    cuhreResult iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
       d_integrand,
       it,
       subregions,
@@ -366,7 +365,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    Res finished = compute_finished_estimates<T, ndim, use_custom>(
+    cuhreResult finished = compute_finished_estimates<T, ndim, use_custom>(
       estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);

@@ -46,26 +46,6 @@ public:
   }
 };
 
-/*TEST_CASE("Constant Positive Value Function")
-{
-  constexpr int ndim = 2;
-  size_t numRegions = 16;
-  PTest integrand;
-  size_t maxIters = 1;
-  int heuristicID = 0;
-  double epsrel = 1.0e-3;
-  double epsabs = 1.0e-12;
-  Pagani<double, 2> pagani;
-  cuhreResult res = pagani.integrate<PTest>(integrand, epsrel, epsabs);
-
-  double integral = res.estimate;
-  double error = res.errorest;
-
-  // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f\n", integral);
-  CHECK(abs(integral - 15.37) <= .00000000000001);
-}*/
-
 TEST_CASE("Custom Reduction with Atomics")
 {
 

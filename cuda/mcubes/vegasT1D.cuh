@@ -735,7 +735,7 @@ namespace mcubes1D {
             int ndim,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = Curand_generator>
-  cuhreResult<double>
+  cuhreResult
   integrate1D(IntegT integrand,
               double epsrel,
               double epsabs,
@@ -745,7 +745,7 @@ namespace mcubes1D {
               int itmax,
               int skip)
   {
-    cuhreResult<double> res;
+    cuhreResult res;
     res.status = 1;
 
     vegas1D<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(integrand,
@@ -768,7 +768,7 @@ namespace mcubes1D {
             int ndim,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = Curand_generator>
-  cuhreResult<double>
+  cuhreResult
   simple_integrate1D(IntegT integrand,
                      double epsrel,
                      double epsabs,
@@ -778,7 +778,7 @@ namespace mcubes1D {
                      int itmax,
                      int skip)
   {
-    cuhreResult<double> res;
+    cuhreResult res;
     res.status = 1;
     do {
       vegas1D<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(integrand,

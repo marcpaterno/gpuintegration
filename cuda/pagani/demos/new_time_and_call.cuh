@@ -26,7 +26,7 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
   rules.set_device_volume(vol.lows, vol.highs);
   int iteration = 0;
   bool compute_relerr_error_reduction = false;
-  cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(
+  cuhreResult iter = rules.template apply_cubature_integration_rules<F>(
     d_integrand,
     iteration,
     sub_regions,
@@ -80,7 +80,7 @@ clean_time_and_call(std::string id,
     constexpr bool predict_split = false;
     constexpr bool collect_iters = false;
 
-    cuhreResult<T> result =
+    cuhreResult result =
       workspace.template integrate<F, predict_split, collect_iters, debug>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;

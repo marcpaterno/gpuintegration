@@ -480,7 +480,7 @@ vegas_mcubes(IntegT integrand,
 }
 
 template <typename IntegT, int NDIM>
-cuhreResult<double>
+cuhreResult
 seq_mcubes_integrate(IntegT integrand,
                      int ndim,
                      double epsrel,
@@ -490,7 +490,7 @@ seq_mcubes_integrate(IntegT integrand,
                      int itmx)
 {
   // declaring the variables
-  cuhreResult<double> result;
+  cuhreResult result;
   int init, j /*, ncall*/, nprn;
   double avgi, chi2a, sd;
   double* regn;

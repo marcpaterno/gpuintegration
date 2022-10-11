@@ -3,15 +3,15 @@
 
 class GENZ_1_8D {
 public:
-  __device__ __host__ float
-  operator()(float s,
-             float t,
-             float u,
-             float v,
-             float w,
-             float x,
-             float y,
-             float z)
+  __device__ __host__ double
+  operator()(double s,
+             double t,
+             double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z)
   {
     return cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x + 7. * y +
                8. * z);
@@ -20,17 +20,17 @@ public:
 
 int main(){
     
-    float epsrel = 1.0e-3;
-    float const epsrel_min = 1.0240000000000002e-10;
+    double epsrel = 1.0e-3;
+    double const epsrel_min = 1.0240000000000002e-10;
     constexpr int ndim = 8;
     GENZ_1_8D integrand;
-    float true_value =
+    double true_value =
     (1. / 315.) * sin(1.) * sin(3. / 2.) * sin(2.) * sin(5. / 2.) * sin(3.) *
     sin(7. / 2.) * sin(4.) *
     (sin(37. / 2.) - sin(35. / 2.)); /*0.000041433844333568199264*/	
-    quad::Volume<float, ndim> vol;
+    quad::Volume<double, ndim> vol;
 
-    while (clean_time_and_call<GENZ_1_8D, float, ndim, false>("f1",
+    while (clean_time_and_call<GENZ_1_8D, double, ndim, false>("f1",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -41,16 +41,6 @@ int main(){
 			epsrel /= 5.0;
 	}
 	
-	/*epsrel = 1.0e-3;
-	while (clean_time_and_call<GENZ_1_8D, float, ndim, true>("f1",
-                                           integrand,
-                                           epsrel,
-                                           true_value,
-                                           "gpucuhre",
-                                           std::cout) == true &&
-         epsrel >= epsrel_min) {
-			epsrel /= 5.0;
-	}*/
     return 0;
 }
 

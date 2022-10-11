@@ -1021,7 +1021,7 @@ namespace cuda_mcubes {
             int NDIM,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
-  cuhreResult<double>
+  cuhreResult
   integrate(IntegT& ig,
             double epsrel,
             double epsabs,
@@ -1032,7 +1032,7 @@ namespace cuda_mcubes {
             int skipIters = 5)
   {
 
-    cuhreResult<double> result;
+    cuhreResult result;
     result.status = 1;
     vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(ig,
                                                      epsrel,
@@ -1054,7 +1054,7 @@ namespace cuda_mcubes {
             int NDIM,
             bool DEBUG_MCUBES = false,
             typename GeneratorType = typename ::Curand_generator>
-  cuhreResult<double>
+  cuhreResult
   simple_integrate(IntegT const& integrand,
                    double epsrel,
                    double epsabs,
@@ -1065,7 +1065,7 @@ namespace cuda_mcubes {
                    int skipIters = 5)
   {
 
-    cuhreResult<double> result;
+    cuhreResult result;
     result.status = 1;
 
     do {

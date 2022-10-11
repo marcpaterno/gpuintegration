@@ -145,15 +145,6 @@ target_include_directories(pagani_Gauss9D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(pagani_Gauss9Dfloat Gauss9Dfloat.cu)
-set_target_properties(pagani_Gauss9Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(pagani_Gauss9Dfloat util ${NVTX_LIBRARY})
-target_compile_options(pagani_Gauss9Dfloat PRIVATE "--expt-relaxed-constexpr")
-target_include_directories(pagani_Gauss9Dfloat PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
 add_executable(pagani_absCosSum5Dplus1 absCosSum5Dplus1.cu)
 set_target_properties(pagani_absCosSum5Dplus1 PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(pagani_absCosSum5Dplus1 util ${NVTX_LIBRARY})
@@ -227,29 +218,11 @@ target_include_directories(pagani_Genz4_5D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(pagani_Genz4_5Dfloat Genz4_5Dfloat.cu)
-set_target_properties(pagani_Genz4_5Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(pagani_Genz4_5Dfloat util ${NVTX_LIBRARY}) 
-target_compile_options(pagani_Genz4_5Dfloat PRIVATE "--expt-relaxed-constexpr")
-target_include_directories(pagani_Genz4_5Dfloat PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
 add_executable(pagani_Genz4_8D Genz4_8D.cu)
 set_target_properties(pagani_Genz4_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(pagani_Genz4_8D util ${NVTX_LIBRARY})
 target_compile_options(pagani_Genz4_8D PRIVATE "--expt-relaxed-constexpr")
 target_include_directories(pagani_Genz4_8D PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(pagani_Genz4_8Dfloat Genz4_8Dfloat.cu)
-set_target_properties(pagani_Genz4_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(pagani_Genz4_8Dfloat util ${NVTX_LIBRARY})
-target_compile_options(pagani_Genz4_8Dfloat PRIVATE "--expt-relaxed-constexpr")
-target_include_directories(pagani_Genz4_8Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
@@ -300,30 +273,12 @@ target_include_directories(pagani_Genz6_6D PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 
-add_executable(pagani_Genz6_6Dfloat Genz6_6Dfloat.cu)
-set_target_properties(pagani_Genz6_6Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(pagani_Genz6_6Dfloat util ${NVTX_LIBRARY})
-target_compile_options(pagani_Genz6_6Dfloat PRIVATE "--expt-relaxed-constexpr")
-target_include_directories(pagani_Genz6_6Dfloat PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
 add_executable(pagani_Genz1_8D Genz1_8D.cu)
 target_compile_options(pagani_Genz1_8D PRIVATE "-lineinfo")
 set_target_properties(pagani_Genz1_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 target_link_libraries(pagani_Genz1_8D util ${NVTX_LIBRARY})
 target_compile_options(pagani_Genz1_8D PRIVATE "--expt-relaxed-constexpr")
 target_include_directories(pagani_Genz1_8D PRIVATE
-  ${CMAKE_SOURCE_DIR}
-)
-
-add_executable(pagani_Genz1_8Dfloat Genz1_8Dfloat.cu)
-target_compile_options(pagani_Genz1_8Dfloat PRIVATE "-lineinfo")
-set_target_properties(pagani_Genz1_8Dfloat PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
-target_link_libraries(pagani_Genz1_8Dfloat util ${NVTX_LIBRARY})
-target_compile_options(pagani_Genz1_8Dfloat PRIVATE "--expt-relaxed-constexpr")
-target_include_directories(pagani_Genz1_8Dfloat PRIVATE
   ${CMAKE_SOURCE_DIR}
 )
 

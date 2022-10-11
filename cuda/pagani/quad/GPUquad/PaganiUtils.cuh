@@ -213,7 +213,7 @@ public:
 
     
     template<typename IntegT>
-    cuhreResult<T> apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
+    cuhreResult apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
         
         IntegT* d_integrand =  make_gpu_integrand<IntegT>(integrand);
         
@@ -245,7 +245,7 @@ public:
             generators);
         cudaDeviceSynchronize();
         
-        cuhreResult<T> res;
+        cuhreResult res;
         res.estimate = reduction<T, use_custom>(subregion_estimates.integral_estimates, num_regions);
         res.errorest = compute_error ? reduction<T, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<T>::infinity();
         
@@ -253,7 +253,7 @@ public:
     }
     
     template<typename IntegT, int debug = 0>
-    cuhreResult<T> 
+    cuhreResult 
     apply_cubature_integration_rules(IntegT* d_integrand,
 		int it, 
         const Sub_regs& subregions, 
@@ -295,7 +295,7 @@ public:
 		
 		print_verbose<debug>(generators, dfevals, subregion_estimates);
 		
-        cuhreResult<T> res;
+        cuhreResult res;
         res.estimate = reduction<T, use_custom>(subregion_estimates.integral_estimates, num_regions);
         res.errorest = compute_error ? reduction<T, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<T>::infinity();        
         return res;
@@ -326,12 +326,12 @@ public:
 };
 
 template <typename T, size_t ndim, bool use_custom = false>
-cuhreResult<T>
+cuhreResult
 compute_finished_estimates(const Region_estimates<T, ndim>& estimates,
                            const Region_characteristics<ndim>& classifiers,
-                           const cuhreResult<T>& iter)
+                           const cuhreResult& iter)
 {
-  cuhreResult<T> finished;
+  cuhreResult finished;
   finished.estimate =
     iter.estimate -
     dot_product<int, T, use_custom>(
@@ -355,7 +355,7 @@ accuracy_reached(T epsrel, T epsabs, T estimate, T errorest)
 
 template <typename T>
 bool
-accuracy_reached(T epsrel, T epsabs, cuhreResult<T> res)
+accuracy_reached(T epsrel, T epsabs, cuhreResult res)
 {
   if (res.errorest / res.estimate <= epsrel || res.errorest <= epsabs)
     return true;
@@ -363,7 +363,7 @@ accuracy_reached(T epsrel, T epsabs, cuhreResult<T> res)
 }
 
 template <typename T, typename IntegT, int ndim>
-cuhreResult<T>
+cuhreResult
 pagani_clone(const IntegT& integrand,
              Sub_regions<T, ndim>& subregions,
              T epsrel = 1.e-3,
@@ -373,7 +373,7 @@ pagani_clone(const IntegT& integrand,
   using Reg_estimates = Region_estimates<T, ndim>;
   using Sub_regs = Sub_regions<T, ndim>;
   using Regs_characteristics = Region_characteristics<ndim>;
-  using Res = cuhreResult<T>;
+  using Res = cuhreResult;
   using Filter = Sub_regions_filter<T, ndim>;
   using Splitter = Sub_region_splitter<T, ndim>;
   Reg_estimates prev_iter_estimates;
