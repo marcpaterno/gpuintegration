@@ -24,7 +24,7 @@ TEST_CASE("Unit-Volume 2D")
       kernel.numRegions,
       KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
         double sub_region_volume = 1.;
-        for (size_t dim = 0; dim < NDIM; dim++) {
+        for (int dim = 0; dim < NDIM; dim++) {
           sub_region_volume *= dRegionsLength(dim * kernel.numRegions + index);
         }
         valueToUpdate += sub_region_volume;
@@ -45,7 +45,7 @@ TEST_CASE("Unit-Volume 2D")
     double cpu_volume = 0.;
     for (size_t index = 0; index < kernel.numRegions; index++) {
       double sub_region_volume = 1.;
-      for (size_t dim = 0; dim < NDIM; dim++) {
+      for (int dim = 0; dim < NDIM; dim++) {
         sub_region_volume *= RegionsLength(dim * kernel.numRegions + index);
         // printf("dRegionslength(%i):%.15f\n", dim*kernel.numRegions + index,
         // RegionsLength(dim*kernel.numRegions + index));
@@ -76,7 +76,7 @@ TEST_CASE("Unit-Volume 5D")
       kernel.numRegions,
       KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
         double sub_region_volume = 1.;
-        for (size_t dim = 0; dim < NDIM; dim++) {
+        for (int dim = 0; dim < NDIM; dim++) {
           sub_region_volume *= dRegionsLength(dim * kernel.numRegions + index);
         }
         valueToUpdate += sub_region_volume;
@@ -97,7 +97,7 @@ TEST_CASE("Unit-Volume 5D")
     double cpu_volume = 0.;
     for (size_t index = 0; index < kernel.numRegions; index++) {
       double sub_region_volume = 1.;
-      for (size_t dim = 0; dim < NDIM; dim++) {
+      for (int dim = 0; dim < NDIM; dim++) {
         sub_region_volume *= RegionsLength(dim * kernel.numRegions + index);
       }
       cpu_volume += sub_region_volume;
@@ -125,7 +125,7 @@ TEST_CASE("Unit-Volume 10D")
       kernel.numRegions,
       KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
         double sub_region_volume = 1.;
-        for (size_t dim = 0; dim < NDIM; dim++) {
+        for (int dim = 0; dim < NDIM; dim++) {
           sub_region_volume *= dRegionsLength(dim * kernel.numRegions + index);
         }
         valueToUpdate += sub_region_volume;
@@ -147,7 +147,7 @@ TEST_CASE("Unit-Volume 10D")
     double cpu_volume = 0.;
     for (size_t index = 0; index < kernel.numRegions; index++) {
       double sub_region_volume = 1.;
-      for (size_t dim = 0; dim < NDIM; dim++) {
+      for (int dim = 0; dim < NDIM; dim++) {
         sub_region_volume *= RegionsLength(dim * kernel.numRegions + index);
       }
       cpu_volume += sub_region_volume;
