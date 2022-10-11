@@ -10,9 +10,7 @@ public:
   __device__ __host__ double
   operator()(double x, double y)
   {
-    double temp = x * y;
-    double res = 15.37;
-    return res;
+    return 15.37 + 0 * x * y;
   }
 };
 
@@ -21,9 +19,7 @@ public:
   __device__ __host__ double
   operator()(double x, double y)
   {
-    double temp = x * y;  
-    double res = -15.37;
-    return res;
+    return -15.37 + 0 * x * y;
   }
 };
 
@@ -32,8 +28,7 @@ public:
   __device__ __host__ double
   operator()(double x, double y)
   {
-    double temp = x * y;  
-    return 0.;
+    return 0. + 0 * x * y;
   }
 };
 
@@ -53,8 +48,7 @@ TEST_CASE("Constant Positive Value Function")
   double epsabs = 1.0e-12;
   Cuhre<double, ndim> cuhre(
     hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  /*cuhreResult res =*/
-    cuhre.Integrate<PTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  cuhre.Integrate<PTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
 
   double firstEstimate = hRegsIntegral[0];
   double totalEstimate = firstEstimate;
@@ -74,9 +68,7 @@ TEST_CASE("Constant Positive Value Function")
     CHECK(diffIntegralFound == false);
   }
 
-  // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f\n", totalEstimate);
-  CHECK(abs(totalEstimate - 15.37) <= .00000000000001);
+  CHECK(totalEstimate == Approx(15.37));
   CHECK(nonZeroErrFound == false);
   CHECK(totalErrorEst <= 0.00000000000001);
 }
@@ -96,8 +88,7 @@ TEST_CASE("Constant Negative Value Function")
   double epsabs = 1.0e-12;
   Cuhre<double, 2> cuhre(
     hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  /*cuhreResult res =*/
-    cuhre.Integrate<NTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  cuhre.Integrate<NTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
 
   double firstEstimate = hRegsIntegral[0];
   double totalEstimate = firstEstimate;
@@ -118,8 +109,7 @@ TEST_CASE("Constant Negative Value Function")
   }
 
   // returns are never precisely equal to 0. and -15.37
-  printf("totalEstimate:%.15f\n", totalEstimate);
-  CHECK(abs(totalEstimate - (-15.37)) <= .00000000000001);
+  CHECK(totalEstimate == Approx(-15.37));
   CHECK(nonZeroErrFound == false);
   CHECK(totalErrorEst <= 0.00000000000001);
 }
@@ -139,8 +129,7 @@ TEST_CASE("Constant Zero Value Function")
   double epsabs = 1.0e-12;
   Cuhre<double, 2> cuhre(
     hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  /*cuhreResult res =*/
-    cuhre.Integrate<ZTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  cuhre.Integrate<ZTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
 
   double firstEstimate = hRegsIntegral[0];
   double totalEstimate = firstEstimate;
@@ -160,8 +149,7 @@ TEST_CASE("Constant Zero Value Function")
     CHECK(diffIntegralFound == false);
   }
 
-  // printf("totalEstimate:%.15f\n", totalEstimate);
-  CHECK(totalEstimate == 0.0);
+  CHECK(Approx(totalEstimate) == 0.0);
   CHECK(nonZeroErrFound == false);
   CHECK(totalErrorEst <= 0.00000000000001);
 }
