@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp"
 
 #include "kokkos/pagani/quad/Interp2D.h"
@@ -166,16 +165,4 @@ TEST_CASE("Interp2D on bilinear")
 
   double interpResult = Evaluate(object, 2.5, 1.5);
   CHECK(interpResult == 4.5);
-}
-
-int
-main(int argc, char* argv[])
-{
-  int result = 0;
-  Kokkos::initialize();
-  {
-    result = Catch::Session().run(argc, argv);
-  }
-  Kokkos::finalize();
-  return result;
 }

@@ -4,6 +4,8 @@
 #include "kokkos/pagani/quad/Kernel.cuh"
 #include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/quad/quad.h"
+
+#include "common/integration_result.hh"
 #include <array>
 
 template <typename T, int NDIM>
@@ -95,7 +97,7 @@ public:
   }
 
   template <typename IntegT>
-  cuhreResult
+  numint::integration_result
   Integrate(IntegT _integrand,
             double epsrel,
             double epsabs,
@@ -105,7 +107,7 @@ public:
             double* hRegsLength = nullptr,
             Volume<T, NDIM>* volume = nullptr*/)
   {
-    cuhreResult res;
+    numint::integration_result res;
 
     Kernel<double, NDIM> kernel(rule.GET_NSETS());
     ViewVectorDouble dRegions(
@@ -153,7 +155,7 @@ public:
   // against cuda
 
   template <typename IntegT>
-  cuhreResult
+  numint::integration_result
   DummyIntegrate(IntegT _integrand,
                  double epsrel,
                  double epsabs,
@@ -163,7 +165,7 @@ public:
                  double* hRegsLength = nullptr,
                  Volume<T, NDIM>* volume = nullptr)
   {
-    cuhreResult res;
+    numint::integration_result res;
 
     Kernel<double, NDIM> kernel(rule.GET_NSETS());
     ViewVectorDouble dRegions("dRegions", NDIM);

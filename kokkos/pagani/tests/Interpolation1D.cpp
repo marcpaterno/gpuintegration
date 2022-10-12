@@ -1,12 +1,10 @@
-#define CATCH_CONFIG_RUNNER
 #include "catch2/catch.hpp"
 
 #include "kokkos/pagani/quad/Interp1D.h"
-//#include "quad.h"
 #include <array>
 #include <math.h>
 
-typedef Kokkos::View<quad::Interp1D*, Kokkos::CudaUVMSpace> ViewVectorInterp1D;
+using ViewVectorInterp1D = Kokkos::View<quad::Interp1D*, Kokkos::CudaUVMSpace>;
 
 TEST_CASE("Initialization from std::array")
 {
@@ -197,16 +195,4 @@ TEST_CASE("Interp1D on quadratic")
 
   Kokkos::deep_copy(hostResults, results);
   CHECK(hostResults(0) == Approx(2.24263).epsilon(1e-4));
-}
-
-int
-main(int argc, char* argv[])
-{
-  int result = 0;
-  Kokkos::initialize();
-  {
-    result = Catch::Session().run(argc, argv);
-  }
-  Kokkos::finalize();
-  return result;
 }

@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_RUNNER
 #include "kokkos/pagani/quad/Cuhre.cuh"
 #include "catch.hpp"
 #include <stdint.h>
@@ -152,16 +151,4 @@ TEST_CASE("Constant Zero Value Function")
   CHECK(Approx(totalEstimate) == 0.0);
   CHECK(nonZeroErrFound == false);
   CHECK(totalErrorEst <= 0.00000000000001);
-}
-
-int
-main(int argc, char* argv[])
-{
-  int result = 0;
-  Kokkos::initialize();
-  {
-    result = Catch::Session().run(argc, argv);
-  }
-  Kokkos::finalize();
-  return result;
 }

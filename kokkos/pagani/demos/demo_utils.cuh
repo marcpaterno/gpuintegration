@@ -1,4 +1,6 @@
 #include "kokkos/pagani/quad/Cuhre.cuh"
+#include "common/integration_result.hh"
+
 #include <chrono>
 #include <cmath>
 #include <iomanip>
@@ -23,7 +25,7 @@ time_and_call(std::string id,
 
   Cuhre<double, ndim> pagani;
   auto const t0 = std::chrono::high_resolution_clock::now();
-  cuhreResult const result =
+  numint::integration_result const result =
     pagani.Integrate(integrand, epsrel, epsabs, heuristicID);
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);

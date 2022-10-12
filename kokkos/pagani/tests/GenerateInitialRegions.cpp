@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_RUNNER
 #include "kokkos/pagani/quad/Cuhre.cuh"
 #include "catch.hpp"
 #include <stdint.h>
@@ -152,15 +151,3 @@ TEST_CASE("Unit-Volume 10D")
     CHECK(cpu_volume == 1.);
   }
 };
-
-int
-main(int argc, char* argv[])
-{
-  int result = 0;
-  Kokkos::initialize();
-  {
-    result = Catch::Session().run(argc, argv);
-  }
-  Kokkos::finalize();
-  return result;
-}

@@ -79,31 +79,6 @@ typedef Kokkos::View<double*, Kokkos::Serial> HostVectorDouble;
 typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
 //-------------------------------------------------------------------------------
 typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
-struct cuhreResult {
-
-  cuhreResult()
-  {
-    estimate = 0.;
-    errorest = 0.;
-    neval = 0.;
-    nregions = 0.;
-    status = 1.;
-    // activeRegions = 0.;
-    phase2_failedblocks = 0.;
-    lastPhase = 0;
-    nFinishedRegions = 0;
-  };
-
-  double estimate;
-  double errorest;
-  size_t neval;
-  size_t nregions;
-  size_t nFinishedRegions;
-  int status;
-  int lastPhase;
-  // size_t activeRegions;    // is not currently being set
-  size_t phase2_failedblocks; // is not currently being set
-};
 
 template <typename T>
 struct Structures {
