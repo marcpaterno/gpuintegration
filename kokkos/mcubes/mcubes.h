@@ -207,10 +207,11 @@ class Custom_generator{
       uint32_t p = one << expi;
       uint32_t custom_seed = 0;
       uint64_t temp = 0; 
-    
+	  const int block_id;
+	  const int thread_id;
+	  
   public:
-      Custom_generator(uint32_t seed):custom_seed(seed){};
-	  Custom_generator(uint32_t seed, int blockId, int threadId):custom_seed(seed){};
+	  Custom_generator(uint32_t seed, int blockId, int threadId):custom_seed(seed), block_id(blockId), thread_id(threadId){};
 
 	  
       __device__ double operator()(){
@@ -492,11 +493,6 @@ void vegas_kernel_kokkos(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                         ViewVectorDouble d, 
                         ViewVectorDouble dx, 
                         ViewVectorDouble regn, 
-                        int ncubes,
-                        int iter, 
-                        double sc, 
-                        double sci, 
-                        double ing,
                         int _chunkSize, 
                         uint32_t totalNumThreads,
                         int LastChunk, 
@@ -562,8 +558,6 @@ void vegas_kernel_kokkos(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
 				fbgs += sh_buff(ii);
 				f2bgs += sh_buff(ii + BLOCK_DIM_X);
 			}
-            //if(m == 0)
-			//	printf("(m(0):fbgs:%.15e\n", fbgs);
 			Kokkos::atomic_add(&result_dev(0), fbgs);
 			Kokkos::atomic_add(&result_dev(1), f2bgs);               
         }
@@ -583,14 +577,8 @@ void vegas_kernel_kokkosF(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                         ViewVectorDouble result_dev, 
                         double xnd, 
                         ViewVectorDouble xi,
-                        ViewVectorDouble d, 
                         ViewVectorDouble dx, 
                         ViewVectorDouble regn, 
-                        int ncubes,
-                        int iter, 
-                        double sc, 
-                        double sci, 
-                        double ing,
                         int _chunkSize, 
                         uint32_t totalNumThreads,
                         int LastChunk, 
@@ -614,7 +602,7 @@ void vegas_kernel_kokkosF(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
 		int iaj;
 		double x[mxdim_p1];
 		int k;
-		double fbg, f2bg;
+		double fbg = 0., f2bg = 0.;
 
 		if (m < totalNumThreads) {
             
@@ -809,8 +797,7 @@ void vegas(IntegT integrand,
 		npg = IMAX(ncall / k, 2);
 		calls = (double)npg * (double)k;
 		dxg = 1.0 / ng;
-		double ing = dxg;
-        
+			
 		for (dv2g = 1, i = 1; i <= ndim; i++) 
             dv2g *= dxg;
             
@@ -874,11 +861,6 @@ void vegas(IntegT integrand,
                                                              d_d, 
                                                              d_dx, 
                                                              d_regn, 
-                                                             ncubes, 
-                                                             it, 
-                                                             sc,
-                                                             sci,  
-                                                             ing, 
                                                              chunkSize, 
                                                              totalNumThreads,
                                                              LastChunk, 
@@ -959,14 +941,8 @@ void vegas(IntegT integrand,
                                                             dxg,                                           d_result, 
                                                             xnd,
                                                             d_xi, 
-                                                            d_d, 
                                                             d_dx, 
                                                             d_regn, 
-                                                            ncubes, 
-                                                            it, 
-                                                            sc,
-                                                            sci,  
-                                                            ing, 
                                                             chunkSize, 
                                                             totalNumThreads,
                                                             LastChunk, 

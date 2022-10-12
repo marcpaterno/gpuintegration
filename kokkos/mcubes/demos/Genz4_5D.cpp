@@ -15,7 +15,7 @@ class GENZ_4_5D {
 };
 
 int
-main(int argc, char** argv)
+main()
 {
   Kokkos::initialize();
   {

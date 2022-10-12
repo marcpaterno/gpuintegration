@@ -21,7 +21,7 @@ public:
 };
 
 int
-main(int argc, char** argv)
+main()
 {
   Kokkos::initialize();
   {
