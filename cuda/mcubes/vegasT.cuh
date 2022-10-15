@@ -1051,6 +1051,37 @@ namespace cuda_mcubes {
     return result;
   }
 
+  class mcubes {
+    public:
+    mcubes(double epsrel, double epsabs, double ncall, int totalIters=15, int adjustIters=15, int skipIters=5):
+      epsrel_(epsrel),
+      epsabs_(epsabs),
+      ncall_(ncall),
+      totalIters_(totalIters),
+      adjustIters_(adjustIters),
+      skipIters_(skipIters)
+    { }
+
+    template <typename F, int NDIM>
+    numint::integration_result integrate(F& integrand, quad::Volume<double, NDIM> const* volume);
+
+    private:
+      double epsrel_;
+      double epsabs_;
+      double ncall_;
+      int totalIters_;
+      int adjustIters_;
+      int skipIters_;
+  };
+
+
+  template <typename F, int NDIM>
+  numint::integration_result
+  mcubes::integrate(F& integrand, quad::Volume<double, NDIM> const* volume)
+  {
+    return mcubes::integrate<F, NDIM>(integrand, epsrel_, epsabs_, ncall_, volume, totalIters_, adjustIters_, skipIters_);
+  }
+  
   template <typename IntegT,
             int NDIM,
             bool DEBUG_MCUBES = false,
