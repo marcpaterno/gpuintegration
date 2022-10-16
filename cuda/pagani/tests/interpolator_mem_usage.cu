@@ -6,8 +6,7 @@
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 
 __global__ void
-Evaluate(quad::Interp1D<double> interpolator,
-	 
+Evaluate(quad::Interp1D interpolator,
          size_t size,
          double* results)
 {
@@ -36,7 +35,7 @@ public:
 
 
   
-  quad::Interp1D<double> obj_1D;
+  quad::Interp1D obj_1D;
   quad::Interp2D<double> obj_2D;
 
 };
