@@ -36,51 +36,9 @@ public:
 
   
   quad::Interp1D obj_1D;
-  quad::Interp2D<double> obj_2D;
+  quad::Interp2D obj_2D;
 
 };
-
-/*void interp_on_cpu_stack(){
-  const size_t s = 10000000;
-  std::vector<double> xs_1D(s);
-  std::vector<double> ys_1D(s);
-   
-  std::iota(xs_1D.begin(), xs_1D.end(), 1.);
-  std::iota(ys_1D.begin(), ys_1D.end(), 2.);
-  double* results = quad::cuda_malloc<double>(s);
-
-
-  constexpr std::size_t nx = 3; // rows
-  constexpr std::size_t ny = 2; // cols                                                                                                
-  std::array<double, nx> xs_2D = {1., 2., 3.};
-  std::array<double, ny> ys_2D = {4., 5.};
-  std::array<double, ny * nx> zs_2D;
-  auto fxy = [](double x, double y) { return 3 * x * y + 2 * x + 4 * y; };
-
-  for (std::size_t i = 0; i != nx; ++i) {
-    double x = xs[i];
-
-    for (std::size_t j = 0; j != ny; ++j) {
-      double y = ys[j];
-      zs[j * nx + i] = fxy(x, y);
-    }
-  }
-
-  quad::Interp2D 2D(xs_2D, ys_2D, zs_2D);
-  
-  for(int i=0; i<1000; i++)
-    {
-      quad::Interp1D 1D(xs.data(), ys.data(), s);  
-      Evaluate<<<1,1>>>(1D, s, results);
-      cudaDeviceSynchronize();
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      std::cout<<free_physmem<<"\n"; 
-      //std::cout<<"total:"<<total_physmem<<"\n"; 
-    }
-
-  cudaFree(results);
-}*/
 
 template<typename F>
 __global__ void
