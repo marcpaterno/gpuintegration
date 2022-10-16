@@ -56,7 +56,7 @@ public:
                            Sub_regions<T, ndim>& subregions,
                            T epsrel,
                            T epsabs,
-                           quad::Volume<T, ndim>& vol,
+                           quad::Volume<T, ndim> const& vol,
                            bool relerr_classification = true);
 
   template <typename IntegT,
@@ -66,7 +66,7 @@ public:
   numint::integration_result integrate(const IntegT& integrand,
                            T epsrel,
                            T epsabs,
-                           quad::Volume<T, ndim>& vol,
+                           quad::Volume<T, ndim> const& vol,
                            bool relerr_classification = true);
 };
 
@@ -156,7 +156,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
                                           T epsabs,
-                                          quad::Volume<T, ndim>& vol,
+                                          quad::Volume<T, ndim> const& vol,
                                           bool relerr_classification)
 {
   using MilliSeconds =
@@ -276,7 +276,7 @@ numint::integration_result
 Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
-                                          quad::Volume<T, ndim>& vol,
+                                          quad::Volume<T, ndim> const& vol,
                                           bool relerr_classification)
 {
   using MilliSeconds =
