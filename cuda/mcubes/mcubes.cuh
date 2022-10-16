@@ -5,6 +5,7 @@
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/mcubes/util/util.cuh"
 #include "cuda/mcubes/vegasT.cuh"
+#include "common/integration_result.hh"
 
 namespace quad {
   struct mcubes {
@@ -14,7 +15,7 @@ namespace quad {
     int skip_iters = 0;
 
     template <typename F>
-    cuhreResult<double> integrate(
+    numint::integration_result integrate(
       F const& f,
       double epsabs,
       double epsrel,
@@ -23,7 +24,7 @@ namespace quad {
 }
 
 template <typename F>
-cuhreResult<double>
+numint::integration_result
 quad::mcubes::integrate(F const& f,
                         double epsabs,
                         double epsrel,
