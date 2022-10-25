@@ -166,28 +166,20 @@ struct Sub_regions{
             auto dLength_ct2 = dLength;
             auto ndim_ct5 = ndim;
             
-			
-			
-			
             cgh.parallel_for(sycl::range<1>(num_starting_regions),
                [=](sycl::id<1> reg)
              {
 				 
-			size_t partitions_per_axis = 2;   
-			if(ndim < 5)
-				partitions_per_axis = 4;
-			else if(ndim <= 10)
-				partitions_per_axis = 2;
-			else
-				partitions_per_axis = 1; 
-				 
-				 
-                for(size_t dim = 0; dim < ndim; ++dim){
-				
-				
-				
-					size_t _id = (int)(reg /  (int)std::pow(partitions_per_axis, dim)) % partitions_per_axis;
-                   //size_t _id = /*(int)*/static_cast<size_t>(reg[0] /  (size_t)pow(numOfDivisionPerRegionPerDimension, dim)) % numOfDivisionPerRegionPerDimension;
+			auto custom_pow = [=](size_t const base, size_t const exponent){
+				size_t res = 1.;
+				for(size_t i = 0; i < exponent; ++i)
+					res *= base;
+				return base;
+			};
+			
+			
+                for(size_t dim = 0; dim < ndim; ++dim){				
+				   size_t _id = (int)(reg /custom_pow(numOfDivisionPerRegionPerDimension, dim)) % numOfDivisionPerRegionPerDimension;
                    dLeftCoord_ct1[num_starting_regions * dim + (reg)] = static_cast<double>(_id) * static_cast<double>(starting_axis_length);  
                    dLength_ct2[num_starting_regions * dim + (reg)] = starting_axis_length;
                  }
@@ -200,7 +192,6 @@ struct Sub_regions{
   quad::Volume<double, ndim> extract_region(size_t const regionID){
     
     if(LeftCoord == nullptr || Length == nullptr){  
-        //printf("host_init to be invoked within Sub_regions::extra_region\n");
         host_init();
     }
     refresh_host_device();
