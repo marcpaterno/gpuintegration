@@ -11,3 +11,4 @@ build/
 .ipynb_checkpoints
 *.csv
 *.out
+*build*
