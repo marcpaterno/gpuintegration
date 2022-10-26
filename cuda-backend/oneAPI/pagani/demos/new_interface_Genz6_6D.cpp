@@ -66,4 +66,3 @@ main()
     epsrel /= 5.0;
   }*/
 }
->>>>>>> c6eba3a (oneAPI demos update with function to invoke the main kernel only)
