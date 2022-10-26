@@ -7,17 +7,16 @@
 
 
 class GENZ_4_5D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double w, double v)
-  {
-    // double alpha = 25.;
-    double beta = .5;
-    return sycl::exp(-1.0 *
-               (pow(25, 2) * pow(x - beta, 2) + pow(25, 2) * pow(y - beta, 2) +
-                pow(25, 2) * pow(z - beta, 2) + pow(25, 2) * pow(w - beta, 2) +
-                pow(25, 2) * pow(v - beta, 2)));
-  }
+  public:
+    SYCL_EXTERNAL double
+    operator()(double x, double y, double z, double w, double v)
+    {
+      double beta = .5;
+      return sycl::exp(
+        -1.0 * (sycl::pow(25., 2.) * sycl::pow(x - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(y - beta, 2.) +
+                sycl::pow(25., 2.) * sycl::pow(z - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(w - beta, 2.) +
+                sycl::pow(25., 2.) * sycl::pow(v - beta, 2.)));
+    }
 };
 
 int

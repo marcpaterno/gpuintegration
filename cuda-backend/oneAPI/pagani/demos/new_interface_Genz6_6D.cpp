@@ -12,7 +12,7 @@
 
 using namespace quad;
 
-	class GENZ_6_6D {
+class GENZ_6_6D {
 	  public:
 		double
 		operator()(double u, double v, double w, double x, double y, double z)
@@ -23,7 +23,7 @@ using namespace quad;
 			return sycl::exp(10 * z + 9 * y + 8 * x + 7 * w + 6 * v +
 					   5 * u) /*/1.5477367885091207413e8*/;
 		}
-	};
+};
 
 
 int
