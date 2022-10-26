@@ -32,9 +32,7 @@ int main(){
     double true_value = 1.79132603674879e-06;
 	quad::Volume<double, ndim> vol;
 	
-	for(int i=0; i < 10; ++i)
-		call_cubature_rules<GENZ_4_5D, ndim>(integrand, vol);
-   /*while (clean_time_and_call<GENZ_4_5D, ndim, false>("f4",
+   while (clean_time_and_call<GENZ_4_5D, ndim, false>("f4",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -42,10 +40,9 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
-	break;
-  }*/
+  }
     
-   /*while (clean_time_and_call<GENZ_4_5D, ndim, true>("f4",
+   while (clean_time_and_call<GENZ_4_5D, ndim, true>("f4",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -53,8 +50,7 @@ int main(){
                                            std::cout) == true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
-	break;
-  }*/
+  }
     return 0;
 }
 

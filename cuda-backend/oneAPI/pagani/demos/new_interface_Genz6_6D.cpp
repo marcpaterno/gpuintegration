@@ -40,9 +40,7 @@ main()
   
   quad::Volume<double, ndim>  vol;
   
-  for(int i=0; i < 10; ++i)
-    call_cubature_rules<GENZ_6_6D, ndim>(integrand, vol);
-  /*while (clean_time_and_call<detail::GENZ_6_6D, ndim, false>("f6",
+  while (clean_time_and_call<GENZ_6_6D, ndim, false>("f6",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -51,11 +49,10 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-	break;
-  }*/
+  }
     
-    /* epsrel = 1.e-3;
-    while (clean_time_and_call<detail::GENZ_6_6D, ndim, true>("f6",
+     epsrel = 1.e-3;
+    while (clean_time_and_call<GENZ_6_6D, ndim, true>("f6",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -64,5 +61,5 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-  }*/
+  }
 }

@@ -5,8 +5,6 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
-
-
 class GENZ_2_6D {
   public:
     SYCL_EXTERNAL double
@@ -14,7 +12,7 @@ class GENZ_2_6D {
     {
         const double a = 50.;
         const double b = .5;
-		
+
         const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
         const double term_2 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(y - b, 2.));
         const double term_3 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(z - b, 2.));
@@ -24,36 +22,15 @@ class GENZ_2_6D {
         
         double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
         return val;
+
     }
 };
 
 int main(){
-	double epsrel = 1.0e-3;
-    double const epsrel_min = 1.0240000000000002e-10;
     constexpr int ndim = 6;
     GENZ_2_6D integrand;
-    double true_value = 1.79132603674879e-06;
 	quad::Volume<double, ndim> vol;
-	
-   while (clean_time_and_call<GENZ_2_6D, ndim, false>("f4",
-                                           integrand,
-                                           epsrel,
-                                           true_value,
-                                           "gpucuhre",
-                                           std::cout) == true &&
-         epsrel >= epsrel_min) {
-    epsrel /= 5.0;
-  }
-    
-   while (clean_time_and_call<GENZ_2_6D, ndim, true>("f4",
-                                           integrand,
-                                           epsrel,
-                                           true_value,
-                                           "gpucuhre",
-                                           std::cout) == true &&
-         epsrel >= epsrel_min) {
-    epsrel /= 5.0;
-  }
+	call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol);
     return 0;
 }
 

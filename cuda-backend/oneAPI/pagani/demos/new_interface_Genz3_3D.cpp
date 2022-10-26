@@ -47,11 +47,10 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-	break;
   }
     
      epsrel = 1.e-3;
-    /*while (clean_time_and_call<detail::GENZ_3_3D, ndim, true>("3D f3",
+   while (clean_time_and_call<detail::GENZ_3_3D, ndim, true>("3D f3",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -60,5 +59,5 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-  }*/
+  }
 }

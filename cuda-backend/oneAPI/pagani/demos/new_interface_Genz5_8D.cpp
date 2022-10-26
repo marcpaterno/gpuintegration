@@ -55,11 +55,10 @@ main()
                                                    std::cout,
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
-		break;
     epsrel /= 5.0;
   }
     
-   /*  epsrel = 1.e-3;
+     epsrel = 1.e-3;
     while (clean_time_and_call<detail::GENZ_5_8D, ndim, true>("f5",
                                                    integrand,
                                                    epsrel,
@@ -69,5 +68,5 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-  }*/
+  }
 }
