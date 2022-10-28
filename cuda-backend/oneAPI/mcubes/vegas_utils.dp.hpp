@@ -9,77 +9,6 @@
 #define RAND_MAX        2147483647
 
 #include <cmath>
-//#include <oneapi/mkl.hpp>
-//#include <oneapi/mkl/rng/device.hpp>
-
-/*
-class Parallel_params{
-    int chunkSize;      //minimum cubes processed by each thread
-    int LastChunk;      //number of cubes processed by the last thread, which
-gets assigned all leftover cubes uint32_t nBlocks;   //number of blocks launched
-by kernel uint32_t nThreads;  //number of threads per block, when launching
-kernel uint32_t totalNumThreads
-    Vegas_Params* vegas_params = nullptr;
-    friend class Mcubes_state;
-    public:
-        Set(double ncall){
-            //requires that Vegas_Params have been properly set
-            totalNumThreads = (uint32_t)((vegas_params->ncubes + chunkSize - 1)
-/ chunkSize); uint32_t totalCubes = totalNumThreads * chunkSize; uint32_t extra
-= totalCubes - static_cast<uint32_t>(vegas_params->ncubes); LastChunk =
-chunkSize - extra; nBlocks =
-                ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) /
-chunkSize) + 1; nThreads = BLOCK_DIM_X;
-        }
-};
-class Vegas_params{
-    const int ncubes;
-    const int ndim;
-    const double ncall;
-    const int npg;
-    friend class Mcubes_state;
-    public:
-    Set(double NCALL, int NDIM){
-        ncubes = ComputeNcubes(NCALL, NDIM);
-        npg = Compute_samples_per_cube(NCALL, ncubes);
-    }
-};
-class Mcubes_state{
-    double* bin_right_coord = nullptr;
-    double* bin_contributions = nullptr;
-    int finished_iters = 0;
-    const Parallel_params parallel_params;
-    const Vegas_params vegas_params;
-    public:
-        Mcubes_state(double ncall, int ndim){
-            constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-            constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-            vegas_params.Set(ncall, ndim);
-            parallel_params.Set(ncall);
-            bin_right_coord = new double[ndmx_p1*mxdim_p1];
-            bin_contributions = new double[ndmx_p1*mxdim_p1];
-        }
-        ~Mcubes_state(){
-            delete[] bin_right_coord;
-            delete[] bin_contributions;
-        }
-        void
-        operator++(){
-            finished_iters++;
-        }
-};
-class Internal_Vegas_Params{
-        static constexpr int NDMX = 500;
-        static constexpr int MXDIM = 20;
-        static constexpr double ALPH = 1.5;
-    public:
-        __host__ __device__ static constexpr int get_NDMX(){return NDMX;}
-        __host__ __device__ static constexpr int get_NDMX_p1(){return NDMX+1;}
-        __host__ __device__ static constexpr  double get_ALPH(){return ALPH;}
-        __host__ __device__ static constexpr  int get_MXDIM(){return MXDIM;}
-        constexpr __host__ __device__ static int get_MXDIM_p1(){return MXDIM+1;}
-};
-*/
 
 class Custom_generator {
   const uint32_t a = 1103515245;
@@ -109,53 +38,23 @@ public:
 };
 
 
-/*
-Class is not required for mcubes but throws errors in required templates if deleted.
-It is not necesserily adequate to leave it as such but the removal would require reqriting of a large portion of the project. Omitting allows for proper execution ~ Emmanuel
-*/
 class Curand_generator {
-  /*
-  DPCT1032:6: A different random number generator is used. You may need to
-  adjust the code.
-  */
-  /*
-  DPCT1050:38: The template argument of the RNG engine could not be deduced. You
-  need to update this code.
-  */
-  //oneapi::mkl::rng::device::philox4x32x10<1> localState;
-
 public:
   
   Curand_generator(sycl::nd_item<3> item_ct1)
   {
-    /*
-    DPCT1050:39: The template argument of the RNG engine could not be deduced.
-    You need to update this code.
-    */
-    /*localState = oneapi::mkl::rng::device::philox4x32x10<1>(
-        0, {static_cast<std::uint64_t>(item_ct1.get_local_id(2)),
-            static_cast<std::uint64_t>(item_ct1.get_group(2) * 8)});*/
   }
 
   
   Curand_generator(unsigned int seed, sycl::nd_item<3> item_ct1)
   {
-    /*
-    DPCT1050:40: The template argument of the RNG engine could not be deduced.
-    You need to update this code.
-    */
-    /*localState = oneapi::mkl::rng::device::philox4x32x10<1>(
-        seed, {static_cast<std::uint64_t>(item_ct1.get_local_id(2)),
-               static_cast<std::uint64_t>(item_ct1.get_group(2) * 8)});*/
+
   }
 
   double
   operator()()
   {
-    /*
-    DPCT1007:7: Migration of this CUDA API is not supported by the Intel(R)
-    DPC++ Compatibility Tool.
-    */
+
     return 0.;
   }
 };
