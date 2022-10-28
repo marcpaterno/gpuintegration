@@ -28,3 +28,4 @@ set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 add_subdirectory(quad)
 add_subdirectory(tests)
 add_subdirectory(demos)
+add_subdirectory(profile)
