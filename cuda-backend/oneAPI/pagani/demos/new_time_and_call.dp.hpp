@@ -15,33 +15,45 @@ template <typename F, int ndim>
 void
 call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 	
-	F* d_integrand = make_gpu_integrand<F>(integrand);
-	size_t partitions_per_axis = 2;   
-	if(ndim < 5)
-		partitions_per_axis = 4;
-	else if(ndim <= 10)
-		partitions_per_axis = 2;
-	else
-		partitions_per_axis = 1;
-	partitions_per_axis = 8;
-	Sub_regions<ndim> sub_regions(partitions_per_axis);
-	size_t num_regions = sub_regions.size;
-	std::cout<<"Initial regions:"<<sub_regions.size << std::endl;
-    Region_characteristics<ndim> characteristics(sub_regions.size);
-    Region_estimates<ndim> estimates(sub_regions.size);
-	Cubature_rules<ndim> rules;
-    rules.set_device_volume(vol.lows, vol.highs);
-	int iteration = 0;
-	bool compute_relerr_error_reduction = false;
-	cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(d_integrand, iteration, &sub_regions, &estimates, &characteristics, compute_relerr_error_reduction);
-	
-	double estimate = reduction<double>(estimates.integral_estimates, num_regions);
-	double errorest = reduction<double>(estimates.error_estimates, num_regions);
-	
-	std::cout << std::setprecision(15) << std::scientific << iter.estimate << "," << iter.errorest << std::endl;
-	dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
-	sycl::free(d_integrand, q_ct1);
+	for(int splits_per_dim = 4; splits_per_dim < 10; splits_per_dim++){
+		F* d_integrand = make_gpu_integrand<F>(integrand);
+		/*size_t partitions_per_axis = 2;   
+		if(ndim < 5)
+			partitions_per_axis = 4;
+		else if(ndim <= 10)
+			partitions_per_axis = 2;
+		else
+			partitions_per_axis = 1;
+		partitions_per_axis = 8;*/
+		
+		
+		
+		Sub_regions<ndim> sub_regions(splits_per_dim);
+		size_t num_regions = sub_regions.size;
+
+		if(num_regions >= 43e6)
+			break;
+		
+		Region_characteristics<ndim> characteristics(sub_regions.size);
+		Region_estimates<ndim> estimates(sub_regions.size);
+		
+		Cubature_rules<ndim> rules;
+		rules.set_device_volume(vol.lows, vol.highs);
+		
+		std::cout<<"launching with "<<  num_regions << std::endl;
+		
+		int iteration = 0;
+		bool compute_relerr_error_reduction = false;
+		cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(d_integrand, iteration, &sub_regions, &estimates, &characteristics, compute_relerr_error_reduction);
+		
+		double estimate = reduction<double>(estimates.integral_estimates, num_regions);
+		double errorest = reduction<double>(estimates.error_estimates, num_regions);
+		
+		std::cout << std::setprecision(15) << std::scientific << iter.estimate << "," << iter.errorest << std::endl;
+		dpct::device_ext& dev_ct1 = dpct::get_current_device();
+		sycl::queue& q_ct1 = dev_ct1.default_queue();
+		sycl::free(d_integrand, q_ct1);
+	}
 }	
 
 /*

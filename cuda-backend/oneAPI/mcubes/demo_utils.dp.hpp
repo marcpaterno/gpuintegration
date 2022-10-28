@@ -161,4 +161,46 @@ common_header_mcubes_time_and_call(F integrand,
   return success;
 }
 
+template <typename F,
+          int ndim>
+bool
+signle_invocation_time_and_call(F integrand,
+                     double epsrel,
+                     double correct_answer,
+                     char const* integralName,
+                     VegasParams& params,
+                     quad::Volume<double, ndim>* volume)
+{
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+	double constexpr epsabs = 1.0e-20;
+	bool success = false;
+             
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = cuda_mcubes::integrate<F, ndim>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      volume,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    success = (res.status == 0);
+    std::cout.precision(15);
+
+    if (success)
+      std::cout << integralName << "," << epsrel << "," << std::scientific
+                << correct_answer << "," << std::scientific << res.estimate
+                << "," << std::scientific << res.errorest << "," << res.chi_sq
+                << "," << params.t_iter << "," << params.num_adjust_iters << ","
+                << params.num_skip_iters << "," << res.iters << ","
+                << params.ncall << "," << res.neval << "," << dt.count() << ","
+                << res.status << "\n";
+               
+	return success;
+}
+
 #endif
