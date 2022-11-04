@@ -190,8 +190,9 @@ signle_invocation_time_and_call(F integrand,
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
-
-    if (success)
+	
+	std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << res.estimate << "," <<  params.ncall <<std::endl;
+    /*if (success)
       std::cout << integralName << "," << epsrel << "," << std::scientific
                 << correct_answer << "," << std::scientific << res.estimate
                 << "," << std::scientific << res.errorest << "," << res.chi_sq
@@ -199,7 +200,7 @@ signle_invocation_time_and_call(F integrand,
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
                 << res.status << "\n";
-               
+    */           
 	return success;
 }
 

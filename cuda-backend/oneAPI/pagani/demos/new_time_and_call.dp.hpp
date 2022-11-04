@@ -11,26 +11,25 @@
 #include <iostream>
 #include <iomanip>
 
+template<typename T>
+void host_print_dev_array(T* dev, size_t size, std::string label){
+	T* host = new T[size];
+	cuda_memcpy_to_host(host, dev, size);
+	for(int i = 0; i < size; ++i)
+		std::cout<<label << "," <<  i << ","  << std::scientific << std::setprecision(15) << host[i] << std::endl;
+	printf("done\n");
+	delete[] host;
+}
+
 template <typename F, int ndim>
 void
 call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 	
 	for(int splits_per_dim = 4; splits_per_dim < 10; splits_per_dim++){
 		F* d_integrand = make_gpu_integrand<F>(integrand);
-		/*size_t partitions_per_axis = 2;   
-		if(ndim < 5)
-			partitions_per_axis = 4;
-		else if(ndim <= 10)
-			partitions_per_axis = 2;
-		else
-			partitions_per_axis = 1;
-		partitions_per_axis = 8;*/
-		
-		
-		
 		Sub_regions<ndim> sub_regions(splits_per_dim);
 		size_t num_regions = sub_regions.size;
-
+		
 		if(num_regions >= 43e6)
 			break;
 		
@@ -49,7 +48,10 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 		double estimate = reduction<double>(estimates.integral_estimates, num_regions);
 		double errorest = reduction<double>(estimates.error_estimates, num_regions);
 		
-		std::cout << std::setprecision(15) << std::scientific << iter.estimate << "," << iter.errorest << std::endl;
+		//host_print_dev_array(estimates.integral_estimates, num_regions, "regest");
+		
+		std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
+		//sub_regions.print_bounds();
 		dpct::device_ext& dev_ct1 = dpct::get_current_device();
 		sycl::queue& q_ct1 = dev_ct1.default_queue();
 		sycl::free(d_integrand, q_ct1);
