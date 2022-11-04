@@ -1,0 +1,23 @@
+add_executable(profile_mcubes_Genz2_6D profile_mcubes_Genz2_6D.cu)
+target_compile_options(profile_mcubes_Genz2_6D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz3_3D profile_mcubes_Genz3_3D.cu)
+target_compile_options(profile_mcubes_Genz3_3D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz3_8D profile_mcubes_Genz3_8D.cu)
+target_compile_options(profile_mcubes_Genz3_8D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz3_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz4_5D profile_mcubes_Genz4_5D.cu)
+target_compile_options(profile_mcubes_Genz4_5D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz4_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz5_8D profile_mcubes_Genz5_8D.cu)
+target_compile_options(profile_mcubes_Genz5_8D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz5_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz6_6D profile_mcubes_Genz6_6D.cu)
+target_compile_options(profile_mcubes_Genz6_6D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz6_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
