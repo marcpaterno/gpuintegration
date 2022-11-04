@@ -239,14 +239,15 @@ signle_invocation_time_and_call(F integrand,
     success = (res.status == 0);
     std::cout.precision(15);
 
-    if (success)
+	std::cout << "estimates:" << std::scientific << res.estimate << "," <<  params.ncall <<std::endl;
+    /*if (success)
       std::cout << integralName << "," << epsrel << "," << std::scientific
                 << correct_answer << "," << std::scientific << res.estimate
                 << "," << std::scientific << res.errorest << "," << res.chi_sq
                 << "," << params.t_iter << "," << params.num_adjust_iters << ","
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
-                << res.status << "\n";
+                << res.status << "\n";*/
 	
   return success;
 }
