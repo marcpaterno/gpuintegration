@@ -22,30 +22,10 @@ namespace quad {
   T
   warpReduceSum(T val, sycl::nd_item<3> item_ct1)
   {
-    /*
-    DPCT1023:8: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 16);
-    /*
-    DPCT1023:9: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 8);
-    /*
-    DPCT1023:10: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 4);
-    /*
-    DPCT1023:11: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 2);
-    /*
-    DPCT1023:12: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 1);
     return val;
   }
@@ -54,30 +34,10 @@ namespace quad {
   T
   warpReduceSum(T val, sycl::nd_item<1> item_ct1)
   {
-    /*
-    DPCT1023:8: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 16);
-    /*
-    DPCT1023:9: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 8);
-    /*
-    DPCT1023:10: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 4);
-    /*
-    DPCT1023:11: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 2);
-    /*
-    DPCT1023:12: The DPC++ sub-group does not support mask options for
-    sycl::shift_group_left.
-    */
     val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 1);
     return val;
   }
@@ -95,11 +55,7 @@ namespace quad {
     if (lane == 0) {
       shared[wid] = val;
     }
-    /*
-    DPCT1065:13: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
+
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
@@ -208,7 +164,7 @@ namespace quad {
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-
+	
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
                                            /*
@@ -216,7 +172,7 @@ namespace quad {
                                            correspoinding API in DPC++.
                                            */
     const int gIndex = constMem._gpuGenPermGIndex[pIndex];
-
+	
     if constexpr (debug >= 2) {
       fevals[item_ct1.get_group(0) * CuhreFuncEvalsPerRegion<NDIM>() + pIndex]
         .store(x, sBound, b);
@@ -282,10 +238,6 @@ namespace quad {
     item_ct1.barrier();
 
     if (item_ct1.get_local_id(0) == 0) {
-      /*
-      DPCT1026:25: The call to __ldg was removed because there is no
-      correspoinding API in DPC++.
-      */
       const T ratio = Sq(constMem._gpuG[2 * NDIM] / constMem._gpuG[1 * NDIM]);
       T* f = &sdata[0];
       Result* r = &region->result;
@@ -308,11 +260,7 @@ namespace quad {
 
       r->bisectdim = bisectdim;
     }
-    /*
-    DPCT1065:24: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
+
     item_ct1.barrier();
 
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
