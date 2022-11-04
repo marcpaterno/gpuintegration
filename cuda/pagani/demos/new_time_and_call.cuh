@@ -11,6 +11,15 @@
 #include <iostream>
 #include <iomanip>
 
+template<typename T>
+void host_print_dev_array(T* dev, size_t size, std::string label){
+	T* host = new T[size];
+	cuda_memcpy_to_host(host, dev, size);
+	for(int i = 0; i < size; ++i)
+		std::cout<<label << "," <<  i << ","  << std::scientific << std::setprecision(15) << host[i] << std::endl;
+	delete[] host;
+}
+
 template <typename F, int ndim>
 void
 call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
@@ -38,8 +47,9 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
 		estimates,
 		characteristics,
 		compute_relerr_error_reduction);
-
-	  std::cout << iter.estimate << "," << iter.errorest << std::endl;
+		
+	  //sub_regions.print_bounds();
+	  std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
 	  cudaFree(d_integrand);
   }
 }
