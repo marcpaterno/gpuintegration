@@ -108,10 +108,11 @@ struct Sub_regions{
   }
   
   void print_bounds(){
+	host_init();
     refresh_host_device();
     for(size_t i = 0; i < size; i++){
         for(size_t dim = 0; dim < ndim; dim++){
-            printf("region %lu, dim %lu, bounds: %f, %f (length:%f)\n", 
+            printf("region %lu, %lu, %f, %f, %f\n", 
                     i, dim, 
                     LeftCoord[size*dim + i], 
                     LeftCoord[size*dim + i] + Length[size*dim + i],
@@ -179,7 +180,7 @@ struct Sub_regions{
 			
 			
                 for(size_t dim = 0; dim < ndim; ++dim){				
-				   size_t _id = (int)(reg /custom_pow(numOfDivisionPerRegionPerDimension, dim)) % numOfDivisionPerRegionPerDimension;
+				   size_t _id = (int)(reg[0] /sycl::pow((double)numOfDivisionPerRegionPerDimension, (double)dim)) % numOfDivisionPerRegionPerDimension;
                    dLeftCoord_ct1[num_starting_regions * dim + (reg)] = static_cast<double>(_id) * static_cast<double>(starting_axis_length);  
                    dLength_ct2[num_starting_regions * dim + (reg)] = starting_axis_length;
                  }

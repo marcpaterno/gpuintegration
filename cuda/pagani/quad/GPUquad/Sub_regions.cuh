@@ -111,10 +111,11 @@ struct Sub_regions {
   void
   print_bounds()
   {
+	host_init();
     refresh_host_device();
     for (size_t i = 0; i < size; i++) {
       for (size_t dim = 0; dim < ndim; dim++) {
-        printf("region %lu, dim %lu, bounds: %f, %f (length:%f)\n",
+        printf("region %lu, %lu, %f, %f, %f",
                i,
                dim,
                LeftCoord[size * dim + i],
