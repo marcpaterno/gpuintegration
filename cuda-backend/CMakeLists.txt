@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 #find_package(IntelDPCPP REQUIRED)
-find_package(TBB REQUIRED)
-find_package(MKL REQUIRED)
+#find_package(TBB REQUIRED)
+#find_package(MKL REQUIRED)
 
 add_subdirectory(oneAPI)
