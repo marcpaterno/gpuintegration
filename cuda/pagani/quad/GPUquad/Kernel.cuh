@@ -1050,7 +1050,7 @@ namespace quad {
                             T*& dParentsIntegral,
                             T*& dParentsError)
     {
-      nvtxRangePush("Compute numActive Regions");
+      //nvtxRangePush("Compute numActive Regions");
       int* scannedArray = 0; // de-allocated at the end of this function
       QuadDebug(
         Device.AllocateMemory((void**)&scannedArray, sizeof(int) * numRegions));
@@ -1062,9 +1062,9 @@ namespace quad {
 
       thrust::device_ptr<int> scan_ptr =
         thrust::device_pointer_cast(scannedArray);
-      nvtxRangePush("Exclusive scan");
+      //nvtxRangePush("Exclusive scan");
       thrust::exclusive_scan(d_ptr, d_ptr + numRegions, scan_ptr);
-      nvtxRangePop();
+      //nvtxRangePop();
       CudaCheckError();
 
       int last_element;
@@ -1082,7 +1082,7 @@ namespace quad {
       if (last_element == 1)
         numActiveRegions++;
 
-      nvtxRangePop();
+      //nvtxRangePop();
 
       numInActiveRegions = numRegions - numActiveRegions;
 
@@ -1090,7 +1090,7 @@ namespace quad {
         out4 << numActiveRegions << "," << numRegions << std::endl;
 
       if (numActiveRegions > 0) {
-        nvtxRangePush("Aligning Regions");
+        //nvtxRangePush("Aligning Regions");
         int numOfDivisionOnDimension = 2;
 
         int* newActiveRegionsBisectDim = 0;
@@ -1134,7 +1134,7 @@ namespace quad {
                                                    numOfDivisionOnDimension);
 
         CudaCheckError();
-        nvtxRangePop();
+        //nvtxRangePop();
         T *genRegions = 0, *genRegionsLength = 0;
         numBlocks = numActiveRegions / numThreads +
                     ((numActiveRegions % numThreads) ? 1 : 0);
@@ -1143,7 +1143,7 @@ namespace quad {
         QuadDebug(Device.ReleaseMemory(dRegionsLength));
         QuadDebug(Device.ReleaseMemory(scannedArray));
 
-        nvtxRangePush("dividing Intervals");
+        //nvtxRangePush("dividing Intervals");
         QuadDebug(cudaMalloc((void**)&genRegions,
                              sizeof(T) * numActiveRegions * NDIM *
                                numOfDivisionOnDimension));
@@ -1172,7 +1172,7 @@ namespace quad {
 
         dRegions = genRegions;
         dRegionsLength = genRegionsLength;
-        nvtxRangePop();
+        //nvtxRangePop();
         cudaDeviceSynchronize();
         CudaCheckError();
       } else {
@@ -1467,7 +1467,7 @@ namespace quad {
         destruction of highs, lows if AllocVolArrays is never called, cudaFree
         will cause error
       */
-      // nvtxRangePush("AllocVolArrays");
+      // //nvtxRangePush("AllocVolArrays");
       cudaMalloc((void**)&lows, sizeof(T) * NDIM);
       cudaMalloc((void**)&highs, sizeof(T) * NDIM);
 
@@ -1481,7 +1481,7 @@ namespace quad {
         cudaMemcpy(
           highs, tempVol.highs, sizeof(T) * NDIM, cudaMemcpyHostToDevice);
       }
-      // nvtxRangePop();
+      // //nvtxRangePop();
     }
 
     void
@@ -1636,7 +1636,7 @@ namespace quad {
     {
       thrust::device_ptr<int> wrapped_mask;
       // printf("1st Inner dot product %lu regions\n", numRegions);
-      // nvtxRangePush("Inner Product 1");
+      // //nvtxRangePush("Inner Product 1");
       wrapped_mask = thrust::device_pointer_cast(activeRegions);
 
       thrust::device_ptr<T> wrapped_ptr =
@@ -1647,9 +1647,9 @@ namespace quad {
                                               wrapped_ptr + numRegions,
                                               wrapped_mask,
                                               0.);
-      // nvtxRangePop();
+      // //nvtxRangePop();
       // printf("2nd Inner dot product %lu regions\n", numRegions);
-      // nvtxRangePush("Inner Product 2");
+      // //nvtxRangePush("Inner Product 2");
       wrapped_ptr = thrust::device_pointer_cast(dRegionsError);
       iter_finished_errorest =
         iter_errorest - thrust::inner_product(thrust::device,
@@ -1657,7 +1657,7 @@ namespace quad {
                                               wrapped_ptr + numRegions,
                                               wrapped_mask,
                                               0.);
-      // nvtxRangePop();
+      // //nvtxRangePop();
     }
 
     void
@@ -1731,7 +1731,7 @@ namespace quad {
       // printf("Amount of free memory at start of iteration:%lu\n",
       // Device.GetAmountFreeMem());
 
-      // nvtxRangePush("Iteration Allocations");
+      // //nvtxRangePush("Iteration Allocations");
       dRegionsError = nullptr, dRegionsIntegral = nullptr;
       int *activeRegions = 0, *subDividingDimension = 0;
       IterationAllocations(dRegionsIntegral,
@@ -1742,7 +1742,7 @@ namespace quad {
                            subDividingDimension,
                            iteration);
       CudaCheckError();
-      // nvtxRangePop();
+      // //nvtxRangePop();
 	 set_device_array<int>(activeRegions, numRegions, 1.);
 
       /*if(iteration == 14){
@@ -1750,7 +1750,7 @@ namespace quad {
           display<double, 2>(numRegions*NDIM, dRegions, dRegionsLength);
       }*/
 
-      // nvtxRangePush("INTEGRATE_GPU_PHASE1");
+      // //nvtxRangePush("INTEGRATE_GPU_PHASE1");
       quad::Func_Evals<NDIM> fevals;
       bool constexpr debug = false;
       quad::INTEGRATE_GPU_PHASE1<IntegT, T, NDIM, BLOCK_SIZE, debug>
@@ -1775,20 +1775,20 @@ namespace quad {
       neval += numRegions * fEvalPerRegion;
       cudaDeviceSynchronize();
       CudaCheckError();
-      // nvtxRangePop();
+      // //nvtxRangePop();
       // printf("Reduction 1 %lu regions\n", numRegions);
-      // nvtxRangePush("Reduction 1");
+      // //nvtxRangePush("Reduction 1");
       T iter_estimate = ComputeIterContribution(dRegionsIntegral);
-      // nvtxRangePop();
+      // //nvtxRangePop();
       T leaves_estimate = integral + iter_estimate;
-      nvtxRangePush("Rel Error Classify");
+      //nvtxRangePush("Rel Error Classify");
       RelErrClassify(activeRegions, nregions, epsrel, iteration);
-      nvtxRangePop();
+      //nvtxRangePop();
       // printf("Reduction 2 %lu regions\n", numRegions);
       T iter_finished_estimate = 0, iter_finished_errorest = 0;
-      // nvtxRangePush("Reduction 2");
+      // //nvtxRangePush("Reduction 2");
       T iter_errorest = ComputeIterContribution(dRegionsError);
-      // nvtxRangePop();
+      // //nvtxRangePop();
       T leaves_errorest = error + iter_errorest;
 
       ComputeFinishedEstimates(iter_finished_estimate,
@@ -1837,7 +1837,7 @@ namespace quad {
                                     subDividingDimension))
         return;
 
-      nvtxRangePush("HS CLASSIFY");
+      //nvtxRangePush("HS CLASSIFY");
       HSClassify(dRegionsIntegral,
                  dRegionsError,
                  subDividingDimension,
@@ -1856,7 +1856,7 @@ namespace quad {
                  epsrel,
                  epsabs,
                  iteration);
-      nvtxRangePop();
+      //nvtxRangePop();
       if (CheckTerminationCondition(leaves_estimate,
                                     leaves_errorest,
                                     integral,
@@ -1871,7 +1871,7 @@ namespace quad {
 
       //
       if (iteration < 700 && fail == 1) {
-        nvtxRangePush("GenerateActiveIntervals");
+        //nvtxRangePush("GenerateActiveIntervals");
         size_t numInActiveIntervals =
           GenerateActiveIntervals(activeRegions,
                                   subDividingDimension,
@@ -1886,7 +1886,7 @@ namespace quad {
       } else {
         nregions += numRegions;
       }
-      nvtxRangePop();
+      //nvtxRangePop();
       QuadDebug(cudaFree(activeRegions));
       QuadDebug(cudaFree(subDividingDimension));
     }

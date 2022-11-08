@@ -2,7 +2,7 @@
 #define QUAD_UTIL_CUDA_CUSTOM_FUNCTIONS_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaDebugUtil.h"
@@ -40,20 +40,14 @@ device_custom_reduce(T* arr, size_t size, T* out, sycl::nd_item<3> item_ct1,
 template <typename T>
 T
 custom_reduce(T* arr, size_t size) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        size_t num_threads = 512;
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  size_t num_threads = 512;
 	size_t max_num_blocks = 1024;
         size_t num_blocks =
           std::min((size + num_threads - 1) / num_threads, max_num_blocks);
         T* out = cuda_malloc<T>(num_blocks);
 
-        /*
-	DPCT1049:92: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
         q_ct1.submit([&](sycl::handler& cgh) {
                 sycl::accessor<T,
                                1,
@@ -75,12 +69,7 @@ custom_reduce(T* arr, size_t size) {
                               (T*)shared_acc_ct1.get_pointer());
                     });
         });
-        /*
-	DPCT1049:93: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
         q_ct1.submit([&](sycl::handler& cgh) {
                 sycl::accessor<T,
                                1,
@@ -124,23 +113,16 @@ device_custom_reduce_atomics(T* arr, size_t size, T* out,
         
     const int warpSize = 32;
         if ((item_ct1.get_local_id(2) & (warpSize - 1)) == 0) {
-                /*
-		DPCT1039:94: The generated code assumes that
-                 * "out" points to the global memory address space. If it points
-                 * to a local memory address space, replace
-                 * "dpct::atomic_fetch_add" with "dpct::atomic_fetch_add<T,
-                 * sycl::access::address_space::local_space>".
-		*/
-                dpct::atomic_fetch_add(out, sum);
+                
+	  //dpct::atomic_fetch_add(out, sum);
         }
 }
 
 template <typename T>
 T
 custom_reduce_atomics(T* arr, size_t size) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        T res = 0.;
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  T res = 0.;
 	size_t num_threads = 256;
 	size_t max_num_blocks = 1024;
         size_t num_blocks =
@@ -149,12 +131,7 @@ custom_reduce_atomics(T* arr, size_t size) {
 	cuda_memcpy_to_device<T>(out, &res, 1);
 	
 	cuda_memcpy_to_device<T>(out, &res, 1);
-        /*
-	DPCT1049:95: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
         q_ct1.parallel_for(
           sycl::nd_range(sycl::range(1, 1, num_blocks) *
                            sycl::range(1, 1, num_threads),
@@ -190,23 +167,15 @@ device_custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size, T2* out,
         item_ct1.barrier();
         const int warpSize = 32;
         if ((item_ct1.get_local_id(2) & (warpSize - 1)) == 0) {
-                /*
-		DPCT1039:96: The generated code assumes that
-                 * "out" points to the global memory address space. If it points
-                 * to a local memory address space, replace
-                 * "dpct::atomic_fetch_add" with "dpct::atomic_fetch_add<T2,
-                 * sycl::access::address_space::local_space>".
-		*/
-                dpct::atomic_fetch_add(out, sum);
+                
+	  //dpct::atomic_fetch_add(out, sum);
         }
 }
 
 template <typename T1, typename T2>
 T2
 custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size) {
-	
-	dpct::device_ext& dev_ct1 = dpct::get_current_device();
-	sycl::queue& q_ct1 = dev_ct1.default_queue();
+	auto q_ct1 =  sycl::queue(sycl::gpu_selector());
 	T2 res = 0.;
 	size_t num_threads = 256;
 	size_t max_num_blocks = 1024;
@@ -214,12 +183,7 @@ custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size) {
     std::min((size + num_threads - 1) / num_threads, max_num_blocks);
     T2* out = cuda_malloc<T2>(1);
 	cuda_memcpy_to_device<T2>(out, &res, 1);
-        /*
-	DPCT1049:97: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
 	q_ct1.submit([&](sycl::handler& cgh) {
         cgh.parallel_for(
           sycl::nd_range(sycl::range(1, 1, num_blocks) *
@@ -249,10 +213,7 @@ __inline__ T warpReduceMax(T val, sycl::nd_item<3> item_ct1)
          mask > 0;
          mask /= 2)
     {
-        /*
-        DPCT1023:98: The DPC++ sub-group does not support mask
-         * options for sycl::permute_group_by_xor.
-        */
+        
         val = sycl::max(
           sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
     }
@@ -269,10 +230,7 @@ __inline__ T warpReduceMin(T val, sycl::nd_item<3> item_ct1)
          mask > 0;
          mask /= 2)
     {
-        /*
-        DPCT1023:99: The DPC++ sub-group does not support mask
-         * options for sycl::permute_group_by_xor.
-        */
+        
         val = sycl::min(
           sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
     }
@@ -297,11 +255,7 @@ blockReduceMinMax(T& min, T& max, sycl::nd_item<3> item_ct1, T *shared_max,
 	  shared_max[wid] = max;
 	  //printf("all warps blockReduceMinMax [%i](%i) min:%f\n", blockIdx.x, threadIdx.x, min);
     }
-    /*
-    DPCT1065:100: Consider replacing sycl::nd_item::barrier() with
-     * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-     * performance if there is no access to global memory.
-    */
+    
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
@@ -381,10 +335,10 @@ void block0_min_max(T* mins, T* maxs, const int size, T* min, T* max,
 template <typename T>
 std::pair<T, T>
 min_max(T* input, const int size) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        size_t num_threads = 256;
-	size_t max_num_blocks = dev_ct1.get_info<cl::sycl::info::device::max_work_group_size>();
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  size_t num_threads = 256;
+  auto device = q_ct1.get_device();
+	size_t max_num_blocks = device.get_info<cl::sycl::info::device::max_work_group_size>();
         size_t num_blocks =
           std::min((size + num_threads - 1) / num_threads, max_num_blocks);
 
@@ -393,12 +347,7 @@ min_max(T* input, const int size) {
 	T* d_min = cuda_malloc<T>(1);
 	T* d_max = cuda_malloc<T>(1);
 
-        /*
-	DPCT1049:101: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
         q_ct1.submit([&](sycl::handler& cgh) {
                 sycl::accessor<T,
                                1,
@@ -425,13 +374,8 @@ min_max(T* input, const int size) {
                                               shared_max_acc_ct1.get_pointer(),
                                               shared_min_acc_ct1.get_pointer());
                     });
-        });
-        /*
-	DPCT1049:102: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+	  }).wait();
+        
         q_ct1.submit([&](sycl::handler& cgh) {
                 sycl::accessor<T,
                                1,
@@ -459,9 +403,9 @@ min_max(T* input, const int size) {
                                               shared_max_acc_ct1.get_pointer(),
                                               shared_min_acc_ct1.get_pointer());
                     });
-        });
+	  }).wait();
 
-        dev_ct1.queues_wait_and_throw();
+        //dev_ct1.queues_wait_and_throw();
 
         T min = 0.;
 	T max = 0.;
@@ -496,11 +440,7 @@ void gpu_sum_scan_blelloch(T* const d_out,
         s_out[item_ct1.get_local_id(2)] = 0.;
         s_out[item_ct1.get_local_id(2) + item_ct1.get_local_range().get(2)] = 0.;
 
-        /*
-	DPCT1065:103: Consider replacing sycl::nd_item::barrier() with
-         * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-         * better performance if there is no access to global memory.
-	*/
+        
         item_ct1.barrier();
 
         //}
@@ -516,11 +456,7 @@ void gpu_sum_scan_blelloch(T* const d_out,
                           d_in[cpy_idx + item_ct1.get_local_range().get(2)];
         }
 
-        /*
-	DPCT1065:104: Consider replacing sycl::nd_item::barrier() with
-         * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-         * better performance if there is no access to global memory.
-	*/
+        
         item_ct1.barrier();
 
         // Reduce/Upsweep step
@@ -550,24 +486,12 @@ void gpu_sum_scan_blelloch(T* const d_out,
             // do the actual add operation
             sum = s_out[l_idx] + s_out[r_idx];
         }
-                /*
-		DPCT1065:106: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-		*/
+                
         item_ct1.barrier();
 
                 if (t_active)
         s_out[r_idx] = sum;
-                /*
-		DPCT1065:107: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-		*/
+                
           item_ct1.barrier();
         }
 
@@ -579,11 +503,7 @@ void gpu_sum_scan_blelloch(T* const d_out,
                 s_out[r_idx] = 0.;
         }
 
-        /*
-    DPCT1065:105: Consider replacing sycl::nd_item::barrier() with
-         * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-         * better performance if there is no access to global memory.
-    */
+        
         item_ct1.barrier();
 
         // Downsweep step
@@ -609,13 +529,7 @@ void gpu_sum_scan_blelloch(T* const d_out,
             r_cpy = s_out[r_idx];
             lr_sum = s_out[l_idx] + s_out[r_idx];
         }
-                /*
-        DPCT1065:108: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-        */
+          
                 item_ct1.barrier();
 
         if (t_active)
@@ -623,13 +537,7 @@ void gpu_sum_scan_blelloch(T* const d_out,
             s_out[l_idx] = r_cpy;
             s_out[r_idx] = lr_sum;
         }
-                /*
-        DPCT1065:109: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-    */
+            
                 item_ct1.barrier();
         }
 
@@ -715,11 +623,6 @@ void gpu_prescan(T* const d_out,
     if (thid + max_elems_per_block < shmem_sz)
         s_out[thid + max_elems_per_block] = 0.;
 
-        /*
-    DPCT1065:110: Consider replacing sycl::nd_item::barrier() with
-         * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-         * better performance if there is no access to global memory.
-    */
         item_ct1.barrier();
 
         // Copy d_in to shared memory
@@ -749,13 +652,7 @@ void gpu_prescan(T* const d_out,
     int offset = 1;
     for (int d = max_elems_per_block >> 1; d > 0; d >>= 1)
     {
-                /*
-        DPCT1065:112: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-        */
+            
                 item_ct1.barrier();
 
         if (thid < d)
@@ -784,13 +681,7 @@ void gpu_prescan(T* const d_out,
     for (int d = 1; d < max_elems_per_block; d <<= 1)
     {
         offset >>= 1;
-                /*
-        DPCT1065:113: Consider replacing
-                 * sycl::nd_item::barrier() with
-                 * sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-                 * for better performance if there is no access to global
-                 * memory.
-        */
+            
                 item_ct1.barrier();
 
         if (thid < d)
@@ -805,11 +696,7 @@ void gpu_prescan(T* const d_out,
             s_out[bi] += temp;
         }
     }
-        /*
-	DPCT1065:111: Consider replacing sycl::nd_item::barrier() with
-         * sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-         * better performance if there is no access to global memory.
-	*/
+        
         item_ct1.barrier();
 
         // Copy contents of shared memory to global memory
@@ -827,13 +714,9 @@ void sum_scan_blelloch(T* const d_out,
 	const T* const d_in,
 	const size_t numElems)
 {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        // Zero out d_out
-        /*
-    DPCT1003:114: Migrated API does not return error code. (*, 0)
-         * is inserted. You may need to rewrite this code.
-    */
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  // Zero out d_out
+        
         q_ct1.memset(d_out, 0., numElems * sizeof(T)).wait();
 
         // Set up number of threads and blocks
@@ -860,19 +743,8 @@ void sum_scan_blelloch(T* const d_out,
     d_block_sums = sycl::malloc_device<T>(grid_sz, q_ct1);
     q_ct1.memset(d_block_sums, 0., sizeof(T) * grid_sz).wait();
 
-    /*
-    DPCT1049:117: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-    */
+    
         q_ct1.submit([&](sycl::handler& cgh) {
-        /*
-        DPCT1083:127: The size of local memory in the
-                 * migrated code may be different from the original code. Check
-                 * that the allocated memory size in the migrated code is
-                 * correct.
-	    */
                 sycl::accessor<T,
                                1,
                                sycl::access_mode::read_write,
@@ -901,32 +773,13 @@ void sum_scan_blelloch(T* const d_out,
     if (grid_sz <= max_elems_per_block)
     {
         T* d_dummy_blocks_sums;
-                /*
-        DPCT1003:118: Migrated API does not return error
-                 * code. (*, 0) is inserted. You may need to rewrite this code.
 
-                 */
                 d_dummy_blocks_sums = sycl::malloc_device<T>(1, q_ct1);
-                /*
-        DPCT1003:119: Migrated API does not return error
-                 * code. (*, 0) is inserted. You may need to rewrite this code.
-
-                 */
+                
                 q_ct1.memset(d_dummy_blocks_sums, 0, sizeof(T)).wait();
                 //gpu_sum_scan_blelloch<<<1, block_sz, sizeof(unsigned int) * max_elems_per_block>>>(d_block_sums, d_block_sums, d_dummy_blocks_sums, grid_sz);
-                /*
-		DPCT1049:120: The workgroup size passed to the
-                 * SYCL kernel may exceed the limit. To get the device limit,
-                 * query info::device::max_work_group_size. Adjust the workgroup
-                 * size if needed.
-		*/
+                
                 q_ct1.submit([&](sycl::handler& cgh) {
-                        /*
-		    DPCT1083:128: The size of local
-                         * memory in the migrated code may be different from the
-                         * original code. Check that the allocated memory size
-                         * in the migrated code is correct.
-		    */
                         sycl::accessor<T,
                                        1,
                                        sycl::access_mode::read_write,
@@ -978,12 +831,7 @@ void sum_scan_blelloch(T* const d_out,
 
 	// Add each block's total sum to its scan output
 	// in order to get the final, global scanned array
-        /*
-	DPCT1049:125: The workgroup size passed to the SYCL kernel may
-         * exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-	*/
+        
         q_ct1.parallel_for(
           sycl::nd_range(sycl::range(1, 1, grid_sz) *
                            sycl::range(1, 1, block_sz),
@@ -993,10 +841,7 @@ void sum_scan_blelloch(T* const d_out,
                     d_out, d_out, d_block_sums, numElems, item_ct1);
           }).wait();
 
-        /*
-	DPCT1003:126: Migrated API does not return error code. (*, 0)
-         * is inserted. You may need to rewrite this code.
-	*/
+        
         ((sycl::free(d_block_sums, q_ct1), 0));
 }
 

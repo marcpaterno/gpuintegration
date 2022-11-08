@@ -1,5 +1,5 @@
-#include <oneapi/dpl/execution>
-#include <oneapi/dpl/async>
+//#include <oneapi/dpl/execution>
+//#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include <iostream>

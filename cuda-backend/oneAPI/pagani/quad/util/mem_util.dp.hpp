@@ -4,10 +4,8 @@
 //#include <oneapi/dpl/execution>
 //#include <oneapi/dpl/algorithm>
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <iostream>
-
-//#include <dpct/dpl_utils.hpp>
 
 void ShowDevice(sycl::queue &q) {
       using namespace sycl;
@@ -30,19 +28,22 @@ void ShowDevice(sycl::queue &q) {
 template<typename T>
 void
 cuda_memcpy_to_host(T* dest, T* src, size_t size){
-    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  q_ct1.memcpy(dest, src, sizeof(T) * size).wait();
 }
 
 template <typename T>
 void
 cuda_memcpy_to_device(T* dest, T* src, size_t size){
-    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  q_ct1.memcpy(dest, src, sizeof(T) * size).wait();
 }
 
 template <typename T>
 void
 cuda_memcpy_device_to_device(T* dest, T* src, size_t size){
-    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  q_ct1.memcpy(dest, src, sizeof(T) * size).wait();
 }
 
 template<typename T>
@@ -62,12 +63,12 @@ device_print_array(T* arr, size_t size){
 template<typename T>
 void
 print_device_array(T* arr, size_t size){
-    dpct::get_default_queue().parallel_for(
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
       [=](sycl::nd_item<3> item_ct1) {
           device_print_array<T>(arr, size);
-      });
-     dpct::get_current_device().queues_wait_and_throw();
+      }).wait();
 }
 
 template<class T>
@@ -84,7 +85,8 @@ template <class T>
 T*
 cuda_malloc(size_t size){
     T* temp;
-    temp = sycl::malloc_device<T>(size, dpct::get_default_queue());
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    temp = sycl::malloc_device<T>(size, q_ct1);
     return temp;
 }
 
@@ -93,9 +95,10 @@ template<typename T>
 void
 ExpandcuArray(T*& array, int currentSize, int newSize)
 {
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
     int copy_size = std::min(currentSize, newSize);
     T* temp = cuda_malloc<T>(newSize);
-    sycl::free(array, dpct::get_default_queue());
+    sycl::free(array, q_ct1);
     array = temp;
 }
 
@@ -104,8 +107,9 @@ IntegT*
 make_gpu_integrand(const IntegT& integrand)
 {
     IntegT* d_integrand;
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
     d_integrand =
-      (IntegT*)sycl::malloc_shared(sizeof(IntegT), dpct::get_default_queue());
+      (IntegT*)sycl::malloc_shared(sizeof(IntegT), q_ct1);
     //memcpy(d_integrand, &integrand, sizeof(IntegT));
 	new (d_integrand) IntegT(integrand);
     return d_integrand;
@@ -136,49 +140,37 @@ template<typename T>
 void set_device_array_range(T* arr, size_t first_to_change, size_t last_to_change, size_t  size, T val){
     size_t num_threads = 64;
     size_t num_blocks = size/num_threads +  ((size % num_threads) ? 1 : 0);
-    /*
-    DPCT1049:109: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
-    dpct::get_default_queue().parallel_for(
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, num_blocks) *
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
       [=](sycl::nd_item<3> item_ct1) {
           set_array_range_to_value<T>(
             arr, first_to_change, last_to_change, size, val, item_ct1);
-      });
-    dpct::get_current_device().queues_wait_and_throw();
+      }).wait();
 }   
     
 template<typename T>
 void set_device_array(T* arr, size_t size, T val){
     size_t num_threads = 64;
     size_t num_blocks = size/num_threads +  ((size % num_threads) ? 1 : 0);
-    /*
-    DPCT1049:110: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
-    dpct::get_default_queue().parallel_for(
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, num_blocks) *
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
       [=](sycl::nd_item<3> item_ct1) {
           set_array_to_value<T>(arr, size, val, item_ct1);
-      });
-    dpct::get_current_device().queues_wait_and_throw();
+      }).wait();
 }
 
 template<typename T, typename C = T>
 bool
 array_values_smaller_than_val(T* dev_arr, size_t dev_arr_size, C val){
     double* host_arr = host_alloc<double>(dev_arr_size);
-    dpct::get_default_queue()
-      .memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    q_ct1.memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
       .wait();
 
     for(int i = 0; i < dev_arr_size; i++){
@@ -192,8 +184,8 @@ template<typename T, typename C = T>
 bool
 array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
     double* host_arr = host_alloc<double>(dev_arr_size);
-    dpct::get_default_queue()
-      .memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    q_ct1.memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
       .wait();
 
     for(int i = 0; i < dev_arr_size; i++){

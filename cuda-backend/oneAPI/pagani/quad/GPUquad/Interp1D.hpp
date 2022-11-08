@@ -123,8 +123,9 @@ quad::Interp1D::operator=(Interp1D const& rhs)
 
 inline quad::Interp1D::~Interp1D()
 {
-	sycl::free(_xs, dpct::get_default_queue());
-	sycl::free(_zs, dpct::get_default_queue());
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+	sycl::free(_xs, q_ct1);
+	sycl::free(_zs, q_ct1);
 }
 
 template <size_t M>

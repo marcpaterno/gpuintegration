@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Func_Eval.hpp"
@@ -44,11 +44,7 @@ namespace quad {
         sRegionPool[item_ct1.get_local_id(2)].result.avg;
       dRegionsError[item_ct1.get_group(2)] =
         sRegionPool[item_ct1.get_local_id(2)].result.err;
-      /*
-      DPCT1065:31: Consider replacing sycl::nd_item::barrier() with
-      sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-      performance if there is no access to global memory.
-      */
+      
       item_ct1.barrier();
     }
   }
@@ -190,9 +186,6 @@ namespace quad {
       ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
 
-    // DPCT1065:37: Consider replacing sycl::nd_item::barrier() with
-    // sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    // performance if there is no access to global memory.
 
     item_ct1.barrier();
     for (perm = 1; perm < FEVAL / block_size; ++perm) {
@@ -349,12 +342,6 @@ namespace quad {
         }
       }
     }
-
-    /*
-    DPCT1065:42: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
     item_ct1.barrier();
     SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
                                                         // 0,
@@ -372,11 +359,6 @@ namespace quad {
                                                         shared,
                                                         sdata,
                                                         fevals);
-    /*
-    DPCT1065:43: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
     item_ct1.barrier();
   }
 

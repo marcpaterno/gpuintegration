@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/util/cudaArchUtil.h"
 #include <iostream>
 #include <stdio.h>
@@ -119,56 +119,34 @@ namespace quad {
   __cudaCheckError(const char* file, const int line)
   try {
 #ifdef CUDA_ERROR_CHECK
-    /*
-    DPCT1010:4: SYCL uses exceptions to report errors and does not use the error
-    codes. The call was replaced with 0. You need to rewrite this code.
-    */
+    
     int err = 0;
-    /*
-    DPCT1000:1: Error handling if-stmt was detected but could not be rewritten.
-    */
+    
     if (0 != err) {
       fprintf(stderr,
               "cudaCheckError() failed at %s:%i : %s\n",
               file,
               line,
-              /*
-              DPCT1009:5: SYCL uses exceptions to report errors and does not use
-              the error codes. The original code was commented out and a warning
-              string was inserted. You need to rewrite this code.
-              */
+              
               "cudaGetErrorString not supported" /*cudaGetErrorString(err)*/);
-      /*
-      DPCT1001:0: The statement could not be removed.
-      */
+      
       print_trace();
       abort();
     }
 
     // More careful checking. However, this will affect performance.
     // Comment away if needed.
-    /*
-    DPCT1003:6: Migrated API does not return error code. (*, 0) is inserted. You
-    may need to rewrite this code.
-    */
-    err = (dpct::get_current_device().queues_wait_and_throw(), 0);
-    /*
-    DPCT1000:3: Error handling if-stmt was detected but could not be rewritten.
-    */
+    
+    //err = (dpct::get_current_device().queues_wait_and_throw(), 0);
+    
     if (0 != err) {
       fprintf(stderr,
               "cudaCheckError() with sync failed at %s:%i : %s\n",
               file,
               line,
-              /*
-              DPCT1009:7: SYCL uses exceptions to report errors and does not use
-              the error codes. The original code was commented out and a warning
-              string was inserted. You need to rewrite this code.
-              */
+              
               "cudaGetErrorString not supported" /*cudaGetErrorString(err)*/);
-      /*
-      DPCT1001:2: The statement could not be removed.
-      */
+      
       print_trace();
       abort();
     }

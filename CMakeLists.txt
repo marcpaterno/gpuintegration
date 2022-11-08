@@ -18,7 +18,7 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
-include_directories(AFTER cubacpp externals ${PAGANI_DIR})
+include_directories(AFTER cubacpp externals ${TOP_DIR})
 
 if (GPUINTEGRATION_BUILD_CUDA)
   add_subdirectory(cuda)

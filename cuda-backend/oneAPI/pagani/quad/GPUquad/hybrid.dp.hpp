@@ -2,7 +2,7 @@
 #define HYBRID_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <iostream>
 
 //#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
@@ -18,9 +18,7 @@ two_level_errorest_and_relerr_classify(
   const Region_characteristics<ndim>* reg_classifiers,
   double epsrel,
   bool relerr_classification = true) {
-    
-      dpct::device_ext& dev_ct1 = dpct::get_current_device();
-      sycl::queue& q_ct1 = dev_ct1.default_queue();
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
       auto current_iter_raw_integ_estimates =  current_iter_raw_estimates->integral_estimates;
       auto current_iter_raw_err_estimates = current_iter_raw_estimates->error_estimates;
       auto prev_iter_two_level_int_estimates = prev_iter_two_level_estimates->integral_estimates;
@@ -38,12 +36,8 @@ two_level_errorest_and_relerr_classify(
       }
         
       double* new_two_level_errorestimates = cuda_malloc<double>(num_regions);
-        /*
-        DPCT1049:111: The workgroup size passed to the SYCL kernel may exceed
-             * the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if needed.
-         */
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+        
+        q_ct1.submit([&](sycl::handler& cgh) {
             
             
             
@@ -65,7 +59,7 @@ two_level_errorest_and_relerr_classify(
                              item_ct1);
                        });
         }).wait();
-        dev_ct1.queues_wait_and_throw();
+        //dev_ct1.queues_wait_and_throw();
         //std::cout<<"done with refineError kernel"<<std::endl;
     //-------------------
         //double* t_act = new double[num_regions];
@@ -95,9 +89,8 @@ computute_two_level_errorest(
   const Region_estimates<ndim>& prev_iter_two_level_estimates,
   Region_characteristics<ndim>& reg_classifiers,
   bool relerr_classification = true) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+  
     size_t num_regions =  current_iter_raw_estimates.size;       
     double epsrel = 1.e-3/*, epsabs = 1.e-12*/;    
     size_t block_size = 64;
@@ -109,12 +102,7 @@ computute_two_level_errorest(
     }
         
     double* new_two_level_errorestimates = cuda_malloc<double>(num_regions);
-    /*
-    DPCT1049:112: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
+    
     q_ct1.parallel_for(sycl::nd_range(sycl::range(1, 1, numBlocks) *
                                         sycl::range(1, 1, block_size),
                                       sycl::range(1, 1, block_size)),
@@ -130,9 +118,9 @@ computute_two_level_errorest(
                              epsrel,
                              forbid_relerr_classification,
                              item_ct1);
-                       });
+                       }).wait();
 
-    dev_ct1.queues_wait_and_throw();
+    //dev_ct1.queues_wait_and_throw();
     sycl::free(current_iter_raw_estimates.error_estimates, q_ct1);
     current_iter_raw_estimates.error_estimates = new_two_level_errorestimates;
 }

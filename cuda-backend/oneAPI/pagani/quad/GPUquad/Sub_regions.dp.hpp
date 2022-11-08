@@ -2,44 +2,13 @@
 #define SUB_REGIONS_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include <cmath>
-
-/*void
-create_uniform_split(const double length, 
-                     double* newRegions,
-                     double* newRegionsLength,
-                     const size_t newNumOfRegions,
-                     const size_t numOfDivisionsPerRegionPerDimension,
-                     size_t ndim,
-                     sycl::nd_item<1> item_ct1)
-{
-    size_t threadId =
-      item_ct1.get_group(0) * item_ct1.get_local_range().get(0) + item_ct1.get_local_id();
-
-    if (threadId < newNumOfRegions) {
-      size_t interval_index =
-        threadId / sycl::pow<double>(
-                     (double)numOfDivisionsPerRegionPerDimension, (double)ndim);
-      size_t local_id =
-        threadId % (size_t)sycl::pow<double>(
-                     (double)numOfDivisionsPerRegionPerDimension, (double)ndim);
-      for (int dim = 0; dim < ndim; ++dim) {
-        size_t id =
-          (size_t)(local_id /
-                   sycl::pow((double)numOfDivisionsPerRegionPerDimension,
-                              (double)dim)) %
-          numOfDivisionsPerRegionPerDimension;
-        newRegions[newNumOfRegions * dim + threadId] = id * length;
-        newRegionsLength[newNumOfRegions * dim + threadId] = length;
-      }
-    }
-} */
 
 template<size_t ndim>
 struct Sub_regions{
@@ -54,8 +23,7 @@ struct Sub_regions{
   }
 
   ~Sub_regions() {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
     delete[] LeftCoord;
     delete[] Length;
     sycl::free(dLeftCoord, q_ct1);
@@ -98,10 +66,6 @@ struct Sub_regions{
 
   void
   device_init(size_t const numRegions) {
-      //dpct::device_ext& dev_ct1 = dpct::get_current_device();
-      //sycl::queue& q_ct1 = dev_ct1.default_queue();
-      //sycl::free(dLeftCoord, q_ct1);
-      //sycl::free(dLength, q_ct1);
       size = numRegions;
       dLeftCoord = cuda_malloc<double>(numRegions*ndim);  
       dLength = cuda_malloc<double>(numRegions*ndim);  
@@ -148,21 +112,14 @@ struct Sub_regions{
   void uniform_split(size_t numOfDivisionPerRegionPerDimension, double ttt = 0.){
     size_t num_starting_regions = pow((double)numOfDivisionPerRegionPerDimension, (double)ndim);
     double starting_axis_length = 1./(double)numOfDivisionPerRegionPerDimension;
-    dpct::get_current_device().queues_wait_and_throw();
     
     device_init(num_starting_regions);
         
     size_t numThreads = 512;
     size_t numBlocks = (size_t)ceil((double)num_starting_regions / (double)numThreads);
-    /*
-    DPCT1049:113: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
-        dpct::get_current_device().queues_wait_and_throw();
-		double tt = 2.;
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+        	double tt = 2.;
+		auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+		q_ct1.submit([&](sycl::handler& cgh) {
             auto dLeftCoord_ct1 = dLeftCoord;
             auto dLength_ct2 = dLength;
             auto ndim_ct5 = ndim;
@@ -185,8 +142,7 @@ struct Sub_regions{
                    dLength_ct2[num_starting_regions * dim + (reg)] = starting_axis_length;
                  }
              });
-        });
-    dpct::get_current_device().queues_wait_and_throw();
+		  }).wait();
     size = num_starting_regions;
   }
   
@@ -225,9 +181,8 @@ struct Sub_regions{
 
   void
   load_snapshot() {
-      dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
-        sycl::free(dLeftCoord, q_ct1);
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    sycl::free(dLeftCoord, q_ct1);
         sycl::free(dLength, q_ct1);
         dLeftCoord = snapshot_dLeftCoord;
 	dLength = snapshot_dLength;

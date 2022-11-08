@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/quad.h"
 #include "oneAPI/pagani/quad/util/cudaDebugUtil.h"
 

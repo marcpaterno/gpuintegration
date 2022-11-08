@@ -2,7 +2,7 @@
 #define SUB_REGION_FILTER_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
 #include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"
@@ -69,21 +69,8 @@ class Sub_regions_filter{
     
     size_t
     get_num_active_regions(double* active_regions, const size_t num_regions) {
-        dpct::device_ext& dev_ct1 = dpct::get_current_device();
-        sycl::queue& q_ct1 = dev_ct1.default_queue();
-        
-        /* dpct::device_pointer<double> d_ptr = dpct::get_device_pointer(active_regions);
-           dpct::device_pointer<double> scan_ptr =
-           dpct::get_device_pointer(scanned_array);
-           std::exclusive_scan(oneapi::dpl::execution::make_device_policy(q_ct1),
-                            d_ptr,
-                            d_ptr + num_regions,
-                            scan_ptr,
-                            0);*/
-                                    
+        auto q_ct1 =  sycl::queue(sycl::gpu_selector());                        
         exclusive_scan<double, use_custom>(active_regions, num_regions, scanned_array);
-        //dpl::experimental::exclusive_scan_async(oneapi::dpl::execution::make_device_policy(q_ct1), active_regions, active_regions + num_regions, scanned_array, 0.).wait();
-        //size_t num_active = scanned_array[num_regions-1];
         
         double last_element;
         double num_active = 0;
@@ -105,9 +92,7 @@ class Sub_regions_filter{
            Region_char* region_characteristics,
            const Region_ests* region_ests,
            Region_ests* parent_ests) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
         const size_t current_num_regions = sub_regions->size;
         const size_t num_active_regions = get_num_active_regions(region_characteristics->active_regions, current_num_regions);
 
@@ -158,9 +143,9 @@ class Sub_regions_filter{
                                    numOfDivisionOnDimension,
                                    item_ct1);
                              });
-        });
+	  }).wait();
 
-        dev_ct1.queues_wait_and_throw();
+        //dev_ct1.queues_wait_and_throw();
         sycl::free(sub_regions->dLeftCoord, q_ct1);
         sycl::free(sub_regions->dLength, q_ct1);
         sycl::free(region_characteristics->sub_dividing_dim, q_ct1);
@@ -179,7 +164,8 @@ class Sub_regions_filter{
     }
     
     ~Sub_regions_filter(){
-        sycl::free(scanned_array, dpct::get_default_queue());
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+        sycl::free(scanned_array, q_ct1);
     }
     
     double* scanned_array = nullptr;

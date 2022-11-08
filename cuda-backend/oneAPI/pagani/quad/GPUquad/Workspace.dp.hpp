@@ -2,7 +2,7 @@
 #define WORKSPACE_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
@@ -77,7 +77,8 @@ Workspace<ndim, use_custom>::heuristic_classify(Classifier& classifier_a,
     const bool hs_classify_success = hs_results.pass_mem && hs_results.pass_errorest_budget;
 	
     if(hs_classify_success){
-        sycl::free(characteristics.active_regions, dpct::get_default_queue());
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+        sycl::free(characteristics.active_regions, q_ct1);
         characteristics.active_regions = hs_results.active_flags;
         finished.estimate = iter.estimate - dot_product<double, double, use_custom>(characteristics.active_regions, estimates.integral_estimates, characteristics.size);     
         finished.errorest = hs_results.finished_errorest;
@@ -101,13 +102,8 @@ Workspace<ndim, use_custom>::fix_error_budget_overflow(Region_characteristics<nd
     if (leaves_finished_errorest > fabs(leaves_estimate) * epsrel) {
         size_t num_threads = 256;
         size_t num_blocks = characteristics->size / num_threads + ( characteristics->size % num_threads == 0 ? 0 : 1);
-        /*
-        DPCT1049:120: The workgroup size passed to the SYCL kernel
-         * may exceed the limit. To get the device limit, query
-         * info::device::max_work_group_size. Adjust the workgroup size if
-         * needed.
-        */
-        dpct::get_default_queue().parallel_for(
+        auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+        q_ct1.parallel_for(
           sycl::nd_range(sycl::range(1, 1, num_blocks) *
                            sycl::range(1, 1, num_threads),
                          sycl::range(1, 1, num_threads)),
@@ -116,8 +112,7 @@ Workspace<ndim, use_custom>::fix_error_budget_overflow(Region_characteristics<nd
                                       characteristics->size,
                                       1,
                                       item_ct1);
-          });
-        dpct::get_current_device().queues_wait_and_throw();
+          }).wait();
 
         iter_finished.errorest = 0.;
         iter_finished.estimate = 0.;
@@ -138,9 +133,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                            quad::Volume<double, ndim>& vol,
                            bool relerr_classification) {
 			
-            dpct::device_ext& dev_ct1 = dpct::get_current_device();
-            sycl::queue& q_ct1 = dev_ct1.default_queue();
-
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
             Res cummulative;
             Recorder<debug> iter_recorder("oneapi_iters.csv"); 
             using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -187,7 +180,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                     cummulative.nregions += subregions.size;
                     d_integrand->~IntegT();
                     sycl::free(d_integrand, q_ct1);
-                    dpct::get_current_device().queues_wait_and_throw(); //is this what stopped the error? REALLY?
                     std::cout<<"total_time:"<<rules.total_time/1e6 << std::endl;
                     return cummulative;
                 }
@@ -195,8 +187,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
                 Res finished = compute_finished_estimates<ndim>(estimates, characteristics, iter); 
                 fix_error_budget_overflow(&characteristics, cummulative, iter, finished, epsrel);
-                dpct::get_current_device().queues_wait_and_throw();
-				
+                		
                 if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;

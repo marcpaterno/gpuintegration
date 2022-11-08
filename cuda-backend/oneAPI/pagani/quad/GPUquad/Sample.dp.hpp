@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/quad.h"
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
@@ -85,11 +85,7 @@ namespace quad {
     if (lane == 0) {
       shared[wid] = val;
     }
-    /*
-    DPCT1065:13: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
+    
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
@@ -112,11 +108,7 @@ namespace quad {
   {
     sdata[item_ct1.get_local_id(2)] = sum;
 
-    /*
-    DPCT1065:14: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
+    
     item_ct1.barrier();
     // is it wise to use shlf_down_sync, sdata[BLOCK_SIZE]
     // contiguous range pattern
@@ -126,11 +118,7 @@ namespace quad {
         sdata[item_ct1.get_local_id(2)] +=
           sdata[item_ct1.get_local_id(2) + offset];
       }
-      /*
-      DPCT1065:15: Consider replacing sycl::nd_item::barrier() with
-      sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-      performance if there is no access to global memory.
-      */
+      
       item_ct1.barrier();
     }
     return sdata[0];
@@ -154,10 +142,7 @@ namespace quad {
 
     gpu::cudaArray<T, NDIM> x;
     for (int dim = 0; dim < NDIM; ++dim) {
-      /*
-      DPCT1026:18: The call to __ldg was removed because there is no
-      correspoinding API in DPC++.
-      */
+      
       const T generator =
         generators[CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex];
       x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
@@ -167,10 +152,7 @@ namespace quad {
 	
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
-                                           /*
-                                           DPCT1026:16: The call to __ldg was removed because there is no
-                                           correspoinding API in DPC++.
-                                           */
+                                           
     const int gIndex = constMem._gpuGenPermGIndex[pIndex];
 	
     if constexpr (debug >= 2) {
@@ -230,11 +212,7 @@ namespace quad {
                                                  fevals);
     }
 
-    /*
-    DPCT1065:23: Consider replacing sycl::nd_item::barrier() with
-    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
-    performance if there is no access to global memory.
-    */
+    
     item_ct1.barrier();
 
     if (item_ct1.get_local_id(0) == 0) {

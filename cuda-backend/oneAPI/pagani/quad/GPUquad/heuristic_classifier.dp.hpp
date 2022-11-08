@@ -2,70 +2,14 @@
 #define HEURISTIC_CLASSIFIER_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
 #include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 #include "oneAPI/pagani/quad/util/thrust_utils.dp.hpp"
 #include <string>
 #include <cmath>
-#include <oneapi/mkl.hpp>
+//#include <oneapi/mkl.hpp>
 
-/*
-	the dpct didn't have anything to do with this function at all,
-	I took it from the manually developed version since dpct couldn't 
-	do anything with the call to thrust::minmax_element
-*/
-
-/*template<typename T>
-Range<T>
-device_array_min_max(T* arr, size_t size){
-	auto q = dpct::get_default_queue();
-    Range<T> range;
-    int64_t* min = sycl::malloc_shared<int64_t>(1, q);  
-    int64_t* max = sycl::malloc_shared<int64_t>(1, q);    
-    const int stride = 1;
-	
-	sycl::event est_ev = oneapi::mkl::blas::row_major::iamax(
-		q, size, arr, stride, max);
-					  
-	sycl::event est_ev2 = oneapi::mkl::blas::row_major::iamin(
-		q, size, arr, stride, min);
-	
-	est_ev.wait();
-	est_ev2.wait();
-	
-    range.low = arr[min[0]];
-    range.high = arr[max[0]];
-    free(min, q);
-    free(max, q);
-    return range;
-}*/
-
-/*template<typename T>
-Range<T>
-device_array_min_max(T* arr, size_t size){
-    Range<T> range;
-	auto q = dpct::get_default_queue();
-    double* min = sycl::malloc_shared<double>(1, q);  
-    double* max = sycl::malloc_shared<double>(1, q);    
-    
-    oneapi::mkl::stats::dataset<oneapi::mkl::stats::layout::row_major, T*> wrapper(1, size, arr);
-    
-    auto this_event = oneapi::mkl::stats::min_max<oneapi::mkl::stats::method::fast, 
-                        double, oneapi::mkl::stats::layout::row_major>(q, wrapper, min, max);
-    this_event.wait();
-    
-    range.low = min[0];
-    range.high = max[0];
-    free(min, q);
-    free(max, q);
-	
-	//dpct::device_ext& dev_ct1 = dpct::get_current_device();
-	//sycl::queue& q_ct1 = dev_ct1.default_queue();
-	//dpct::device_pointer<T> d_ptr = dpct::get_device_pointer(arr);
-	//range.low = std::min_element (oneapi::dpl::execution::make_device_policy(q_ct1), arr, arr + size);
-    return range;
-}*/
 
 
  std::string
@@ -134,21 +78,9 @@ template<typename T>
 void set_true_for_larger_than(const T* arr, const T val, const size_t size, double* output_flags){
     size_t num_threads = 256;
     size_t num_blocks = size/num_threads + (size % num_threads == 0 ? 0 : 1);
-    /*
-    DPCT1049:115: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
-    /*
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
     
-       sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                            sycl::range(1, 1, block_size),
-                            sycl::range(1, 1, block_size))
-    */
-    
-    
-    dpct::get_default_queue().parallel_for(
+    q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, num_blocks) *
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
@@ -156,15 +88,12 @@ void set_true_for_larger_than(const T* arr, const T val, const size_t size, doub
           device_set_true_for_larger_than<T>(
             arr, val, size, output_flags, item_ct1);
       }).wait();
-    dpct::get_current_device().queues_wait_and_throw();    
+        
 }
 
 size_t total_device_mem(){
-    //return dpct::get_current_device().get_device_info().get_global_mem_size();
 	return 16e9; //ONLY FOR CUDA_BACKEND maybe adjust with a template argument?
-    auto device = dpct::get_default_queue().get_device();
-    return device.get_info<sycl::info::device::max_mem_alloc_size>();
-}
+ }
 
 size_t  
 num_ints_needed(size_t num_regions){//move to pagani utils, has nothing to do with classifying
@@ -465,7 +394,8 @@ class Heuristic_classifier{
             }while(!thres_search.pass_mem ||  !thres_search.pass_errorest_budget);
             
             if(!thres_search.pass_mem || !thres_search.pass_errorest_budget){
-                sycl::free(thres_search.active_flags, dpct::get_default_queue());
+	      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+                sycl::free(thres_search.active_flags, q_ct1);
             }
             
             thres_search.max_budget_perc_to_cover = max_percent_error_budget;

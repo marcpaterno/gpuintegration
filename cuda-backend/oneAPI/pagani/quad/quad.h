@@ -12,7 +12,7 @@
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -20,7 +20,6 @@
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-// dpct::constant_memory<TYPE, 1> errcoeff(sycl::range(1), {5, 1, 5});
 
 // Utilities
 #include "util/cudaArchUtil.h"

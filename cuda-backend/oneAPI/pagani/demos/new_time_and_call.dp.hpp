@@ -2,7 +2,7 @@
 #define ALTERNATIVE_TIME_AND_CALL_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <chrono>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
@@ -45,15 +45,17 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 		bool compute_relerr_error_reduction = false;
 		cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(d_integrand, iteration, &sub_regions, &estimates, &characteristics, compute_relerr_error_reduction);
 		
-		double estimate = reduction<double>(estimates.integral_estimates, num_regions);
-		double errorest = reduction<double>(estimates.error_estimates, num_regions);
+		//double estimate = reduction<double>(estimates.integral_estimates, num_regions);
+		//double errorest = reduction<double>(estimates.error_estimates, num_regions);
 		
 		//host_print_dev_array(estimates.integral_estimates, num_regions, "regest");
 		
-		std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
+		//std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
 		//sub_regions.print_bounds();
-		dpct::device_ext& dev_ct1 = dpct::get_current_device();
-		sycl::queue& q_ct1 = dev_ct1.default_queue();
+		//dpct::device_ext& dev_ct1 = dpct::get_current_device();
+		//sycl::queue& q_ct1 = dev_ct1.default_queue();
+		auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+		
 		sycl::free(d_integrand, q_ct1);
 	}
 }	

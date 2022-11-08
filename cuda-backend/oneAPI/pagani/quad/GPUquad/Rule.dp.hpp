@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/quad.h"
 #include <cmath>
@@ -324,7 +324,8 @@ namespace quad {
     display(K* array, size_t size)
     {
       K* tmp = (K*)malloc(sizeof(K) * size);
-      dpct::get_default_queue().memcpy(tmp, array, sizeof(K) * size).wait();
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      q_ct1.memcpy(tmp, array, sizeof(K) * size).wait();
       for (int i = 0; i < size; ++i) {
         // printf("%.20lf \n", (T)tmp[i]);
         std::cout.precision(17);
@@ -362,8 +363,7 @@ namespace quad {
     void
     loadDeviceConstantMemory(Structures<T>* constMem, int device = 0)
     {
-      dpct::device_ext& dev_ct1 = dpct::get_current_device();
-      sycl::queue& q_ct1 = dev_ct1.default_queue();
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
       //Device.DeviceInit(device, VERBOSE);
 
       constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
