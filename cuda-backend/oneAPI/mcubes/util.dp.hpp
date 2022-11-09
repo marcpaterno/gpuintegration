@@ -2,7 +2,7 @@
 #define VEGAS_UTIL_UTIL_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <cstring>
 #include <iostream>
 #include <stdio.h>
@@ -29,12 +29,10 @@ T*
 cuda_malloc_managed(size_t size)
 {
   T* temp = nullptr;
-  /*
-  DPCT1003:4: Migrated API does not return error code. (*, 0) is inserted. You
-  may need to rewrite this code.
-  */
+  
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
   auto rc = (temp = (T *)sycl::malloc_shared(sizeof(T) * size,
-                                             dpct::get_default_queue()),
+                                             q_ct1),
              0);
   if (rc != 0)
     throw std::bad_alloc();
@@ -43,12 +41,9 @@ cuda_malloc_managed(size_t size)
 
 template <class T> T *cuda_malloc_managed() try {
   T* temp = nullptr;
-  /*
-  DPCT1003:5: Migrated API does not return error code. (*, 0) is inserted. You
-  may need to rewrite this code.
-  */
+  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
   auto rc =
-      (temp = (T *)sycl::malloc_shared(sizeof(T), dpct::get_default_queue()),
+      (temp = (T *)sycl::malloc_shared(sizeof(T), q_ct1),
        0);
   if (rc != 0)
     throw std::bad_alloc();
@@ -69,7 +64,8 @@ cuda_copy_to_managed(T const& on_host)
     new (buffer) T(on_host);
   }
   catch (...) {
-    sycl::free(buffer, dpct::get_default_queue());
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    sycl::free(buffer, q_ct1);
     throw;
   }
   return buffer;

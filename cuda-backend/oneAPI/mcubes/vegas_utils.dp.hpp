@@ -2,7 +2,7 @@
 #define VEGAS_UTILS_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/seqCodesDefs.hh"
 
 #define BLOCK_DIM_X 128

@@ -10,6 +10,7 @@
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include <iostream>
 #include <iomanip>
+#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 
 template<typename T>
 void host_print_dev_array(T* dev, size_t size, std::string label){
@@ -44,13 +45,18 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 		int iteration = 0;
 		bool compute_relerr_error_reduction = false;
 		cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(d_integrand, iteration, &sub_regions, &estimates, &characteristics, compute_relerr_error_reduction);
-		
-		//double estimate = reduction<double>(estimates.integral_estimates, num_regions);
+
+		//double* host_ests = new double[sub_regions.size];
+		//cuda_memcpy_to_host<double>(host_ests, estimates.integral_estimates, num_regions);
+
+		//for(int i=0; i < num_regions; ++i)
+		//  std::cout<<"region "<< i <<"\t"<<host_ests[i]<<std::endl;
+		double estimate = custom_reduce<double>(estimates.integral_estimates, num_regions);
 		//double errorest = reduction<double>(estimates.error_estimates, num_regions);
 		
 		//host_print_dev_array(estimates.integral_estimates, num_regions, "regest");
 		
-		//std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
+		std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << estimate << "," << num_regions << std::endl;
 		//sub_regions.print_bounds();
 		//dpct::device_ext& dev_ct1 = dpct::get_current_device();
 		//sycl::queue& q_ct1 = dev_ct1.default_queue();

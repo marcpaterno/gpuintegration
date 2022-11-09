@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "./cudaArray.dp.hpp"
 namespace gpu {
 

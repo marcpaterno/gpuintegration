@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <cstring>
 #include "oneAPI/mcubes/quad.h"
 
@@ -82,8 +82,7 @@ namespace gpu {
     void    
     Initialize(T const* initData, size_t s)
     {
-  dpct::device_ext &dev_ct1 = dpct::get_current_device();
-  sycl::queue &q_ct1 = dev_ct1.default_queue();
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
       N = s;
       data = (T *)sycl::malloc_shared(sizeof(T) * s, q_ct1);
       q_ct1.memcpy(data, initData, sizeof(T) * s).wait();
@@ -92,15 +91,17 @@ namespace gpu {
     void
     Reserve(size_t s)
     {
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
       N = s;
-      data = (T *)sycl::malloc_shared(sizeof(T) * s, dpct::get_default_queue());
+      data = (T *)sycl::malloc_shared(sizeof(T) * s, q_ct1);
     }
     
     explicit
     cudaDynamicArray(size_t s)
     {
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
       N = s;
-      data = (T *)sycl::malloc_shared(sizeof(T) * s, dpct::get_default_queue());
+      data = (T *)sycl::malloc_shared(sizeof(T) * s, q_ct1);
     }
     ~cudaDynamicArray()
     {

@@ -2,7 +2,7 @@
 //#include <oneapi/dpl/execution>
 //#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/demo_utils.dp.hpp"
 #include "oneAPI/mcubes/vegasT.dp.hpp"
 
@@ -17,7 +17,7 @@ public:
                double t,
                double s)
   {
-    return sycl::pown(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9);
+    return sycl::pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
   }
 };
 

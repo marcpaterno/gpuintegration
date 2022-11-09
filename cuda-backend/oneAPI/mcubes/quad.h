@@ -12,7 +12,7 @@
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <fstream>
 #include <string>
 #include <vector>

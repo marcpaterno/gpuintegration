@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_VOLUME_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <array>
 #include <cstring>
 

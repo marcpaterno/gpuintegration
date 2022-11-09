@@ -1,5 +1,5 @@
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <cmath>
 #ifndef VEGAS_UTIL_FUNC_CUH
 #define VEGAS_UTIL_FUNC_CUH

@@ -17,15 +17,15 @@
 template<typename T>
 
 void
-device_custom_reduce(T* arr, size_t size, T* out, sycl::nd_item<3> item_ct1,
+device_custom_reduce(T* arr, size_t size, T* out, sycl::nd_item<1> item_ct1,
                      T *shared){
     T sum = 0.;
     //reduce multiple elements per thread
         const int tid =
-          item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-          item_ct1.get_local_id(2);
+          item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
+          item_ct1.get_local_id(0);
         const int total_num_threads =
-          item_ct1.get_local_range().get(2) * item_ct1.get_group_range(2);
+          item_ct1.get_local_range().get(0) * item_ct1.get_group_range(0);
 
         for (size_t i = tid; i < size; i += total_num_threads) {
 		sum += arr[i];
@@ -33,8 +33,9 @@ device_custom_reduce(T* arr, size_t size, T* out, sycl::nd_item<3> item_ct1,
 
         sum = quad::blockReduceSum(sum, item_ct1, shared);
 
-        if (item_ct1.get_local_id(2) == 0)
-                out[item_ct1.get_group(2)] = sum;
+        if (item_ct1.get_local_id(0) == 0){
+	  out[item_ct1.get_group(0)] = sum;
+	}
 }
 
 template <typename T>
@@ -42,55 +43,59 @@ T
 custom_reduce(T* arr, size_t size) {
   auto q_ct1 =  sycl::queue(sycl::gpu_selector());
   size_t num_threads = 512;
-	size_t max_num_blocks = 1024;
-        size_t num_blocks =
-          std::min((size + num_threads - 1) / num_threads, max_num_blocks);
-        T* out = cuda_malloc<T>(num_blocks);
+  size_t max_num_blocks = 1024;
+  size_t num_blocks =
+    std::min((size + num_threads - 1) / num_threads, max_num_blocks);
+  T* out = cuda_malloc<T>(num_blocks);
+  
+  q_ct1.submit([&](sycl::handler& cgh) {
+      sycl::accessor<T,
+		     1,
+		     sycl::access_mode::read_write,
+		     sycl::access::target::local>
+	shared_acc_ct1(sycl::range(8), cgh);
 
-        
-        q_ct1.submit([&](sycl::handler& cgh) {
-                sycl::accessor<T,
-                               1,
-                               sycl::access_mode::read_write,
-                               sycl::access::target::local>
-                  shared_acc_ct1(sycl::range(8), cgh);
+      cgh.parallel_for(
+		       sycl::nd_range(sycl::range(num_blocks) *
+				      sycl::range(num_threads),
+				      sycl::range(num_threads)),
+		       [=](sycl::nd_item<1> item_ct1)
+		       [[intel::reqd_sub_group_size(32)]] {
+			 device_custom_reduce(
+					      arr,
+					      size,
+					      out,
+					      item_ct1,
+					      (T*)shared_acc_ct1.get_pointer());
+		       });
+    }).wait();
 
-                cgh.parallel_for(
-                  sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                                   sycl::range(1, 1, num_threads),
-                                 sycl::range(1, 1, num_threads)),
-                  [=](sycl::nd_item<3> item_ct1)
-                    [[intel::reqd_sub_group_size(32)]] {
-                            device_custom_reduce(
-                              arr,
-                              size,
-                              out,
-                              item_ct1,
-                              (T*)shared_acc_ct1.get_pointer());
-                    });
-        });
-        
-        q_ct1.submit([&](sycl::handler& cgh) {
-                sycl::accessor<T,
-                               1,
-                               sycl::access_mode::read_write,
-                               sycl::access::target::local>
-                  shared_acc_ct1(sycl::range(8), cgh);
+  q_ct1.submit([&](sycl::handler& cgh) {
+      sycl::accessor<T,
+		     1,
+		     sycl::access_mode::read_write,
+		     sycl::access::target::local>
+	shared_acc_ct1(sycl::range(8), cgh);
 
-                cgh.parallel_for(
-                  sycl::nd_range(sycl::range(1, 1, 1024),
-                                 sycl::range(1, 1, 1024)),
-                  [=](sycl::nd_item<3> item_ct1)
-                    [[intel::reqd_sub_group_size(32)]] {
-                            device_custom_reduce(
-                              out,
-                              num_blocks,
-                              out,
-                              item_ct1,
-                              (T*)shared_acc_ct1.get_pointer());
-                    });
-        });
-        sycl::free(out, q_ct1);
+      cgh.parallel_for(
+		       sycl::nd_range(sycl::range(1024),
+				      sycl::range(1024)),
+		       [=](sycl::nd_item<1> item_ct1)
+		       [[intel::reqd_sub_group_size(32)]] {
+			 device_custom_reduce(
+					      out,
+					      num_blocks,
+					      out,
+					      item_ct1,
+					      (T*)shared_acc_ct1.get_pointer());
+		       });
+    }).wait();
+
+  T res = 0;
+  cuda_memcpy_to_host<T>(&res, out, 1);
+  sycl::free(out, q_ct1);
+  return res;
+  
 }
 
 template<typename T>

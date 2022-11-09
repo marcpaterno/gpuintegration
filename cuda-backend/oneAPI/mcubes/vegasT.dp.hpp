@@ -6,7 +6,7 @@
 #define OUTFILEVAR 0
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/quad.h"
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
@@ -320,12 +320,12 @@ namespace cuda_mcubes {
 #pragma unroll 2
       for (int j = 1; j <= ndim; j++) {
 		 // d[ia[j] * mxdim_p1 + j] += f2;
-        dpct::atomic_fetch_add(&d[ia[j] * mxdim_p1 + j], f2);
-		/*auto v = sycl::atomic_ref<double, 
+        //dpct::atomic_fetch_add(&d[ia[j] * mxdim_p1 + j], f2);
+		auto v = sycl::atomic_ref<double, 
 			sycl::memory_order::relaxed, 
 			sycl::memory_scope::device,
 			sycl::access::address_space::global_space>(d[ia[j] * mxdim_p1 + j]);
-		v += f2;*/
+		v += f2;
 
       }
     }
@@ -488,9 +488,9 @@ namespace cuda_mcubes {
     if (tx == 0) {
 		//result_dev[0] += fbg;
 		//result_dev[1] += f2bg;
-      dpct::atomic_fetch_add(&result_dev[0], fbg);
-      dpct::atomic_fetch_add(&result_dev[1], f2bg);
-	  /*auto v = sycl::atomic_ref<double, 
+      //dpct::atomic_fetch_add(&result_dev[0], fbg);
+      //dpct::atomic_fetch_add(&result_dev[1], f2bg);
+	  auto v = sycl::atomic_ref<double, 
 			sycl::memory_order::relaxed, 
 			sycl::memory_scope::device,
 			sycl::access::address_space::global_space>(result_dev[0]);
@@ -499,7 +499,7 @@ namespace cuda_mcubes {
 			sycl::memory_order::relaxed, 
 			sycl::memory_scope::device,
 			sycl::access::address_space::global_space>(result_dev[1]);
-	  v2 += f2bg;*/
+	  v2 += f2bg;
     }
     // end of subcube if
   }
@@ -623,9 +623,18 @@ namespace cuda_mcubes {
 
     if (tx == 0) {
       // printf("Block %i done\n", blockIdx.x);
-   
-      dpct::atomic_fetch_add(&result_dev[0], fbg);
-      dpct::atomic_fetch_add(&result_dev[1], f2bg);
+      auto v = sycl::atomic_ref<double, 
+			sycl::memory_order::relaxed, 
+			sycl::memory_scope::device,
+			sycl::access::address_space::global_space>(result_dev[0]);
+	  v += fbg;
+	  auto v2 = sycl::atomic_ref<double, 
+			sycl::memory_order::relaxed, 
+			sycl::memory_scope::device,
+			sycl::access::address_space::global_space>(result_dev[1]);
+	  v2 += f2bg;
+      //dpct::atomic_fetch_add(&result_dev[0], fbg);
+      //dpct::atomic_fetch_add(&result_dev[1], f2bg);
     }
 
     // end of subcube if
@@ -690,8 +699,6 @@ void ShowDevice(sycl::queue &q) {
         quad::Volume<double, ndim> const* vol)
   {
   double total_time = 0.;
-  dpct::device_ext &dev_ct1 = dpct::get_current_device();
-  //sycl::queue &q_ct1 = dev_ct1.default_queue();
   sycl::queue q_ct1(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
 	ShowDevice(q_ct1);
   //Display Device Name

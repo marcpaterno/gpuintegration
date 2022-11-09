@@ -1,8 +1,8 @@
 add_executable(profile_Genz3_3D oneapi_profile_Genz3_3D.cpp)
-target_compile_options(profile_Genz3_3D PRIVATE "-fsycl" "-fsycl-targets=nvptx64-nvidia-cuda" "-mllvm" "-inline-threshold=10000" "-std=c++17")
+target_compile_options(profile_Genz3_3D PRIVATE "-mllvm" "-inline-threshold=10000" "-std=c++17")
 
 add_executable(profile_Genz3_8D oneapi_profile_Genz3_8D.cpp)
-target_compile_options(profile_Genz3_8D PRIVATE "-fsycl" "-fsycl-targets=nvptx64-nvidia-cuda" "-lonemkl" "-ltbb" "-mllvm" "-inline-threshold=10000" "-std=c++17")
+target_compile_options(profile_Genz3_8D PRIVATE "-mllvm" "-inline-threshold=10000" "-std=c++17")
 
 add_executable(profile_Genz2_6D oneapi_profile_Genz2_6D.cpp)
 target_compile_options(profile_Genz2_6D PRIVATE "-fsycl" "-fsycl-targets=nvptx64-nvidia-cuda" "-lonemkl" "-ltbb" "-mllvm" "-inline-threshold=10000" "-std=c++17")
