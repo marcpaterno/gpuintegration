@@ -13,6 +13,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
 include_directories(AFTER ${DPCT_DIR} ${EXTERNALS_DIR} ${TOP_DIR} "/opt/intel/compiler/2022.0.2/linux/include/sycl" "/home/u133027/numint/dpct/oneAPI/Catch2/src/catch2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 #set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
