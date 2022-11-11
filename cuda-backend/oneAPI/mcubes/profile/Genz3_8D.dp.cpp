@@ -17,7 +17,7 @@ public:
                double t,
                double s)
   {
-    return sycl::pown(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9);
+    return sycl::pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
   }
 };
 
