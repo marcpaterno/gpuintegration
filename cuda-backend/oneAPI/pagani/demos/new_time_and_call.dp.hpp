@@ -25,7 +25,7 @@ template <typename F, int ndim>
 void
 call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol){
 	
-	for(int splits_per_dim = 4; splits_per_dim < 10; splits_per_dim++){
+	for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 12; splits_per_dim++){
 		F* d_integrand = make_gpu_integrand<F>(integrand);
 		Sub_regions<ndim> sub_regions(splits_per_dim);
 		size_t num_regions = sub_regions.size;
