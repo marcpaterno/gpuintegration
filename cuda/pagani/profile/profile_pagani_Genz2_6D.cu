@@ -9,7 +9,6 @@ public:
 	  
     const double a = 50.;
     const double b = .5;
-
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
     const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
     const double term_3 = 1. / ((1. / pow(a, 2.)) + pow(z - b, 2.));
