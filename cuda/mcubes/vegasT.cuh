@@ -813,7 +813,7 @@ namespace cuda_mcubes {
         std::chrono::duration<double, std::chrono::milliseconds::period>;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
+      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
 	  cudaEvent_t start, stop;
 	  cudaEventCreate(&start);
