@@ -819,10 +819,8 @@ namespace cuda_mcubes {
 	  cudaEventCreate(&start);
 	  cudaEventCreate(&stop);
 		
-	  cudaProfilerStart();
-	  cudaEventRecord(start);
-	  std::cout<<"num-cubes:"<< totalCubes<<std::endl;
-	  std::cout<<"chunk-size:"<<chunkSize<<std::endl;
+	  //cudaProfilerStart();
+	  //cudaEventRecord(start);
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,
                                               ng,
@@ -847,11 +845,11 @@ namespace cuda_mcubes {
                                               data_collector.randoms,
                                               data_collector.funcevals);
       cudaDeviceSynchronize();
-	  cudaEventRecord(stop);
-	  cudaEventSynchronize(stop);
+	  //cudaEventRecord(stop);
+	  //cudaEventSynchronize(stop);
 	  float kernel_time = 0;
 	  cudaEventElapsedTime(&kernel_time, start, stop);
-	  std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time << std::endl;
+	  //std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time << std::endl;
       cudaProfilerStop();
       cudaMemcpy(xi,
                  xi_dev,
