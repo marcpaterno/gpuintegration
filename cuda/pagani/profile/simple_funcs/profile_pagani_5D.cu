@@ -6,13 +6,10 @@ class GENZ_4_5D {
     __device__ __host__ double
     operator()(double x, double y, double z, double w, double v)
     {
-	  double beta = .5;
-      return exp(
-        -1.0 * (pow(25., 2.) * pow(x - beta, 2.) + 
-				pow(25., 2.) * pow(y - beta, 2.) +
-                pow(25., 2.) * pow(z - beta, 2.) + 
-				pow(25., 2.) * pow(w - beta, 2.) +
-                pow(25., 2.) * pow(v - beta, 2.)));
+		double sum = 0.;
+	for(int i=0; i < 1000; ++i)
+		sum += (x*y*z*w*v)/(x/y/z/w/v);
+	return sum;
     }
 };
 

@@ -5,6 +5,7 @@ class GENZ_3_3D {
 public:
   __host__ __device__ double operator()(double x, double y, double z)
   {
+  return 0.1;
     return pow(1 + 3 * x + 2 * y + z, -4);
   }
 };

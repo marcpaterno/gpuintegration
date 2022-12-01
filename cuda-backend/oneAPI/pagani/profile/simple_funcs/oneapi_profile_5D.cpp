@@ -10,11 +10,10 @@ class GENZ_4_5D {
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double w, double v)
     {
-	  double beta = .5;
-      return sycl::exp(
-        -1.0 * (sycl::pow(25., 2.) * sycl::pow(x - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(y - beta, 2.) +
-                sycl::pow(25., 2.) * sycl::pow(z - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(w - beta, 2.) +
-                sycl::pow(25., 2.) * sycl::pow(v - beta, 2.)));
+	  double sum = 0.;
+	for(int i=0; i < 1000; ++i)
+		sum += (x*y*z*w*v)/(x/y/z/w/v);
+	return sum;		
     }
   };
 

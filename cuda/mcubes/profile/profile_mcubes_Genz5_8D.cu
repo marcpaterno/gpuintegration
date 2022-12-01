@@ -25,6 +25,7 @@ public:
 int
 main(int argc, char** argv)
 {
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 100;
   double epsrel = 1e-3;
   constexpr int ndim = 8;
 
@@ -40,14 +41,14 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   
   GENZ_5_8D integrand;
-  std::array<double, 6> required_ncall = {1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9};
+  std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
   size_t run = 0;
   
   for(auto num_samples : required_ncall){
     params.ncall = num_samples;
     
 	signle_invocation_time_and_call<GENZ_5_8D, ndim>(
-        integrand, epsrel, true_value, "f5, 8", params, &volume);
+        integrand, epsrel, true_value, "f5, 8", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())
 		break;

@@ -10,7 +10,7 @@ class GENZ_2_6D {
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double k, double l, double m)
     {
-        const double a = 50.;
+		const double a = 50.;
         const double b = .5;
 
         const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
@@ -26,11 +26,14 @@ class GENZ_2_6D {
     }
 };
 
-int main(){
+int
+main(int argc, char** argv)
+{
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 6;
     GENZ_2_6D integrand;
 	quad::Volume<double, ndim> vol;
-	call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol);
+	call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol, num_repeats);
     return 0;
 }
 

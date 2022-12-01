@@ -10,6 +10,8 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <string>
+
 
 template<typename T>
 void host_print_dev_array(T* dev, size_t size, std::string label){
@@ -22,38 +24,43 @@ void host_print_dev_array(T* dev, size_t size, std::string label){
 
 template <typename F, int ndim>
 void
-call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol)
+call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol, int num_repeats = 11)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;	
   // cudaDeviceReset();
-  for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 12; splits_per_dim++){
-	  F* d_integrand = make_gpu_integrand<F>(integrand);
-	  Sub_regions<double, ndim> sub_regions(splits_per_dim);
-	  size_t num_regions = sub_regions.size;
-	  
-	  if(num_regions >= 43e6)
-		  break;
-	  Region_characteristics<ndim> characteristics(sub_regions.size);
-	  Region_estimates<double, ndim> estimates(sub_regions.size);
-	  Cubature_rules<double, ndim> rules;
-	  std::cout << "Initial regions:" << sub_regions.size << std::endl;
-	  rules.set_device_volume(vol.lows, vol.highs);
-	  int iteration = 0;
-	  bool compute_relerr_error_reduction = false;
-	  
-	  numint::integration_result iter = rules.template apply_cubature_integration_rules<F>(
-		d_integrand,
-		iteration,
-		sub_regions,
-		estimates,
-		characteristics,
-		compute_relerr_error_reduction);
-		
-	  //sub_regions.print_bounds();
-	  std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
-	  cudaFree(d_integrand);
+
+  std::cout << "num-repeats:" << num_repeats << std::endl;
+  for(int i=0; i < num_repeats; ++i){
+	  for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15; splits_per_dim++){
+		  F* d_integrand = make_gpu_integrand<F>(integrand);
+		  Sub_regions<double, ndim> sub_regions(splits_per_dim);
+		  size_t num_regions = sub_regions.size;
+		  
+		  if(num_regions >= 43e6)
+			  break;
+		  Region_characteristics<ndim> characteristics(sub_regions.size);
+		  Region_estimates<double, ndim> estimates(sub_regions.size);
+		  Cubature_rules<double, ndim> rules;
+		  std::cout << "Initial regions:" << sub_regions.size << std::endl;
+		  rules.set_device_volume(vol.lows, vol.highs);
+		  int iteration = 0;
+		  bool compute_relerr_error_reduction = false;
+		  
+		  numint::integration_result iter = rules.template apply_cubature_integration_rules<F>(
+			d_integrand,
+			iteration,
+			sub_regions,
+			estimates,
+			characteristics,
+			compute_relerr_error_reduction);
+			
+		  //sub_regions.print_bounds();
+		  std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << iter.estimate << "," << num_regions << std::endl;
+		  cudaFree(d_integrand);
+	  }
   }
+  
 }
 
 template <typename F,

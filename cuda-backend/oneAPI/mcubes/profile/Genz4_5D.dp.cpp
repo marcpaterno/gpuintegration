@@ -11,7 +11,7 @@ class GENZ_4_5D {
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double w, double v)
     {
-      double beta = .5;
+	  double beta = .5;
       return sycl::exp(
         -1.0 * (sycl::pow(25., 2.) * sycl::pow(x - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(y - beta, 2.) +
                 sycl::pow(25., 2.) * sycl::pow(z - beta, 2.) + sycl::pow(25., 2.) * sycl::pow(w - beta, 2.) +
@@ -22,6 +22,7 @@ class GENZ_4_5D {
 int
 main(int argc, char** argv)
 {
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 100;
   double epsrel = 1e-3;
   constexpr int ndim = 5;
 
@@ -37,7 +38,7 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   
   GENZ_4_5D integrand;
-  std::array<double, 6> required_ncall = {1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9};
+  std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
    
   bool success = false;  
   size_t num_epsrels = 10;
@@ -47,7 +48,7 @@ main(int argc, char** argv)
     params.ncall = num_samples;
     
 	signle_invocation_time_and_call<GENZ_4_5D, ndim>(
-        integrand, epsrel, true_value, "f4, 5", params, &volume);
+        integrand, epsrel, true_value, "f4, 5", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())
 		break;

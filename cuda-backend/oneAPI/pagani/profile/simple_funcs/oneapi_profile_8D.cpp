@@ -5,7 +5,8 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
-class Pow_of_product {
+
+class GENZ_3_8D {
   public:
     SYCL_EXTERNAL double
     operator()(double x,
@@ -17,16 +18,20 @@ class Pow_of_product {
                double t,
                double s)
     {
-		return sycl::pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, 9.);
+		double sum = 0.;
+	for(int i=0; i < 1000; ++i)
+		sum += (x*y*z*w*v*u+t+s)/(x/y/w/v/u/t/s);
+	return sum; 
     }
 };
 
-
-int main(){
+int
+main(int argc, char** argv)
+{
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 8;
-    Pow_of_product integrand;
+    GENZ_3_8D integrand;
 	quad::Volume<double, ndim> vol;
-	call_cubature_rules<Pow_of_product, ndim>(integrand, vol);
+	call_cubature_rules<GENZ_3_8D, ndim>(integrand, vol, num_repeats);
     return 0;
 }
-

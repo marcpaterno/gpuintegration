@@ -275,8 +275,14 @@ public:
         constexpr size_t block_size = 64;
         
         T epsrel = 1.e-3, epsabs = 1.e-12;
+		
+		cudaEvent_t start, stop;
+		cudaEventCreate(&start);
+		cudaEventCreate(&stop);
+		
 		cudaProfilerStart();
-        quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug><<<num_blocks, block_size>>>
+		cudaEventRecord(start);
+		quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug><<<num_blocks, block_size>>>
             (d_integrand, 
             subregions.dLeftCoord, 
             subregions.dLength, num_regions, 
@@ -291,6 +297,11 @@ public:
             generators,
 			dfevals);
         cudaDeviceSynchronize();
+		cudaEventRecord(stop);
+		cudaEventSynchronize(stop);
+		float kernel_time = 0;
+		cudaEventElapsedTime(&kernel_time, start, stop);
+		std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << kernel_time << std::endl;
 		cudaProfilerStop();
 		
 		print_verbose<debug>(generators, dfevals, subregion_estimates);

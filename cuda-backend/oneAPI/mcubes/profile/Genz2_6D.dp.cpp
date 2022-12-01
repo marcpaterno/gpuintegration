@@ -11,7 +11,7 @@ class GENZ_2_6D {
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double k, double l, double m)
     {
-        const double a = 50.;
+		const double a = 50.;
         const double b = .5;
 
         const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
@@ -29,6 +29,7 @@ class GENZ_2_6D {
 int
 main(int argc, char** argv)
 {
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 100;
   double epsrel = 1e-3;
   double epsrel_min = 1.e-9;
   constexpr int ndim = 6;
@@ -45,7 +46,7 @@ main(int argc, char** argv)
   quad::Volume<double, ndim> volume(lows, highs);
   
   GENZ_2_6D integrand;
-  std::array<double, 6> required_ncall = {1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9};
+  std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
    
   bool success = false;  
   size_t num_epsrels = 10;
@@ -55,7 +56,7 @@ main(int argc, char** argv)
     params.ncall = num_samples;
     
 	signle_invocation_time_and_call<GENZ_2_6D, ndim>(
-        integrand, epsrel, true_value, "f2, 6", params, &volume);
+        integrand, epsrel, true_value, "f2, 6", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())
 		break;

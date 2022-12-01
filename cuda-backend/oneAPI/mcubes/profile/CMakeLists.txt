@@ -1,3 +1,5 @@
+add_subdirectory(simple_funcs)
+
 add_executable(profile_oneAPI_mcubes_Genz2_6D Genz2_6D.dp.cpp)
 target_compile_options(profile_oneAPI_mcubes_Genz2_6D PRIVATE "-mllvm" "-inline-threshold=10000" )
 

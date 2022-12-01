@@ -169,8 +169,11 @@ signle_invocation_time_and_call(F integrand,
                      double correct_answer,
                      char const* integralName,
                      VegasParams& params,
-                     quad::Volume<double, ndim>* volume)
+                     quad::Volume<double, ndim>* volume,
+					 int num_repeats = 100)
 {
+  bool success = false;
+  for(int i=0; i < num_repeats; ++i){
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
@@ -200,7 +203,8 @@ signle_invocation_time_and_call(F integrand,
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
                 << res.status << "\n";
-    */           
+    */
+  }
 	return success;
 }
 

@@ -6,8 +6,10 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z)
   {
-  return 0.1;
-    return pow(1 + 3 * x + 2 * y + z, -4);
+	double sum = 0.;
+	for(int i=0; i < 1000; ++i)
+		sum += (x*y*z)/(x/y/z);
+	return sum;
   }
 };
 

@@ -200,8 +200,7 @@ class Cubature_rules{
             delete[] errs;
         }
     }   
-       
-       
+    
     void
     set_device_volume(double* lows = nullptr, double* highs = nullptr){
                 
@@ -378,7 +377,9 @@ class Cubature_rules{
       q.wait();
       double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
 		     e.template get_profiling_info<sycl::info::event_profiling::command_start>());
-      std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim << ","<< num_regions << std::endl;
+      //std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim << ","<< num_regions << std::endl;
+	  std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << time/1.e6 << std::endl;
+
       total_time += time;
       print_verbose<debug>(generators, dfevals, subregion_estimates);
       cuhreResult<double> res;

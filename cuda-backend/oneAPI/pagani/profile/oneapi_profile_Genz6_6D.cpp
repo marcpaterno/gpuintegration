@@ -14,16 +14,19 @@ class GENZ_6_6D {
 			return 0.;
 		else
 			return sycl::exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v +
-					   5. * u) /*/1.5477367885091207413e8*/;
+					   5. * u);
 	}
 };
 
-int main(){
+int
+main(int argc, char** argv)
+{
+  int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 6;
     GENZ_6_6D integrand;
 	quad::Volume<double, ndim> vol;
 	
-	call_cubature_rules<GENZ_6_6D, ndim>(integrand, vol);
+	call_cubature_rules<GENZ_6_6D, ndim>(integrand, vol, num_repeats);
   
     return 0;
 }

@@ -13,12 +13,10 @@ public:
              double p,
              double q)
   {
-	double beta = .5;
-    double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
-                10. * fabs(z - beta) - 10. * fabs(k - beta) -
-                10. * fabs(m - beta) - 10. * fabs(n - beta) -
-                10. * fabs(p - beta) - 10. * fabs(q - beta);
-    return exp(t1);
+	  double sum = 0.;
+	for(int i=0; i < 1000; ++i)
+		sum += (x*y*z*k*m*n*p*q)/(x/y/z/k/m/n/p/q);
+	return sum;
   }
 };
 

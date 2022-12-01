@@ -825,11 +825,12 @@ void ShowDevice(sycl::queue &q) {
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
-
-    uint32_t nBlocks =
+	
+	Kernel_Params params(ncall, chunkSize, ndim);
+    /*uint32_t nBlocks =
       ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
       1; // compute blocks based on chunk_size, ncubes, and block_dim_x
-    uint32_t nThreads = BLOCK_DIM_X;
+    uint32_t nThreads = BLOCK_DIM_X;*/
 
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
       ti = tsi = 0.0;
@@ -848,7 +849,7 @@ void ShowDevice(sycl::queue &q) {
         std::chrono::duration<double, std::chrono::milliseconds::period>;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
+      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
                           static_cast<unsigned int>(it);
          
       sycl::event e = q_ct1.submit([&](sycl::handler &cgh) {
@@ -857,7 +858,7 @@ sycl::accessor<double, 1, sycl::access_mode::read_write,
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) * sycl::range<1>(/*1, 1, */nThreads), sycl::range<1>(/*1, 1, */nThreads)),
+             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */params.nBlocks) * sycl::range<1>(/*1, 1, */params.nThreads), sycl::range<1>(/*1, 1, */params.nThreads)),
              [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernel<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
@@ -870,7 +871,9 @@ sycl::accessor<double, 1, sycl::access_mode::read_write,
 	  
 	  double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
 	  e.template get_profiling_info<sycl::info::event_profiling::command_start>());
-	  std::cout<< "time:" << std::scientific << 1 << "," << time/1.e6 << "," << ndim << ","<< ncall << std::endl;
+	  //std::cout<< "time:" << std::scientific << 1 << "," << time/1.e6 << "," << ndim << ","<< ncall << std::endl;
+	  std::cout<< "vegas_kernel:" << params.nBlocks << "," << time/1.e6  << std::endl;
+
 	  total_time += time;
 	  
       q_ct1.memcpy(xi, xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1)).wait();
@@ -968,9 +971,9 @@ sycl::accessor<double, 1, sycl::access_mode::read_write,
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */nBlocks) *
-                                   sycl::range<1>(/*1, 1,*/ nThreads),
-                               sycl::range<1>(/*1, 1, */nThreads)),
+             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */params.nBlocks) *
+                                   sycl::range<1>(/*1, 1,*/ params.nThreads),
+                               sycl::range<1>(/*1, 1, */params.nThreads)),
              [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernelF<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,

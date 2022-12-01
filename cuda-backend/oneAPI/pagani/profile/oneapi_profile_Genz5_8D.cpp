@@ -17,7 +17,7 @@ class GENZ_5_8D {
                double p,
                double q)
     {
-      double beta = .5;
+	  double beta = .5;
       double t1 = -10. * sycl::fabs(x - beta) - 10. * fabs(y - beta) -
                   10. * sycl::fabs(z - beta) - 10. * fabs(k - beta) -
                   10. * fabs(m - beta) - 10. * fabs(n - beta) -
@@ -26,12 +26,15 @@ class GENZ_5_8D {
     }
 };
 
-int main(){
+int
+main(int argc, char** argv)
+{
+    int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 8;
     GENZ_5_8D integrand;
 	quad::Volume<double, ndim> vol;
 	
-	call_cubature_rules<GENZ_5_8D, ndim>(integrand, vol);
+	call_cubature_rules<GENZ_5_8D, ndim>(integrand, vol, num_repeats);
   
     return 0;
 }

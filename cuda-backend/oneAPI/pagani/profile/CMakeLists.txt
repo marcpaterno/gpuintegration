@@ -1,3 +1,5 @@
+add_subdirectory(simple_funcs)
+
 add_executable(profile_Genz3_3D oneapi_profile_Genz3_3D.cpp)
 target_compile_options(profile_Genz3_3D PRIVATE "-mllvm" "-inline-threshold=10000")
 
@@ -19,5 +21,5 @@ target_compile_options(profile_Genz5_8D PRIVATE "-mllvm" "-inline-threshold=1000
 add_executable(profile_Genz6_6D oneapi_profile_Genz6_6D.cpp)
 target_compile_options(profile_Genz6_6D PRIVATE "-mllvm" "-inline-threshold=10000" )
 
-add_executable(oneapi_profile_pagani_pow_of_sum oneapi_profile_pow_of_sum.cpp)
-target_compile_options(oneapi_profile_pagani_pow_of_sum PRIVATE "-mllvm" "-inline-threshold=10000")
+add_executable(execute_integrands_on_device execute_integrands_on_device.cpp)
+target_compile_options(execute_integrands_on_device PRIVATE "-mllvm" "-inline-threshold=10000")
