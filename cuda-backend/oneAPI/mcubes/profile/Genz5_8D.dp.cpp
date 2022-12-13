@@ -6,7 +6,7 @@
 #include "oneAPI/mcubes/demo_utils.dp.hpp"
 #include "oneAPI/mcubes/vegasT.dp.hpp"
 
-class GENZ_5_8D {
+class F_5_8D {
 public:
   SYCL_EXTERNAL double
   operator()(double x,
@@ -24,6 +24,7 @@ public:
                 10. * fabs(m - beta) - 10. * fabs(n - beta) -
                 10. * fabs(p - beta) - 10. * fabs(q - beta);
     return sycl::exp(t1);
+	
   }
 };
 
@@ -46,7 +47,7 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   
-  GENZ_5_8D integrand;
+  F_5_8D integrand;
   std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
    
   bool success = false;  
@@ -56,7 +57,7 @@ main(int argc, char** argv)
   for(auto num_samples : required_ncall){
     params.ncall = num_samples;
     
-	signle_invocation_time_and_call<GENZ_5_8D, ndim>(
+	signle_invocation_time_and_call<F_5_8D, ndim>(
         integrand, epsrel, true_value, "f5, 8", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())

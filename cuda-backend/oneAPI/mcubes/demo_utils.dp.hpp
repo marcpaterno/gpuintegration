@@ -208,4 +208,29 @@ signle_invocation_time_and_call(F integrand,
 	return success;
 }
 
+template<typename F, int ndim>
+void call_mcubes_kernel(int num_repeats){
+	std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
+	double ncall = 1.0e8;
+	int titer = 1;
+	int itmax = 1;
+	int skip = 0;
+	VegasParams params(ncall, titer, itmax, skip);
+	F integrand;
+	quad::Volume<double, ndim> volume;
+	size_t run = 0;
+	double epsrel = 1.e-3;
+	double epsabs = 1.e-12;
+	double true_value = 0.;
+	for(auto num_samples : required_ncall){
+		params.ncall = num_samples;
+    
+		signle_invocation_time_and_call<F, ndim>(
+			integrand, epsrel, true_value, "f", params, &volume, num_repeats);
+	run++;
+	if(run > required_ncall.size())
+		break;
+  }
+}
+
 #endif

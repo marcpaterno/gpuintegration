@@ -2,7 +2,7 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
-class GENZ_3_3D {
+class Simple_3D {
   public:
     double
     operator()(double x, double y, double z)
@@ -19,10 +19,10 @@ main(int argc, char** argv)
 {
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 3;
-    GENZ_3_3D integrand;
+    Simple_3D integrand;
 	quad::Volume<double, ndim> vol;
 	
-	call_cubature_rules<GENZ_3_3D, ndim>(integrand, vol, num_repeats);
+	call_cubature_rules<Simple_3D, ndim>(integrand, vol, num_repeats);
   
     return 0;
 }

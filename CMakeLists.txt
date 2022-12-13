@@ -15,6 +15,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+SET(CMAKE_CUDA_FLAGS_DEBUG "-g -lineinfo")
+
 
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
 include_directories(AFTER cubacpp externals ${TOP_DIR})

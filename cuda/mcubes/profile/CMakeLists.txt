@@ -1,4 +1,5 @@
 add_subdirectory(simple_funcs)
+add_subdirectory(sum_of_args_integrands)
 
 add_executable(profile_mcubes_Genz2_6D profile_mcubes_Genz2_6D.cu)
 target_compile_options(profile_mcubes_Genz2_6D PRIVATE "-DCURAND")
@@ -15,6 +16,10 @@ set_target_properties(profile_mcubes_Genz3_8D PROPERTIES POSITION_INDEPENDENT_CO
 add_executable(profile_mcubes_Genz4_5D profile_mcubes_Genz4_5D.cu)
 target_compile_options(profile_mcubes_Genz4_5D PRIVATE "-DCURAND")
 set_target_properties(profile_mcubes_Genz4_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_Genz4_8D profile_mcubes_Genz4_8D.cu)
+target_compile_options(profile_mcubes_Genz4_8D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz4_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
 
 add_executable(profile_mcubes_Genz5_8D profile_mcubes_Genz5_8D.cu)
 target_compile_options(profile_mcubes_Genz5_8D PRIVATE "-DCURAND")

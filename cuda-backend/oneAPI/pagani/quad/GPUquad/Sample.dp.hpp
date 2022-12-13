@@ -139,17 +139,18 @@ namespace quad {
                      sycl::nd_item<1> item_ct1,
                      quad::Func_Evals<NDIM>& fevals)
   {
-
     gpu::cudaArray<T, NDIM> x;
-    for (int dim = 0; dim < NDIM; ++dim) {
+    #pragma unroll NDIM
+	for (int dim = 0; dim < NDIM; ++dim) {
       
       const T generator =
         generators[CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex];
-      x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
+	  x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-	
+	//double fun = 0.1;
+	//if(x[0] < 0.)
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
                                            
@@ -241,6 +242,7 @@ namespace quad {
 
     item_ct1.barrier();
 
+	#pragma unroll 1
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -277,6 +279,7 @@ namespace quad {
     }
 
     item_ct1.barrier();
+	#pragma unroll 5
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i], item_ct1, shared);
       // sum[i] = sycl::reduce_over_group(item_ct1.get_group(), sum[i],
@@ -287,14 +290,14 @@ namespace quad {
     if (item_ct1.get_local_id(0) == 0) {
       Result* r = &region->result;
 
-#pragma unroll 3
+	  #pragma unroll 3
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
 
         constexpr int NSETS = 9;
-#pragma unroll 9
+		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
-          maxerr =
+          maxerr = sum[rul + 1];
             sycl::max(maxerr,
                       (double)(sycl::fabs(sum[rul + 1] +
                                           constMem._GPUScale[s * NRULES + rul] *
@@ -303,6 +306,7 @@ namespace quad {
         }
         sum[rul] = maxerr;
       }
+	
 
       r->avg = (*vol) * sum[0];
       const double errcoeff[3] = {5., 1., 5.};
@@ -311,7 +315,8 @@ namespace quad {
         ((errcoeff[0] * sum[1] <= sum[2] && errcoeff[0] * sum[2] <= sum[3]) ?
            errcoeff[1] * sum[1] :
            errcoeff[2] * sycl::max(sycl::max(sum[1], sum[2]), sum[3]));
-    }
+	
+	}
   }
 
 }

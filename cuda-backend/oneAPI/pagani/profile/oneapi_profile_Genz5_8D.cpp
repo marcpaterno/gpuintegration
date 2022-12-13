@@ -5,9 +5,12 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
+//i had initially forgotten the SYCL_EXTERNAL
+
+
 class GENZ_5_8D {
   public:
-    double
+    SYCL_EXTERNAL double
        operator()(double x,
                double y,
                double z,
@@ -16,7 +19,7 @@ class GENZ_5_8D {
                double n,
                double p,
                double q)
-    {
+    {	
 	  double beta = .5;
       double t1 = -10. * sycl::fabs(x - beta) - 10. * fabs(y - beta) -
                   10. * sycl::fabs(z - beta) - 10. * fabs(k - beta) -

@@ -6,7 +6,7 @@
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
 
-class GENZ_3_8D {
+class Simple_8D {
   public:
     SYCL_EXTERNAL double
     operator()(double x,
@@ -30,8 +30,8 @@ main(int argc, char** argv)
 {
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 8;
-    GENZ_3_8D integrand;
+    Simple_8D integrand;
 	quad::Volume<double, ndim> vol;
-	call_cubature_rules<GENZ_3_8D, ndim>(integrand, vol, num_repeats);
+	call_cubature_rules<Simple_8D, ndim>(integrand, vol, num_repeats);
     return 0;
 }

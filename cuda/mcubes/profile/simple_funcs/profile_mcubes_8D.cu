@@ -1,7 +1,7 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
 
-class Integrand_8D {
+class Simple_8D {
 public:
   __device__ __host__ double
   operator()(double x,
@@ -38,14 +38,14 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   
-  Integrand_8D integrand;
+  Simple_8D integrand;
   std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
   size_t run = 0;
   
   for(auto num_samples : required_ncall){
     params.ncall = num_samples;
     
-	signle_invocation_time_and_call<Integrand_8D, ndim>(
+	signle_invocation_time_and_call<Simple_8D, ndim>(
         integrand, epsrel, true_value, "f5, 8", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())

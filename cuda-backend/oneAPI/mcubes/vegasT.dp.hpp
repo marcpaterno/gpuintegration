@@ -220,8 +220,9 @@ namespace cuda_mcubes {
   {
     constexpr int ndmx = 500/*Internal_Vegas_Params::get_NDMX()*/;
     constexpr int ndmx1 = 501;//Internal_Vegas_Params::get_NDMX_p1();
-
-
+	
+	//optimizer was not using the unroll here and this was causing a slowdown on high dimensional integrands
+	#pragma unroll ndim
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
@@ -240,16 +241,18 @@ namespace cuda_mcubes {
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 
-      if (ia[j] > 1) {
-        xo = (xi[j * ndmx1 + ia[j]]) - (xi[j * ndmx1 + ia[j] - 1]); // bin
+	   if (ia[j] > 1) {
+		const double binA = (xi[j * ndmx1 + ia[j]]) ;
+		const double binB = (xi[j * ndmx1 + ia[j] - 1]);  
+        xo = binA - binB;  // bin
                                                                     // length
-        rc = (xi[j * ndmx1 + ia[j] - 1]) +
-             (xn - ia[j]) * xo; // scaling ran00 to bin bounds
+        rc = binB + (xn - ia[j]) * xo; // scaling ran00 to bin bounds
       } else {
         xo = (xi[j * ndmx1 + ia[j]]);
         rc = (xn - ia[j]) * xo;
       }
-
+	
+	
       x[j] = regn[j] + rc * (dx[j]);
       wgt *= xo * xnd; // xnd is number of bins, xo is the length of the bin,
                        // xjac is 1/num_calls
@@ -296,13 +299,15 @@ namespace cuda_mcubes {
         npg,
         k,
         cube_id);
-
+	  
       gpu::cudaArray<double, ndim> xx;
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
 
-      const double tmp = gpu::apply(*d_integrand, xx);
+	  double tmp = 0.;
+	  if(xx[0] >= 0.)
+      /*const double*/ tmp = gpu::apply(*d_integrand, xx);
       const double f = wgt * tmp;
 
       // if constexpr(DEBUG_MCUBES){
@@ -317,10 +322,8 @@ namespace cuda_mcubes {
       fb += f;
       f2b += f2;
 
-#pragma unroll 2
       for (int j = 1; j <= ndim; j++) {
-		 // d[ia[j] * mxdim_p1 + j] += f2;
-        //dpct::atomic_fetch_add(&d[ia[j] * mxdim_p1 + j], f2);
+		//d[ia[j] * mxdim_p1 + j] += f2;
 		auto v = sycl::atomic_ref<double, 
 			sycl::memory_order::relaxed, 
 			sycl::memory_scope::device,
@@ -433,7 +436,7 @@ namespace cuda_mcubes {
                sycl::nd_item<1> item_ct1,
                double *shared)
   {
-    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int mxdim_p1 = 21;//Internal_Vegas_Params::get_MXDIM_p1();
     uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
                  item_ct1.get_local_id(0);
     uint32_t tx = item_ct1.get_local_id(0);
@@ -488,8 +491,7 @@ namespace cuda_mcubes {
     if (tx == 0) {
 		//result_dev[0] += fbg;
 		//result_dev[1] += f2bg;
-      //dpct::atomic_fetch_add(&result_dev[0], fbg);
-      //dpct::atomic_fetch_add(&result_dev[1], f2bg);
+	
 	  auto v = sycl::atomic_ref<double, 
 			sycl::memory_order::relaxed, 
 			sycl::memory_scope::device,
@@ -664,21 +666,22 @@ namespace cuda_mcubes {
   }
 	
 void ShowDevice(sycl::queue &q) {
-      using namespace sycl;
+     // using namespace sycl;
       // Output platform and device information.
       auto device = q.get_device();
-      auto p_name = device.get_platform().get_info<info::platform::name>();
+      auto p_name = device.get_platform().get_info<sycl::info::platform::name>();
       std::cout << "Platform Name: " << p_name << "\n";
-      auto p_version = device.get_platform().get_info<info::platform::version>();
+      auto p_version = device.get_platform().get_info<sycl::info::platform::version>();
       std::cout << "Platform Version: " << p_version << "\n";
-      auto d_name = device.get_info<info::device::name>();
+      auto d_name = device.get_info<sycl::info::device::name>();
       std::cout << "Device Name: " << d_name << "\n";
-      auto max_work_group = device.get_info<info::device::max_work_group_size>();
+      auto max_work_group = device.get_info<sycl::info::device::max_work_group_size>();
         
-      auto max_compute_units = device.get_info<info::device::max_compute_units>();
+      auto max_compute_units = device.get_info<sycl::info::device::max_compute_units>();
       std::cout << "Max Compute Units: " << max_compute_units << "\n\n";
       std::cout << "max_mem_alloc_size " << device.get_info<sycl::info::device::max_mem_alloc_size>() << std::endl;
       std::cout << "local_mem_size " <<  device.get_info<sycl::info::device::local_mem_size>() << std::endl;
+	
 }	
 	
   template <typename IntegT,
@@ -818,7 +821,6 @@ void ShowDevice(sycl::queue &q) {
     q_ct1.memset(ia_dev, 0, sizeof(int) * (mxdim_p1)).wait();
 
     int chunkSize = GetChunkSize(ncall);
-
     uint32_t totalNumThreads =
       (uint32_t)((ncubes) / chunkSize);
 
@@ -831,7 +833,7 @@ void ShowDevice(sycl::queue &q) {
       ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
       1; // compute blocks based on chunk_size, ncubes, and block_dim_x
     uint32_t nThreads = BLOCK_DIM_X;*/
-
+	std::cout<<"\textra cubes:"<< extra << std::endl;
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
       ti = tsi = 0.0;
       for (j = 1; j <= ndim; j++) {
@@ -858,7 +860,7 @@ sycl::accessor<double, 1, sycl::access_mode::read_write,
              shared_acc_ct1(sycl::range<1>(32), cgh);
 
          cgh.parallel_for(
-             sycl::nd_range<1>(sycl::range<1>(/*1, 1, */params.nBlocks) * sycl::range<1>(/*1, 1, */params.nThreads), sycl::range<1>(/*1, 1, */params.nThreads)),
+             sycl::nd_range<1>(sycl::range<1>(params.nBlocks) * sycl::range<1>(params.nThreads), sycl::range<1>(params.nThreads)),
              [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                 vegas_kernel<IntegT, ndim>(
                     d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,

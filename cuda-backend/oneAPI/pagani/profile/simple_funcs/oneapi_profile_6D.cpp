@@ -5,7 +5,7 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
-class GENZ_2_6D {
+class Simple_6D {
   public:
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double k, double l, double m)
@@ -22,9 +22,9 @@ main(int argc, char** argv)
 {
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
     constexpr int ndim = 6;
-    GENZ_2_6D integrand;
+    Simple_6D integrand;
 	quad::Volume<double, ndim> vol;
-	call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol, num_repeats);
+	call_cubature_rules<Simple_6D, ndim>(integrand, vol, num_repeats);
     return 0;
 }
 

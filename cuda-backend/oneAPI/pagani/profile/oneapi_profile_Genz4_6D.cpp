@@ -10,7 +10,6 @@ class GENZ_4_6D {
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double w, double v, double b)
     {
-	  //printf("x:%f, y:%f, z:%f w:%f v:%f b:%f\n", x, y, z, w, v, b);
       double beta = .5;
       return sycl::exp(
         -1.0 * sycl::pow(25., 2.) * ( 

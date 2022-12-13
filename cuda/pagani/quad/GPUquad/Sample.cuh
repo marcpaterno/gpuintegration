@@ -115,16 +115,26 @@ namespace quad {
                      T* sdata,
                      quad::Func_Evals<NDIM>& fevals)
   {
+	
     gpu::cudaArray<T, NDIM> x;
-    for (int dim = 0; dim < NDIM; ++dim) {
+    
+	//if I read shared memory in the case where we don't invoke the integrand, cuda is slower than oneapi
+	
+	#pragma unroll NDIM
+	for (int dim = 0; dim < NDIM; ++dim) {
       const T generator = __ldg(
-        &generators[pagani::CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
-      x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
+       &generators[pagani::CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
+	  x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-
-    const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
+	
+	//double fun = 0.1;
+    //if(x[0] < 0.)
+	
+	//	printf("invoking\n");
+	const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
+	
     sdata[threadIdx.x] = fun; // target for reduction
     const int gIndex = __ldg(&constMem.gpuGenPermGIndex[pIndex]);
 
@@ -137,9 +147,10 @@ namespace quad {
     }
 
 #pragma unroll 5
-    for (int rul = 0; rul < NRULES; ++rul) {
+  for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
     }
+	
   }
 
   // BLOCK SIZE has to be atleast 4*DIM+1 for the first IF
@@ -194,6 +205,7 @@ namespace quad {
       T base = *f1 * 2 * (1 - ratio);
       T maxdiff = 0;
       int bisectdim = *maxdim;
+	  //#pragma unroll 1
       for (int dim = 0; dim < NDIM; ++dim) {
         T* fp = f1 + 1;
         T* fm = fp + 1;
@@ -211,6 +223,7 @@ namespace quad {
     }
     __syncthreads();
 
+	#pragma unroll 1
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -244,6 +257,7 @@ namespace quad {
     }
 	
 	__syncthreads();
+	#pragma unroll 5
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i]);
       //__syncthreads();
@@ -261,12 +275,13 @@ namespace quad {
 		constexpr int NSETS = 9;
 		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
-          maxerr =
+          maxerr = sum[rul + 1];
             max(maxerr,
-                fabs(sum[rul + 1] + __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) * __ldg(&constMem.GPUNorm[s * NRULES + rul]));
+                (double)fabs(sum[rul + 1] + __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) * __ldg(&constMem.GPUNorm[s * NRULES + rul]));
 		}
         sum[rul] = maxerr;
       }
+		
 
       r->avg = (*vol) * sum[0];
       const T errcoeff[3] = {5., 1., 5.};
@@ -275,7 +290,8 @@ namespace quad {
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
-    }
+	  
+	}
   }
 
   template <typename T>

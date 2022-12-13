@@ -9,10 +9,10 @@ class GENZ_2_6D {
   public:
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double k, double l, double m)
-    {
+    {		
 		const double a = 50.;
         const double b = .5;
-
+		
         const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
         const double term_2 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(y - b, 2.));
         const double term_3 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(z - b, 2.));
@@ -22,7 +22,6 @@ class GENZ_2_6D {
         
         double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
         return val;
-
     }
 };
 

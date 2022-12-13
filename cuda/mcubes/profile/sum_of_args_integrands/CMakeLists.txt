@@ -1,0 +1,17 @@
+#find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
+
+add_executable(profile_mcubes_kernel_f_3D profile_mcubes_kernel_f_3D.cu)
+target_compile_options(profile_mcubes_kernel_f_3D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_kernel_f_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_kernel_f_5D profile_mcubes_kernel_f_5D.cu)
+target_compile_options(profile_mcubes_kernel_f_5D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_kernel_f_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_kernel_f_6D profile_mcubes_kernel_f_6D.cu)
+target_compile_options(profile_mcubes_kernel_f_6D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_kernel_f_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+
+add_executable(profile_mcubes_kernel_f_8D profile_mcubes_kernel_f_8D.cu)
+target_compile_options(profile_mcubes_kernel_f_8D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_kernel_f_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})

@@ -1,7 +1,7 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
 
-class GENZ_3_3D {
+class F_3_3D {
 public:
   __host__ __device__ double operator()(double x, double y, double z)
   {
@@ -27,7 +27,7 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   
-  GENZ_3_3D integrand;
+  F_3_3D integrand;
   std::array<double, 6> required_ncall = {1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9};
    
   size_t run = 0;
@@ -35,7 +35,7 @@ main(int argc, char** argv)
   for(auto num_samples : required_ncall){
     params.ncall = num_samples;
     
-	signle_invocation_time_and_call<GENZ_3_3D, ndim>(
+	signle_invocation_time_and_call<F_3_3D, ndim>(
         integrand, epsrel, true_value, "f3, 3", params, &volume);
 	run++;
 	if(run > required_ncall.size())

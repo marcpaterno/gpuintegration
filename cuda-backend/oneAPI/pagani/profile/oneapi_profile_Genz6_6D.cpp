@@ -5,9 +5,11 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 
+//i had initially forgotten the SYCL_EXTERNAL
+
 class GENZ_6_6D {
 	 public:
-	double
+	SYCL_EXTERNAL double
 	operator()(double u, double v, double w, double x, double y, double z)
 	{
 		if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)

@@ -1,11 +1,13 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
 
-class GENZ_2_6D {
+class F_2_6D {
   public:
     __host__ __device__ double
     operator()(double x, double y, double z, double k, double l, double m)
     {
+		//	return x + y + z + k + l + m;
+
         const double a = 50.;
         const double b = .5;
 
@@ -40,7 +42,7 @@ main(int argc, char** argv)
   double highs[] = {1., 1., 1., 1., 1., 1.};
   quad::Volume<double, ndim> volume(lows, highs);
   
-  GENZ_2_6D integrand;
+  F_2_6D integrand;
   std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
    
   size_t run = 0;
@@ -48,7 +50,7 @@ main(int argc, char** argv)
   for(auto num_samples : required_ncall){
     params.ncall = num_samples;
     
-	signle_invocation_time_and_call<GENZ_2_6D, ndim>(
+	signle_invocation_time_and_call<F_2_6D, ndim>(
         integrand, epsrel, true_value, "f2, 6", params, &volume, num_repeats);
 	run++;
 	if(run > required_ncall.size())

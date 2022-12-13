@@ -1,7 +1,7 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 
-class GENZ_6_6D {
+class F_6_6D {
 public:
   __device__ __host__ double
   operator()(double u, double v, double w, double x, double y, double z)
@@ -18,8 +18,8 @@ main(int argc, char** argv)
 {
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 100;
   constexpr int ndim = 6;
-  GENZ_6_6D integrand;
+  F_6_6D integrand;
   quad::Volume<double, ndim> vol;
-  call_cubature_rules<GENZ_6_6D, ndim>(integrand, vol, num_repeats);
+  call_cubature_rules<F_6_6D, ndim>(integrand, vol, num_repeats);
   return 0;
 }

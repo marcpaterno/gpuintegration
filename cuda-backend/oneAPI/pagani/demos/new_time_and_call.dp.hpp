@@ -11,6 +11,8 @@
 #include <iostream>
 #include <iomanip>
 #include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include <limits>
+
 
 template<typename T>
 void host_print_dev_array(T* dev, size_t size, std::string label){
@@ -24,6 +26,57 @@ void host_print_dev_array(T* dev, size_t size, std::string label){
 
 template <typename F, int ndim>
 void
+call_cubature_rules(int num_repeats = 11){
+	F integrand;
+	quad::Volume<double, ndim> vol;
+	F* d_integrand = make_gpu_integrand<F>(integrand);
+	
+	for(int i=0; i < num_repeats; ++i){
+		for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15; splits_per_dim++){
+			
+			Sub_regions<ndim> sub_regions(splits_per_dim);
+			size_t num_regions = sub_regions.size;
+			
+		  if(num_regions >= 35e6 || num_regions*64/INT_MAX >= 1.)
+				break;
+			
+			Region_characteristics<ndim> characteristics(sub_regions.size);
+			Region_estimates<ndim> estimates(sub_regions.size);
+			
+			Cubature_rules<ndim> rules;
+			rules.set_device_volume(vol.lows, vol.highs);
+			
+			std::cout<<"launching with "<<  num_regions << std::endl;
+			
+			int iteration = 0;
+			bool compute_relerr_error_reduction = false;
+			cuhreResult<double> iter = rules.template apply_cubature_integration_rules<F>(d_integrand, iteration, &sub_regions, &estimates, &characteristics, compute_relerr_error_reduction);
+
+			//double* host_ests = new double[sub_regions.size];
+			//cuda_memcpy_to_host<double>(host_ests, estimates.integral_estimates, num_regions);
+
+			//for(int i=0; i < num_regions; ++i)
+			//  std::cout<<"region "<< i <<"\t"<<host_ests[i]<<std::endl;
+			double estimate = custom_reduce<double>(estimates.integral_estimates, num_regions);
+			//double errorest = reduction<double>(estimates.error_estimates, num_regions);
+			
+			//host_print_dev_array(estimates.integral_estimates, num_regions, "regest");
+			
+			std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << estimate << "," << num_regions << std::endl;
+			//sub_regions.print_bounds();
+			//dpct::device_ext& dev_ct1 = dpct::get_current_device();
+			//sycl::queue& q_ct1 = dev_ct1.default_queue();
+			
+		}
+		std::cout<<"All splits done for run:"<<i<<std::endl;
+	}
+	
+	auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+	sycl::free(d_integrand, q_ct1);
+}	
+
+template <typename F, int ndim>
+void
 call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol, int num_repeats = 11){
 	
 	for(int i=0; i < num_repeats; ++i){
@@ -32,7 +85,7 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>&  vol, int num_repea
 			Sub_regions<ndim> sub_regions(splits_per_dim);
 			size_t num_regions = sub_regions.size;
 			
-			if(num_regions >= 43e6)
+		  if(num_regions >= 35e6 || num_regions*64/INT_MAX >= 1.)
 				break;
 			
 			Region_characteristics<ndim> characteristics(sub_regions.size);
@@ -147,5 +200,79 @@ print_header()
   std::cout << "id, ndim, integral, epsrel, epsabs, estimate, errorest, "
                "nregions, status, time\n";
 }
+
+template<typename F, int ndim>
+double execute_integrand(std::array<double, ndim> point, size_t num_invocations){
+	const size_t num_blocks = 1024;
+	const size_t num_threads = 64;
+	
+	F integrand;  
+	F* d_integrand = quad::cuda_copy_to_managed(integrand);
+	
+	double* d_point = cuda_malloc<double>(point.size());
+	cuda_memcpy_to_device(d_point, point.data(), point.size());
+	
+	double* output = cuda_malloc<double>(num_threads*num_blocks);
+	
+	//kernel<F><<<num_blocks, num_threads>>>(d_integrand, d_point, output, num_invocations);
+	//cudaDeviceSynchronize();
+	auto q = 	sycl::queue(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
+	
+	for(int i = 0; i < 10; ++i){
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
+	
+	
+		cgh.parallel_for(
+			   sycl::nd_range(sycl::range(num_blocks*num_threads) , sycl::range(num_threads)),
+			   [=](sycl::nd_item<1> item_ct1)
+			   [[intel::reqd_sub_group_size(32)]] {
+			   		   
+			size_t tid = item_ct1.get_local_id(0) + item_ct1.get_local_range().get(0) * item_ct1.get_group(0);
+			double total = 0.;
+			gpu::cudaArray<double, ndim> point;
+			
+			double start_val = .01;
+			#pragma unroll 1
+			for(int i=0; i < ndim; ++i){
+				point[i] = start_val * (i + 1); 
+				//point[i] = d_point[i];
+			}
+			
+			#pragma unroll 1
+			for(int i=0; i < num_invocations; ++i){
+		
+				//double res = point[0] / point[1] / point[2] / point[3] / point[4] / point[5] / point[6] / point[7];
+				//double res = d_integrand->operator()(point[0], point[1], point[2], point[3], point[4], point[5], point[6], point[7]);
+				double res = gpu::apply(*d_integrand, point);
+				total += res;
+			}
+			output[tid] = total;
+			     
+		});
+    });
+	
+	q.wait();
+	
+	double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
+		     e.template get_profiling_info<sycl::info::event_profiling::command_start>());
+	std::cout<<"time:"<<time/1.e6 << std::endl;
+	}	
+	std::cout<<"time---------\n";
+	std::vector<double> host_output;
+	host_output.resize(num_threads*num_blocks);
+	//std::cout<<"vector size:"<<host_output.size()<<std::endl;
+	cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
+	
+	double sum = 0.;
+	for(int i=0; i < num_threads*num_blocks; ++i)
+		sum += host_output[i];
+	
+	sycl::free(output, q);
+	sycl::free(d_integrand, q);
+	sycl::free(d_point, q);
+	return sum;
+}
+
+
 
 #endif
