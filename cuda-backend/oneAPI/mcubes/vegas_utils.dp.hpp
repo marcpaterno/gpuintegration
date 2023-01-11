@@ -27,7 +27,8 @@ public:
   {
     temp = a * custom_seed + c;
     custom_seed = temp & (p - 1);
-    return (double)custom_seed / (double)p;
+	//return (double)custom_seed / (double)p;
+    return static_cast<double>(custom_seed) / static_cast<double>(p);
   }
 
   void
