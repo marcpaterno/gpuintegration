@@ -126,8 +126,6 @@ namespace cuda_mcubes {
 
     if (wid == 0) {
       val = warpReduceSum(val); // Final reduce within first warp
-      // printf("[%i] final reduction for block warp %i reduction:%.15e\n",
-      // blockIdx.x, threadIdx.x, val);
     }
     __syncthreads(); // added by Ioannis due to cuda-memcheck racecheck
                      // reporting race between read/write
@@ -138,7 +136,7 @@ namespace cuda_mcubes {
   get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
   {
     // called like :    get_indx(m * chunkSize, &kg[1], ndim, ng);
-    uint32_t dp[/*Internal_Vegas_Params::get_MXDIM()*/ 20];
+    uint32_t dp[Internal_Vegas_Params::get_MXDIM()];
     uint32_t j, t0, t1;
     uint32_t m = ms;
     dp[0] = 1;
@@ -147,7 +145,7 @@ namespace cuda_mcubes {
     for (j = 0; j < ND - 2; j++) {
       dp[j + 2] = dp[j + 1] * NINTV;
     }
-
+	
     for (j = 0; j < ND; j++) {
       t0 = dp[ND - j - 1];
       t1 = m / t0;
@@ -199,15 +197,10 @@ namespace cuda_mcubes {
                        uint32_t cube_id,
                        double* randoms = nullptr)
   {
-    constexpr int ndmx = 500;  // Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
-    /*
-        input:
-            dim: dimension being processed
-            integer kg array that holds the interval being processed
-            xi: right boundary coordinate of each bin
-    */
-	#pragma unroll ndim
+    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
+	
+	#pragma unroll ndim  // unroll needed
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
@@ -221,7 +214,8 @@ namespace cuda_mcubes {
       //      //randoms[index] = ran00;
       //  }
       // }
-
+	
+	  
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
@@ -270,10 +264,10 @@ namespace cuda_mcubes {
                       double* randoms = nullptr,
                       double* funcevals = nullptr)
   {
-    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
-
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+	
     for (int k = 1; k <= npg; k++) {
-
+	  
       double wgt = xjac;
       Setup_Integrand_Eval<ndim, DEBUG_MCUBES, GeneratorType>(
         rand_num_generator,
@@ -292,17 +286,17 @@ namespace cuda_mcubes {
         randoms);
 
       gpu::cudaArray<double, ndim> xx;
+	  #pragma unroll ndim //unroll needed
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
 
-	  double tmp = 0.1;
-	  if(xx[0] >= 0.){
-		  //for(int i =0; i < 100; ++i)
+	  double tmp = 0.;
       /*const double*/ tmp += gpu::apply(*d_integrand, xx);
-	  }
+	  
 	  const double f = wgt * tmp;
 
+      // if constexpr(DEBUG_MCUBES){
       // if constexpr(DEBUG_MCUBES){
       //     if(funcevals != nullptr){
       //         size_t nums_evals_per_cube = npg;
@@ -314,11 +308,13 @@ namespace cuda_mcubes {
       double f2 = f * f;
       fb += f;
       f2b += f2;
-
-      for (int j = 1; j <= ndim; j++) {
-        // d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
-        atomicAdd(&d[ia[j] * mxdim_p1 + j], f2);
-      }
+	  
+	  for (int j = 1; j <= ndim; j++) {
+		const int index = ia[j] * mxdim_p1 + j;
+		// d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
+		atomicAdd(&d[index], f2);
+	  }
+	  
     }
   }
 
@@ -350,7 +346,7 @@ namespace cuda_mcubes {
                  double* randoms = nullptr,
                  double* funcevals = nullptr)
   {
-
+	
     for (int t = 0; t < chunkSize; t++) {
       double fb = 0.,
              f2b = 0.0; // init to zero for each interval processed by thread
@@ -364,7 +360,7 @@ namespace cuda_mcubes {
                       is_custom_generator()) {
         rand_num_generator->SetSeed(cube_id);
       }
-
+	
       Process_npg_samples<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
         d_integrand,
         npg,
@@ -397,7 +393,7 @@ namespace cuda_mcubes {
 	  
       fbg += fb;
       f2bg += f2b;
-
+		
       for (int k = ndim; k >= 1; k--) {
         kg[k] %= ng;
 
@@ -435,7 +431,7 @@ namespace cuda_mcubes {
                double* randoms = nullptr,
                double* funcevals = nullptr)
   {
-    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
     uint32_t tx = threadIdx.x;
     double wgt;
@@ -445,7 +441,7 @@ namespace cuda_mcubes {
     double fbg = 0., f2bg = 0.;
 
     if (m < totalNumThreads) {
-
+		
       size_t cube_id_offset =
         (blockIdx.x * blockDim.x + threadIdx.x) * chunkSize;
 
@@ -486,10 +482,11 @@ namespace cuda_mcubes {
     f2bg = blockReduceSum(f2bg);
 	
     if (tx == 0) {
-       result_dev[0] += fbg;
-       result_dev[1] += f2bg;
-      //atomicAdd(&result_dev[0], fbg);
-      //atomicAdd(&result_dev[1], f2bg);
+       //result_dev[0] += fbg;
+       //result_dev[1] += f2bg;
+      
+	  atomicAdd(&result_dev[0], fbg);
+      atomicAdd(&result_dev[1], f2bg);
     }
     // end of subcube if
   }

@@ -164,7 +164,7 @@ namespace cuda_mcubes {
     uint32_t m = ms;
     dp[0] = 1;
     dp[1] = NINTV;
-
+	
     for (j = 0; j < ND - 2; j++) {
       dp[j + 2] = dp[j + 1] * NINTV;
     }
@@ -218,10 +218,9 @@ namespace cuda_mcubes {
                        uint32_t cube_id,
                        double* randoms = nullptr)
   {
-    constexpr int ndmx = 500/*Internal_Vegas_Params::get_NDMX()*/;
-    constexpr int ndmx1 = 501;//Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
 	
-	//optimizer was not using the unroll here and this was causing a slowdown on high dimensional integrands
 	#pragma unroll ndim
     for (int j = 1; j <= ndim; j++) {
 
@@ -254,7 +253,7 @@ namespace cuda_mcubes {
 	
 	
       x[j] = regn[j] + rc * (dx[j]);
-      wgt *= xo * xnd; // xnd is number of bins, xo is the length of the bin,
+      wgt *= xo* xnd; // xnd is number of bins, xo is the length of the bin,
                        // xjac is 1/num_calls
     }
   }
@@ -280,7 +279,7 @@ namespace cuda_mcubes {
                       double& f2b,
                       uint32_t cube_id)
   {
-    constexpr int mxdim_p1 = 21/*Internal_Vegas_Params::get_MXDIM_p1()*/;
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
     for (int k = 1; k <= npg; k++) {
 
@@ -301,12 +300,12 @@ namespace cuda_mcubes {
         cube_id);
 	  
       gpu::cudaArray<double, ndim> xx;
+	  #pragma unroll ndim
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
 
 	  double tmp = 0.;
-	  if(xx[0] >= 0.)
       /*const double*/ tmp = gpu::apply(*d_integrand, xx);
       const double f = wgt * tmp;
 
@@ -321,16 +320,20 @@ namespace cuda_mcubes {
       double f2 = f * f;
       fb += f;
       f2b += f2;
+	  
 
-      for (int j = 1; j <= ndim; j++) {
-		//d[ia[j] * mxdim_p1 + j] += f2;
-		auto v = sycl::atomic_ref<double, 
-			sycl::memory_order::relaxed, 
-			sycl::memory_scope::device,
-			sycl::access::address_space::global_space>(d[ia[j] * mxdim_p1 + j]);
-		v += f2;
+	  #pragma unroll ndim
+	  for (int j = 1; j <= ndim; j++) {
+			//d[ia[j] * mxdim_p1 + j] += f2;
+			const int index = ia[j] * mxdim_p1 + j;
+			auto v = sycl::atomic_ref<double, 
+				sycl::memory_order::relaxed, 
+				sycl::memory_scope::device,
+				sycl::access::address_space::global_space>(d[index]);
+			v += f2;
 
-      }
+	  }
+	  
     }
   }
 
@@ -390,8 +393,8 @@ namespace cuda_mcubes {
         fb,
         f2b,
         cube_id);
-
-      f2b = sycl::sqrt(f2b * npg);
+      
+	  f2b = sycl::sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb);
 
       if (f2b <= 0.0) {
@@ -400,7 +403,8 @@ namespace cuda_mcubes {
 
       fbg += fb;
       f2bg += f2b;
-
+	
+	 
       for (int k = ndim; k >= 1; k--) {
         kg[k] %= ng;
 
@@ -436,7 +440,7 @@ namespace cuda_mcubes {
                sycl::nd_item<1> item_ct1,
                double *shared)
   {
-    constexpr int mxdim_p1 = 21;//Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
                  item_ct1.get_local_id(0);
     uint32_t tx = item_ct1.get_local_id(0);
@@ -485,8 +489,8 @@ namespace cuda_mcubes {
     // testing if synch is needed
 	
     item_ct1.barrier(sycl::access::fence_space::local_space);
-    fbg = reduce_over_group(item_ct1.get_group(), fbg, sycl::plus<>());/*blockReduceSum(fbg, item_ct1, shared)*/;
-    f2bg = reduce_over_group(item_ct1.get_group(), f2bg, sycl::plus<>());/*blockReduceSum(f2bg, item_ct1, shared)*/;
+    fbg = /*reduce_over_group(item_ct1.get_group(), fbg, sycl::plus<>());*/blockReduceSum(fbg, item_ct1, shared);
+    f2bg = /*reduce_over_group(item_ct1.get_group(), f2bg, sycl::plus<>());*/blockReduceSum(f2bg, item_ct1, shared);
 
     if (tx == 0) {
 		//result_dev[0] += fbg;
@@ -624,6 +628,7 @@ namespace cuda_mcubes {
     f2bg = blockReduceSum(f2bg, item_ct1, shared);
 
     if (tx == 0) {
+	  
       // printf("Block %i done\n", blockIdx.x);
       auto v = sycl::atomic_ref<double, 
 			sycl::memory_order::relaxed, 
@@ -637,6 +642,7 @@ namespace cuda_mcubes {
 	  v2 += f2bg;
       //dpct::atomic_fetch_add(&result_dev[0], fbg);
       //dpct::atomic_fetch_add(&result_dev[1], f2bg);
+	  
     }
 
     // end of subcube if
@@ -701,8 +707,8 @@ void ShowDevice(sycl::queue &q) {
         int skip,
         quad::Volume<double, ndim> const* vol)
   {
-  double total_time = 0.;
-  sycl::queue q_ct1(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
+	double total_time = 0.;
+	sycl::queue q_ct1(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
 	ShowDevice(q_ct1);
   //Display Device Name
     // Mcubes_state mcubes_state(ncall, ndim);
@@ -849,6 +855,7 @@ void ShowDevice(sycl::queue &q) {
 
       using MilliSeconds =
         std::chrono::duration<double, std::chrono::milliseconds::period>;
+	  std::cout<< "\tfevals:"<<ncubes*2<<std::endl;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
