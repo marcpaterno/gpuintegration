@@ -154,8 +154,23 @@ public:
                double s)
   {
 	//return x / y / z / w / v / u / t / s;
-  
+  //return 1.;
+    //return x + y + z + w + v + u + t + s;/*
+	
 	const double a = 50.;
+    const double b = .5;
+    const double term_1 = 1. / ((1. / (a*a)) + ((x - b)*(x - b)));
+    const double term_2 = 1. / ((1. / (a*a)) + ((y - b)*(y - b)));
+    const double term_3 = 1. / ((1. / (a*a)) + ((z - b)*(z - b)));
+    const double term_4 = 1. / ((1. / (a*a)) + ((w - b)*(w - b)));
+    const double term_5 = 1. / ((1. / (a*a)) + ((v - b)*(v - b)));
+    const double term_6 = 1. / ((1. / (a*a)) + ((u - b)*(u - b)));
+	const double term_7 = 1. / ((1. / (a*a)) + ((t - b)*(t - b)));
+	const double term_8 = 1. / ((1. / (a*a)) + ((s - b)*(s - b)));
+
+    double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
+    return val;
+	/*const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
     const double term_2 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(y - b, 2.));
@@ -167,7 +182,8 @@ public:
 	const double term_8 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(s - b, 2.));
 
     double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
-    return val;
+    return val;*/
+	
   }
 };
 
@@ -582,6 +598,69 @@ public:
       return 0.;
     else
       return sycl::exp(9. * y + 8. * x + 7. * w + 6. * v + 5. * u);
+  }
+};
+
+class BoxIntegral8_15 {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+
+    double s = 15;
+    double sum = 0;
+    sum = sycl::pow(x, 2.) + sycl::pow(y, 2.) + sycl::pow(z, 2.) + sycl::pow(k, 2.) + sycl::pow(l, 2.) +
+          sycl::pow(m, 2.) + sycl::pow(n, 2.) + sycl::pow(o, 2.);
+    return sycl::pow(sum, s / 2.);
+  }
+};
+
+class BoxIntegral8_22 {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+    double s = 22.;
+    double sum = 0;
+    sum = sycl::pow(x, 2.) + sycl::pow(y, 2.) + sycl::pow(z, 2.) + sycl::pow(k, 2.) + sycl::pow(l, 2.) +
+          sycl::pow(m, 2.) + sycl::pow(n, 2.) + sycl::pow(o, 2.);
+    double exponent = s/2.;
+	return sycl::powr(sum, exponent);
+  }
+};
+
+class BoxIntegral8_25 {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double o)
+  {
+
+    double s = 25;
+    double sum = 0;
+    sum = sycl::pow(x, 2.) + sycl::pow(y, 2.) + sycl::pow(z, 2.) + sycl::pow(k, 2.) + sycl::pow(l, 2.) +
+          sycl::pow(m, 2.) + sycl::pow(n, 2.) + sycl::pow(o, 2.);
+    return sycl::pow(sum, s / 2.);
   }
 };
 
