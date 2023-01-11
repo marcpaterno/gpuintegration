@@ -4,8 +4,9 @@
 //#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
+#include "oneAPI/integrands.hpp"
 
-class GENZ_2_6D {
+/*class GENZ_2_6D {
   public:
     SYCL_EXTERNAL double
     operator()(double x, double y, double z, double k, double l, double m)
@@ -23,16 +24,16 @@ class GENZ_2_6D {
         double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
         return val;
     }
-};
+};*/
 
 int
 main(int argc, char** argv)
 {
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
-    constexpr int ndim = 6;
-    GENZ_2_6D integrand;
+    constexpr int ndim = 8;
+    F_2_8D integrand;
 	quad::Volume<double, ndim> vol;
-	call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol, num_repeats);
+	call_cubature_rules<F_2_8D, ndim>(integrand, vol, num_repeats);
     return 0;
 }
 
