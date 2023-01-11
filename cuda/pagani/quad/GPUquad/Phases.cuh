@@ -329,6 +329,7 @@ namespace quad {
       vol = 1.;
       T maxRange = 0;
 
+	  #pragma unroll NDIM
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
