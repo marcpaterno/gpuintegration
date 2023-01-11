@@ -43,3 +43,7 @@ add_executable(min_max min_max.cpp)
 #target_link_libraries(min_max PRIVATE MKL::MKL_DPCPP)
 target_compile_options(min_max PRIVATE "-fsycl" "-fsycl-targets=nvptx64-nvidia-cuda" "-lonemkl" "-ltbb" "-mllvm" "-inline-threshold=10000")
 add_test(min_max min_max)
+
+add_executable(StatefulIntegrand StatefulIntegrand.dp.cpp)
+target_compile_options(StatefulIntegrand PRIVATE "-fsycl" "-fsycl-targets=nvptx64-nvidia-cuda" "-lonemkl" "-ltbb" "-mllvm" "-inline-threshold=10000")
+add_test(StatefulIntegrand StatefulIntegrand)

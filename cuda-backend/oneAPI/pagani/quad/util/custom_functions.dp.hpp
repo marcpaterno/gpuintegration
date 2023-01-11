@@ -2,7 +2,7 @@
 #define QUAD_UTIL_CUDA_CUSTOM_FUNCTIONS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaDebugUtil.h"
@@ -119,7 +119,7 @@ device_custom_reduce_atomics(T* arr, size_t size, T* out,
     const int warpSize = 32;
         if ((item_ct1.get_local_id(2) & (warpSize - 1)) == 0) {
                 
-	  //dpct::atomic_fetch_add(out, sum);
+	  dpct::atomic_fetch_add(out, sum);
         }
 }
 
@@ -313,7 +313,6 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
     if (item_ct1.get_local_id(2) == 0) {
         max[item_ct1.get_group(2)] = localMax;
                 min[item_ct1.get_group(2)] = localMin;
-                //printf("block reduction stage [%i] :%f,%f\n", blockIdx.x, localMax, localMin);
     }
 }
 

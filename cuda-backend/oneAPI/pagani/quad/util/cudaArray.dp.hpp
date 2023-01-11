@@ -5,6 +5,7 @@
 //#include <dpct/dpct.hpp>
 #include <cstring>
 #include "oneAPI/pagani/quad/quad.h"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
 namespace gpu {
   template <typename T, std::size_t s>
@@ -54,16 +55,17 @@ namespace gpu {
   public:
     
     cudaDynamicArray(const cudaDynamicArray& a){
-#ifndef DPCT_COMPATIBILITY_TEMP
+	//#ifndef DPCT_COMPATIBILITY_TEMP
             N = a.N;
-            cudaMallocManaged((void**)&data, sizeof(T) * a.N);
-            memcpy(data, a.data, sizeof(T) * a.N);
-        #else
+            //cudaMallocManaged((void**)&data, sizeof(T) * a.N);
+            &data = quad::cuda_malloc_managed<T>(a.N);
+			memcpy(data, a.data, sizeof(T) * a.N);
+       /* #else
             //can't instantiate on device and then access on host
             N = a.N;
             data = new T[a.N];
-            memcpy(data, a.data, sizeof(T) * a.N);
-        #endif
+            memcpy(data, a.data, sizeof(T) * a.N);*/
+        //#endif
     }
     
     

@@ -11,8 +11,7 @@
 
 
 TEST_CASE("Custom Reduction with Atomics"){
-	  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-      sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	auto init_vector_and_compute_sum = [=](std::vector<double>& arr, double& val, size_t size){
 		arr.resize(size);
 		std::iota(arr.begin(), arr.end(), val);
@@ -62,8 +61,7 @@ TEST_CASE("Custom Reduction with Atomics"){
 }
 
 TEST_CASE("Custom Reduction with Atomics - Common Inteface with Thrust"){
-	dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	auto init_vector_and_compute_sum = [=](std::vector<double>& arr, double& val, size_t size){
 		arr.resize(size);
 		std::iota(arr.begin(), arr.end(), val);

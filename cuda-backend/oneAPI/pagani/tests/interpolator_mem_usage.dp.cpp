@@ -2,7 +2,7 @@
 #include <oneapi/dpl/async>
 #define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
 #include <numeric>
 #include <vector>
@@ -101,8 +101,7 @@ Evaluate_test_obj(F* f, double* results)
 
 int
 main() {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());;
   constexpr size_t s = 100000;
   std::vector<double> xs_1D(s);
   std::vector<double> ys_1D(s);

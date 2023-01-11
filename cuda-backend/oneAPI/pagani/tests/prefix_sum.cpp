@@ -10,10 +10,9 @@
 #include "oneAPI/pagani/quad/util/custom_functions.dp.hpp"
 
 
-TEST_CASE("Exclusvie scan of array of size 8")
+TEST_CASE("Exclusive scan of array of size 8")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 8;
 	std::array<int, size> arr = {3, 1, 7, 0, 4, 1, 6, 3};
 	std::array<int, size> true_results = {0, 3, 4, 11, 11, 15, 16, 22};
@@ -54,10 +53,9 @@ TEST_CASE("Exclusvie scan of array of size 8")
 }
 
 
-TEST_CASE("Exclusvie scan of array of non-power-two size")
+TEST_CASE("Exclusive scan of array of non-power-two size")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 10000;
 	std::array<int, size> arr;
 	std::iota(arr.begin(), arr.end(), 1.);
@@ -89,8 +87,7 @@ TEST_CASE("Exclusvie scan of array of non-power-two size")
 
 TEST_CASE("Exclusvie scan of array of odd size")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 10001;
 	std::array<int, size> arr;
 	std::iota(arr.begin(), arr.end(), 1.);
@@ -122,8 +119,7 @@ TEST_CASE("Exclusvie scan of array of odd size")
 
 TEST_CASE("Exclusvie scan of array of size 8 double type")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 8;
 	std::array<double, size> arr = {3., 1., 7., 0., 4., 1., 6., 3.};
 	std::array<double, size> true_results = {0., 3., 4., 11., 11., 15., 16., 22.};

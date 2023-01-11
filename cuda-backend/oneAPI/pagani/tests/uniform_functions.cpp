@@ -4,7 +4,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
 #include <string>
@@ -26,7 +26,7 @@
 
 class PTest {
 public:
-  double
+  SYCL_EXTERNAL double
   operator()(double x, double y)
   { double res = 15.37;
     return res;
@@ -35,7 +35,7 @@ public:
 
 class NTest {
 public:
-  double
+  SYCL_EXTERNAL double
   operator()(double x, double y)
   {
     double res = -15.37;
@@ -55,11 +55,7 @@ public:
 
 
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
-#include <chrono>
-#include <cmath>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
+
 
 
 using namespace quad;
@@ -76,7 +72,26 @@ namespace detail {
 }
 
 
-TEST_CASE("Constant Positive Value Function")
+TEST_CASE("Positive Value Function")
+{
+  constexpr int ndim = 2;
+  size_t numRegions = 16;
+  PTest integrand;
+  size_t maxIters = 1;
+  int heuristicID = 0;
+  double epsrel = 1.0e-3;
+  double epsabs = 1.0e-12;
+  Workspace<ndim> pagani;
+  quad::Volume<double, ndim> vol;
+  constexpr bool debug = false;
+  cuhreResult res = pagani.integrate<PTest, debug>(integrand, epsrel, epsabs, vol);
+    
+  double integral = res.estimate;
+  double error = res.errorest;
+  CHECK(Approx(15.37) == integral);
+}
+
+TEST_CASE("Negative Value Function")
 {
   constexpr int ndim = 2;
   size_t numRegions = 16;
@@ -92,13 +107,11 @@ TEST_CASE("Constant Positive Value Function")
     
   double integral = res.estimate;
   double error = res.errorest;
-
-  // returns are never precisely equal to 0. and 15.37
   CHECK(Approx(-15.37) == integral);
 }
 
 
- TEST_CASE("Constant Positive Value Function2")
+ TEST_CASE("Zero Value Function2")
 {
   constexpr int ndim = 2;
   size_t numRegions = 16;
@@ -115,8 +128,5 @@ TEST_CASE("Constant Positive Value Function")
 
   double integral = res.estimate;
   double error = res.errorest;
-
-  // returns are never precisely equal to 0. and 15.37
-  printf("ttotalEstimate:%.15f\n", integral);
   CHECK(Approx(0.) == 0.);
 }

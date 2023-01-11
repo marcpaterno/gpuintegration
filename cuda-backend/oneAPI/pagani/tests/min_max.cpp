@@ -20,8 +20,7 @@ make_gpu_arr(std::array<T, size> arr){
 
 TEST_CASE("Half Block")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 512;
 	std::array<double, size> arr;
 	std::fill(arr.begin(), arr.end(), 3.9);
@@ -90,8 +89,7 @@ TEST_CASE("Half Block")
 
 TEST_CASE("Full Block")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 1024;
 	std::array<double, size> arr;
 	std::fill(arr.begin(), arr.end(), 3.9);
@@ -163,8 +161,7 @@ TEST_CASE("Full Block")
 
 TEST_CASE("Two Full Blocks")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 2048;
 	std::array<double, size> arr;
 	std::fill(arr.begin(), arr.end(), 3.9);
@@ -237,8 +234,7 @@ TEST_CASE("Two Full Blocks")
 
 TEST_CASE("Misaligned Partial Block")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 1000;
 	std::array<double, size> arr;
 	std::fill(arr.begin(), arr.end(), 3.9);
@@ -308,8 +304,7 @@ TEST_CASE("Misaligned Partial Block")
 
 TEST_CASE("Misaligned Partial Block with multiple block launches")
 {
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());;
 	constexpr size_t size = 2052;
 	std::array<double, size> arr;
 	std::fill(arr.begin(), arr.end(), 3.9);
