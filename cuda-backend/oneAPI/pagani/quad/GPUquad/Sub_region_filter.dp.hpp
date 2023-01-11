@@ -2,7 +2,7 @@
 #define SUB_REGION_FILTER_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
 #include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"

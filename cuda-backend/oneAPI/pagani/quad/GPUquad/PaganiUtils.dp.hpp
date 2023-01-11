@@ -278,9 +278,6 @@ class Cubature_rules{
       double epsrel = 1.e-3, epsabs = 1.e-12;
         
       //temp addition
-
-		
-		
       quad::Func_Evals<ndim> dfevals;
       quad::Func_Evals<ndim>* hfevals;
         
@@ -383,8 +380,8 @@ class Cubature_rules{
       total_time += time;
       print_verbose<debug>(generators, dfevals, subregion_estimates);
       cuhreResult<double> res;
-      //res.estimate = reduction<double, use_custom>(subregion_estimates->integral_estimates, num_regions);
-      //res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates->error_estimates, num_regions) : std::numeric_limits<double>::infinity(); 
+      res.estimate = reduction<double, use_custom>(subregion_estimates->integral_estimates, num_regions);
+      res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates->error_estimates, num_regions) : std::numeric_limits<double>::infinity(); 
       return res;
     }
            
