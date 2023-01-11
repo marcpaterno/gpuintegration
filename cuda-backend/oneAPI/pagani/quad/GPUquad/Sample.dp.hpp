@@ -140,17 +140,17 @@ namespace quad {
                      quad::Func_Evals<NDIM>& fevals)
   {
     gpu::cudaArray<T, NDIM> x;
+	
+	
     #pragma unroll NDIM
 	for (int dim = 0; dim < NDIM; ++dim) {
-      
       const T generator =
         generators[CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex];
 	  x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                             (.5 - generator) * b[dim].upper) *
                                              range[dim];
     }
-	//double fun = 0.1;
-	//if(x[0] < 0.)
+
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
     sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
                                            

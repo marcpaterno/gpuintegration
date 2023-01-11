@@ -129,10 +129,6 @@ namespace quad {
                                              range[dim];
     }
 	
-	//double fun = 0.1;
-    //if(x[0] < 0.)
-	
-	//	printf("invoking\n");
 	const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
 	
     sdata[threadIdx.x] = fun; // target for reduction
@@ -146,8 +142,8 @@ namespace quad {
         .store(gpu::apply(*d_integrand, x), pIndex);
     }
 
-#pragma unroll 5
-  for (int rul = 0; rul < NRULES; ++rul) {
+	#pragma unroll 5
+	for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
     }
 	

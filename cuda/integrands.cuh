@@ -139,7 +139,6 @@ public:
   }
 };
 
-
 class F_2_8D {
 public:
   __device__ __host__ double
@@ -152,9 +151,8 @@ public:
                double t,
                double s)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	const double a = 50.;
+   
+    const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
     const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
@@ -162,8 +160,8 @@ public:
     const double term_4 = 1. / ((1. / pow(a, 2.)) + pow(w - b, 2.));
     const double term_5 = 1. / ((1. / pow(a, 2.)) + pow(v - b, 2.));
     const double term_6 = 1. / ((1. / pow(a, 2.)) + pow(u - b, 2.));
-	const double term_7 = 1. / ((1. / pow(a, 2.)) + pow(t - b, 2.));
-	const double term_8 = 1. / ((1. / pow(a, 2.)) + pow(s - b, 2.));
+    const double term_7 = 1. / ((1. / pow(a, 2.)) + pow(t - b, 2.));
+    const double term_8 = 1. / ((1. / pow(a, 2.)) + pow(s - b, 2.));
 
     double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
     return val;
@@ -182,8 +180,6 @@ public:
                double t,
                double s)
   {
-	//return x / y / z / w / v / u / t / s;
-  
 	return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
   }
 };

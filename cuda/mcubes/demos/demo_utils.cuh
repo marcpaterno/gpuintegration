@@ -271,7 +271,6 @@ void call_mcubes_kernel(int num_repeats){
 	quad::Volume<double, ndim> volume;
 	size_t run = 0;
 	double epsrel = 1.e-3;
-	double epsabs = 1.e-12;
 	double true_value = 0.;
 	for(auto num_samples : required_ncall){
 		params.ncall = num_samples;
