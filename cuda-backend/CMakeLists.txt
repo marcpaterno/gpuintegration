@@ -7,12 +7,13 @@ enable_testing()
 #SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-math-errno -mtune=native" )
 SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsycl-fp32-prec-sqrt" )
 
+
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 # Turn on compiler warnings
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
-include_directories(AFTER ${EXTERNALS_DIR} ${TOP_DIR} "/opt/intel/compiler/2022.0.2/linux/include/sycl" "/home/u133027/numint/dpct/oneAPI/Catch2/src/catch2")
+include_directories(AFTER ${EXTERNALS_DIR} ${TOP_DIR} ${DPL_DIR}"/opt/intel/compiler/2022.0.2/linux/include/sycl" "/home/u133027/numint/dpct/oneAPI/Catch2/src/catch2" ${DPCT_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,6 +23,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
 #find_package(IntelDPCPP REQUIRED)
 #find_package(TBB REQUIRED)
-#find_package(MKL REQUIRED)
+find_package(MKL REQUIRED)
 
 add_subdirectory(oneAPI)
