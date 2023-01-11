@@ -5,7 +5,7 @@
 //#include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/demo_utils.dp.hpp"
 #include "oneAPI/mcubes/vegasT.dp.hpp"
-#inluce "oneaAPI/integrands.hpp"
+#include "oneAPI/integrands.hpp"
 
 int
 main(int argc, char** argv)
