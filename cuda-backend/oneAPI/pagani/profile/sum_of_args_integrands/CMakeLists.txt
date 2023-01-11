@@ -10,3 +10,7 @@ target_compile_options(oneapi_profile_pagani_kernel_f_3D PRIVATE "-mllvm" "-inli
 
 add_executable(oneapi_profile_pagani_kernel_f_8D oneapi_profile_pagani_kernel_f_8D.cpp)
 target_compile_options(oneapi_profile_pagani_kernel_f_8D PRIVATE "-mllvm" "-inline-threshold=10000")
+
+
+add_executable(execute_Addition_integrands_on_device execute_Addition_integrands_on_device.cpp)
+target_compile_options(execute_Addition_integrands_on_device PRIVATE "-mllvm" "-inline-threshold=10000")

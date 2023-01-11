@@ -5,10 +5,26 @@
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 #include <string>
-// #include <math.h>
-#include <cmath>
+// #include <math.h> //initial results were collected with math.h library
+#include <cmath> 
 
-
+class trivial_powr {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    return sycl::powr(x, 4.) + sycl::powr(y, 4.) + sycl::powr(z, 4.) +
+           sycl::powr(w, 4.) + sycl::powr(v, 4.) + sycl::powr(u, 4.) +
+           sycl::powr(t, 4.) + sycl::powr(s, 4.);
+  }
+};
 
 class trivial_pow {
 public:
@@ -16,17 +32,43 @@ public:
   operator()(double x,
              double y)
   {
-    return sycl::pow(x, 2.) + y;
+    return sycl::pow(x, 2.) + sycl::pow(y, 2.);
   }
 };
 
 class trivial_pown {
 public:
+    SYCL_EXTERNAL double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    return sycl::pown(x, 4) + sycl::pown(y, 4) + sycl::pown(z, 4) +
+           sycl::pown(w, 4) + sycl::pown(v, 4) + sycl::pown(u, 4) +
+           sycl::pown(t, 4) + sycl::pown(s, 4);
+  }
+};
+
+class sycl_pow_double_4 {
+public:
   SYCL_EXTERNAL double
   operator()(double x,
-             double y)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-    return sycl::pown(x, 2) + y;
+    return sycl::pow(x, 4.) + sycl::pow(y, 4.) + sycl::pow(z, 4.) +
+           sycl::pow(w, 4.) + sycl::pow(v, 4.) + sycl::pow(u, 4.) +
+           sycl::pow(t, 4.) + sycl::pow(s, 4.);
   }
 };
 
@@ -136,6 +178,15 @@ public:
   }
 };
 
+class sycl_cos_2D{
+public:
+  SYCL_EXTERNAL double
+    operator()(double u, double v)
+  {
+	return sycl::cos(u) - sycl::cos(v);    
+  }
+};
+
 class sycl_cos{
 public:
   SYCL_EXTERNAL double
@@ -154,50 +205,37 @@ public:
   }
 };
 
+class warmpup{
+public:
+  SYCL_EXTERNAL double
+    operator()(double u, double v, double w, double x, double y, double z, double p, double t)
+  {
+	return u + v + w + x + y + z + p + t;    
+  }	
+};
 
 int
 main(int argc, char** argv)
 {
-  size_t num_invocations = argc > 1 ? std::stoi(argv[1]) : 100000;
-  std::cout << "num_invocations:" << num_invocations << std::endl;
+  size_t num_invocs = argc > 1 ? std::stoi(argv[1]) : 100000;
+  std::cout << "num_invocs:" << num_invocs << std::endl;
   std::array<double, 8> point = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
   std::array<double, 2> point_2D = {0.1, 0.2};
 
   double sum = 0.;
 
-  // this that yield a backend error
-  // the std equivalents only work with cmath, not math.h
-  /*
-  ///this  means that there is a specialization for powf(x,2)
-   sum += execute_integrand<Powf_to_third_add_double>(point, num_invocations);
-   sum += execute_integrand<Powf_to_third_add_int>(point, num_invocations);
-   sum += execute_integrand<Expf_sub>(point, num_invocations);
-   sum += execute_integrand<Expf_add>(point, num_invocations);
-   sum += execute_integrand<Expf_div>(point, num_invocations);
-   sum += execute_integrand<Std_Pow_to_third_add_double>(point,
-  num_invocations); sum += execute_integrand<Std_Pow_to_third_add_int>(point,
-  num_invocations);
-
-   sum += execute_integrand<Std_Exp_sub>(point, num_invocations);
-   sum += execute_integrand<Std_Exp_add>(point, num_invocations);
-   sum += execute_integrand<Std_Exp_div>(point, num_invocations);
-  */
-
-  sum +=
-    execute_integrand<sycl_pow_double_3, 8>(point, num_invocations);
-  sum +=
-    execute_integrand<sycl_pow_double_2, 8>(point, num_invocations);
-  sum +=
-    execute_integrand<sycl_pow_int_3, 8>(point, num_invocations);
-
-  //sum += execute_integrand<std_pow_double_2>(point, num_invocations);
-  //sum += execute_integrand<clang_powf_double_2>(point, num_invocations);
-
-  sum += execute_integrand<sycl_exp_d, 8>(point, num_invocations);
-  sum += execute_integrand<trivial_pow, 2>(point_2D, num_invocations);
-  sum += execute_integrand<trivial_pown, 2>(point_2D, num_invocations);
-  sum += execute_integrand<sycl_cos, 8>(point, num_invocations);
-  sum += execute_integrand<sycl_sin, 8>(point, num_invocations);
+  sum += execute_integrand_at_points<warmpup, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_pow_double_4, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_pow_double_3, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_pow_double_2, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_pow_int_3, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_exp_d, 8>(num_invocs);
+  //sum += execute_integrand_at_points<trivial_pow, 2>(num_invocs);
+  //sum += execute_integrand_at_points<trivial_powr, 8>(num_invocs);
+  //sum += execute_integrand_at_points<trivial_pown, 8>(num_invocs);
+  sum += execute_integrand_at_points<sycl_cos, 8>(num_invocs);
+  sum += execute_integrand_at_points<sycl_sin, 8>(num_invocs);
+  //sum += execute_integrand_at_points<sycl_cos_2D, 2>(num_invocs);
 
 
   printf("%.15e\n", sum);

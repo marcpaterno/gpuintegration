@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <string>
 #include <limits>
+#include <stdlib.h> 
+#include <vector>
 
 template<typename T>
 void host_print_dev_array(T* dev, size_t size, std::string label){
@@ -174,21 +176,20 @@ print_header()
                "errorest, nregions, status, time\n";
 }
 
-
 template<typename F, int ndim>
 __global__ void
 execute_integrand_kernel(F* integrand, double* d_point, double* output, size_t num_invocations){
 	size_t tid = threadIdx.x + blockDim.x * blockIdx.x;
-	double total = 0.;
 	gpu::cudaArray<double, ndim> point;
 	
 	double start_val = .01;
-	#pragma unroll 1
+	#pragma unroll ndim
 	for(int i=0; i < ndim; ++i){
 		point[i] = start_val * (i + 1); 
 	}
 	
-	#pragma unroll 1
+	double total = 0.;
+	//#pragma unroll 1
 	for(int i=0; i < num_invocations; ++i){
 		
 		double res = gpu::apply(*integrand, point);
@@ -242,4 +243,79 @@ double execute_integrand(std::array<double, ndim> point, size_t num_invocations)
 	cudaFree(d_point);
 	return sum;
 }
+
+template<typename F, int ndim>
+__global__ void
+execute_integrand_kernel_at_points(F* integrand, double* points, double* output, size_t num_invocations){
+	size_t tid = threadIdx.x + blockDim.x * blockIdx.x;
+	gpu::cudaArray<double, ndim> point;
+	
+
+	double total = 0.;
+	#pragma unroll 1
+	for(int i=0; i < num_invocations; ++i){
+		
+		#pragma unroll ndim
+		for(int dim=0; dim < ndim; ++dim){
+			point[dim] = points[i*ndim + dim]; 
+		}
+		
+		double res = gpu::apply(*integrand, point);
+		total += res;
+	}
+	output[tid] = total;
+}
+
+template<typename F, int ndim>
+double execute_integrand_at_points(size_t num_invocations){
+	const size_t num_blocks = 1024;
+	const size_t num_threads = 64;
+	
+	F integrand;  
+	F* d_integrand = quad::cuda_copy_to_managed<F>(integrand);
+	
+	double* output = quad::cuda_malloc<double>(num_threads*num_blocks);
+	double* points = quad::cuda_malloc<double>(num_invocations*ndim);
+	std::vector<double> h_points;
+	srand (1);
+	
+	for(int i=0; i < num_invocations*ndim; ++i)
+		h_points.push_back(rand());
+	
+	
+	quad::cuda_memcpy_to_device<double>(points, h_points.data(), h_points.size());
+	
+	for(int i = 0; i < 10; ++i)
+	{
+		cudaEvent_t start, stop;
+		cudaEventCreate(&start);
+		cudaEventCreate(&stop);
+		cudaEventRecord(start);
+
+		execute_integrand_kernel_at_points<F, ndim><<<num_blocks, num_threads>>>(d_integrand, points, output, num_invocations);
+		cudaDeviceSynchronize();
+		cudaEventRecord(stop);
+		cudaEventSynchronize(stop);
+		float kernel_time = 0;
+		cudaEventElapsedTime(&kernel_time, start, stop);
+		std::cout<<"time:"<< kernel_time << std::endl;
+	}
+	std::cout<<"time---------\n";
+
+	std::vector<double> host_output;
+	host_output.resize(num_threads*num_blocks);
+	//std::cout<<"vector size:"<<host_output.size()<<std::endl;
+	cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
+	
+	double sum = 0.;
+	for(int i=0; i < num_threads*num_blocks; ++i)
+		sum += host_output[i];
+	
+	
+	cudaFree(output);
+	cudaFree(d_integrand);
+	cudaFree(points);
+	return sum;
+}
+
 #endif
