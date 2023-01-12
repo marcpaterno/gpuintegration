@@ -281,7 +281,7 @@ public:
 		cudaEventSynchronize(stop);
 		float kernel_time = 0;
 		cudaEventElapsedTime(&kernel_time, start, stop);
-		std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << kernel_time << std::endl;
+		//std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << kernel_time << std::endl;
 		cudaProfilerStop();
 		
 		print_verbose<debug>(generators, dfevals, subregion_estimates);

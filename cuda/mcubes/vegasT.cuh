@@ -820,10 +820,7 @@ namespace cuda_mcubes {
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
                           static_cast<unsigned int>(it);
-	  std::cout<<"numthreads:"<<totalNumThreads<<std::endl;
-	  std::cout<< "\tfevals:"<<ncubes*2<<std::endl;
-	  std::cout<<"max_feval_per_thread:"<<extra + chunkSize <<std::endl;
-	  std::cout<<"chunksize:"<<chunkSize<<std::endl;
+	  
 	  cudaEvent_t start, stop;
 	  cudaEventCreate(&start);
 	  cudaEventCreate(&stop);
@@ -858,8 +855,8 @@ namespace cuda_mcubes {
 	  cudaEventSynchronize(stop);
 	  float kernel_time = 0;
 	  cudaEventElapsedTime(&kernel_time, start, stop);
-	  std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time << std::endl;
-	  std::cout<<"\textra cubes:"<< extra << "," << "time:" << kernel_time << std::endl;
+	  //std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time << std::endl;
+	  //std::cout<<"\textra cubes:"<< extra << "," << "time:" << kernel_time << std::endl;
 	  params.set_alternate(chunkSize);
       cudaProfilerStop();
       cudaMemcpy(xi,
