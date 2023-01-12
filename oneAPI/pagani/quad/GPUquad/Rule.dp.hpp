@@ -2,9 +2,9 @@
 #define CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "pagani/quad/util/cudaMemoryUtil.h"
-#include "pagani/quad/quad.h"
+//#include <dpct/dpct.hpp>
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "oneAPI/pagani/quad/quad.h"
 #include <cmath>
 
 namespace quad {
@@ -324,7 +324,8 @@ namespace quad {
     display(K* array, size_t size)
     {
       K* tmp = (K*)malloc(sizeof(K) * size);
-      dpct::get_default_queue().memcpy(tmp, array, sizeof(K) * size).wait();
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      q_ct1.memcpy(tmp, array, sizeof(K) * size).wait();
       for (int i = 0; i < size; ++i) {
         // printf("%.20lf \n", (T)tmp[i]);
         std::cout.precision(17);
@@ -362,11 +363,10 @@ namespace quad {
     void
     loadDeviceConstantMemory(Structures<T>* constMem, int device = 0)
     {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-      Device.DeviceInit(device, VERBOSE);
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      //Device.DeviceInit(device, VERBOSE);
 
-      constMem->_gpuG = sycl::malloc_device<T>(sizeof(T) * NDIM * NSETS, q_ct1);
+      constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
       constMem->_cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
 	  constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
       constMem->_GPUScale = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
@@ -376,12 +376,12 @@ namespace quad {
 	  constMem->_gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
       constMem->_gpuGenPermVarStart =sycl::malloc_device<int>((FEVAL + 1), q_ct1);
       
-      q_ct1.memcpy(constMem->_gpuG, cpuG, sizeof(T) * NDIM * NSETS).wait();
-      q_ct1.memcpy(constMem->_cRuleWt, CPURuleWt, sizeof(T) * NRULES * NSETS).wait();
+      q_ct1.memcpy(constMem->_gpuG, cpuG,                       sizeof(T) * NDIM * NSETS).wait();
+      q_ct1.memcpy(constMem->_cRuleWt, CPURuleWt,               sizeof(T) * NRULES * NSETS).wait();
       q_ct1.memcpy(constMem->_cGeneratorCount,CPUGeneratorCount,sizeof(size_t) * NSETS).wait();
-      q_ct1.memcpy(constMem->_GPUScale, CPUScale, sizeof(T) * NSETS * NRULES).wait();
-      q_ct1.memcpy(constMem->_GPUNorm, CPUNorm, sizeof(T) * NSETS * NRULES).wait();
-      q_ct1.memcpy(constMem->_gpuGenPos,genPtr, sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE).wait();
+      q_ct1.memcpy(constMem->_GPUScale, CPUScale,               sizeof(T) * NSETS * NRULES).wait();
+      q_ct1.memcpy(constMem->_GPUNorm, CPUNorm,                 sizeof(T) * NSETS * NRULES).wait();
+      q_ct1.memcpy(constMem->_gpuGenPos,genPtr,                 sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE).wait();
       q_ct1.memcpy(constMem->_gpuGenPermVarCount,cpuGenPermVarCount, sizeof(int) * FEVAL).wait();
       q_ct1.memcpy(constMem->_gpuGenPermGIndex, cpuGenPermGIndex, sizeof(int) * FEVAL).wait();
       q_ct1.memcpy(constMem->_gpuGenPermVarStart, cpuGenPermVarStart, sizeof(int) * (FEVAL + 1)).wait();

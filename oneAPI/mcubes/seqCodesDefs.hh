@@ -2,7 +2,7 @@
 #define SEQ_CODES_DEFS_HH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <type_traits>
 
 //#define ALPH 1.5

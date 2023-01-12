@@ -1,6 +1,10 @@
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/async>
+#define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "cuda/pagani/quad/GPUquad/Pagani.dp.hpp"
+//#include <dpct/dpct.hpp>
+#include "catch2/catch.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Pagani.dp.hpp"
 #include <iostream>
 #include <math.h>
 

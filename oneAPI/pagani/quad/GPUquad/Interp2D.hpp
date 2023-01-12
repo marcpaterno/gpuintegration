@@ -1,10 +1,10 @@
 #ifndef ONEAPI_GPUQUADINTERP2D_H
 #define ONEAPI_GPUQUADINTERP2D_H
 
-#include "pagani/quad/quad.h"
-#include "pagani/quad/util/cudaArray.dp.hpp"
-#include "pagani/quad/util/cudaMemoryUtil.h"
-#include "pagani/quad/util/str_to_doubles.hh"
+#include "oneAPI/pagani/quad/quad.h"
+#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "oneAPI/pagani/quad/util/str_to_doubles.hh"
 #include <assert.h>
 #include <cstdlib>
 #include <iostream>
@@ -87,9 +87,10 @@ namespace quad {
 
     ~Interp2D()
     {
-	  sycl::free(interpT, dpct::get_default_queue());
-	  sycl::free(interpR, dpct::get_default_queue());
-	  sycl::free(interpC, dpct::get_default_queue());
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+	  sycl::free(interpT, q_ct1);
+	  sycl::free(interpR, q_ct1);
+	  sycl::free(interpC, q_ct1);
     }
 
     template <size_t M, size_t N>

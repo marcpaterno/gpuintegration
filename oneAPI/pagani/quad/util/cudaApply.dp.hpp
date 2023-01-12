@@ -2,8 +2,8 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "pagani/quad/util/cudaArray.dp.hpp"
+//#include <dpct/dpct.hpp>
+#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
 namespace gpu {
 
   namespace detail {

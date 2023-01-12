@@ -2,71 +2,14 @@
 #define HEURISTIC_CLASSIFIER_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "pagani/quad/util/mem_util.dp.hpp"
-#include "pagani/quad/util/thrust_utils.dp.hpp"
+//#include <dpct/dpct.hpp>
+#include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
+#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/thrust_utils.dp.hpp"
 #include <string>
 #include <cmath>
-#include <oneapi/mkl.hpp>
-#include "oneapi/mkl/stats.hpp"
+//#include <oneapi/mkl.hpp>
 
-/*
-	the dpct didn't have anything to do with this function at all,
-	I took it from the manually developed version since dpct couldn't 
-	do anything with the call to thrust::minmax_element
-*/
-
-/*template<typename T>
-Range<T>
-device_array_min_max(T* arr, size_t size){
-	auto q = dpct::get_default_queue();
-    Range<T> range;
-    int64_t* min = sycl::malloc_shared<int64_t>(1, q);  
-    int64_t* max = sycl::malloc_shared<int64_t>(1, q);    
-    const int stride = 1;
-	
-	sycl::event est_ev = oneapi::mkl::blas::row_major::iamax(
-		q, size, arr, stride, max);
-					  
-	sycl::event est_ev2 = oneapi::mkl::blas::row_major::iamin(
-		q, size, arr, stride, min);
-	
-	est_ev.wait();
-	est_ev2.wait();
-	
-    range.low = arr[min[0]];
-    range.high = arr[max[0]];
-    free(min, q);
-    free(max, q);
-    return range;
-}*/
-
-template<typename T>
-Range<T>
-device_array_min_max(T* arr, size_t size){
-    Range<T> range;
-	auto q = dpct::get_default_queue();
-    double* min = sycl::malloc_shared<double>(1, q);  
-    double* max = sycl::malloc_shared<double>(1, q);    
-    
-    oneapi::mkl::stats::dataset<oneapi::mkl::stats::layout::row_major, T*> wrapper(1, size, arr);
-    
-    auto this_event = oneapi::mkl::stats::min_max<oneapi::mkl::stats::method::fast, 
-                        double, oneapi::mkl::stats::layout::row_major>(q, wrapper, min, max);
-    this_event.wait();
-    
-    range.low = min[0];
-    range.high = max[0];
-    free(min, q);
-    free(max, q);
-	
-	/*dpct::device_ext& dev_ct1 = dpct::get_current_device();
-	sycl::queue& q_ct1 = dev_ct1.default_queue();
-	dpct::device_pointer<T> d_ptr = dpct::get_device_pointer(arr);
-	range.low = std::min_element (oneapi::dpl::execution::make_device_policy(q_ct1), arr, arr + size);*/
-    return range;
-}
 
 
  std::string
@@ -133,28 +76,24 @@ device_set_true_for_larger_than(
 
 template<typename T>
 void set_true_for_larger_than(const T* arr, const T val, const size_t size, double* output_flags){
-    size_t num_threads = 1024;
+    size_t num_threads = 256;
     size_t num_blocks = size/num_threads + (size % num_threads == 0 ? 0 : 1);
-    /*
-    DPCT1049:115: The workgroup size passed to the SYCL kernel may exceed
-     * the limit. To get the device limit, query
-     * info::device::max_work_group_size. Adjust the workgroup size if needed.
-
-     */
-    dpct::get_default_queue().parallel_for(
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    
+    q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, num_blocks) *
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
       [=](sycl::nd_item<3> item_ct1) {
           device_set_true_for_larger_than<T>(
             arr, val, size, output_flags, item_ct1);
-      });
-    dpct::get_current_device().queues_wait_and_throw();
+      }).wait();
+        
 }
 
 size_t total_device_mem(){
-    return dpct::get_current_device().get_device_info().get_global_mem_size();
-}
+	return 16e9; //ONLY FOR CUDA_BACKEND maybe adjust with a template argument?
+ }
 
 size_t  
 num_ints_needed(size_t num_regions){//move to pagani utils, has nothing to do with classifying
@@ -200,7 +139,7 @@ free_device_mem(size_t num_regions, size_t ndim){
 
 
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 class Heuristic_classifier{
     
      double epsrel = 0.;
@@ -321,8 +260,11 @@ class Heuristic_classifier{
             };
             
             set_true_for_larger_than<double>(errorests, res.threshold, num_regions, res.active_flags);
-            res.num_active  = static_cast<size_t>(reduction<double>(res.active_flags, num_regions));    
+            res.num_active  = static_cast<size_t>(reduction<double, use_custom>(res.active_flags, num_regions));    
             res.percent_mem_active = int_division(res.num_active, num_regions);
+			//std::cout<<"res.num_active:"<< res.num_active << std::endl;
+			//std::cout<<"res.percent_mem_active:"<<res.percent_mem_active<<std::endl;
+			//std::cout<<"max_active_regions_percentage:"<<max_active_regions_percentage<<std::endl;
             res.pass_mem = res.percent_mem_active <= max_active_regions_percentage;
         }
         
@@ -336,8 +278,11 @@ class Heuristic_classifier{
             const double iter_finished_errorest, 
             const double total_f_errorest,
             const double max_percent_err_budget){
-            
-            const double extra_f_errorest = active_errorest - dot_product<double, double>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
+            //std::cout<<"active_errorest:"<<active_errorest<<std::endl;
+            const double extra_f_errorest = active_errorest - dot_product<double, double, use_custom>(error_estimates, active_flags, num_regions) - iter_finished_errorest;  
+			//std::cout<<"dot_product<double, double, use_custom>(error_estimates, active_flags, num_regions):"<<dot_product<double, double, use_custom>(error_estimates, active_flags, num_regions)<<std::endl;
+			//std::cout<<"extra_f_errorest:"<<extra_f_errorest<<std::endl;
+			//std::cout<<"iter_finished_errorest:"<<iter_finished_errorest<<std::endl;
             const double error_budget = target_error - total_f_errorest;
             res.pass_errorest_budget = 
                 extra_f_errorest <= max_percent_err_budget * error_budget;
@@ -383,8 +328,7 @@ class Heuristic_classifier{
             const double iter_errorest, 
             const double iter_finished_errorest,
             const double total_finished_errorest){
-                           
-            Classification_res thres_search = (device_array_min_max<double>(errorests, num_regions));
+            Classification_res thres_search = (device_array_min_max<double, use_custom>(errorests, num_regions));
             thres_search.data_allocated = true;
             
             const double min_errorest = thres_search.threshold_range.low;
@@ -392,22 +336,24 @@ class Heuristic_classifier{
             thres_search.threshold = iter_errorest/num_regions;
             thres_search.active_flags = cuda_malloc<double>(num_regions);
             const double target_error = abs(estimates_from_last_iters[2]) * epsrel;
-
+            
             const size_t max_num_thresholds_attempts = 20;
             size_t num_thres_increases = 0;
             size_t num_thres_decreases = 0;
             size_t max_thres_increases = 20;
             
             int threshold_changed = 0; //keeps track of where the threshold is being pulled (left or right)
-
+            
             do{
-                
-                if(!thres_search.pass_mem && num_thres_increases <= max_thres_increases){
+				//std::cout<<"classifying"<<std::endl;
+				if(!thres_search.pass_mem && num_thres_increases <= max_thres_increases){
                     get_larger_threshold_results(thres_search, active_flags, errorests, num_regions);
                     num_thres_increases++;
                 }
-                        
+				
+				//std::cout<<"thres_search.pass_mem:"<<thres_search.pass_mem<<std::endl;
                 if(thres_search.pass_mem){
+                    
                     evaluate_error_budget(thres_search, 
                         errorests, 
                         thres_search.active_flags, 
@@ -417,8 +363,10 @@ class Heuristic_classifier{
                         iter_finished_errorest, 
                         total_finished_errorest,
                         max_percent_error_budget);
-                    
+                    //std::cout<<"thres_search.pass_errorest_budget:"<<thres_search.pass_errorest_budget<<std::endl;
+					//std::cout<<"num_thres_decreases:" << num_thres_decreases<<std::endl;
                     if(!thres_search.pass_errorest_budget && num_thres_decreases <= max_num_thresholds_attempts){
+						
                         thres_search.threshold_range.high = thres_search.threshold;
                         thres_search.decrease_threshold();
                         thres_search.pass_mem = false;   //we don't know if it will pass
@@ -428,7 +376,7 @@ class Heuristic_classifier{
                 }
                 
                 bool exhausted_attempts = num_thres_decreases >= 20  || num_thres_increases >= 20;
-                
+                //std::cout<<"max_percent_error_budget:"<<max_percent_error_budget<<std::endl;
                 if(exhausted_attempts && max_percent_error_budget < .7){
                     max_percent_error_budget += 0.1;
                     num_thres_decreases = 0;
@@ -442,10 +390,12 @@ class Heuristic_classifier{
                 else if(exhausted_attempts){   
                     break;
                 }
+				
             }while(!thres_search.pass_mem ||  !thres_search.pass_errorest_budget);
             
             if(!thres_search.pass_mem || !thres_search.pass_errorest_budget){
-                sycl::free(thres_search.active_flags, dpct::get_default_queue());
+	      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+                sycl::free(thres_search.active_flags, q_ct1);
             }
             
             thres_search.max_budget_perc_to_cover = max_percent_error_budget;

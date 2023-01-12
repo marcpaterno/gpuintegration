@@ -12,11 +12,11 @@
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <fstream>
 #include <string>
 #include <vector>
-#include "./cuhreResult.dp.hpp"
+#include "oneAPI/mcubes/cuhreResult.dp.hpp"
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);

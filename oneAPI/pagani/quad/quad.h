@@ -12,15 +12,14 @@
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <fstream>
 #include <string>
 #include <vector>
-#include "pagani/quad/util/cuhreResult.dp.hpp"
+#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
 using TYPE = double;
 
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
-// dpct::constant_memory<TYPE, 1> errcoeff(sycl::range(1), {5, 1, 5});
 
 // Utilities
 #include "util/cudaArchUtil.h"
@@ -37,29 +36,27 @@ public:
 template <typename T>
 struct Structures {
 
-  Structures()
-    : _gpuG(nullptr)
-    , _cRuleWt(nullptr)
-    , _GPUScale(nullptr)
-    , _gpuGenPos(nullptr)
-    , _gpuGenPermGIndex(nullptr)
-    , _gpuGenPermVarCount(nullptr)
-    , _gpuGenPermVarStart(nullptr)
-    , _cGeneratorCount(nullptr)
-    , _GPUNorm(nullptr)
-  {}
+  Structures() = default;
+  /* : _gpuG(nullptr)
+   , _cRuleWt(nullptr)
+   , _GPUScale(nullptr)
+   , _gpuGenPos(nullptr)
+   , _gpuGenPermGIndex(nullptr)
+   , _gpuGenPermVarCount(nullptr)
+   , _gpuGenPermVarStart(nullptr)
+   , _cGeneratorCount(nullptr)
+   , _GPUNorm(nullptr)
+ {}*/
 
-  ~Structures() {}
-
-  T* _gpuG;
-  T* _cRuleWt;
-  T* _GPUScale;
-  T* _GPUNorm;
-  int* _gpuGenPos;
-  int* _gpuGenPermGIndex;
-  int* _gpuGenPermVarCount;
-  int* _gpuGenPermVarStart;
-  size_t* _cGeneratorCount;
+  T* _gpuG = nullptr;
+  T* _cRuleWt = nullptr;
+  T* _GPUScale = nullptr;
+  T* _GPUNorm = nullptr;
+  int* _gpuGenPos = nullptr;
+  int* _gpuGenPermGIndex = nullptr;
+  int* _gpuGenPermVarCount = nullptr;
+  int* _gpuGenPermVarStart = nullptr;
+  size_t* _cGeneratorCount = nullptr;
 };
 
 /*template <typename T>
@@ -77,8 +74,8 @@ struct cuhreResult {
 };*/
 
 struct Result {
-  double avg, err;
-  int bisectdim;
+  double avg = 0., err = 0.;
+  int bisectdim = 0;
 };
 
 struct Bounds {

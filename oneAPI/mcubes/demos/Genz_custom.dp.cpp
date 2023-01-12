@@ -4,9 +4,11 @@
 */
 
 //#include <CL/sycl.hpp>
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/async>
 #include <dpct/dpct.hpp>
-#include "./demo_utils.dp.hpp"
-#include "./vegasT.dp.hpp"
+#include "oneAPI/mcubes/demo_utils.dp.hpp"
+#include "oneAPI/mcubes/vegasT.dp.hpp"
 
 
 class GENZ_custom {

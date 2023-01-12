@@ -1,9 +1,9 @@
 #define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "pagani/quad/GPUquad/Interp2D.hpp"
-#include "pagani/quad/util/cudaMemoryUtil.h"
+#include "oneAPI/pagani/quad/GPUquad/Interp2D.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
 #include <array>
 #include <chrono>
@@ -20,15 +20,14 @@ gEvaluate(quad::Interp2D* f, double x, double y, double* result)
 double
 Evaluate(quad::Interp2D* f, double x, double y)
 {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());;
   double* result = quad::cuda_malloc_managed<double>(1);
     q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
       [=](sycl::nd_item<3> item_ct1) {
           gEvaluate(f, x, y, result);
       });
-  dev_ct1.queues_wait_and_throw();
+  q_ct1.wait_and_throw();
   double hResult = *result;
   sycl::free(result, q_ct1);
   return hResult;
@@ -43,15 +42,14 @@ gClamp(quad::Interp2D* f, double x, double y, double* result)
 double
 clamp(quad::Interp2D* f, double x, double y)
 {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());;
   double* result = quad::cuda_malloc_managed<double>(1);
     q_ct1.parallel_for(
       sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
       [=](sycl::nd_item<3> item_ct1) {
           gClamp(f, 2.5, 4.5, result);
       });
-  dev_ct1.queues_wait_and_throw();
+  q_ct1.wait_and_throw();
   double hResult = *result;
   sycl::free(result, q_ct1);
   return hResult;

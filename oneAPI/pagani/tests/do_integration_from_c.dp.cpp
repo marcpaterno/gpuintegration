@@ -1,7 +1,11 @@
 extern "C" {
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/async>
+#define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "cuda/pagani/tests/do_integration_from_c.h"
+//#include <dpct/dpct.hpp>
+#include "catch2/catch.hpp"
+#include "oneAPI/pagani/tests/do_integration_from_c.h"
 }
 
 #include "cuda/pagani/quad/GPUquad/Pagani.dp.hpp"

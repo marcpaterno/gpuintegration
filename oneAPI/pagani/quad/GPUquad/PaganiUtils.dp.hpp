@@ -2,81 +2,205 @@
 #define PAGANI_UTILS_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "pagani/quad/util/Volume.dp.hpp"
-#include "pagani/quad/util/cudaApply.dp.hpp"
-#include "pagani/quad/util/cudaArray.dp.hpp"
-#include "pagani/quad/util/cudaUtil.h"
-#include "pagani/quad/GPUquad/Phases.dp.hpp"
-#include "pagani/quad/GPUquad/Sample.dp.hpp"
-#include "pagani/quad/util/cuhreResult.dp.hpp"
-#include "pagani/quad/GPUquad/Rule.dp.hpp"
+//#include <dpct/dpct.hpp>
+#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaUtil.h"
+#include "oneAPI/pagani/quad/GPUquad/Phases.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
+#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Rule.dp.hpp"
 
-#include "pagani/quad/GPUquad/hybrid.dp.hpp"
-#include "pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "pagani/quad/GPUquad/Region_estimates.dp.hpp"
-#include "pagani/quad/GPUquad/Region_characteristics.dp.hpp"
-#include "pagani/quad/GPUquad/Sub_region_filter.dp.hpp"
-#include "pagani/quad/quad.h"
-#include "pagani/quad/GPUquad/Sub_region_splitter.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/hybrid.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Sub_region_filter.dp.hpp"
+#include "oneAPI/pagani/quad/quad.h"
+#include "oneAPI/pagani/quad/GPUquad/Sub_region_splitter.dp.hpp"
+#include "oneAPI/pagani/quad/GPUquad/Func_Eval.hpp"
 
 #include <stdlib.h>
+#include <fstream>
+#include <string>
 
-//dpct::constant_memory<size_t, 0> dFEvalPerRegion;
-
-
-
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 class Cubature_rules{
     public:    
 	
+    
     using Reg_estimates = Region_estimates<ndim>;
     using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;
+    std::ofstream outregions;
+    std::ofstream outgenerators;
+    
+	double total_time = 0.;
+	
+    Recorder<true> rfevals;
+    Recorder<true> rregions;
+    Recorder<true> rgenerators;
     
     Cubature_rules(){
+        rfevals.outfile.open("oneapi_fevals.csv");
+        rgenerators.outfile.open("generators.csv");
+        rregions.outfile.open("regions.csv");
+        
+        auto print_header = [=](){
+        
+            rfevals.outfile << "reg, fid,";
+            for(size_t dim = 0; dim < ndim; ++dim)
+                rfevals.outfile  << "dim" + std::to_string(dim) << + "low" << ","
+                    <<  "dim" + std::to_string(dim) + "high,";
+                    
+            for(size_t dim = 0; dim < ndim; ++dim)
+                rfevals.outfile  << "gdim" + std::to_string(dim) << + "low" << ","
+                    <<  "gdim" + std::to_string(dim) + "high,";
+                    
+             for(size_t dim = 0; dim < ndim; ++dim)
+                rfevals.outfile  << "dim" + std::to_string(dim) << ",";
+                
+            rfevals.outfile  << std::scientific << "feval, estimate, errorest"<< std::endl;
+			
+			rregions.outfile << "reg, estimate, errorest" << std::endl;
+        };
+        
+       
+        
+        print_header();
         constexpr size_t fEvalPerRegion = CuhreFuncEvalsPerRegion<ndim>();
         quad::Rule<double> rule;
-
         const int key = 0;
         const int verbose = 0;
         rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
-        generators = cuda_malloc<double>(/*sizeof(double) **/ ndim * fEvalPerRegion);
-        
+        generators = cuda_malloc<double>(ndim * fEvalPerRegion);
         size_t block_size = 64;
+        int NSETS = 9;
+        auto q =  sycl::queue(sycl::gpu_selector());
+        q.submit([&](sycl::handler& cgh) {
+            double* generators_ct0 = generators;
+            auto constMem_ct2 = constMem;
+            
+            int NDIM = ndim;
+            int FEVAL = fEvalPerRegion;
+            int total_feval = FEVAL;
+            
+            cgh.parallel_for(sycl::nd_range<1>(block_size, block_size),
+                             [=](sycl::nd_item<1> item_ct1) {
+                quad::ComputeGenerators<double, ndim>(generators_ct0, FEVAL, constMem_ct2, item_ct1);            
+               
+            });
+        }).wait_and_throw();
         
-        //DPCT1049:118: The workgroup size passed to the SYCL kernel may exceed
-        //the limit. To get the device limit, query
-        //info::device::max_work_group_size. Adjust the workgroup size if needed.
         
-		auto* constMem_ct2 = &constMem;
-		std::cout<<"fEvalPerRegion:"<<fEvalPerRegion<<std::endl;
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
-            auto generators_ct0 = generators;
-           
-
-            cgh.parallel_for(sycl::nd_range(sycl::range(1, 1, block_size),
-                                            sycl::range(1, 1, block_size)),
-                             [=](sycl::nd_item<3> item_ct1) {
-                                 quad::ComputeGenerators<double, ndim>(generators_ct0,
-                                                                 fEvalPerRegion,
-                                                                 constMem_ct2,
-                                                                 item_ct1);
-                             });
-        });
-		
-		double* h_generators = new double[ndim * fEvalPerRegion];
-		cuda_memcpy_to_host(h_generators, generators, ndim * fEvalPerRegion);
-		
-		for(int i=0; i < ndim*fEvalPerRegion; ++i)
-			printf("generators[%i]:%f\n", i, h_generators[i]); 
-		
         integ_space_lows = cuda_malloc<double>(ndim);
         integ_space_highs = cuda_malloc<double>(ndim);
-        
         set_device_volume();
+        
     }
        
+    void
+    Print_region_evals(double* ests, double* errs, const size_t num_regions){
+        constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
+
+        for(size_t reg = 0; reg < num_regions; ++reg){						  
+				rregions.outfile << reg << ",";								
+				rregions.outfile << std::scientific 
+					<< ests[reg] << "," 
+					<< errs[reg];				
+				rregions.outfile << std::endl;
+			
+            
+		}    
+	} 	   
+       
+     void
+	Print_func_evals(quad::Func_Evals<ndim> fevals, double* ests, double* errs, const size_t num_regions){
+        if(num_regions >= 1024)
+			return;
+		constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
+		
+		auto print_reg = [=](const Bounds* sub_region){
+			for(size_t dim =0; dim < ndim; ++dim){
+                rfevals.outfile << std::scientific << sub_region[dim].lower << "," <<  sub_region[dim].upper << ",";
+			}
+		};
+		
+		auto print_global_bounds = [=](const GlobalBounds* sub_region){
+			for(size_t dim =0; dim < ndim; ++dim){
+                rfevals.outfile << std::scientific << sub_region[dim].unScaledLower << "," << sub_region[dim].unScaledUpper << ",";
+			}
+		};
+        
+        auto print_feval_point = [=](double* x){
+			for(size_t dim =0; dim < ndim; ++dim){
+                rfevals.outfile << std::scientific << x[dim] << "," ;
+			}
+		};
+		
+		for(size_t reg = 0; reg < num_regions; ++reg){
+			for(int feval = 0; feval < fevals.num_fevals; ++feval){
+				size_t index = reg * fevals.num_fevals + feval;
+               rfevals.outfile << reg << "," << fevals[index].feval_index << ",";           
+                          
+				print_reg(fevals[index].region_bounds);
+				print_global_bounds(fevals[index].global_bounds);
+                print_feval_point(fevals[index].point);
+                
+                rfevals.outfile << std::scientific << fevals[index].feval << ",";
+                rfevals.outfile << std::scientific << ests[reg] << "," << 
+                errs[reg];
+				rfevals.outfile <<  std::endl;
+			}
+            
+		}
+	}   
+       
+   void print_generators(double* d_generators){
+        rgenerators.outfile << "i, gen" << std::endl;
+        double* h_generators = new double[ndim * CuhreFuncEvalsPerRegion<ndim>()];
+        cuda_memcpy_to_host<double>(h_generators, d_generators, ndim * CuhreFuncEvalsPerRegion<ndim>());
+        for(int i=0; i < ndim * CuhreFuncEvalsPerRegion<ndim>(); ++i){
+            rgenerators.outfile << i << "," << std::scientific << h_generators[i] << std::endl;
+        }
+        delete[] h_generators;
+    }    
+       
+       
+    template<int debug = 0>
+    void print_verbose(double* d_generators, quad::Func_Evals<ndim>& dfevals, Reg_estimates* estimates){
+		
+        if constexpr(debug >= 1){
+
+            print_generators(d_generators);
+
+            constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
+            const size_t num_regions = estimates->size;
+            
+            double* ests = new double[num_regions];
+            double* errs = new double[num_regions];
+
+            cuda_memcpy_to_host<double>(ests, estimates->integral_estimates, num_regions);
+            cuda_memcpy_to_host<double>(errs, estimates->error_estimates, num_regions);
+
+            Print_region_evals(ests, errs, num_regions);
+            
+            if constexpr(debug >= 2){
+                quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
+                hfevals->fevals_list = new quad::Feval<ndim>[num_regions*num_fevals];
+                cuda_memcpy_to_host<quad::Feval<ndim>>(hfevals->fevals_list, dfevals.fevals_list, num_regions*num_fevals);
+                Print_func_evals(*hfevals, ests, errs, num_regions);
+                delete[] hfevals->fevals_list;
+                delete hfevals;
+                cudaFree(dfevals.fevals_list);
+            }
+
+            delete[] ests;
+            delete[] errs;
+        }
+    }   
+    
     void
     set_device_volume(double* lows = nullptr, double* highs = nullptr){
                 
@@ -95,9 +219,8 @@ class Cubature_rules{
     }
 
     ~Cubature_rules() {
-		dpct::device_ext& dev_ct1 = dpct::get_current_device();
-		sycl::queue& q_ct1 = dev_ct1.default_queue();
-        sycl::free(generators, q_ct1);
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      sycl::free(generators, q_ct1);
         sycl::free(integ_space_lows, q_ct1);
         sycl::free(integ_space_highs, q_ct1);
     }
@@ -112,238 +235,154 @@ class Cubature_rules{
         generators = cuda_malloc<double>(sizeof(double) * dim * fEvalPerRegion);
         
         size_t block_size = 64;
-		auto constMem_ct2 = constMem;
-		
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+        
+	sycl::queue q;
+        q.submit([&](sycl::handler& cgh) {
             auto generators_ct0 = generators;
+            auto constMem_ct2 = constMem;
             
-
             cgh.parallel_for(sycl::nd_range(sycl::range(1, 1, block_size),
                                             sycl::range(1, 1, block_size)),
-                             [=](sycl::nd_item<3> item_ct1) {
-                                 ComputeGenerators<double, dim>(generators_ct0,
+                             [=](sycl::nd_item<1> item_ct1) {
+                                 quad::ComputeGenerators<double, ndim>(generators_ct0,
                                                                 fEvalPerRegion,
                                                                 constMem_ct2,
                                                                 item_ct1);
                              });
-        });
+	  }).wait();
+        
     }
     
-
-    template<typename IntegT>
-    cuhreResult<double> apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
-        
-        IntegT* d_integrand =  make_gpu_integrand<IntegT>(integrand);
-        
-        size_t num_regions = subregions.size;
-        //int nsets = 9;
-        //int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
-        //std::cout<<"feval:"<<feval<<std::endl;
-        Region_characteristics<ndim> region_characteristics(num_regions);
-        Region_estimates<ndim> subregion_estimates(num_regions);
-        
-        set_device_array<int>(region_characteristics.active_regions, num_regions, 1);
-
-        size_t num_blocks = num_regions;
-        constexpr size_t block_size = 64;
-        
-        double epsrel = 1.e-3, epsabs = 1.e-12;
-
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
-
-            sycl::accessor<double ,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              shared_acc_ct1(sycl::range(8), cgh);
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sdata_acc_ct1(sycl::range(block_size), cgh);
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              Jacobian_acc_ct1(cgh);
-            sycl::accessor<int,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              maxDim_acc_ct1(cgh);
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              vol_acc_ct1(cgh);
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              ranges_acc_ct1(sycl::range(ndim), cgh);
-            sycl::accessor<Region<ndim>,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sRegionPool_acc_ct1(sycl::range(1), cgh);
-            sycl::accessor<GlobalBounds,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sBound_acc_ct1(sycl::range(ndim), cgh);
-
-            auto constMem_ct10 = constMem;
-            auto integ_space_lows_ct11 = integ_space_lows;
-            auto integ_space_highs_ct12 = integ_space_highs;
-            auto generators_ct14 = generators;
-
-            cgh.parallel_for(
-              sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                               sycl::range(1, 1, block_size),
-                             sycl::range(1, 1, block_size)),
-              [=](sycl::nd_item<3> item_ct1)
-                [[intel::reqd_sub_group_size(32)]] {
-                    INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size>(
-                      d_integrand,
-                      subregions.dLeftCoord,
-                      subregions.dLength,
-                      num_regions,
-                      subregion_estimates.integral_estimates,
-                      subregion_estimates.error_estimates,
-                      region_characteristics.active_regions,
-                      region_characteristics.sub_dividing_dim,
-                      epsrel,
-                      epsabs,
-                      constMem_ct10,
-                      integ_space_lows_ct11,
-                      integ_space_highs_ct12,
-                      0,
-                      item_ct1,
-                      shared_acc_ct1.get_pointer(),
-                      sdata_acc_ct1.get_pointer(),
-                      Jacobian_acc_ct1.get_pointer(),
-                      maxDim_acc_ct1.get_pointer(),
-                      vol_acc_ct1.get_pointer(),
-                      ranges_acc_ct1.get_pointer(),
-                      sRegionPool_acc_ct1.get_pointer(),
-                      sBound_acc_ct1.get_pointer(),
-                      generators_ct14);
-                });
-        });
-        dpct::get_current_device().queues_wait_and_throw();
-
-        cuhreResult<double> res;
-        res.estimate = reduction<double>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<double>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<double>::infinity();
-        
-        return res;
-    }
-    
-    template<typename IntegT, bool pre_allocated_integrand = false>
+    template<typename IntegT, bool pre_allocated_integrand = false, int debug = 0>
     cuhreResult<double> 
     apply_cubature_integration_rules(IntegT* d_integrand,
-        const Sub_regs* subregions, 
-        const Reg_estimates* subregion_estimates, 
-        const Regs_characteristics* region_characteristics, 
+        int it, 
+        /*const*/ Sub_regs* subregions, 
+        /*const*/ Reg_estimates* subregion_estimates, 
+        /*const*/ Regs_characteristics* region_characteristics, 
         bool compute_error = false)
     {
+      size_t num_regions = subregions->size;
+        
+      set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
+		
+      auto integral_estimates = subregion_estimates->integral_estimates;
+      auto error_estimates = subregion_estimates->error_estimates;
+      auto active_regions = region_characteristics->active_regions;
+      auto sub_dividing_dim = region_characteristics->sub_dividing_dim;
+      auto dLeftCoord = subregions->dLeftCoord;
+      auto dLength = subregions->dLength;
             
-        size_t num_regions = subregions->size;
-        //constexpr int nsets = 9;
-        //int feval = static_cast<int>(CuhreFuncEvalsPerRegion<ndim>());
+      size_t num_blocks = num_regions;
+      constexpr size_t block_size = 64;
+      double epsrel = 1.e-3, epsabs = 1.e-12;
         
-        set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
+      //temp addition
+      quad::Func_Evals<ndim> dfevals;
+      quad::Func_Evals<ndim>* hfevals;
         
-        
-        size_t num_blocks = num_regions;
-        constexpr size_t block_size = 64;
-        
-        double epsrel = 1.e-3, epsabs = 1.e-12;
-        dpct::get_default_queue().submit([&](sycl::handler& cgh) {
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              shared_acc_ct1(sycl::range(8), cgh);
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sdata_acc_ct1(sycl::range(block_size), cgh);
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              Jacobian_acc_ct1(cgh);
-            sycl::accessor<int,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              maxDim_acc_ct1(cgh);
-            sycl::accessor<double,
-                           0,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              vol_acc_ct1(cgh);
-            sycl::accessor<double,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              ranges_acc_ct1(sycl::range(ndim), cgh);
-            sycl::accessor<Region<ndim>,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sRegionPool_acc_ct1(sycl::range(1), cgh);
-            sycl::accessor<GlobalBounds,
-                           1,
-                           sycl::access_mode::read_write,
-                           sycl::access::target::local>
-              sBound_acc_ct1(sycl::range(ndim), cgh);
-
-            auto* constMem_ct10 = &constMem;
-            auto integ_space_lows_ct11 = integ_space_lows;
-            auto integ_space_highs_ct12 = integ_space_highs;
-            auto generators_ct13 = generators;
+      if constexpr(debug >= 2){
+	  constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
+	  dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals);
+        }
+		
+		
+      auto q = 	sycl::queue(sycl::gpu_selector(), sycl::property::queue::enable_profiling{});
+		
+      sycl::event e = q.submit([&](sycl::handler& cgh) {
 			
-            cgh.parallel_for(
-              sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                               sycl::range(1, 1, block_size),
-                             sycl::range(1, 1, block_size)),
-              [=](sycl::nd_item<3> item_ct1)
-                [[intel::reqd_sub_group_size(32)]] {
-                    quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size>(
-                      d_integrand,
-                      subregions->dLeftCoord,
-                      subregions->dLength,
-                      num_regions,
-                      subregion_estimates->integral_estimates,
-                      subregion_estimates->error_estimates,
-                      region_characteristics->active_regions,
-                      region_characteristics->sub_dividing_dim,
-                      epsrel,
-                      epsabs,
-                      constMem_ct10,
-                      integ_space_lows_ct11,
-                      integ_space_highs_ct12,
-                      generators_ct13,
-                      item_ct1,
-                      shared_acc_ct1.get_pointer(),
-                      sdata_acc_ct1.get_pointer(),
-                      Jacobian_acc_ct1.get_pointer(),
-                      maxDim_acc_ct1.get_pointer(),
-                      vol_acc_ct1.get_pointer(),
-                      ranges_acc_ct1.get_pointer(),
-                      sRegionPool_acc_ct1.get_pointer(),
-                      sBound_acc_ct1.get_pointer());
-                });
-        });
-        dpct::get_current_device().queues_wait_and_throw();
+	  sycl::accessor<double,
+	  1,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  shared_acc_ct1(sycl::range(8), cgh); //shared,    sdata,     jacobian,           vol,                     ranges
+	  //shared[0], shared[8], shared[8+blockDim], shared[8+blockDim +1] , shared[8 blockDIm + 2]
+			  
+	  sycl::accessor<double,
+	  1,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  sdata_acc_ct1(sycl::range(block_size), cgh);
+			  
+	  sycl::accessor<double,
+	  0,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  Jacobian_acc_ct1(cgh);
+	  sycl::accessor<int,
+	  0,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  maxDim_acc_ct1(cgh);
+	  sycl::accessor<double,
+	  0,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  vol_acc_ct1(cgh);
+	  sycl::accessor<double,
+	  1,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  ranges_acc_ct1(sycl::range(ndim), cgh);
+	  sycl::accessor<Region<ndim>,
+	  1,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  sRegionPool_acc_ct1(sycl::range(1), cgh);
+	  sycl::accessor<GlobalBounds,
+	  1,
+	  sycl::access_mode::read_write,
+	  sycl::access::target::local>
+	  sBound_acc_ct1(sycl::range(ndim), cgh);
 
-        cuhreResult<double> res;
-        res.estimate = reduction<double>(subregion_estimates->integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<double>(subregion_estimates->error_estimates, num_regions) : std::numeric_limits<double>::infinity();        
-        return res;
+	  auto constMem_ct10 = constMem;
+	  auto integ_space_lows_ct11 = integ_space_lows;
+	  auto integ_space_highs_ct12 = integ_space_highs;
+	  auto generators_ct13 = generators;
+			
+	  cgh.parallel_for(
+			   sycl::nd_range(sycl::range(num_blocks*block_size) , sycl::range(block_size)),
+			   [=](sycl::nd_item<1> item_ct1)
+			   [[intel::reqd_sub_group_size(32)]] {
+			     quad::INTEGRATE_GPU_PHASE1<IntegT, double, ndim, block_size, debug>(
+												 d_integrand,
+												 dLeftCoord,
+												 dLength,
+												 num_regions,
+												 integral_estimates,
+												 error_estimates,
+												 sub_dividing_dim,
+												 epsrel,
+												 epsabs,
+												 constMem_ct10,
+												 integ_space_lows_ct11,
+												 integ_space_highs_ct12,
+												 generators_ct13,
+												 item_ct1,
+												 shared_acc_ct1.get_pointer(),
+												 sdata_acc_ct1.get_pointer(),
+												 Jacobian_acc_ct1.get_pointer(),
+												 maxDim_acc_ct1.get_pointer(),
+												 vol_acc_ct1.get_pointer(),
+												 ranges_acc_ct1.get_pointer(),
+												 sRegionPool_acc_ct1.get_pointer(),
+												 sBound_acc_ct1.get_pointer(),
+												 dfevals);
+			   });
+        });
+		
+      q.wait();
+      double time = (e.template get_profiling_info<sycl::info::event_profiling::command_end>()  -   
+		     e.template get_profiling_info<sycl::info::event_profiling::command_start>());
+      //std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim << ","<< num_regions << std::endl;
+	  std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << time/1.e6 << std::endl;
+
+      total_time += time;
+      print_verbose<debug>(generators, dfevals, subregion_estimates);
+      cuhreResult<double> res;
+      res.estimate = reduction<double, use_custom>(subregion_estimates->integral_estimates, num_regions);
+      res.errorest = compute_error ? reduction<double, use_custom>(subregion_estimates->error_estimates, num_regions) : std::numeric_limits<double>::infinity(); 
+      return res;
     }
            
     Structures<double> constMem;
@@ -353,12 +392,13 @@ class Cubature_rules{
     double *integ_space_highs = nullptr;
 };
 
-template<size_t ndim>
+template<size_t ndim, bool use_custom = false>
 cuhreResult<double>
 compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region_characteristics<ndim>& classifiers, const cuhreResult<double>& iter){
     cuhreResult<double> finished;
-    finished.estimate = iter.estimate - dot_product<double, double>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
-    finished.errorest = iter.errorest - dot_product<double, double>(classifiers.active_regions, estimates.error_estimates, estimates.size);
+    finished.estimate = iter.estimate - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
+    finished.errorest = iter.errorest - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.error_estimates, estimates.size);
+	
     return finished;
 }
 

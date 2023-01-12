@@ -2,8 +2,8 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "pagani/quad/GPUquad/Interp1D.hpp"
-#include "pagani/quad/util/cudaMemoryUtil.h"
+#include "oneAPI/pagani/quad/GPUquad/Interp1D.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
 #include <array>
 #include <chrono>
@@ -17,7 +17,9 @@ Evaluate(quad::Interp1D* interpolator,
          double* input,
          double* results)
 {
-  dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+   auto q_ct1 = sycl::queue(sycl::gpu_selector());
+	
+   q_ct1.submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range(size), [=](sycl::item<1> item_ct1) {
 			results[item_ct1] = interpolator->operator()(input[item_ct1]);
         });
@@ -27,7 +29,8 @@ Evaluate(quad::Interp1D* interpolator,
 void
 Evaluate(quad::Interp1D* interpolator, double value, double* result)
 {
-	dpct::get_default_queue().submit([&](sycl::handler& cgh) {
+   auto q_ct1 = sycl::queue(sycl::gpu_selector());
+   q_ct1.submit([&](sycl::handler& cgh) {
            
         cgh.parallel_for(sycl::nd_range(sycl::range(1, 1, 1),
                                             sycl::range(1, 1, 1)),

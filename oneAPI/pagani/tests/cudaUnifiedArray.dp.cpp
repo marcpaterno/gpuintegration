@@ -1,9 +1,12 @@
 #define CATCH_CONFIG_MAIN
 
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/async>
+#define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "cuda/pagani/quad/util/cudaArray.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
 //#include <thrust/host_vector.h>
 //#include <thrust/device_vector.h>
 //#include <thrust/universal_vector.h>
@@ -31,9 +34,8 @@ namespace noCopyConstr{
     void
     Initialize(T const* initData, size_t s)
     {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-      N = s;
+	auto q_ct1 = sycl::queue(sycl::gpu_selector());
+    N = s;
       data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
       q_ct1.memcpy(data, initData, sizeof(T) * s).wait();
     }
@@ -41,14 +43,16 @@ namespace noCopyConstr{
     void
     Reserve(size_t s)
     {
+	  auto q_ct1 = sycl::queue(sycl::gpu_selector());	
       N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, dpct::get_default_queue());
+      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
     }
     
     cudaDynamicArray(size_t s)
     {
+	  auto q_ct1 = sycl::queue(sycl::gpu_selector());	
       N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, dpct::get_default_queue());
+      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
     }
     ~cudaDynamicArray()
     {

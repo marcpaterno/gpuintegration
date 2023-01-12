@@ -2,9 +2,9 @@
 #define REGION_ESTIMATES_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <iostream>
-#include "pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
 
 template<size_t ndim>
 class Region_estimates{
@@ -20,9 +20,8 @@ class Region_estimates{
 
     void
     reallocate(size_t num_regions) {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        sycl::free(integral_estimates, q_ct1);
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      sycl::free(integral_estimates, q_ct1);
         sycl::free(error_estimates, q_ct1);
         integral_estimates = cuda_malloc<double>(num_regions);  
         error_estimates = cuda_malloc<double>(num_regions);  
@@ -30,9 +29,8 @@ class Region_estimates{
     }
 
     ~Region_estimates() {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-        sycl::free(integral_estimates, q_ct1);
+      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      sycl::free(integral_estimates, q_ct1);
         sycl::free(error_estimates, q_ct1);
     }
     

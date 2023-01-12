@@ -2,8 +2,8 @@
 #define VERBOSE_UTILS_CUH
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "./vegas_utils.dp.hpp"
+//#include <dpct/dpct.hpp>
+#include "oneAPI/mcubes/vegas_utils.dp.hpp"
 
 // this isn't needed anymore
 std::ofstream

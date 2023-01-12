@@ -1,9 +1,11 @@
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "math.h"
-#include "./demo_utils.dp.hpp"
-#include "./vegasT.dp.hpp"
-#include "./vegasT1D.dp.hpp"
+#include "oneAPI/mcubes/demo_utils.dp.hpp"
+#include "oneAPI/vegasT.dp.hpp"
+#include "oneAPI/vegasT1D.dp.hpp"
 
 class Gauss9D {
 public:
