@@ -29,3 +29,12 @@ if (GPUINTEGRATION_BUILD_KOKKOS)
   add_subdirectory(kokkos)
 endif()
 
+if (GPUINTEGRATION_BUILD_ONEAPI)
+  include_directories(AFTER ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR})
+  if(CUDA_BACKEND)
+	set(CMAKE_CXX_COMPILER clang++)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend --cuda-gpu-arch=sm_70")
+  endif()
+  add_subdirectory(oneAPI)
+endif()
+

@@ -300,14 +300,8 @@ namespace quad {
           maxerr =
             sycl::max(maxerr,
                 sycl::fabs(sum[rul + 1] +
-                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
-		  /*maxerr = sum[rul + 1];
-            sycl::max(maxerr,
-                      (double)(sycl::fabs(sum[rul + 1] +
-                                          constMem._GPUScale[s * NRULES + rul] *
-                                            sum[rul]) *
-                               constMem._GPUNorm[s * NRULES + rul]));*/
+                     (constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  (constMem._GPUNorm[s * NRULES + rul]));
         }
         sum[rul] = maxerr;
       }

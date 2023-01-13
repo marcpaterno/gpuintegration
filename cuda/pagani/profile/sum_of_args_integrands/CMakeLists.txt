@@ -1,7 +1,7 @@
 #find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
 add_executable(execute_Addition_integrands_on_device execute_Addition_integrands_on_device.cu)
-set_target_properties(execute_Addition_integrands_on_device PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+set_target_properties(execute_Addition_integrands_on_device PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(execute_Addition_integrands_on_device util)
 target_compile_options(execute_Addition_integrands_on_device PRIVATE "--expt-relaxed-constexpr" )
 target_include_directories(execute_Addition_integrands_on_device PRIVATE
@@ -12,7 +12,7 @@ target_include_directories(execute_Addition_integrands_on_device PRIVATE
 
 
 add_executable(profile_pagani_kernel_f_3D profile_pagani_kernel_f_3D.cu)
-set_target_properties(profile_pagani_kernel_f_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+set_target_properties(profile_pagani_kernel_f_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(profile_pagani_kernel_f_3D util)
 target_compile_options(profile_pagani_kernel_f_3D PRIVATE "--expt-relaxed-constexpr" )
 target_include_directories(profile_pagani_kernel_f_3D PRIVATE
@@ -21,7 +21,7 @@ target_include_directories(profile_pagani_kernel_f_3D PRIVATE
 )
 
 add_executable(profile_pagani_kernel_f_5D profile_pagani_kernel_f_5D.cu)
-set_target_properties(profile_pagani_kernel_f_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+set_target_properties(profile_pagani_kernel_f_5D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(profile_pagani_kernel_f_5D util)
 target_compile_options(profile_pagani_kernel_f_5D PRIVATE "--expt-relaxed-constexpr" )
 target_include_directories(profile_pagani_kernel_f_5D PRIVATE
@@ -32,7 +32,7 @@ target_include_directories(profile_pagani_kernel_f_5D PRIVATE
 
 
 add_executable(profile_pagani_kernel_f_6D profile_pagani_kernel_f_6D.cu)
-set_target_properties(profile_pagani_kernel_f_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+set_target_properties(profile_pagani_kernel_f_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(profile_pagani_kernel_f_6D util)
 target_compile_options(profile_pagani_kernel_f_6D PRIVATE "--expt-relaxed-constexpr" )
 target_include_directories(profile_pagani_kernel_f_6D PRIVATE
@@ -42,7 +42,7 @@ target_include_directories(profile_pagani_kernel_f_6D PRIVATE
 
 
 add_executable(profile_pagani_kernel_f_8D profile_pagani_kernel_f_8D.cu)
-set_target_properties(profile_pagani_kernel_f_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH} CUDA_ARCHITECTURES ${PAGANI_TARGET_ARCH})
+set_target_properties(profile_pagani_kernel_f_8D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(profile_pagani_kernel_f_8D util)
 target_compile_options(profile_pagani_kernel_f_8D PRIVATE "--expt-relaxed-constexpr" )
 target_include_directories(profile_pagani_kernel_f_8D PRIVATE

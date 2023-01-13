@@ -274,8 +274,8 @@ namespace quad {
           maxerr =
             max(maxerr,
                 fabs(sum[rul + 1] +
-                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
-                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
+                     __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  __ldg(&constMem.GPUNorm[s * NRULES + rul]));
 		}
         sum[rul] = maxerr;
       }
