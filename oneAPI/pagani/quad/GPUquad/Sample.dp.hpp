@@ -297,12 +297,17 @@ namespace quad {
         constexpr int NSETS = 9;
 		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
-          maxerr = sum[rul + 1];
+          maxerr =
+            sycl::max(maxerr,
+                sycl::fabs(sum[rul + 1] +
+                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
+		  /*maxerr = sum[rul + 1];
             sycl::max(maxerr,
                       (double)(sycl::fabs(sum[rul + 1] +
                                           constMem._GPUScale[s * NRULES + rul] *
                                             sum[rul]) *
-                               constMem._GPUNorm[s * NRULES + rul]));
+                               constMem._GPUNorm[s * NRULES + rul]));*/
         }
         sum[rul] = maxerr;
       }

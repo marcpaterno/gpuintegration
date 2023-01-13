@@ -271,9 +271,11 @@ namespace quad {
 		constexpr int NSETS = 9;
 		#pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
-          maxerr = sum[rul + 1];
+          maxerr =
             max(maxerr,
-                (double)fabs(sum[rul + 1] + __ldg(&constMem.GPUScale[s * NRULES + rul]) * sum[rul]) * __ldg(&constMem.GPUNorm[s * NRULES + rul]));
+                fabs(sum[rul + 1] +
+                     __ldg(&constMem._GPUScale[s * NRULES + rul]) * sum[rul]) *
+                  __ldg(&constMem._GPUNorm[s * NRULES + rul]));
 		}
         sum[rul] = maxerr;
       }
