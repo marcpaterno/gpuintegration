@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(gpuintegration VERSION 0.1.0 LANGUAGES CXX CUDA)
+project(gpuintegration VERSION 0.1.0 LANGUAGES CXX CUDA C)
 enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
@@ -19,18 +19,20 @@ SET(CMAKE_CUDA_FLAGS_DEBUG "-g -lineinfo")
 
 
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
-include_directories(AFTER cubacpp externals ${TOP_DIR})
+include_directories(AFTER cubacpp externals ${TOP_DIR}  ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR})
 
 if (GPUINTEGRATION_BUILD_CUDA)
   add_subdirectory(cuda)
+  add_subdirectory(test)
+
 endif()
 
 if (GPUINTEGRATION_BUILD_KOKKOS)
   add_subdirectory(kokkos)
 endif()
 
+
 if (GPUINTEGRATION_BUILD_ONEAPI)
-  include_directories(AFTER ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR})
   if(CUDA_BACKEND)
 	set(CMAKE_CXX_COMPILER clang++)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend --cuda-gpu-arch=sm_70")

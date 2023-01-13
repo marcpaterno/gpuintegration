@@ -1,8 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
-#include "cuda/pagani/tests/model.cuh"
-#include "cuda/pagani/tests/model.hh"
+#include "test/cuda/pagani/model.cuh"
+#include "test/cuda/pagani/model.hh"
 
 #include <cmath>
 #include <fstream>

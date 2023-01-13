@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(gpuintegration VERSION 0.0.1 LANGUAGES CXX CUDA C)
+#cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+#project(gpuintegration VERSION 0.0.1 LANGUAGES CXX CUDA C)
 #enable_testing()
 
 # These flags are used by everything in the project. Put anything that affects
@@ -21,11 +21,11 @@ if (NOT DEFINED TARGET_ARCH)
 	MESSAGE(FATAL_ERROR "You must specify -DPAGANI_TARGET_ARCH=<arch> to generate code for the right GPU, e.g. '=70-real' for V100")
 endif()
 
-include_directories(AFTER ${CMAKE_SOURCE_DIR} ${PAGANI_DIR} externals)
+include_directories(AFTER ${CMAKE_SOURCE_DIR} ${TOP_DIR} externals)
 
 set(CMAKE_SHARED_MODULE_PREFIX "")    # We don't need the leading lib
 
 add_subdirectory(quad)
-add_subdirectory(tests)
+#add_subdirectory(tests)
 add_subdirectory(demos)
 add_subdirectory(profile)

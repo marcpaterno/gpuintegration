@@ -1,4 +1,4 @@
-#include "cuda/pagani/tests/model.hh"
+#include "test/cuda/pagani/model.hh"
 
 #include <cmath>
 
