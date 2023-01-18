@@ -2,7 +2,6 @@
 #define WORKSPACE_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
@@ -42,7 +41,7 @@ class Workspace{
         Workspace() = default;
         //Workspace(double* lows, double* highs):Cubature_rules<ndim>(lows, highs){}
         
-        template<typename IntegT, bool debug>
+        template<typename IntegT, bool debug = false>
         cuhreResult<double>
         integrate(const IntegT& integrand,
                            double epsrel,
@@ -63,15 +62,12 @@ Workspace<ndim, use_custom>::heuristic_classify(Classifier& classifier_a,
     const cuhreResult<double>& cummulative){
     const double ratio = static_cast<double>(classifier_a.device_mem_required_for_full_split(characteristics.size))/static_cast<double>(free_device_mem(characteristics.size, ndim));    
     const bool classification_necessary = ratio > 1.;
-    //std::cout<<"free mem:"<<free_device_mem(characteristics.size, ndim) << std::endl;
-	//std::cout<<"mem_needed:"<<classifier_a.device_mem_required_for_full_split(characteristics.size) << std::endl;
-	//std::cout<<"ratio:"<< ratio<<std::endl;
+	
     if(!classifier_a.classification_criteria_met(characteristics.size)){
-		//std::cout<<"classification criteria not met"<<std::endl;
         const bool must_terminate = classification_necessary;
         return must_terminate;
     }
-	
+
     Classification_res hs_results = 
         classifier_a.classify(characteristics.active_regions, estimates.error_estimates, estimates.size, iter.errorest, finished.errorest, cummulative.errorest);
     const bool hs_classify_success = hs_results.pass_mem && hs_results.pass_errorest_budget;
@@ -136,8 +132,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
   auto q_ct1 =  sycl::queue(sycl::gpu_selector());
             Res cummulative;
             Recorder<debug> iter_recorder("oneapi_iters.csv"); 
-            using MilliSeconds = std::chrono::duration<double, std::chrono::milliseconds::period>;
-
+			
             rules.set_device_volume(vol.lows, vol.highs);
             Estimates prev_iter_estimates; 
             
@@ -162,7 +157,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
 				
                 two_level_errorest_and_relerr_classify<ndim>(&estimates, &prev_iter_estimates, &characteristics, epsrel, relerr_classification);
                 iter.errorest = reduction<double, use_custom>(estimates.error_estimates, subregions.size);
-                                       
                 if(predict_split){
                     if(cummulative.nregions == 0 && it == 15){
                         subregions.take_snapshot();
@@ -180,14 +174,12 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                     cummulative.nregions += subregions.size;
                     d_integrand->~IntegT();
                     sycl::free(d_integrand, q_ct1);
-                    std::cout<<"total_time:"<<rules.total_time/1e6 << std::endl;
                     return cummulative;
                 }
 				
                 classifier_a.store_estimate(cummulative.estimate + iter.estimate);
                 Res finished = compute_finished_estimates<ndim>(estimates, characteristics, iter); 
                 fix_error_budget_overflow(&characteristics, cummulative, iter, finished, epsrel);
-                		
                 if(heuristic_classify(classifier_a, characteristics, estimates, finished, iter, cummulative) == true){
                     cummulative.estimate += iter.estimate;
                     cummulative.errorest += iter.errorest;
@@ -196,10 +188,10 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                     sycl::free(d_integrand, q_ct1);
                     return cummulative;
                 }
-
+				
                 cummulative.estimate += finished.estimate;
                 cummulative.errorest += finished.errorest; 
-
+				
                 Filter filter_obj(subregions.size);
                 size_t num_active_regions = filter_obj.filter(&subregions, &characteristics, &estimates, &prev_iter_estimates);
                 cummulative.nregions += num_regions - num_active_regions;
@@ -209,12 +201,10 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 splitter.split(&subregions, &characteristics);
                 cummulative.iters++;
             }
-            std::cout<<"total_time:"<<rules.total_time << std::endl;
             d_integrand->~IntegT();
             cummulative.nregions += subregions.size;
             sycl::free(d_integrand, q_ct1);
             return cummulative;
-            
         }
 
 template <size_t ndim, bool use_custom>
