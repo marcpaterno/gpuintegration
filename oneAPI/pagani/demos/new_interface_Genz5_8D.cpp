@@ -1,7 +1,6 @@
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 #include <chrono>
 #include <cmath>
