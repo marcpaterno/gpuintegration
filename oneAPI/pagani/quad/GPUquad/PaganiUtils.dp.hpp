@@ -115,7 +115,7 @@ class Cubature_rules{
 		}    
 	} 	   
        
-     void
+    void
 	Print_func_evals(quad::Func_Evals<ndim> fevals, double* ests, double* errs, const size_t num_regions){
         if(num_regions >= 1024)
 			return;
@@ -396,9 +396,10 @@ template<size_t ndim, bool use_custom = false>
 cuhreResult<double>
 compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region_characteristics<ndim>& classifiers, const cuhreResult<double>& iter){
     cuhreResult<double> finished;
+	std::cout<<"before dot-product"<<std::endl;
     finished.estimate = iter.estimate - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
     finished.errorest = iter.errorest - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.error_estimates, estimates.size);
-	
+	std::cout<<"at end of compute_finished_estimates"<<std::endl;
     return finished;
 }
 
@@ -418,7 +419,6 @@ template<typename IntegT, int ndim>
 cuhreResult<double>
 pagani_clone(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsrel = 1.e-3, double epsabs = 1.e-12, bool relerr_classification = true){
     using Reg_estimates = Region_estimates<ndim>;
-    using Sub_regs = Sub_regions<ndim>;
     using Regs_characteristics = Region_characteristics<ndim>;
     using Res = cuhreResult<double>;
     using Filter = Sub_regions_filter<ndim>;
