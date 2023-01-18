@@ -17,26 +17,25 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 SET(CMAKE_CUDA_FLAGS_DEBUG "-g -lineinfo")
 
-
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
-include_directories(AFTER cubacpp externals ${TOP_DIR}  ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR})
+include_directories(AFTER cubacpp externals ${TOP_DIR}  ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR} ${ONEMKL_DIR})
 
 if (GPUINTEGRATION_BUILD_CUDA)
   add_subdirectory(cuda)
-  add_subdirectory(test)
-
 endif()
 
 if (GPUINTEGRATION_BUILD_KOKKOS)
+  find_package(Kokkos REQUIRED)
+  find_package(KokkosKernels REQUIRED)
   add_subdirectory(kokkos)
 endif()
 
-
 if (GPUINTEGRATION_BUILD_ONEAPI)
-  if(CUDA_BACKEND)
-	set(CMAKE_CXX_COMPILER clang++)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend --cuda-gpu-arch=sm_70")
-  endif()
+ #if(CUDA_BACKEND)
+	#set(CMAKE_CXX_COMPILER clang++)
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend --cuda-gpu-arch=sm_70")
+ #endif()
   add_subdirectory(oneAPI)
 endif()
 
+add_subdirectory(test)
