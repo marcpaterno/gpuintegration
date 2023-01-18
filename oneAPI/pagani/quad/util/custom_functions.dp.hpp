@@ -143,7 +143,7 @@ custom_reduce_atomics(T* arr, size_t size) {
                          sycl::range(1, 1, num_threads)),
           [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
                   device_custom_reduce_atomics(arr, size, out, item_ct1);
-          });
+          }).wait();
 
         cuda_memcpy_to_host<T>(&res, out, 1);
         sycl::free(out, q_ct1);
