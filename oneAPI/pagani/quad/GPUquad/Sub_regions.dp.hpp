@@ -18,8 +18,7 @@ struct Sub_regions{
   Sub_regions() {}
   
   Sub_regions(size_t partitions_per_axis){
-	  double ttt = 2.;
-        uniform_split(partitions_per_axis, ttt);  
+        uniform_split(partitions_per_axis);  
   }
 
   ~Sub_regions() {
@@ -109,7 +108,7 @@ struct Sub_regions{
     return total_vol;
   }
   
-  void uniform_split(size_t numOfDivisionPerRegionPerDimension, double ttt = 0.){
+  void uniform_split(size_t numOfDivisionPerRegionPerDimension){
     size_t num_starting_regions = pow((double)numOfDivisionPerRegionPerDimension, (double)ndim);
     double starting_axis_length = 1./(double)numOfDivisionPerRegionPerDimension;
     
@@ -117,7 +116,6 @@ struct Sub_regions{
         
     size_t numThreads = 512;
     size_t numBlocks = (size_t)ceil((double)num_starting_regions / (double)numThreads);
-        	double tt = 2.;
 		auto q_ct1 =  sycl::queue(sycl::gpu_selector());
 		q_ct1.submit([&](sycl::handler& cgh) {
             auto dLeftCoord_ct1 = dLeftCoord;
@@ -127,17 +125,9 @@ struct Sub_regions{
             cgh.parallel_for(sycl::range<1>(num_starting_regions),
                [=](sycl::id<1> reg)
              {
-				 
-			auto custom_pow = [=](size_t const base, size_t const exponent){
-				size_t res = 1.;
-				for(size_t i = 0; i < exponent; ++i)
-					res *= base;
-				return base;
-			};
-			
-			
-                for(size_t dim = 0; dim < ndim; ++dim){				
-				   size_t _id = (int)(reg[0] /sycl::pow((double)numOfDivisionPerRegionPerDimension, (double)dim)) % numOfDivisionPerRegionPerDimension;
+				 			
+                for(int dim = 0; dim < ndim; ++dim){				
+				   size_t _id = (int)(reg[0] / sycl::pown((double)numOfDivisionPerRegionPerDimension, dim)) % numOfDivisionPerRegionPerDimension;
                    dLeftCoord_ct1[num_starting_regions * dim + (reg)] = static_cast<double>(_id) * static_cast<double>(starting_axis_length);  
                    dLength_ct2[num_starting_regions * dim + (reg)] = starting_axis_length;
                  }
