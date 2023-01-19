@@ -858,7 +858,7 @@ void ShowDevice(sycl::queue &q) {
 	  std::cout<< "\tfevals:"<<ncubes*2<<std::endl;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
+      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
          
       sycl::event e = q_ct1.submit([&](sycl::handler &cgh) {

@@ -46,7 +46,7 @@ custom_reduce(T* arr, size_t size) {
   size_t max_num_blocks = 1024;
   size_t num_blocks =
     std::min((size + num_threads - 1) / num_threads, max_num_blocks);
-  T* out = cuda_malloc<T>(num_blocks);
+  T* out = quad::cuda_malloc<T>(num_blocks);
   
   q_ct1.submit([&](sycl::handler& cgh) {
       sycl::accessor<T,
@@ -92,7 +92,7 @@ custom_reduce(T* arr, size_t size) {
     }).wait();
 
   T res = 0;
-  cuda_memcpy_to_host<T>(&res, out, 1);
+  quad::cuda_memcpy_to_host<T>(&res, out, 1);
   sycl::free(out, q_ct1);
   return res;
   
@@ -132,10 +132,10 @@ custom_reduce_atomics(T* arr, size_t size) {
 	size_t max_num_blocks = 1024;
         size_t num_blocks =
           std::min((size + num_threads - 1) / num_threads, max_num_blocks);
-        T* out = cuda_malloc<T>(1);
-	cuda_memcpy_to_device<T>(out, &res, 1);
+        T* out = quad::cuda_malloc<T>(1);
+	quad::cuda_memcpy_to_device<T>(out, &res, 1);
 	
-	cuda_memcpy_to_device<T>(out, &res, 1);
+	quad::cuda_memcpy_to_device<T>(out, &res, 1);
         
         q_ct1.parallel_for(
           sycl::nd_range(sycl::range(1, 1, num_blocks) *
@@ -145,7 +145,7 @@ custom_reduce_atomics(T* arr, size_t size) {
                   device_custom_reduce_atomics(arr, size, out, item_ct1);
           }).wait();
 
-        cuda_memcpy_to_host<T>(&res, out, 1);
+        quad::cuda_memcpy_to_host<T>(&res, out, 1);
         sycl::free(out, q_ct1);
         return res;
 }
@@ -164,7 +164,6 @@ device_custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size, T2* out,
           item_ct1.get_local_range().get(2) * item_ct1.get_group_range(2);
 
         for (size_t i = tid; i < size; i += total_num_threads) {
-		T2 temp = arr1[i]*arr2[i];
 		sum += arr1[i]*arr2[i];
 	}
 
@@ -186,8 +185,8 @@ custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size) {
 	size_t max_num_blocks = 1024;
     size_t num_blocks =
     std::min((size + num_threads - 1) / num_threads, max_num_blocks);
-    T2* out = cuda_malloc<T2>(1);
-	cuda_memcpy_to_device<T2>(out, &res, 1);
+    T2* out = quad::cuda_malloc<T2>(1);
+	quad::cuda_memcpy_to_device<T2>(out, &res, 1);
         
 	q_ct1.submit([&](sycl::handler& cgh) {
         cgh.parallel_for(
@@ -201,7 +200,7 @@ custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size) {
 	}).wait_and_throw();
 	
 	
-    cuda_memcpy_to_host<T2>(&res, out, 1);
+    quad::cuda_memcpy_to_host<T2>(&res, out, 1);
     sycl::free(out, q_ct1);
     return res;
 }
@@ -296,7 +295,7 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
     T localMax = 0.f;
     T localMin = DBL_MAX;
 	
-	for (size_t i = tid; i < size; i += total_num_threads){
+	for (int i = tid; i < size; i += total_num_threads){
         T val = input[tid];
 		
         if (localMax < val){
@@ -346,10 +345,10 @@ min_max(T* input, const int size) {
         size_t num_blocks =
           std::min((size + num_threads - 1) / num_threads, max_num_blocks);
 
-        T* block_mins = cuda_malloc<T>(num_blocks);
-	T* block_maxs = cuda_malloc<T>(num_blocks);
-	T* d_min = cuda_malloc<T>(1);
-	T* d_max = cuda_malloc<T>(1);
+        T* block_mins = quad::cuda_malloc<T>(num_blocks);
+	T* block_maxs = quad::cuda_malloc<T>(num_blocks);
+	T* d_min = quad::cuda_malloc<T>(1);
+	T* d_max = quad::cuda_malloc<T>(1);
 
         
         q_ct1.submit([&](sycl::handler& cgh) {
@@ -414,8 +413,8 @@ min_max(T* input, const int size) {
         T min = 0.;
 	T max = 0.;
 	
-	cuda_memcpy_to_host(&min, d_min, 1);
-	cuda_memcpy_to_host(&max, d_max, 1);
+	quad::cuda_memcpy_to_host(&min, d_min, 1);
+	quad::cuda_memcpy_to_host(&max, d_max, 1);
 
         sycl::free(block_mins, q_ct1);
         sycl::free(block_maxs, q_ct1);

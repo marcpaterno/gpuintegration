@@ -58,10 +58,6 @@ void
 exclusive_scan(T* arr, size_t size, T* out)
 {
   if constexpr (use_custom == false) {
-    // dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    // auto q_ct1 = dev_ct1.default_queue();
-    // oneapi::dpl::experimental::exclusive_scan_async(oneapi::dpl::execution::make_device_policy(q_ct1),
-    // arr, arr + size, out, 0.).wait();
     thrust_exclusive_scan<T>(arr, size, out);
   } else {
     sum_scan_blelloch(out, arr, size);
@@ -69,10 +65,10 @@ exclusive_scan(T* arr, size_t size, T* out)
 }
 
 template <typename T, bool use_custom = false, bool cuda_backend = true>
-Range<T>
+quad::Range<T>
 device_array_min_max(T* arr, size_t size)
 {
-  Range<T> range;
+  quad::Range<T> range;
   if constexpr (use_custom == true && cuda_backend == true) {
     auto q = dpct::get_default_queue();
     int64_t* min = sycl::malloc_shared<int64_t>(1, q);
@@ -88,8 +84,8 @@ device_array_min_max(T* arr, size_t size)
     est_ev.wait();
     est_ev2.wait();
 
-    cuda_memcpy_to_host<T>(&range.low, &arr[min[0]], 1);
-    cuda_memcpy_to_host<T>(&range.high, &arr[max[0]], 1);
+    quad::cuda_memcpy_to_host<T>(&range.low, &arr[min[0]], 1);
+    quad::cuda_memcpy_to_host<T>(&range.high, &arr[max[0]], 1);
     free(min, q);
     free(max, q);
     return range;

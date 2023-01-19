@@ -25,7 +25,7 @@
 class Classification_res{
     public:
     Classification_res() = default;
-    Classification_res(Range<double> some_range):threshold_range(some_range){}
+    Classification_res(quad::Range<double> some_range):threshold_range(some_range){}
     
     ~Classification_res(){}
     
@@ -47,7 +47,7 @@ class Classification_res{
     double threshold = 0.;
     double errorest_budget_covered = 0.;
     double percent_mem_active = 0.;
-    Range<double> threshold_range; //change to threshold_range
+    quad::Range<double> threshold_range; //change to threshold_range
     double* active_flags = nullptr;
     size_t num_active = 0;
     double finished_errorest = 0.;
@@ -334,7 +334,7 @@ class Heuristic_classifier{
             const double min_errorest = thres_search.threshold_range.low;
             const double max_errorest = thres_search.threshold_range.high;
             thres_search.threshold = iter_errorest/num_regions;
-            thres_search.active_flags = cuda_malloc<double>(num_regions);
+            thres_search.active_flags = quad::cuda_malloc<double>(num_regions);
             const double target_error = abs(estimates_from_last_iters[2]) * epsrel;
             
             const size_t max_num_thresholds_attempts = 20;

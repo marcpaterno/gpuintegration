@@ -30,11 +30,10 @@ TEST_CASE("Positive Constant Function")
     Region_estimates<ndim> subregion_estimates(sub_regions.size);
     Region_characteristics<ndim> region_characteristics(sub_regions.size);
         
-    Positive* d_integrand = make_gpu_integrand<Positive>(integrand);
-    int it = 0;    
-    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Positive>(d_integrand, it, &sub_regions, &subregion_estimates, &region_characteristics);
+    Positive* d_integrand = quad::make_gpu_integrand<Positive>(integrand);
+    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Positive>(d_integrand, &sub_regions, &subregion_estimates, &region_characteristics);
     CHECK(res.estimate == Approx(true_answer));  
-    CHECK(array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
+    CHECK(quad::array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
 }
 
 
@@ -61,9 +60,8 @@ TEST_CASE("Negative Constant Function")
     Region_estimates<ndim> subregion_estimates(sub_regions.size);
     Region_characteristics<ndim> region_characteristics(sub_regions.size);
         
-    Negative* d_integrand = make_gpu_integrand<Negative>(integrand);
-    int it = 0;       
-    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Negative>(d_integrand, it, &sub_regions, &subregion_estimates, &region_characteristics);
+    Negative* d_integrand = quad::make_gpu_integrand<Negative>(integrand);
+    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Negative>(d_integrand, &sub_regions, &subregion_estimates, &region_characteristics);
     CHECK(res.estimate == Approx(true_answer));  
-    CHECK(array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
+    CHECK(quad::array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
 }

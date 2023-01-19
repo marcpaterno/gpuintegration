@@ -361,11 +361,9 @@ namespace quad {
     }
 
     void
-    loadDeviceConstantMemory(Structures<T>* constMem, int device = 0)
+    loadDeviceConstantMemory(Structures<T>* constMem)
     {
       auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      //Device.DeviceInit(device, VERBOSE);
-
       constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
       constMem->_cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
 	  constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);

@@ -6,7 +6,7 @@
 #include <CL/sycl.hpp>
 //#include <dpct/dpct.hpp>
 #include <iostream>
-
+/*
 void ShowDevice(sycl::queue &q) {
       using namespace sycl;
       // Output platform and device information.
@@ -195,6 +195,6 @@ array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
     }
     return true;
 }
-
+*/
 
 #endif

@@ -64,33 +64,6 @@ namespace quad {
 #define QUAD_STDERR
 #endif
 
-  //__host__ __device__
-  int
-  Debug(int error, const char* filename, int line, bool silent = false)
-  {
-
-#ifdef QUAD_STDERR
-    if (error && !silent) {
-#if (CUB_PTX_ARCH == 0)
-      fprintf(stderr,
-              "CUDA error %d [%s, %d]: %s\n",
-              error,
-              filename,
-              line,
-              cudaGetErrorString(error));
-      fflush(stderr);
-#elif (CUB_PTX_ARCH >= 200)
-      printf("CUDA error %d [block %d, thread %d, %s, %d]\n",
-             error,
-             blockIdx.x,
-             threadIdx.x,
-             filename,
-             line);
-#endif
-    }
-#endif
-    return error;
-  }
 
   /**
    * \brief Debug macro

@@ -2,7 +2,6 @@
 #define PAGANI_UTILS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
@@ -74,17 +73,14 @@ class Cubature_rules{
         const int key = 0;
         const int verbose = 0;
         rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
-        generators = cuda_malloc<double>(ndim * fEvalPerRegion);
+        generators = quad::cuda_malloc<double>(ndim * fEvalPerRegion);
         size_t block_size = 64;
-        int NSETS = 9;
         auto q =  sycl::queue(sycl::gpu_selector());
         q.submit([&](sycl::handler& cgh) {
             double* generators_ct0 = generators;
             auto constMem_ct2 = constMem;
             
-            int NDIM = ndim;
             int FEVAL = fEvalPerRegion;
-            int total_feval = FEVAL;
             
             cgh.parallel_for(sycl::nd_range<1>(block_size, block_size),
                              [=](sycl::nd_item<1> item_ct1) {
@@ -94,15 +90,14 @@ class Cubature_rules{
         }).wait_and_throw();
         
         
-        integ_space_lows = cuda_malloc<double>(ndim);
-        integ_space_highs = cuda_malloc<double>(ndim);
+        integ_space_lows = quad::cuda_malloc<double>(ndim);
+        integ_space_highs = quad::cuda_malloc<double>(ndim);
         set_device_volume();
         
     }
        
     void
     Print_region_evals(double* ests, double* errs, const size_t num_regions){
-        constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
 
         for(size_t reg = 0; reg < num_regions; ++reg){						  
 				rregions.outfile << reg << ",";								
@@ -119,7 +114,6 @@ class Cubature_rules{
 	Print_func_evals(quad::Func_Evals<ndim> fevals, double* ests, double* errs, const size_t num_regions){
         if(num_regions >= 1024)
 			return;
-		constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
 		
 		auto print_reg = [=](const Bounds* sub_region){
 			for(size_t dim =0; dim < ndim; ++dim){
@@ -139,6 +133,7 @@ class Cubature_rules{
 			}
 		};
 		
+		constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
 		for(size_t reg = 0; reg < num_regions; ++reg){
 			for(int feval = 0; feval < fevals.num_fevals; ++feval){
 				size_t index = reg * fevals.num_fevals + feval;
@@ -160,7 +155,7 @@ class Cubature_rules{
    void print_generators(double* d_generators){
         rgenerators.outfile << "i, gen" << std::endl;
         double* h_generators = new double[ndim * CuhreFuncEvalsPerRegion<ndim>()];
-        cuda_memcpy_to_host<double>(h_generators, d_generators, ndim * CuhreFuncEvalsPerRegion<ndim>());
+        quad::cuda_memcpy_to_host<double>(h_generators, d_generators, ndim * CuhreFuncEvalsPerRegion<ndim>());
         for(int i=0; i < ndim * CuhreFuncEvalsPerRegion<ndim>(); ++i){
             rgenerators.outfile << i << "," << std::scientific << h_generators[i] << std::endl;
         }
@@ -181,15 +176,15 @@ class Cubature_rules{
             double* ests = new double[num_regions];
             double* errs = new double[num_regions];
 
-            cuda_memcpy_to_host<double>(ests, estimates->integral_estimates, num_regions);
-            cuda_memcpy_to_host<double>(errs, estimates->error_estimates, num_regions);
+            quad::cuda_memcpy_to_host<double>(ests, estimates->integral_estimates, num_regions);
+            quad::cuda_memcpy_to_host<double>(errs, estimates->error_estimates, num_regions);
 
             Print_region_evals(ests, errs, num_regions);
             
             if constexpr(debug >= 2){
                 quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
                 hfevals->fevals_list = new quad::Feval<ndim>[num_regions*num_fevals];
-                cuda_memcpy_to_host<quad::Feval<ndim>>(hfevals->fevals_list, dfevals.fevals_list, num_regions*num_fevals);
+                quad::cuda_memcpy_to_host<quad::Feval<ndim>>(hfevals->fevals_list, dfevals.fevals_list, num_regions*num_fevals);
                 Print_func_evals(*hfevals, ests, errs, num_regions);
                 delete[] hfevals->fevals_list;
                 delete hfevals;
@@ -209,12 +204,12 @@ class Cubature_rules{
             std::array<double, ndim> _highs;
             std::fill_n(_highs.begin(), ndim, 1.);
             
-            cuda_memcpy_to_device<double>(integ_space_highs, _highs.data(), ndim);
-            cuda_memcpy_to_device<double>(integ_space_lows, _lows.data(), ndim);
+            quad::cuda_memcpy_to_device<double>(integ_space_highs, _highs.data(), ndim);
+            quad::cuda_memcpy_to_device<double>(integ_space_lows, _lows.data(), ndim);
         }
         else{
-            cuda_memcpy_to_device<double>(integ_space_highs, highs, ndim);
-            cuda_memcpy_to_device<double>(integ_space_lows, lows, ndim);
+            quad::cuda_memcpy_to_device<double>(integ_space_highs, highs, ndim);
+            quad::cuda_memcpy_to_device<double>(integ_space_lows, lows, ndim);
         }
     }
 
@@ -232,7 +227,7 @@ class Cubature_rules{
         const int key = 0;
         const int verbose = 0;
         rule.Init(dim, fEvalPerRegion, key, verbose, &constMem);
-        generators = cuda_malloc<double>(sizeof(double) * dim * fEvalPerRegion);
+        generators = quad::cuda_malloc<double>(sizeof(double) * dim * fEvalPerRegion);
         
         size_t block_size = 64;
         
@@ -256,7 +251,6 @@ class Cubature_rules{
     template<typename IntegT, bool pre_allocated_integrand = false, int debug = 0>
     cuhreResult<double> 
     apply_cubature_integration_rules(IntegT* d_integrand,
-        int it, 
         /*const*/ Sub_regs* subregions, 
         /*const*/ Reg_estimates* subregion_estimates, 
         /*const*/ Regs_characteristics* region_characteristics, 
@@ -264,11 +258,10 @@ class Cubature_rules{
     {
       size_t num_regions = subregions->size;
         
-      set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
+      quad::set_device_array<double>(region_characteristics->active_regions, num_regions, 1.);
 		
       auto integral_estimates = subregion_estimates->integral_estimates;
       auto error_estimates = subregion_estimates->error_estimates;
-      auto active_regions = region_characteristics->active_regions;
       auto sub_dividing_dim = region_characteristics->sub_dividing_dim;
       auto dLeftCoord = subregions->dLeftCoord;
       auto dLength = subregions->dLength;
@@ -279,11 +272,10 @@ class Cubature_rules{
         
       //temp addition
       quad::Func_Evals<ndim> dfevals;
-      quad::Func_Evals<ndim>* hfevals;
         
       if constexpr(debug >= 2){
 	  constexpr size_t num_fevals = CuhreFuncEvalsPerRegion<ndim>();
-	  dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals);
+	  dfevals.fevals_list = quad::cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals);
         }
 		
 		
@@ -396,10 +388,8 @@ template<size_t ndim, bool use_custom = false>
 cuhreResult<double>
 compute_finished_estimates(const Region_estimates<ndim>& estimates, const Region_characteristics<ndim>& classifiers, const cuhreResult<double>& iter){
     cuhreResult<double> finished;
-	std::cout<<"before dot-product"<<std::endl;
     finished.estimate = iter.estimate - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.integral_estimates, estimates.size);
     finished.errorest = iter.errorest - dot_product<double, double, use_custom>(classifiers.active_regions, estimates.error_estimates, estimates.size);
-	std::cout<<"at end of compute_finished_estimates"<<std::endl;
     return finished;
 }
 
@@ -429,7 +419,7 @@ pagani_clone(const IntegT& integrand, Sub_regions<ndim>& subregions, double epsr
     Cubature_rules<ndim> cubature_rules;    
     Heuristic_classifier<ndim> hs_classify(epsrel, epsabs);
     bool accuracy_termination = false;
-    IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
+    IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
     
     for(size_t it = 0; it < 700 && !accuracy_termination; it++){
         size_t num_regions = subregions.size;

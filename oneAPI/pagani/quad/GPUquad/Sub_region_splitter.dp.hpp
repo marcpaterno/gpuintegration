@@ -4,7 +4,7 @@
 #include <CL/sycl.hpp>
 //#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"
 
 template <typename T, int NDIM>
@@ -60,8 +60,8 @@ void split(Sub_regions<ndim>& sub_regions, const Region_characteristics<ndim>& c
         
     size_t children_per_region = 2;
         
-    double* children_left_coord = cuda_malloc<double>(num_regions * ndim * children_per_region);
-    double* children_length = cuda_malloc<double>(num_regions * ndim * children_per_region);
+    double* children_left_coord = quad::cuda_malloc<double>(num_regions * ndim * children_per_region);
+    double* children_length = quad::cuda_malloc<double>(num_regions * ndim * children_per_region);
 
     quad::divideIntervalsGPU<double, ndim>
         <<<num_blocks, num_threads>>>(children_left_coord,
@@ -100,8 +100,8 @@ class Sub_region_splitter{
         size_t num_blocks = num_regions / num_threads + ((num_regions % num_threads) ? 1 : 0);
         size_t children_per_region = 2;
 
-        double* children_left_coord = cuda_malloc<double>(num_regions * ndim * children_per_region);
-        double* children_length = cuda_malloc<double>(num_regions * ndim * children_per_region);
+        double* children_left_coord = quad::cuda_malloc<double>(num_regions * ndim * children_per_region);
+        double* children_length = quad::cuda_malloc<double>(num_regions * ndim * children_per_region);
         
         auto dLeftCoord = sub_regions->dLeftCoord;
         auto dLength = sub_regions->dLength;

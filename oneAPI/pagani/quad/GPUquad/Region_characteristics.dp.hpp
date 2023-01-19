@@ -6,14 +6,14 @@
 #include <iostream>
 
 //helper routines
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
 template<size_t ndim>
 class Region_characteristics{
     public:
     Region_characteristics(size_t num_regions){
-        active_regions = cuda_malloc<double>(num_regions*ndim);  
-        sub_dividing_dim = cuda_malloc<int>(num_regions*ndim);  
+        active_regions = quad::cuda_malloc<double>(num_regions*ndim);  
+        sub_dividing_dim = quad::cuda_malloc<int>(num_regions*ndim);  
         size = num_regions;
     }
 

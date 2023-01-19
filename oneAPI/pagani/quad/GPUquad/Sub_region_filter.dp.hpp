@@ -4,7 +4,7 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"
 #include <numeric>
 
@@ -62,7 +62,7 @@ class Sub_regions_filter{
     using Region_ests = Region_estimates<ndim>;
     
     Sub_regions_filter(const size_t num_regions){
-        scanned_array = cuda_malloc<double>(num_regions);
+        scanned_array = quad::cuda_malloc<double>(num_regions);
     }
     
     
@@ -101,9 +101,9 @@ class Sub_regions_filter{
         }
                 
         //I dont' create Regions filtered_regions, because upon destruction it would deallocate and for performance reasons, I don't want a deep_copy to occur here
-        double* filtered_leftCoord = cuda_malloc<double>(num_active_regions*ndim);        
-        double* filtered_length = cuda_malloc<double>(num_active_regions*ndim);
-        int* filtered_sub_dividing_dim = cuda_malloc<int>(num_active_regions);    
+        double* filtered_leftCoord = quad::cuda_malloc<double>(num_active_regions*ndim);        
+        double* filtered_length = quad::cuda_malloc<double>(num_active_regions*ndim);
+        int* filtered_sub_dividing_dim = quad::cuda_malloc<int>(num_active_regions);    
         
         parent_ests->reallocate(num_active_regions);
         const int numOfDivisionOnDimension = 1;

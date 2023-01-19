@@ -35,7 +35,7 @@ two_level_errorest_and_relerr_classify(
             return;
       }
         
-      double* new_two_level_errorestimates = cuda_malloc<double>(num_regions);
+      double* new_two_level_errorestimates = quad::cuda_malloc<double>(num_regions);
         
         q_ct1.submit([&](sycl::handler& cgh) {
             
@@ -101,7 +101,7 @@ computute_two_level_errorest(
         return;
     }
         
-    double* new_two_level_errorestimates = cuda_malloc<double>(num_regions);
+    double* new_two_level_errorestimates = quad::cuda_malloc<double>(num_regions);
     
     q_ct1.parallel_for(sycl::nd_range(sycl::range(1, 1, numBlocks) *
                                         sycl::range(1, 1, block_size),

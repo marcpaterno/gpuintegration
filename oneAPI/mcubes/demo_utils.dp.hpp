@@ -195,7 +195,7 @@ signle_invocation_time_and_call(F integrand,
     std::cout.precision(15);
 	
 	std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << res.estimate << "," <<  params.ncall <<std::endl;
-    /*if (success)
+    if (success)
       std::cout << integralName << "," << epsrel << "," << std::scientific
                 << correct_answer << "," << std::scientific << res.estimate
                 << "," << std::scientific << res.errorest << "," << res.chi_sq
@@ -203,7 +203,7 @@ signle_invocation_time_and_call(F integrand,
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
                 << res.status << "\n";
-    */
+    
   }
 	return success;
 }
@@ -220,7 +220,6 @@ void call_mcubes_kernel(int num_repeats){
 	quad::Volume<double, ndim> volume;
 	size_t run = 0;
 	double epsrel = 1.e-3;
-	double epsabs = 1.e-12;
 	double true_value = 0.;
 	for(auto num_samples : required_ncall){
 		params.ncall = num_samples;

@@ -2,9 +2,8 @@
 #define SUB_REGIONS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <iostream>
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
@@ -30,11 +29,11 @@ struct Sub_regions{
   }
   
   void host_device_init(const size_t numRegions){
-    LeftCoord = host_alloc<double>(numRegions*ndim);  
-    Length = host_alloc<double>(numRegions*ndim);  
+    LeftCoord = quad::host_alloc<double>(numRegions*ndim);  
+    Length = quad::host_alloc<double>(numRegions*ndim);  
     
-    dLeftCoord = cuda_malloc<double>(numRegions*ndim);  
-    dLength = cuda_malloc<double>(numRegions*ndim);  
+    dLeftCoord = quad::cuda_malloc<double>(numRegions*ndim);  
+    dLength = quad::cuda_malloc<double>(numRegions*ndim);  
     
     size = numRegions;
 	host_data_size = numRegions;
@@ -42,13 +41,13 @@ struct Sub_regions{
   
   
   void refresh_host_device(){
-    cuda_memcpy_to_host<double>(LeftCoord, dLeftCoord, size*ndim);  
-    cuda_memcpy_to_host<double>(Length, dLength, size*ndim);   
+    quad::cuda_memcpy_to_host<double>(LeftCoord, dLeftCoord, size*ndim);  
+    quad::cuda_memcpy_to_host<double>(Length, dLength, size*ndim);   
   }
   
   void refresh_device_from_host(){
-    cuda_memcpy_to_device<double>(dLeftCoord, LeftCoord, size*ndim);  
-    cuda_memcpy_to_device<double>(dLength, Length, size*ndim);   
+    quad::cuda_memcpy_to_device<double>(dLeftCoord, LeftCoord, size*ndim);  
+    quad::cuda_memcpy_to_device<double>(dLength, Length, size*ndim);   
   }
   
   void host_init(){
@@ -59,15 +58,15 @@ struct Sub_regions{
 	free(LeftCoord);
 	free(Length);
     host_data_size = size;
-	LeftCoord = host_alloc<double>(size*ndim);  
-    Length = host_alloc<double>(size*ndim);  
+	LeftCoord = quad::host_alloc<double>(size*ndim);  
+    Length = quad::host_alloc<double>(size*ndim);  
   }
 
   void
   device_init(size_t const numRegions) {
       size = numRegions;
-      dLeftCoord = cuda_malloc<double>(numRegions*ndim);  
-      dLength = cuda_malloc<double>(numRegions*ndim);  
+      dLeftCoord = quad::cuda_malloc<double>(numRegions*ndim);  
+      dLength = quad::cuda_malloc<double>(numRegions*ndim);  
   }
   
   void print_bounds(){
@@ -126,7 +125,7 @@ struct Sub_regions{
                [=](sycl::id<1> reg)
              {
 				 			
-                for(int dim = 0; dim < ndim; ++dim){				
+                for(int dim = 0; dim < (int)ndim; ++dim){				
 				   size_t _id = (int)(reg[0] / sycl::pown((double)numOfDivisionPerRegionPerDimension, dim)) % numOfDivisionPerRegionPerDimension;
                    dLeftCoord_ct1[num_starting_regions * dim + (reg)] = static_cast<double>(_id) * static_cast<double>(starting_axis_length);  
                    dLength_ct2[num_starting_regions * dim + (reg)] = starting_axis_length;
@@ -163,10 +162,10 @@ struct Sub_regions{
   
   void take_snapshot(){
     snapshot_size = size;
-    snapshot_dLeftCoord = cuda_malloc<double>(size*ndim);  
-    snapshot_dLength = cuda_malloc<double>(size*ndim);  
-    cuda_memcpy_device_to_device<double>(snapshot_dLeftCoord, dLeftCoord, size*ndim);  
-    cuda_memcpy_device_to_device<double>(snapshot_dLength, dLength, size*ndim);   
+    snapshot_dLeftCoord = quad::cuda_malloc<double>(size*ndim);  
+    snapshot_dLength = quad::cuda_malloc<double>(size*ndim);  
+    quad::cuda_memcpy_device_to_device<double>(snapshot_dLeftCoord, dLeftCoord, size*ndim);  
+    quad::cuda_memcpy_device_to_device<double>(snapshot_dLength, dLength, size*ndim);   
   }
 
   void

@@ -104,7 +104,7 @@ Workspace<ndim, use_custom>::fix_error_budget_overflow(Region_characteristics<nd
                            sycl::range(1, 1, num_threads),
                          sycl::range(1, 1, num_threads)),
           [=](sycl::nd_item<3> item_ct1) {
-              set_array_to_value<double>(characteristics->active_regions,
+              quad::set_array_to_value<double>(characteristics->active_regions,
                                       characteristics->size,
                                       1,
                                       item_ct1);
@@ -149,7 +149,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 size_t num_regions = subregions.size;
                 Regs_characteristics characteristics(subregions.size);
                 Estimates estimates(subregions.size);
-                Res iter = rules.template apply_cubature_integration_rules<IntegT, collect_iters, debug>(d_integrand, it, &subregions, &estimates, &characteristics, compute_relerr_error_reduction);
+                Res iter = rules.template apply_cubature_integration_rules<IntegT, collect_iters, debug>(d_integrand, &subregions, &estimates, &characteristics, compute_relerr_error_reduction);
 				
                 if(predict_split){
                     relerr_classification = subregions.size <= 15000000 && it < 15  && cummulative.nregions == 0 ? false : true;
