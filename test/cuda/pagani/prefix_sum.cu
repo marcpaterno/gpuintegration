@@ -5,7 +5,6 @@
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "cuda/pagani/quad/util/cudaUtil.h"
-#include "cuda/pagani/quad/util/mem_util.cuh"
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/GPUquad/Sub_region_filter.cuh"
 #include "cuda/pagani/quad/util/thrust_utils.cuh"

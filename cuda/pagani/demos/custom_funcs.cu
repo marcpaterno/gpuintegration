@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "cuda/pagani/quad/util/mem_util.cuh"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/util/thrust_utils.cuh"
 #include "cuda/pagani/quad/util/custom_functions.cuh"

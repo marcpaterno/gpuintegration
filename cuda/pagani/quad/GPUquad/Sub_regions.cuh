@@ -2,7 +2,7 @@
 #define SUB_REGIONS_CUH
 
 #include <iostream>
-#include "cuda/pagani/quad/util/mem_util.cuh"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/GPUquad/Region_estimates.cuh"
 #include "cuda/pagani/quad/GPUquad/Region_characteristics.cuh"
 #include "cuda/pagani/quad/util/Volume.cuh"

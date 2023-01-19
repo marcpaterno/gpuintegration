@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include "cuda/pagani/quad/util/mem_util.cuh"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 
 
 namespace quad {

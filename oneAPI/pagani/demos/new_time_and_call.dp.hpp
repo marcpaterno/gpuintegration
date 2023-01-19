@@ -2,7 +2,6 @@
 #define ALTERNATIVE_TIME_AND_CALL_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <chrono>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
@@ -10,7 +9,7 @@
 #include "oneAPI/pagani/quad/util/Volume.dp.hpp"
 #include <iostream>
 #include <iomanip>
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include <limits>
 #include <stdlib.h> 
 

@@ -2,13 +2,11 @@
 #define HEURISTIC_CLASSIFIER_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/mem_util.dp.hpp"
+#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/util/thrust_utils.dp.hpp"
 #include <string>
 #include <cmath>
-//#include <oneapi/mkl.hpp>
 
 
 
