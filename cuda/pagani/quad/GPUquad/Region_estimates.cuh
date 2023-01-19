@@ -2,7 +2,7 @@
 #define REGION_ESTIMATES_CUH
 
 #include <iostream>
-#include "cuda/pagani/quad/util/mem_util.cuh"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 
 template <typename T, size_t ndim>
 class Region_estimates {
@@ -11,8 +11,8 @@ public:
 
   Region_estimates(size_t num_regions)
   {
-    integral_estimates = cuda_malloc<T>(num_regions);
-    error_estimates = cuda_malloc<T>(num_regions);
+    integral_estimates = quad::cuda_malloc<T>(num_regions);
+    error_estimates = quad::cuda_malloc<T>(num_regions);
     size = num_regions;
   }
 
@@ -21,8 +21,8 @@ public:
   {
     cudaFree(integral_estimates);
     cudaFree(error_estimates);
-    integral_estimates = cuda_malloc<T>(num_regions);
-    error_estimates = cuda_malloc<T>(num_regions);
+    integral_estimates = quad::cuda_malloc<T>(num_regions);
+    error_estimates = quad::cuda_malloc<T>(num_regions);
     size = num_regions;
   }
 

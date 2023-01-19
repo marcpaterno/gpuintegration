@@ -10,7 +10,7 @@ T*
 make_gpu_arr(std::array<T, size> arr)
 {
   int* d_arr = quad::cuda_malloc_managed<int>(arr.size());
-  cuda_memcpy_to_device<int>(d_arr, arr.data(), arr.size());
+  quad::cuda_memcpy_to_device<int>(d_arr, arr.data(), arr.size());
   return d_arr;
 }
 

@@ -23,7 +23,7 @@ template <typename T>
 struct Classification_res {
 public:
   Classification_res() = default;
-  Classification_res(Range<T> some_range) : threshold_range(some_range) {}
+  Classification_res(quad::Range<T> some_range) : threshold_range(some_range) {}
 
   ~Classification_res() {}
 
@@ -47,7 +47,7 @@ public:
   T threshold = 0.;
   T errorest_budget_covered = 0.;
   T percent_mem_active = 0.;
-  Range<T> threshold_range; // change to threshold_range
+  quad::Range<T> threshold_range; // change to threshold_range
   int* active_flags = nullptr;
   size_t num_active = 0;
   T finished_errorest = 0.;
@@ -384,7 +384,7 @@ public:
     const T min_errorest = thres_search.threshold_range.low;
     const T max_errorest = thres_search.threshold_range.high;
     thres_search.threshold = iter_errorest / num_regions;
-    thres_search.active_flags = cuda_malloc<int>(num_regions);
+    thres_search.active_flags = quad::cuda_malloc<int>(num_regions);
     const T target_error = abs(estimates_from_last_iters[2]) * epsrel;
 
     const size_t max_num_thresholds_attempts = 20;

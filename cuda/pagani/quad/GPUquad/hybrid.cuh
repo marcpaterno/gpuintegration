@@ -27,7 +27,7 @@ two_level_errorest_and_relerr_classify(
     return;
   }
 
-  T* new_two_level_errorestimates = cuda_malloc<T>(num_regions);
+  T* new_two_level_errorestimates = quad::cuda_malloc<T>(num_regions);
   quad::RefineError<T><<<numBlocks, block_size>>>(
     current_iter_raw_estimates.integral_estimates,
     current_iter_raw_estimates.error_estimates,
@@ -63,7 +63,7 @@ computute_two_level_errorest(
     return;
   }
 
-  T* new_two_level_errorestimates = cuda_malloc<T>(num_regions);
+  T* new_two_level_errorestimates = quad::cuda_malloc<T>(num_regions);
   quad::RefineError<T><<<numBlocks, block_size>>>(
     current_iter_raw_estimates.integral_estimates,
     current_iter_raw_estimates.error_estimates,

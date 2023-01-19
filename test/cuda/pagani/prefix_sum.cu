@@ -26,7 +26,7 @@ TEST_CASE("Exclusvie scan of array of size 8")
 
   int* out = quad::cuda_malloc_managed<int>(size);
   int* d_arr = quad::cuda_malloc_managed<int>(size);
-  cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
+  quad::cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 
   sum_scan_blelloch(out, d_arr, size);
 
@@ -64,7 +64,7 @@ TEST_CASE("Exclusvie scan of array of non-power-two size")
   int* out_thrust = quad::cuda_malloc_managed<int>(size);
   int* out_custom = quad::cuda_malloc_managed<int>(size);
   int* d_arr = quad::cuda_malloc_managed<int>(size);
-  cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
+  quad::cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 
   sum_scan_blelloch(out_custom, d_arr, size);
   thrust_exclusive_scan<int>(d_arr, size, out_thrust);
@@ -89,7 +89,7 @@ TEST_CASE("Exclusvie scan of array of odd size")
   int* out_thrust = quad::cuda_malloc_managed<int>(size);
   int* out_custom = quad::cuda_malloc_managed<int>(size);
   int* d_arr = quad::cuda_malloc_managed<int>(size);
-  cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
+  quad::cuda_memcpy_to_device<int>(d_arr, arr.data(), size);
 
   sum_scan_blelloch(out_custom, d_arr, size);
   thrust_exclusive_scan<int>(d_arr, size, out_thrust);

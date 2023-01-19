@@ -35,7 +35,7 @@ call_cubature_rules(F integrand, quad::Volume<double, ndim>& vol, int num_repeat
   std::cout << "num-repeats:" << num_repeats << std::endl;
   for(int i=0; i < num_repeats; ++i){
 	  for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15; splits_per_dim++){
-		  F* d_integrand = make_gpu_integrand<F>(integrand);
+		  F* d_integrand = quad::make_gpu_integrand<F>(integrand);
 		  Sub_regions<double, ndim> sub_regions(splits_per_dim);
 		  size_t num_regions = sub_regions.size;
 		  
@@ -76,7 +76,7 @@ call_cubature_rules(int num_repeats = 11)
 	  for(int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15; splits_per_dim++){
 		  quad::Volume<double, ndim> vol;
 		  F integrand;
-		  F* d_integrand = make_gpu_integrand<F>(integrand);
+		  F* d_integrand = quad::make_gpu_integrand<F>(integrand);
 		  Sub_regions<double, ndim> sub_regions(splits_per_dim);
 		  size_t num_regions = sub_regions.size;
 		  
@@ -231,7 +231,7 @@ double execute_integrand(std::array<double, ndim> point, size_t num_invocations)
 	std::vector<double> host_output;
 	host_output.resize(num_threads*num_blocks);
 	//std::cout<<"vector size:"<<host_output.size()<<std::endl;
-	cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
+	quad::cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
 	
 	double sum = 0.;
 	for(int i=0; i < num_threads*num_blocks; ++i)
@@ -305,7 +305,7 @@ double execute_integrand_at_points(size_t num_invocations){
 	std::vector<double> host_output;
 	host_output.resize(num_threads*num_blocks);
 	//std::cout<<"vector size:"<<host_output.size()<<std::endl;
-	cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
+	quad::cuda_memcpy_to_host<double>(host_output.data(), output, host_output.size());
 	
 	double sum = 0.;
 	for(int i=0; i < num_threads*num_blocks; ++i)

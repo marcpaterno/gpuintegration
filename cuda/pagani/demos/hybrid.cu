@@ -50,19 +50,19 @@ main()
   Structures<double> constMem;
   rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
   double* generators =
-    cuda_malloc<double>(sizeof(double) * ndim * fEvalPerRegion);
+    quad::cuda_malloc<double>(sizeof(double) * ndim * fEvalPerRegion);
 
   size_t block_size = 64;
   quad::ComputeGenerators<double, ndim>
     <<<1, block_size>>>(generators, fEvalPerRegion, constMem);
 
-  double* integ_space_lows = cuda_malloc<double>(ndim);
-  double* integ_space_highs = cuda_malloc<double>(ndim);
+  double* integ_space_lows = quad::cuda_malloc<double>(ndim);
+  double* integ_space_highs = quad::cuda_malloc<double>(ndim);
 
-  cuda_memcpy_to_device<double>(integ_space_highs, &vol.highs[0], ndim);
-  cuda_memcpy_to_device<double>(integ_space_lows, &vol.lows[0], ndim);
+  quad::cuda_memcpy_to_device<double>(integ_space_highs, &vol.highs[0], ndim);
+  quad::cuda_memcpy_to_device<double>(integ_space_lows, &vol.lows[0], ndim);
 
-  GENZ_4_2D* d_integrand = make_gpu_integrand<GENZ_4_2D>(integrand);
+  GENZ_4_2D* d_integrand = quad::make_gpu_integrand<GENZ_4_2D>(integrand);
 
   Reg_estimates estimates(sub_regions.size);
   Regs_characteristics region_characteristics(sub_regions.size);
@@ -94,9 +94,9 @@ main()
     reduction<double>(estimates.error_estimates, sub_regions.size);
 
   double* h_regions_estimates =
-    copy_to_host(estimates.integral_estimates, sub_regions.size);
+    quad::copy_to_host(estimates.integral_estimates, sub_regions.size);
   double* h_regions_errorests =
-    copy_to_host(estimates.error_estimates, sub_regions.size);
+    quad::copy_to_host(estimates.error_estimates, sub_regions.size);
   std::cout << "num_regions:" << sub_regions.size << std::endl;
   for (int i = 0; i < sub_regions.size; ++i) {
     std::cout << "region " << i << ":" << h_regions_estimates[i] << "+-"
@@ -131,9 +131,9 @@ main()
   std::cout << "mcubes:" << mcubes_est << "+-" << mcubes_err << std::endl;
 
   h_regions_estimates =
-    copy_to_host(estimates.integral_estimates, sub_regions.size);
+    quad::copy_to_host(estimates.integral_estimates, sub_regions.size);
   h_regions_errorests =
-    copy_to_host(estimates.error_estimates, sub_regions.size);
+    quad::copy_to_host(estimates.error_estimates, sub_regions.size);
   std::cout << "num_regions:" << sub_regions.size << std::endl;
   for (int i = 0; i < sub_regions.size; ++i) {
     std::cout << "region " << i << ":" << h_regions_estimates[i] << "+-"

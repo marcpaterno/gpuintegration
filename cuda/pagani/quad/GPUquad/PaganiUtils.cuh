@@ -81,14 +81,14 @@ public:
     const int key = 0;
     const int verbose = 0;
     rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
-    generators = cuda_malloc<T>(sizeof(T) * ndim * fEvalPerRegion);
+    generators = quad::cuda_malloc<T>(sizeof(T) * ndim * fEvalPerRegion);
 
     size_t block_size = 64;
     quad::ComputeGenerators<T, ndim>
       <<<1, block_size>>>(generators, fEvalPerRegion, constMem);
 
-    integ_space_lows = cuda_malloc<T>(ndim);
-    integ_space_highs = cuda_malloc<T>(ndim);
+    integ_space_lows = quad::cuda_malloc<T>(ndim);
+    integ_space_highs = quad::cuda_malloc<T>(ndim);
 
     set_device_volume();
   }
@@ -102,11 +102,11 @@ public:
       std::array<T, ndim> _highs;
       std::fill_n(_highs.begin(), ndim, 1.);
 
-      cuda_memcpy_to_device<T>(integ_space_highs, _highs.data(), ndim);
-      cuda_memcpy_to_device<T>(integ_space_lows, _lows.data(), ndim);
+      quad::cuda_memcpy_to_device<T>(integ_space_highs, _highs.data(), ndim);
+      quad::cuda_memcpy_to_device<T>(integ_space_lows, _lows.data(), ndim);
     } else {
-      cuda_memcpy_to_device<T>(integ_space_highs, highs, ndim);
-      cuda_memcpy_to_device<T>(integ_space_lows, lows, ndim);
+      quad::cuda_memcpy_to_device<T>(integ_space_highs, highs, ndim);
+      quad::cuda_memcpy_to_device<T>(integ_space_lows, lows, ndim);
     }
   }
 
@@ -141,7 +141,7 @@ public:
   {
     rgenerators.outfile << "i, gen" << std::endl;
     T* h_generators = new T[ndim * pagani::CuhreFuncEvalsPerRegion<ndim>()];
-    cuda_memcpy_to_host<T>(h_generators,
+    quad::cuda_memcpy_to_host<T>(h_generators,
                            d_generators,
                            ndim * pagani::CuhreFuncEvalsPerRegion<ndim>());
 
@@ -168,16 +168,16 @@ public:
       double* ests = new double[num_regions];
       double* errs = new double[num_regions];
 
-      cuda_memcpy_to_host<double>(
+      quad::cuda_memcpy_to_host<double>(
         ests, estimates.integral_estimates, num_regions);
-      cuda_memcpy_to_host<double>(errs, estimates.error_estimates, num_regions);
+      quad::cuda_memcpy_to_host<double>(errs, estimates.error_estimates, num_regions);
 
       Print_region_evals(ests, errs, num_regions);
 
       if constexpr (debug >= 2) {
         quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
         hfevals->fevals_list = new quad::Feval<ndim>[num_regions * num_fevals];
-        cuda_memcpy_to_host<quad::Feval<ndim>>(
+        quad::cuda_memcpy_to_host<quad::Feval<ndim>>(
           hfevals->fevals_list, dfevals.fevals_list, num_regions * num_fevals);
         Print_func_evals(*hfevals, ests, errs, num_regions);
         delete[] hfevals->fevals_list;
@@ -195,13 +195,13 @@ public:
     template<typename IntegT>
     numint::integration_result apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
         
-        IntegT* d_integrand =  make_gpu_integrand<IntegT>(integrand);
+        IntegT* d_integrand =  quad::make_gpu_integrand<IntegT>(integrand);
         
         size_t num_regions = subregions.size;
         Region_characteristics<ndim> region_characteristics(num_regions);
         Region_estimates<T, ndim> subregion_estimates(num_regions);
         
-        set_device_array<int>(region_characteristics.active_regions, num_regions, 1);
+        quad::set_device_array<int>(region_characteristics.active_regions, num_regions, 1);
 
         size_t num_blocks = num_regions;
         constexpr size_t block_size = 64;
@@ -246,10 +246,10 @@ public:
 		
         if constexpr(debug >= 2){
 			constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
-			dfevals.fevals_list = cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals); 
+			dfevals.fevals_list = quad::cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals); 
         }
         
-        set_device_array<int>(region_characteristics.active_regions, num_regions, 1.);
+        quad::set_device_array<int>(region_characteristics.active_regions, num_regions, 1.);
         
         size_t num_blocks = num_regions;
         constexpr size_t block_size = 64;
@@ -302,7 +302,7 @@ public:
     const int key = 0;
     const int verbose = 0;
     rule.Init(dim, fEvalPerRegion, key, verbose, &constMem);
-    generators = cuda_malloc<T>(sizeof(T) * dim * fEvalPerRegion);
+    generators = quad::cuda_malloc<T>(sizeof(T) * dim * fEvalPerRegion);
 
     size_t block_size = 64;
     quad::ComputeGenerators<T, dim>
@@ -373,7 +373,7 @@ pagani_clone(const IntegT& integrand,
   Cubature_rules<T, ndim> cubature_rules;
   Heuristic_classifier<T, ndim> hs_classify(epsrel, epsabs);
   bool accuracy_termination = false;
-  IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
+  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
   for (size_t it = 0; it < 700 && !accuracy_termination; it++) {
     size_t num_regions = subregions.size;

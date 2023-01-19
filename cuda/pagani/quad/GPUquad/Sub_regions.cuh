@@ -60,11 +60,11 @@ struct Sub_regions {
   void
   host_device_init(const size_t numRegions)
   {
-    LeftCoord = host_alloc<T>(numRegions * ndim);
-    Length = host_alloc<T>(numRegions * ndim);
+    LeftCoord = quad::host_alloc<T>(numRegions * ndim);
+    Length = quad::host_alloc<T>(numRegions * ndim);
 
-    dLeftCoord = cuda_malloc<T>(numRegions * ndim);
-    dLength = cuda_malloc<T>(numRegions * ndim);
+    dLeftCoord = quad::cuda_malloc<T>(numRegions * ndim);
+    dLength = quad::cuda_malloc<T>(numRegions * ndim);
 
     size = numRegions;
     host_data_size = numRegions;
@@ -73,15 +73,15 @@ struct Sub_regions {
   void
   refresh_host_device()
   {
-    cuda_memcpy_to_host<T>(LeftCoord, dLeftCoord, size * ndim);
-    cuda_memcpy_to_host<T>(Length, dLength, size * ndim);
+    quad::cuda_memcpy_to_host<T>(LeftCoord, dLeftCoord, size * ndim);
+    quad::cuda_memcpy_to_host<T>(Length, dLength, size * ndim);
   }
 
   void
   refresh_device_from_host()
   {
-    cuda_memcpy_to_device<T>(dLeftCoord, LeftCoord, size * ndim);
-    cuda_memcpy_to_device<T>(dLength, Length, size * ndim);
+    quad::cuda_memcpy_to_device<T>(dLeftCoord, LeftCoord, size * ndim);
+    quad::cuda_memcpy_to_device<T>(dLength, Length, size * ndim);
   }
 
   void
@@ -94,8 +94,8 @@ struct Sub_regions {
     free(LeftCoord);
     free(Length);
     host_data_size = size;
-    LeftCoord = host_alloc<T>(size * ndim);
-    Length = host_alloc<T>(size * ndim);
+    LeftCoord = quad::host_alloc<T>(size * ndim);
+    Length = quad::host_alloc<T>(size * ndim);
   }
 
   void
@@ -104,8 +104,8 @@ struct Sub_regions {
     cudaFree(dLeftCoord);
     cudaFree(dLength);
     size = numRegions;
-    dLeftCoord = cuda_malloc<T>(numRegions * ndim);
-    dLength = cuda_malloc<T>(numRegions * ndim);
+    dLeftCoord = quad::cuda_malloc<T>(numRegions * ndim);
+    dLength = quad::cuda_malloc<T>(numRegions * ndim);
   }
 
   void
@@ -212,11 +212,11 @@ struct Sub_regions {
   take_snapshot()
   {
     snapshot_size = size;
-    snapshot_dLeftCoord = cuda_malloc<T>(size * ndim);
-    snapshot_dLength = cuda_malloc<T>(size * ndim);
-    cuda_memcpy_device_to_device<T>(
+    snapshot_dLeftCoord = quad::cuda_malloc<T>(size * ndim);
+    snapshot_dLength = quad::cuda_malloc<T>(size * ndim);
+    quad::cuda_memcpy_device_to_device<T>(
       snapshot_dLeftCoord, dLeftCoord, size * ndim);
-    cuda_memcpy_device_to_device<T>(snapshot_dLength, dLength, size * ndim);
+    quad::cuda_memcpy_device_to_device<T>(snapshot_dLength, dLength, size * ndim);
   }
 
   void

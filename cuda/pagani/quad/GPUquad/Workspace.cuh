@@ -140,7 +140,7 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
     size_t num_threads = 256;
     size_t num_blocks = characteristics.size / num_threads +
                         (characteristics.size % num_threads == 0 ? 0 : 1);
-    set_array_to_value<int><<<num_blocks, num_threads>>>(
+    quad::set_array_to_value<int><<<num_blocks, num_threads>>>(
       characteristics.active_regions, characteristics.size, 1);
     cudaDeviceSynchronize();
 
@@ -171,7 +171,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
 
-  IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
+  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
   if constexpr (debug > 0) {
 
@@ -301,7 +301,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
 
-  IntegT* d_integrand = make_gpu_integrand<IntegT>(integrand);
+  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
   if constexpr (debug > 0) {
 

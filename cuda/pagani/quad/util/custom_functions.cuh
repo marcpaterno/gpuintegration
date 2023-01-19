@@ -6,6 +6,7 @@
 #include <cuda.h>
 #include "cuda/pagani/quad/GPUquad/Sample.cuh"
 #include "cuda/pagani/quad/util/cudaDebugUtil.h"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 
 /*
         require blocks to be equal to size
@@ -38,7 +39,7 @@ custom_reduce(T* arr, size_t size)
   size_t max_num_blocks = 1024;
   size_t num_blocks =
     min((size + num_threads - 1) / num_threads, max_num_blocks);
-  T* out = cuda_malloc<T>(num_blocks);
+  T* out = quad::cuda_malloc<T>(num_blocks);
 
   device_custom_reduce<<<num_blocks, num_threads>>>(arr, size, out);
   device_custom_reduce<<<1, 1024>>>(out, num_blocks, out);
@@ -74,13 +75,13 @@ custom_reduce_atomics(T* arr, size_t size)
   size_t max_num_blocks = 1024;
   size_t num_blocks =
     min((size + num_threads - 1) / num_threads, max_num_blocks);
-  T* out = cuda_malloc<T>(1);
-  cuda_memcpy_to_device<T>(out, &res, 1);
+  T* out = quad::cuda_malloc<T>(1);
+  quad::cuda_memcpy_to_device<T>(out, &res, 1);
 
-  cuda_memcpy_to_device<T>(out, &res, 1);
+  quad::cuda_memcpy_to_device<T>(out, &res, 1);
   device_custom_reduce_atomics<<<num_blocks, num_threads>>>(arr, size, out);
 
-  cuda_memcpy_to_host<T>(&res, out, 1);
+  quad::cuda_memcpy_to_host<T>(&res, out, 1);
   cudaFree(out);
   return res;
 }
@@ -114,11 +115,11 @@ custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size)
   size_t max_num_blocks = 1024;
   size_t num_blocks =
     min((size + num_threads - 1) / num_threads, max_num_blocks);
-  T2* out = cuda_malloc<T2>(1);
-  cuda_memcpy_to_device<T2>(out, &res, 1);
+  T2* out = quad::cuda_malloc<T2>(1);
+  quad::cuda_memcpy_to_device<T2>(out, &res, 1);
   device_custom_inner_product_atomics<T1, T2>
     <<<num_blocks, num_threads>>>(arr1, arr2, size, out);
-  cuda_memcpy_to_host<T2>(&res, out, 1);
+  quad::cuda_memcpy_to_host<T2>(&res, out, 1);
   cudaFree(out);
   return res;
 }
@@ -188,7 +189,7 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max)
   const int total_num_threads = blockDim.x * gridDim.x;
 
   T localMax = 0;
-  T localMin = std::numeric_limits<T>::max();
+  T localMin = DBL_MAX;
 
   for (size_t i = tid; i < size; i += total_num_threads) {
     T val = input[tid];
@@ -241,10 +242,10 @@ min_max(T* input, const int size)
   size_t num_blocks =
     min((size + num_threads - 1) / num_threads, max_num_blocks);
 
-  T* block_mins = cuda_malloc<T>(num_blocks);
-  T* block_maxs = cuda_malloc<T>(num_blocks);
-  T* d_min = cuda_malloc<T>(1);
-  T* d_max = cuda_malloc<T>(1);
+  T* block_mins = quad::cuda_malloc<T>(num_blocks);
+  T* block_maxs = quad::cuda_malloc<T>(num_blocks);
+  T* d_min = quad::cuda_malloc<T>(1);
+  T* d_max = quad::cuda_malloc<T>(1);
 
   blocks_min_max<T>
     <<<num_blocks, num_threads>>>(input, size, block_mins, block_maxs);
@@ -256,8 +257,8 @@ min_max(T* input, const int size)
   T min = 0.;
   T max = 0.;
 
-  cuda_memcpy_to_host(&min, d_min, 1);
-  cuda_memcpy_to_host(&max, d_max, 1);
+  quad::cuda_memcpy_to_host(&min, d_min, 1);
+  quad::cuda_memcpy_to_host(&max, d_max, 1);
 
   cudaFree(block_mins);
   cudaFree(block_maxs);

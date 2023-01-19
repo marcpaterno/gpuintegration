@@ -11,8 +11,8 @@ class Region_characteristics {
 public:
   Region_characteristics(size_t num_regions)
   {
-    active_regions = cuda_malloc<int>(num_regions * ndim);
-    sub_dividing_dim = cuda_malloc<int>(num_regions * ndim);
+    active_regions = quad::cuda_malloc<int>(num_regions * ndim);
+    sub_dividing_dim = quad::cuda_malloc<int>(num_regions * ndim);
     size = num_regions;
   }
 

@@ -55,7 +55,7 @@ public:
 
   Sub_regions_filter(const size_t num_regions)
   {
-    scanned_array = cuda_malloc<int>(num_regions);
+    scanned_array = quad::cuda_malloc<int>(num_regions);
   }
 
   size_t
@@ -100,9 +100,9 @@ public:
     // I dont' create Regions filtered_regions, because upon destruction it
     // would deallocate and for performance reasons, I don't want a deep_copy to
     // occur here
-    T* filtered_leftCoord = cuda_malloc<T>(num_active_regions * ndim);
-    T* filtered_length = cuda_malloc<T>(num_active_regions * ndim);
-    int* filtered_sub_dividing_dim = cuda_malloc<int>(num_active_regions);
+    T* filtered_leftCoord = quad::cuda_malloc<T>(num_active_regions * ndim);
+    T* filtered_length = quad::cuda_malloc<T>(num_active_regions * ndim);
+    int* filtered_sub_dividing_dim = quad::cuda_malloc<int>(num_active_regions);
 
     parent_ests.reallocate(num_active_regions);
     const int numOfDivisionOnDimension = 1;

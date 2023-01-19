@@ -66,9 +66,9 @@ public:
     size_t children_per_region = 2;
 
     T* children_left_coord =
-      cuda_malloc<T>(num_regions * ndim * children_per_region);
+      quad::cuda_malloc<T>(num_regions * ndim * children_per_region);
     T* children_length =
-      cuda_malloc<T>(num_regions * ndim * children_per_region);
+      quad::cuda_malloc<T>(num_regions * ndim * children_per_region);
 
     divideIntervalsGPU<T, ndim>
       <<<num_blocks, num_threads>>>(children_left_coord,

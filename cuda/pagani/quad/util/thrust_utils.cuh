@@ -9,6 +9,7 @@
 #include <thrust/pair.h>
 #include <thrust/transform_reduce.h>
 #include "cuda/pagani/quad/util/custom_functions.cuh"
+#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
 
 // https://www.apriorit.com/dev-blog/614-cpp-cuda-accelerate-algorithm-cpu-gpu
 
@@ -68,10 +69,10 @@ thrust_exclusive_scan(T* arr, size_t size, T* out)
 }
 
 template <typename T, bool use_custom = false>
-Range<T>
+quad::Range<T>
 device_array_min_max(T* arr, size_t size)
 {
-  Range<T> range;
+  quad::Range<T> range;
   if (use_custom == false) {
     thrust::device_ptr<T> d_ptrE = thrust::device_pointer_cast(arr);
     auto __tuple = thrust::minmax_element(d_ptrE, d_ptrE + size);
