@@ -1,6 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
-#include "cuda/integrands.cuh"
+#include "common/cuda/integrands.cuh"
 
 int
 main(int argc, char** argv)

@@ -3,10 +3,10 @@
 #include "cuda/pagani/demos/function.cuh"
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/Volume.cuh"
-#include "cuda/pagani/quad/util/cudaUtil.h"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/util/custom_functions.cuh"
+#include "common/cuda/Volume.cuh"
+#include "common/cuda/cudaUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
+#include "common/cuda/custom_functions.cuh"
 #include <utility>
 
 #include <chrono>

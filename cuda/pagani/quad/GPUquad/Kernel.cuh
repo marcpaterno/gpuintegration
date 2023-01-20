@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_KERNEL_CUH
 
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/extrema.h>
@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 
 
 namespace quad {

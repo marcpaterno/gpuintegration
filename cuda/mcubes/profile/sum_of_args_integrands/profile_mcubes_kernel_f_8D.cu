@@ -1,6 +1,6 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
-#include "cuda/integrands.cuh"
+#include "common/cuda/integrands.cuh"
 
 int
 main(int argc, char** argv)

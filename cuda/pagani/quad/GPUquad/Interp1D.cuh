@@ -2,10 +2,10 @@
 #define GPUQUADINTERP1D_H
 
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/util/cudaTimerUtil.h"
-#include "cuda/pagani/quad/util/str_to_doubles.hh"
+#include "common/cuda/cudaArray.cuh"
+#include "common/cuda/cudaMemoryUtil.h"
+#include "common/cuda/cudaTimerUtil.h"
+#include "common/cuda/str_to_doubles.hh"
 #include <assert.h>
 #include <cstdlib>
 #include <iostream>

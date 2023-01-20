@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 
 #include "catch2/catch.hpp"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda/cudaArray.cuh"
 //#include <thrust/host_vector.h>
 //#include <thrust/device_vector.h>
 //#include <thrust/universal_vector.h>

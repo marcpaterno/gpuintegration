@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDA_UTIL_H
 
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/cudaDebugUtil.h"
+#include "common/cuda/cudaDebugUtil.h"
 
 #include <float.h>
 #include <stdio.h>

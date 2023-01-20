@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "cuda/common/Volume.cuh"
 
 using quad::Volume;
 

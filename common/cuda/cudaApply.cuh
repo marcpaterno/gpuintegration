@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 #define CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
 
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda/cudaArray.cuh"
 namespace gpu {
 
   namespace detail {

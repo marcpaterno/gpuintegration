@@ -1,7 +1,7 @@
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaArray.cuh"
+#include "common/cuda/cudaMemoryUtil.h"
 #include "test/cuda/pagani/model.cuh"
 
 namespace gpu {

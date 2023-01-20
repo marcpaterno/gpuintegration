@@ -4,7 +4,7 @@
 #include <iostream>
 
 // helper routines
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 
 template <size_t ndim>
 class Region_characteristics {

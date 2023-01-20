@@ -3,7 +3,7 @@
 #include "cuda/pagani/quad/GPUquad/Interp1D.cuh"
 #include <iostream>
 #include "cuda/pagani/quad/GPUquad/Interp2D.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 
 __global__ void
 Evaluate(quad::Interp1D interpolator,

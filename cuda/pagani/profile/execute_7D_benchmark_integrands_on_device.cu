@@ -2,7 +2,7 @@
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 #include <array>
 #include <cuda_profiler_api.h>
-#include "cuda/integrands.cuh"
+#include "common/cuda/integrands.cuh"
 
 template<typename F, int ndim>
 __global__ void

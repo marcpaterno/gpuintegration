@@ -2,7 +2,7 @@
 #define SUB_REGION_SPLITTER_CUH
 
 #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
 
 template <typename T, int NDIM>

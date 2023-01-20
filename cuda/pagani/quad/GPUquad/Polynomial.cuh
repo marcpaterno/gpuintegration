@@ -1,7 +1,7 @@
 #ifndef POLYNOMIAL_H
 #define POLYNOMIAL_H
 
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda/cudaArray.cuh"
 
 namespace quad {
 

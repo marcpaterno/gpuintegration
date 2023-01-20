@@ -2,7 +2,7 @@
 #define REGION_ESTIMATES_CUH
 
 #include <iostream>
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 
 template <typename T, size_t ndim>
 class Region_estimates {

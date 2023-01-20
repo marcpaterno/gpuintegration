@@ -3,12 +3,12 @@
 #include <iomanip>
 
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/cudaUtil.h"
+#include "common/cuda/cudaUtil.h"
 #include "cuda/pagani/demos/function.cuh"
 
 #include "cuda/pagani/quad/GPUquad/Interp2D.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 
 #include "common/integration_result.hh"
 #include "cuda/pagani/demos/new_time_and_call.cuh"

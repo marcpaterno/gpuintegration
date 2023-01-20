@@ -10,7 +10,7 @@
 #include "cuda/pagani/quad/GPUquad/Sub_region_filter.cuh"
 #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
 #include "common/integration_result.hh"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 
 template <bool debug_ters = false>
 void

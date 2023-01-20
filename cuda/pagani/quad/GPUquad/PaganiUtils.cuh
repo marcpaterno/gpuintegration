@@ -1,10 +1,10 @@
 #ifndef PAGANI_UTILS_CUH
 #define PAGANI_UTILS_CUH
 
-#include "cuda/pagani/quad/util/Volume.cuh"
-#include "cuda/pagani/quad/util/cudaApply.cuh"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
-#include "cuda/pagani/quad/util/cudaUtil.h"
+#include "common/cuda/Volume.cuh"
+#include "common/cuda/cudaApply.cuh"
+#include "common/cuda/cudaArray.cuh"
+#include "common/cuda/cudaUtil.h"
 // #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
 #include "cuda/pagani/quad/GPUquad/Phases.cuh"
 #include "cuda/pagani/quad/GPUquad/Sample.cuh"
@@ -19,7 +19,7 @@
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
 // #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
-#include "cuda/pagani/quad/util/custom_functions.cuh"
+#include "common/cuda/custom_functions.cuh"
 #include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
 #include <stdlib.h>
 #include <fstream>

@@ -2,7 +2,7 @@
 #include "catch2/catch.hpp"
 #include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda//cudaArray.cuh"
 #include <cmath>
 #include <fstream>
 #include <iomanip>

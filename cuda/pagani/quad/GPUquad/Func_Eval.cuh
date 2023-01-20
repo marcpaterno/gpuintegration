@@ -1,7 +1,7 @@
 #ifndef CUDA_FUNC_EVAL
 #define CUDA_FUNC_EVAL
 
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda/cudaArray.cuh"
 
 namespace quad {
 

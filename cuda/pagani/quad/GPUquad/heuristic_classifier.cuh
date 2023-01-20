@@ -2,9 +2,9 @@
 #define HEURISTIC_CLASSIFIER_CUH
 
 #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/util/thrust_utils.cuh"
-#include "cuda/pagani/quad/util/custom_functions.cuh"
+#include "common/cuda/cudaMemoryUtil.h"
+#include "common/cuda/thrust_utils.cuh"
+#include "common/cuda/custom_functions.cuh"
 
 #include <string>
 

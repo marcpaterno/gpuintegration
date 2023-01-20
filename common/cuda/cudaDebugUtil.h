@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
 
-#include "cuda/pagani/quad/util/cudaArchUtil.h"
+#include "common/cuda/cudaArchUtil.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>

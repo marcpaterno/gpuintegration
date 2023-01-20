@@ -18,8 +18,8 @@ using TYPE = double;
 static int FIRST_PHASE_MAXREGIONS = (1 << 14);
 
 // Utilities
-#include "util/cudaArchUtil.h"
-#include "util/cudaDebugUtil.h"
+#include "common/cuda/cudaArchUtil.h"
+#include "common/cuda/cudaDebugUtil.h"
 
 class VerboseResults {
 public:

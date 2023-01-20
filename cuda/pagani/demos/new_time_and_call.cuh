@@ -5,7 +5,7 @@
 #include "cuda/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 #include "common/integration_result.hh"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 #include "nvToolsExt.h"
 #include <string>
 #include <iostream>

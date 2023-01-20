@@ -4,9 +4,9 @@
 #include <array>
 #include <vector>
 
-#include "cuda/pagani/quad/util/Volume.cuh"
-#include "cuda/pagani/quad/util/cudaApply.cuh"
-#include "cuda/pagani/quad/util/cudaArray.cuh"
+#include "common/cuda/Volume.cuh"
+#include "common/cuda/cudaApply.cuh"
+#include "common/cuda/cudaArray.cuh"
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/mcubes/util/func.cuh"
 #include "cuda/mcubes/util/util.cuh"

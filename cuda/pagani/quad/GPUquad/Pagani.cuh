@@ -1,11 +1,11 @@
 #ifndef CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
 #define CUDACUHRE_QUAD_GPUQUAD_CUHRE_CUH
 
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/util/cudaTimerUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
+#include "common/cuda/cudaTimerUtil.h"
 
 #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 
 #include "common/integration_result.hh"
 

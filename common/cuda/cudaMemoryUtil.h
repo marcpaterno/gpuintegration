@@ -1,7 +1,7 @@
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDAMEMORY_UTIL_H
 
-#include "cuda/pagani/quad/util/cudaDebugUtil.h"
+#include "common/cuda/cudaDebugUtil.h"
 #include <cuda.h>
 
 namespace quad {

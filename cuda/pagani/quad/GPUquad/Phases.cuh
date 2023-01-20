@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 
 #include "cuda/pagani/quad/GPUquad/Sample.cuh"
-#include "cuda/pagani/quad/util/Volume.cuh"
+#include "common/cuda/Volume.cuh"
 #include <cooperative_groups.h>
 
 #define FINAL 0

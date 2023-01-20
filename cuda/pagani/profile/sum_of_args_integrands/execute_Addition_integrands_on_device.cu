@@ -2,7 +2,7 @@
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 #include <array>
 #include <cuda_profiler_api.h>
-#include "cuda/integrands.cuh"
+#include "common/cuda/integrands.cuh"
 
 int main(int argc, char** argv){
   size_t num_invocations = argc > 1 ? std::stoi(argv[1]) : 100000;

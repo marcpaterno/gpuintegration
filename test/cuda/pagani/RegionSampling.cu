@@ -5,8 +5,8 @@
 #include "cuda/pagani/demos/new_time_and_call.cuh"
 #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/util/Volume.cuh"
-#include "cuda/pagani/quad/util/cudaUtil.h"
+#include "common/cuda//Volume.cuh"
+#include "common/cuda/cudaUtil.h"
 #include <chrono>
 #include <cmath>
 #include <fstream>

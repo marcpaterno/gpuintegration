@@ -8,8 +8,8 @@
 #include <thrust/inner_product.h>
 #include <thrust/pair.h>
 #include <thrust/transform_reduce.h>
-#include "cuda/pagani/quad/util/custom_functions.cuh"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/custom_functions.cuh"
+#include "common/cuda/cudaMemoryUtil.h"
 
 // https://www.apriorit.com/dev-blog/614-cpp-cuda-accelerate-algorithm-cpu-gpu
 

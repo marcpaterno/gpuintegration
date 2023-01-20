@@ -5,8 +5,8 @@
 #include <limits>
 #include <cuda.h>
 #include "cuda/pagani/quad/GPUquad/Sample.cuh"
-#include "cuda/pagani/quad/util/cudaDebugUtil.h"
-#include "cuda/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/cuda/cudaDebugUtil.h"
+#include "common/cuda/cudaMemoryUtil.h"
 
 /*
         require blocks to be equal to size
