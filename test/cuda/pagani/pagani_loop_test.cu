@@ -1,6 +1,7 @@
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include <iostream>
 #include <math.h>
+#include <chrono>
+#include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 
 struct Fcn {
   double const normalization =
@@ -16,13 +17,14 @@ struct Fcn {
 int
 main()
 {
-  quad::Pagani<double, 3> algorithm;
+  constexpr int ndim = 3;
+  Workspace<double, ndim> pagani;
   double const epsrel = 1.0e-3;
   double const epsabs = 1.0e-15;
   Fcn fcn;
-
+  quad::Volume<double, ndim> vol;
   for (int i = 1; i <= 10000; ++i) {
-    auto res = algorithm.integrate(fcn, epsrel / i, epsabs);
+    auto res = pagani.integrate(fcn, epsrel / i, epsabs, vol);
     if (i % 100 == 0) {
       std::cout << i << ' ' << res << '\n';
     }

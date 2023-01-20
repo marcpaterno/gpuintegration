@@ -4,7 +4,7 @@
 #include <iostream>
 #include <utility>
 
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
+#include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/util/Volume.cuh"
 #include "cuda/pagani/quad/util/cudaUtil.h"
@@ -70,55 +70,6 @@ PrintHeader()
                "status, final, lastPhase, total_time\n";
 }
 
-namespace floatIntegrands {
-
-  template <typename F, int ndim>
-  bool
-  cu_time_and_call(char const* id,
-                   F integrand,
-                   float epsrel,
-                   float true_value,
-                   char const* algname,
-                   std::ostream& outfile,
-                   Config config = Config(),
-                   quad::Volume<float, ndim>* vol = nullptr)
-  {
-    using MilliSeconds =
-      std::chrono::duration<float, std::chrono::milliseconds::period>;
-    float constexpr epsabs = 1.0e-20;
-
-    quad::Pagani<float, ndim> alg;
-
-    auto const t0 = std::chrono::high_resolution_clock::now();
-    // nvtxRangePushA("init_host_data");
-    numint::integration_result const result = alg.integrate(integrand,
-                                             epsrel,
-                                             epsabs,
-                                             vol,
-                                             config.outfileVerbosity,
-                                             config._final,
-                                             config.heuristicID,
-                                             config.phase_I_type);
-    // nvtxRangePop();
-    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-    float const absolute_error = std::abs(result.estimate - true_value);
-    bool good = false;
-
-    if (result.status == 0 || result.status == 2) {
-      good = true;
-    }
-
-    outfile.precision(17);
-    outfile << std::fixed << std::scientific << id << "," << config.heuristicID
-            << "," << true_value << "," << epsrel << "," << epsabs << ","
-            << result.estimate << "," << result.errorest << ","
-            << result.nregions << "," << result.nFinishedRegions << ","
-            << result.status << "," << config._final << "," << result.lastPhase
-            << "," << dt.count() << std::endl;
-    return good;
-  }
-}
-
 template <typename F, int ndim>
 bool
 cu_time_and_call(char const* id,
@@ -134,18 +85,14 @@ cu_time_and_call(char const* id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
-  quad::Pagani<double, ndim> alg;
+  Workspace<double, ndim> alg;
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
   numint::integration_result const result = alg.integrate(integrand,
                                            epsrel,
                                            epsabs,
-                                           vol,
-                                           config.outfileVerbosity,
-                                           config._final,
-                                           config.heuristicID,
-                                           config.phase_I_type);
+                                           *vol);
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
@@ -154,26 +101,9 @@ cu_time_and_call(char const* id,
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
-
-  std::string hID;
-
-  if (config.heuristicID == 0)
-    hID = "zero";
-  else if (config.heuristicID == 1)
-    hID = "no load-balancing";
-  else if (config.heuristicID == 2)
-    hID = "budget errorest";
-  else if (config.heuristicID == 4)
-    hID = "target errorest"; // default
-  else if (config.heuristicID == 7)
-    hID = "estimate budget";
-  // else if(config.heuristicID == 8)
-  //   hID = "extreme";
-  else if (config.heuristicID == 9)
-    hID = "aggressive";
-
+  
   outfile.precision(17);
-  outfile << std::fixed << std::scientific << id << "," << hID << ","
+  outfile << std::fixed << std::scientific << id << "," 
           << true_value << "," << epsrel << "," << epsabs << ","
           << result.estimate << "," << result.errorest << "," << result.nregions
           << "," << result.nFinishedRegions << "," << result.status << ","
@@ -203,7 +133,7 @@ cu_time_and_call_100(char const* id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
-  quad::Pagani<double, ndim> alg;
+  Workspace<double, ndim> alg;
 
   for (int i = 0; i < 50; i++) {
     auto const t0 = std::chrono::high_resolution_clock::now();
@@ -211,11 +141,7 @@ cu_time_and_call_100(char const* id,
     numint::integration_result const result = alg.integrate(integrand,
                                              epsrel,
                                              epsabs,
-                                             vol,
-                                             config.outfileVerbosity,
-                                             config._final,
-                                             config.heuristicID,
-                                             config.phase_I_type);
+                                             *vol);
 
     // nvtxRangePop();
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
@@ -225,25 +151,11 @@ cu_time_and_call_100(char const* id,
       good = true;
     }
 
-    std::string hID;
 
-    if (config.heuristicID == 0)
-      hID = "zero";
-    else if (config.heuristicID == 1)
-      hID = "no load-balancing";
-    else if (config.heuristicID == 2)
-      hID = "budget errorest";
-    else if (config.heuristicID == 4)
-      hID = "target errorest"; // default
-    else if (config.heuristicID == 7)
-      hID = "estimate budget";
-    // else if(config.heuristicID == 8)
-    //   hID = "extreme";
-    else if (config.heuristicID == 9)
-      hID = "aggressive";
+    
 
     outfile.precision(17);
-    outfile << std::fixed << std::scientific << id << "," << hID << ","
+    outfile << std::fixed << std::scientific << id << ","
             << true_value << "," << epsrel << "," << epsabs << ","
             << result.estimate << "," << result.errorest << ","
             << result.nregions << "," << result.nFinishedRegions << ","
@@ -273,18 +185,14 @@ common_header_pagani_time_and_call(std::string alg_id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   double constexpr epsabs = 1.0e-20;
 
-  quad::Pagani<double, ndim> alg;
+  Workspace<double, ndim> alg;
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
   numint::integration_result const result = alg.integrate(integrand,
                                            epsrel,
                                            epsabs,
-                                           vol,
-                                           config.outfileVerbosity,
-                                           config._final,
-                                           config.heuristicID,
-                                           config.phase_I_type);
+                                           *vol);
 
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;

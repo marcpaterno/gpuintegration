@@ -2,7 +2,8 @@ extern "C" {
 #include "test/cuda/pagani/do_integration_from_c.h"
 }
 
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
+#include <chrono>
+#include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 
 extern "C" {
 
@@ -25,9 +26,10 @@ do_integration_from_c(double* res)
   double const epsabs = 1.0e-12;
   Integrand integrand;
   constexpr int ndim = 2;
-
-  quad::Pagani<double, ndim> pagani;
-  auto const result = pagani.integrate<Integrand>(integrand, epsrel, epsabs);
+  quad::Volume<double, ndim> vol;
+  
+  Workspace<double, ndim> pagani;
+  auto const result = pagani.integrate<Integrand>(integrand, epsrel, epsabs, vol);
   int rc = result.status;
   if (rc == 0)
     *res = result.estimate;

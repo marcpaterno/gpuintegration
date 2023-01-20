@@ -7,61 +7,151 @@
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
 
-TEST_CASE("Positive Constant Function")
+class PTest {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x, double y)
+  {
+    double res = 15.37;
+    return res;
+  }
+};
+
+class NTest {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x, double y)
+  {
+    double res = -15.37;
+    return res;
+  }
+};
+
+class ZTest {
+public:
+  SYCL_EXTERNAL double
+  operator()(double x, double y)
+  {
+    return 0.;
+  }
+};
+
+TEST_CASE("Constant Positive Value Function")
 {
-    class Positive{
-      public:
-        Positive() = default;
-    
-        double
-        operator()(double x, double y){
-            return 5.5;
-        }
-    };
-    
-    size_t partitions_per_axis = 2;
-    constexpr size_t ndim = 2;
-    Positive integrand;
-    double true_answer = 5.5;
-    Cubature_rules<ndim> cubature_rules;
-    Sub_regions<ndim> sub_regions(partitions_per_axis);
-    
-    
-    Region_estimates<ndim> subregion_estimates(sub_regions.size);
-    Region_characteristics<ndim> region_characteristics(sub_regions.size);
-        
-    Positive* d_integrand = quad::make_gpu_integrand<Positive>(integrand);
-    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Positive>(d_integrand, &sub_regions, &subregion_estimates, &region_characteristics);
-    CHECK(res.estimate == Approx(true_answer));  
-    CHECK(quad::array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
+  constexpr int ndim = 2;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
+  
+  PTest integrand;
+  PTest* d_integrand = quad::make_gpu_integrand(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<ndim> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = 15.37;
+  
+  for(int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++){
+	Sub_regions<ndim> sub_regions(splits_per_dim);
+	size_t nregions = sub_regions.size;
+	Region_characteristics<ndim> characteristics(nregions);
+	Region_estimates<ndim> estimates(nregions);
+	
+	auto result = rules.template apply_cubature_integration_rules<PTest>(
+			d_integrand,
+			&sub_regions,
+			&estimates,
+			&characteristics,
+			compute_relerr_error_reduction);
+			
+	double* h_estimates = quad::copy_to_host<double>(estimates.integral_estimates, nregions);
+  
+	double sum = 0.;
+	for(size_t i = 0; i < nregions; ++i)
+		sum += h_estimates[i];
+
+	double true_val = integral_val/nregions;
+	
+	for(size_t i = 0; i < nregions; ++i){
+		CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
+	}
+  }	
 }
 
-
-TEST_CASE("Negative Constant Function")
+TEST_CASE("Negative Positive Value Function")
 {
-    class Negative{
-      public:
-        Negative() = default;
-    
-        double
-        operator()(double x, double y){
-            return -5.5;
-        }
-    };
-    
-    size_t partitions_per_axis = 2;
-    constexpr size_t ndim = 2;
-    Negative integrand;
-    double true_answer = -5.5;
-    Cubature_rules<ndim> cubature_rules;
-    Sub_regions<ndim> sub_regions(partitions_per_axis);
-    
-    
-    Region_estimates<ndim> subregion_estimates(sub_regions.size);
-    Region_characteristics<ndim> region_characteristics(sub_regions.size);
-        
-    Negative* d_integrand = quad::make_gpu_integrand<Negative>(integrand);
-    cuhreResult<double> res = cubature_rules.apply_cubature_integration_rules<Negative>(d_integrand, &sub_regions, &subregion_estimates, &region_characteristics);
-    CHECK(res.estimate == Approx(true_answer));  
-    CHECK(quad::array_values_smaller_than_val<int, size_t>(region_characteristics.sub_dividing_dim, sub_regions.size, ndim));
+  constexpr int ndim = 2;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
+  
+  NTest integrand;
+  NTest* d_integrand = quad::make_gpu_integrand(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<ndim> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = -15.37;
+  
+  for(int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++){
+	Sub_regions<ndim> sub_regions(splits_per_dim);
+	size_t nregions = sub_regions.size;
+	Region_characteristics<ndim> characteristics(nregions);
+	Region_estimates<ndim> estimates(nregions);
+	
+	auto result = rules.template apply_cubature_integration_rules<NTest>(
+			d_integrand,
+			&sub_regions,
+			&estimates,
+			&characteristics,
+			compute_relerr_error_reduction);
+			
+	double* h_estimates = quad::copy_to_host<double>(estimates.integral_estimates, nregions);
+  
+	double sum = 0.;
+	for(size_t i = 0; i < nregions; ++i)
+		sum += h_estimates[i];
+
+	double true_val = integral_val/nregions;
+	
+	for(size_t i = 0; i < nregions; ++i){
+		CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
+	}
+  }	
+}
+
+TEST_CASE("Zero Positive Value Function")
+{
+  constexpr int ndim = 2;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
+  
+  ZTest integrand;
+  ZTest* d_integrand = quad::make_gpu_integrand(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<ndim> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = 0.;
+  
+  for(int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++){
+	Sub_regions<ndim> sub_regions(splits_per_dim);
+	size_t nregions = sub_regions.size;
+	Region_characteristics<ndim> characteristics(nregions);
+	Region_estimates<ndim> estimates(nregions);
+	
+	auto result = rules.template apply_cubature_integration_rules<ZTest>(
+			d_integrand,
+			&sub_regions,
+			&estimates,
+			&characteristics,
+			compute_relerr_error_reduction);
+			
+	double* h_estimates = quad::copy_to_host<double>(estimates.integral_estimates, nregions);
+  
+	double sum = 0.;
+	for(size_t i = 0; i < nregions; ++i)
+		sum += h_estimates[i];
+
+	double true_val = integral_val/nregions;
+	
+	for(size_t i = 0; i < nregions; ++i){
+		CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
+	}
+  }	
 }

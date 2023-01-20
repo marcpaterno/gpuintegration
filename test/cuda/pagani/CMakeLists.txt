@@ -109,14 +109,14 @@ target_include_directories(StatefullIntegrand PRIVATE
 )
 add_test(StatefullIntegrand StatefullIntegrand)
 
-add_executable(test_cuhre_convergence test_cuhre_convergence.cu)
-set_target_properties(test_cuhre_convergence PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(test_cuhre_convergence util )
-target_include_directories(test_cuhre_convergence PRIVATE
+add_executable(accuracy_improves_with_epsrel accuracy_improves_with_epsrel.cu)
+set_target_properties(accuracy_improves_with_epsrel PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(accuracy_improves_with_epsrel util )
+target_include_directories(accuracy_improves_with_epsrel PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
-add_test(test_cuhre_convergence test_cuhre_convergence)
+add_test(accuracy_improves_with_epsrel accuracy_improves_with_epsrel)
 
 add_executable(BoxIntegrals BoxIntegrals.cu)
 set_target_properties(BoxIntegrals PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})

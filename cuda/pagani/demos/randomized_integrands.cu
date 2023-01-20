@@ -2,6 +2,7 @@
 #include "cuda/pagani/demos/function.cuh"
 #include "cuda/pagani/demos/compute_genz_integrals.cuh"
 #include "cuda/mcubes/demos/demo_utils.cuh"
+#include "cuda/mcubes/demos/demo_utils.cuh"
 
 #include <chrono>
 #include <cmath>
@@ -9,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
+
 using namespace quad;
 
 namespace detail {

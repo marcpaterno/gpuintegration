@@ -11,7 +11,7 @@
 
 namespace quad {
 
-  template <typename T, int NDIM>
+  /*template <typename T, int NDIM>
   class Pagani {
 
     int key;
@@ -114,7 +114,7 @@ namespace quad {
       CudaCheckError();
       return res;
     }
-  };
+  };*/
 }
 
 #endif
