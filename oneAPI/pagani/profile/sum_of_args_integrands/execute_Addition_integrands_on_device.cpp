@@ -1,10 +1,7 @@
-//#include <oneapi/dpl/execution>
-//#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/integrands.hpp"
 
 
 int main(int argc, char** argv){

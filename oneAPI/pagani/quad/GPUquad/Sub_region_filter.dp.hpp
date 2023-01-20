@@ -4,7 +4,7 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"
 #include <numeric>
 

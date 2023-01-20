@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 class PTest {
 public:

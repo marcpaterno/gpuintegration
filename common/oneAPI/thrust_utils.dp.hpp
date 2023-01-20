@@ -6,7 +6,7 @@
 #include <oneapi/dpl/async>
 #include "oneapi/mkl.hpp"
 #include "oneapi/mkl/stats.hpp"
-#include "oneAPI/pagani/quad/util/custom_functions.dp.hpp"
+#include "common/oneAPI/custom_functions.dp.hpp"
 
 template <typename T1, typename T2, bool use_custom = false>
 double

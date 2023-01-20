@@ -1,11 +1,7 @@
-//#include <CL/sycl.hpp>
-//#include <oneapi/dpl/execution>
-//#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/demo_utils.dp.hpp"
 #include "oneAPI/mcubes/vegasT.dp.hpp"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/integrands.hpp"
 
 int
 main(int argc, char** argv)

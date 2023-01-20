@@ -6,7 +6,7 @@
 #include <CL/sycl.hpp>
 //#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
 //#include <thrust/host_vector.h>
 //#include <thrust/device_vector.h>
 //#include <thrust/universal_vector.h>

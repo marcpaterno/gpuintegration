@@ -5,7 +5,7 @@
 #include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 #include <chrono>
 #include <cmath>

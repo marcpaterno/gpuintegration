@@ -11,8 +11,8 @@
 //#include <oneapi/mkl.hpp>
 //#include "oneapi/mkl/stats.hpp"
 
-#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "common/oneAPI/cuhreResult.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
 
 
 

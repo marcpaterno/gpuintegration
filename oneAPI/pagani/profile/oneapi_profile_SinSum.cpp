@@ -1,67 +1,8 @@
-//#include <oneapi/dpl/execution>
-//#include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/integrands.hpp"
 
-/*
-class SinSum3D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z)
-  {
-    return sycl::sin(x + y + z);
-  }
-};
-
-
-class SinSum4D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double k)
-  {
-    return sycl::sin(x + y + z + k);
-  }
-};
-
-class SinSum5D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double k, double l)
-  {
-    return sycl::sin(x + y + z + k + l);
-  }
-};
-
-class SinSum6D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double k, double l, double m)
-  {
-    return sycl::sin(x + y + z + k + l + m);
-  }
-};
-
-class SinSum7D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double k, double l, double m, double n)
-  {
-    return sycl::sin(x + y + z + k + l + m + n);
-  }
-};
-
-class SinSum8D {
-public:
-  SYCL_EXTERNAL double
-  operator()(double x, double y, double z, double k, double l, double m, double n, double p)
-  {
-    return sycl::sin(x + y + z + k + l + m + n + p);
-  }
-};
-*/
 int
 main(int argc, char** argv)
 {

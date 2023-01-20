@@ -10,8 +10,8 @@
 #include "oneAPI/pagani/quad/GPUquad/Sub_region_splitter.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Sub_region_filter.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.dp.hpp"
-#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "common/oneAPI/cuhreResult.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
 #include <fstream>
 #include <cmath>
 

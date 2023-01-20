@@ -2,11 +2,8 @@
 #define REGION_CHARACTERISTICS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <iostream>
-
-//helper routines
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 template<size_t ndim>
 class Region_characteristics{

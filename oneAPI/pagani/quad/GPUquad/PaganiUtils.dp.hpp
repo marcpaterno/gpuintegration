@@ -2,13 +2,13 @@
 #define PAGANI_UTILS_CUH
 
 #include <CL/sycl.hpp>
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaUtil.h"
+#include "common/oneAPI/Volume.dp.hpp"
+#include "common/oneAPI/cudaApply.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/Phases.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
-#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
+#include "common/oneAPI/cuhreResult.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Rule.dp.hpp"
 
 #include "oneAPI/pagani/quad/GPUquad/hybrid.dp.hpp"

@@ -5,9 +5,9 @@
 
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
-#include "oneAPI/pagani/quad/util/thrust_utils.dp.hpp"
-#include "oneAPI/pagani/quad/util/custom_functions.dp.hpp"
+#include "common/oneAPI/cudaMemoryUtil.h"
+#include "common/oneAPI/thrust_utils.dp.hpp"
+#include "common/oneAPI/custom_functions.dp.hpp"
 
 
 TEST_CASE("Exclusive scan of array of size 8")

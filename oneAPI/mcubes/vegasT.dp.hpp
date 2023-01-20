@@ -8,11 +8,11 @@
 #include <CL/sycl.hpp>
 //#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
+#include "common/oneAPI/cudaApply.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
 #include "oneAPI/mcubes/seqCodesDefs.hh"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 #include "oneAPI/mcubes/vegas_utils.dp.hpp"
 #include "oneAPI/mcubes/verbose_utils.dp.hpp"
 

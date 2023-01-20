@@ -2,10 +2,8 @@
 #define HYBRID_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <iostream>
 
-//#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Phases.dp.hpp"

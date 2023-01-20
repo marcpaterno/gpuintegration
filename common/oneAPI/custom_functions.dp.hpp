@@ -5,7 +5,7 @@
 #include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaDebugUtil.h"
+#include "common/oneAPI/cudaDebugUtil.h"
 #include <cmath>
 
 #include <algorithm>

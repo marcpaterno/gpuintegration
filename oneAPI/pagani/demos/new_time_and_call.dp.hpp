@@ -5,11 +5,11 @@
 #include <chrono>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
-#include "oneAPI/pagani/quad/util/cuhreResult.dp.hpp"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "common/oneAPI/cuhreResult.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
 #include <iostream>
 #include <iomanip>
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 #include <limits>
 #include <stdlib.h> 
 

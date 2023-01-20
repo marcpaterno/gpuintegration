@@ -2,9 +2,8 @@
 #define CUDACUHRE_QUAD_GPUQUAD_PHASES_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sample.dp.hpp"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Func_Eval.hpp"
 
 #define FINAL 0

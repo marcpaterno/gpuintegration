@@ -1,7 +1,7 @@
 #include <CL/sycl.hpp>
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/integrands.hpp"
 
 int main(){
     constexpr int ndim = 3;

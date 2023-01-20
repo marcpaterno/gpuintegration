@@ -1,11 +1,7 @@
-// #include <oneapi/dpl/execution>
-// #include <oneapi/dpl/async>
 #include <CL/sycl.hpp>
-// #include <dpct/dpct.hpp>
 #include <iostream>
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
 #include <string>
-// #include <math.h> //initial results were collected with math.h library
 #include <cmath> 
 
 class trivial_powr {

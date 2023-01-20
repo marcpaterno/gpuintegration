@@ -2,12 +2,11 @@
 #define CUDACUHRE_QUAD_GPUQUAD_SAMPLE_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaApply.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaUtil.h"
+#include "common/oneAPI/Volume.dp.hpp"
+#include "common/oneAPI/cudaApply.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/Func_Eval.hpp"
 
 namespace quad {

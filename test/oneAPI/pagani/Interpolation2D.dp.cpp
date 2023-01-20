@@ -3,7 +3,7 @@
 //#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Interp2D.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 #include <array>
 #include <chrono>

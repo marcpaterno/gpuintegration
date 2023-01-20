@@ -3,10 +3,10 @@
 
 #include <CL/sycl.hpp>
 #include <iostream>
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/GPUquad/Region_estimates.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Region_characteristics.dp.hpp"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
 #include <cmath>
 
 template<size_t ndim>

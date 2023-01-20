@@ -2,9 +2,9 @@
 #define ONEAPI_GPUQUADINTERP1D_H
 
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
-#include "oneAPI/pagani/quad/util/str_to_doubles.hh"
+#include "common/oneAPI/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaMemoryUtil.h"
+#include "common/oneAPI/str_to_doubles.hh"
 #include <assert.h>
 #include <cstdlib>
 #include <iostream>

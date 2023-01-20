@@ -1,6 +1,5 @@
 #include <oneapi/dpl/execution>
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <chrono>
 #include <cmath>
 #include <fstream>

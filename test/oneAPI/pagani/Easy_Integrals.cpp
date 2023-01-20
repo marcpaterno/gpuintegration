@@ -2,12 +2,12 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/integrands.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/Volume.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaUtil.h"
-#include "oneAPI/integrands.hpp"
+#include "common/oneAPI/Volume.dp.hpp"
+#include "common/oneAPI/cudaUtil.h"
+#include "common/oneAPI/integrands.hpp"
 #include <chrono>
 #include <cmath>
 #include <fstream>

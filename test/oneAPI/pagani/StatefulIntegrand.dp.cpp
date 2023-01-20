@@ -4,7 +4,7 @@
 #include "catch2/catch.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
 #include <cmath>
 #include <fstream>
 #include <iomanip>

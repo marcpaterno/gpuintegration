@@ -1,7 +1,7 @@
 #ifndef ONEAPI_FUNC_EVAL
 #define ONEAPI_FUNC_EVAL
 
-#include "oneAPI/pagani/quad/util/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaArray.dp.hpp"
 
 namespace quad{
 

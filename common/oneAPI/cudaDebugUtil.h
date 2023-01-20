@@ -3,7 +3,7 @@
 
 #include <CL/sycl.hpp>
 //#include <dpct/dpct.hpp>
-#include "oneAPI/pagani/quad/util/cudaArchUtil.h"
+#include "common/oneAPI/cudaArchUtil.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>

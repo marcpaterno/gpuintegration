@@ -3,8 +3,8 @@
 
 #include <CL/sycl.hpp>
 #include "oneAPI/pagani/quad/GPUquad/Sub_regions.dp.hpp"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
-#include "oneAPI/pagani/quad/util/thrust_utils.dp.hpp"
+#include "common/oneAPI/cudaMemoryUtil.h"
+#include "common/oneAPI/thrust_utils.dp.hpp"
 #include <string>
 #include <cmath>
 

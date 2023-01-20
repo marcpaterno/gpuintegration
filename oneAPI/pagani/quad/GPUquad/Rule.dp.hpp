@@ -2,8 +2,7 @@
 #define CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 #include "oneAPI/pagani/quad/quad.h"
 #include <cmath>
 

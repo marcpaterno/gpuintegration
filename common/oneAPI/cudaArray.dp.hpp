@@ -2,10 +2,9 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
 #include <cstring>
 #include "oneAPI/pagani/quad/quad.h"
-#include "oneAPI/pagani/quad/util/cudaMemoryUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 namespace gpu {
   template <typename T, std::size_t s>
