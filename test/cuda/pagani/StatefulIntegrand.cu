@@ -34,7 +34,7 @@ make_from_file(char const* filename)
 }
 
 struct ToyModelWithHeapArray {
-  ToyModelWithHeapArray(int const* d, size_t s) { data.Initialize(d, s); }
+  ToyModelWithHeapArray(int const* d, size_t s): data(d, s) {}
 
   ToyModelWithHeapArray() = default;
 

@@ -2,7 +2,11 @@
 #define CUDACUHRE_QUAD_UTIL_CUDAARRAY_CUH
 
 #include <cstring>
+#include <array>
 #include "cuda/pagani/quad/quad.h"
+#include "common/cuda/cudaMemoryUtil.h"
+
+// cudaArray is meant to allow in-kernel use of functions that expect std::array interface, e.g. std::forward
 
 namespace gpu {
   template <typename T, std::size_t s>
@@ -55,20 +59,20 @@ namespace gpu {
     {
 #ifndef __CUDA_ARCH__
       N = a.N;
-      cudaMallocManaged((void**)&data, sizeof(T) * a.N);
-      memcpy(data, a.data, sizeof(T) * a.N);
+	  _data = quad::cuda_malloc_managed<T>(N);
+      memcpy(_data, a._data, sizeof(T) * a.N);
 #else
       // can't instantiate on device and then access on host
       N = a.N;
-      data = new T[a.N];
-      memcpy(data, a.data, sizeof(T) * a.N);
+      _data = new T[a.N];
+      memcpy(_data, a._data, sizeof(T) * a.N);
 #endif
     }
 
     __host__ __device__
     cudaDynamicArray()
     {
-      data = nullptr;
+      _data = nullptr;
       N = 0;
     }
 
@@ -76,46 +80,41 @@ namespace gpu {
 
     cudaDynamicArray(T const* initData, size_t s)
     {
-      Initialize(initData, s);
+      N = s;
+	  _data = quad::cuda_malloc_managed<T>(s);
+	  quad::cuda_memcpy_to_device<T>(_data, initData, s);
     }
 
-    void
-    Initialize(T const* initData, size_t s)
+	explicit cudaDynamicArray(size_t s)
     {
       N = s;
-      cudaMallocManaged((void**)&data, sizeof(T) * s);
-      cudaMemcpy(data, initData, sizeof(T) * s, cudaMemcpyHostToDevice);
+	  _data = quad::cuda_malloc_managed<T>(s);
     }
 
     void
     Reserve(size_t s)
     {
       N = s;
-      cudaMallocManaged((void**)&data, sizeof(T) * s);
+	  _data = quad::cuda_malloc_managed<T>(s);
     }
 
-    explicit cudaDynamicArray(size_t s)
-    {
-      N = s;
-      cudaMallocManaged((void**)&data, sizeof(T) * s);
-    }
     __host__ __device__ ~cudaDynamicArray()
     {
 #ifndef __CUDACC__
-      cudaFree(data);
+      cudaFree(_data);
 #endif
     }
 
     __host__ __device__ const T*
     begin() const
     {
-      return &data[0];
+      return &_data[0];
     }
 
     __host__ __device__ const T*
     end() const
     {
-      return (&data[0] + N);
+      return (&_data[0] + N);
     }
 
     __host__ __device__ constexpr std::size_t
@@ -124,28 +123,29 @@ namespace gpu {
       return N;
     }
 
-    /*cudaDynamicArray&
-    operator=(const cudaDynamicArray& source)
-    {
-      cudaMallocManaged((void**)&data, sizeof(T) * source.size());
-      cudaMemcpy(data, source.data, sizeof(T) * N, cudaMemcpyHostToDevice);
-      return *this;
-    }*/
-
+	__host__ __device__ 
+	T*
+	data(){
+		return _data;
+	}
+	
     __host__ __device__ T&
     operator[](std::size_t i)
     {
-      return data[i];
+      return _data[i];
     }
 
     __host__ __device__ T
     operator[](std::size_t i) const
     {
-      return data[i];
+      return _data[i];
     }
-
-    T* data;
-    size_t N;
+	
+	
+	private: 
+	
+		T* _data;
+		size_t N;
   }; // cudaDynamicArray
 
 };

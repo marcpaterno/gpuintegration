@@ -2,10 +2,9 @@
 
 #include "catch2/catch.hpp"
 #include "common/cuda/cudaArray.cuh"
-//#include <thrust/host_vector.h>
-//#include <thrust/device_vector.h>
-//#include <thrust/universal_vector.h>
 
+
+/*
 namespace noCopyConstr {
   template <typename T>
   class cudaDynamicArray {
@@ -89,80 +88,84 @@ namespace noCopyConstr {
   };
 
 }
-
+*/
 template <typename arrayType>
 __global__ void
-Evaluate(arrayType input)
+set_vals_at_indices(arrayType array, arrayType indices, arrayType vals)
 {
-  // make device to device copy and write to copied
-  arrayType input2(input);
-  input2[1] = 9.3;
-  input[1] = 99.;
+  for(int i=0; i < indices.size(); ++i){
+	const size_t index_to_change = indices[i];
+	array[index_to_change] = vals[i];
+  }
 }
 
-template <typename arrayType>
+template <typename arrayType, typename T>
 __global__ void
-Evaluate_pass_by_ref(arrayType& input)
+set_vals_at_indices(T* array, arrayType indices, arrayType vals)
 {
-  input[1] = 99.;
-}
-
-__global__ void
-evaluate_thrust(double* vec, size_t size)
-{
-  // for(auto& v: vec)
-  //     v = 99.;
-  for (int i = 0; i < size; ++i)
-    vec[i] = 99.;
-}
-
-TEST_CASE("cudaDynamicArray Data Access")
-{
-  size_t arraySize = 5;
-  gpu::cudaDynamicArray<double> array;
-  array.Reserve(arraySize);
-
-  // initialize data allocated in unified memory
-  for (int i = 0; i < arraySize; ++i)
-    array[i] = i;
-
-  Evaluate<gpu::cudaDynamicArray<double>><<<1, 1>>>(array);
-  cudaDeviceSynchronize();
-
-  SECTION("No shallow copy when copying device to device")
-  {
-    CHECK(array[1] != 9.3); // redundant but makes point clearer
-  }
-
-  SECTION("Deep copy from host to device")
-  {
-    CHECK(array[1] == 1.);
-  }
-
-  SECTION("Default copy-constructor makes shallow copy")
-  {
-    noCopyConstr::cudaDynamicArray<double> input;
-    input.Reserve(arraySize);
-
-    for (int i = 0; i < arraySize; ++i)
-      input[i] = i;
-
-    Evaluate<noCopyConstr::cudaDynamicArray<double>><<<1, 1>>>(input);
-    cudaDeviceSynchronize();
-
-    CHECK(input[1] == 99.);
+  for(int i=0; i < indices.size(); ++i){
+	const size_t index_to_change = indices[i];
+	array[index_to_change] = vals[i];
   }
 }
 
-/*TEST_CASE("unified vector test")
+TEST_CASE("Data can be set on the device and accessed on host")
 {
-    thrust::universal_vector<double> vec;
-    CHECK(vec.size() == 0);
-    vec.push_back(4.0);
-    CHECK(vec.size() == 1);
+	using int_array = gpu::cudaDynamicArray<int>;
+	int_array array;
+	array.Reserve(5);
 
-    evaluate_thrust<<<1,1>>>(vec.data(), vec.size());
-    cudaDeviceSynchronize();
-    for(auto const& v: vec)
-        CHECK(v == 99.);
-}*/
+	for (int i = 0; i < array.size(); ++i)
+		array[i] = i;
+  
+	SECTION("Data can be set and accessed on host"){
+		CHECK(array[0] == 0);
+		CHECK(array[4] == 4);
+	}
+  
+ 
+	constexpr int vals_to_edit = 3;
+	std::array<int, vals_to_edit> indices = {1, 3, 4};
+	std::array<int, vals_to_edit> vals = {11, 33, 44};
+	
+	int_array d_indices(indices.data(), indices.size());
+	int_array d_vals(vals.data(), vals.size());
+
+	SECTION("c-style array constructor works"){
+		CHECK(d_indices[0] == 1);
+		CHECK(d_indices[1] == 3);
+		CHECK(d_indices[2] == 4);
+		
+		CHECK(d_vals[0] == 11);
+		CHECK(d_vals[1] == 33);
+		CHECK(d_vals[2] == 44);
+	}
+	
+	set_vals_at_indices<int_array><<<1,1>>>(array, d_indices, d_vals);
+	cudaDeviceSynchronize();
+	
+	SECTION("Copy constructor makes deep-copy"){
+		//passing by value to kernel invokes copy-constructor, which does deep, not shallow copy
+		//thus values don't update when accessing the array on host
+		CHECK(array[1] != 11);
+		CHECK(array[3] != 33);
+		CHECK(array[4] != 44);
+	}
+	
+	set_vals_at_indices<int_array, int><<<1,1>>>(array.data(), d_indices, d_vals);
+	cudaDeviceSynchronize();
+	
+	SECTION("Can still access data on host after editing on device"){
+		//if we pass pointer to that data (which is allocated in unified memory)
+		//we can get update on the device properly
+		CHECK(array[1] == 11);
+		CHECK(array[3] == 33);
+		CHECK(array[4] == 44);
+	}
+	
+	int_array copy(array);
+	SECTION("copy-constructor works"){
+		for(int i=0; i < array.size(); ++i)
+			CHECK(copy[i] == array[i]);
+	}
+}
