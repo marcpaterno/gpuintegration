@@ -1,6 +1,7 @@
 #ifndef VERBOSE_UTILS_CUH
 #define VERBOSE_UTILS_CUH
 
+#include "common/cuda/cudaMemoryUtil.h"
 #include "cuda/mcubes/util/vegas_utils.cuh"
 
 // this isn't needed anymore
@@ -31,9 +32,9 @@ public:
                  int ndim)
   {
     if constexpr (DEBUG_MCUBES) {
-      randoms = cuda_malloc_managed<double>(
+      randoms = quad::cuda_malloc_managed<double>(
         (totalNumThreads * chunkSize + extra) * npg * ndim);
-      funcevals = cuda_malloc_managed<double>(
+      funcevals = quad::cuda_malloc_managed<double>(
         (totalNumThreads * chunkSize + extra) * npg);
 
       myfile_bin_bounds.open("pmcubes_bin_bounds.csv");

@@ -36,8 +36,6 @@ Last three arguments are: total iterations, iteration
 #include "common/cuda/cudaApply.cuh"
 #include "common/cuda/cudaArray.cuh"
 #include "cuda/mcubes/seqCodesDefs.hh"
-#include "cuda/mcubes/util/func.cuh"
-#include "cuda/mcubes/util/util.cuh"
 #include "cuda/mcubes/util/vegas_utils.cuh"
 #include "cuda/mcubes/util/verbose_utils.cuh"
 #include <assert.h>

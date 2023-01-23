@@ -205,7 +205,7 @@ avg_sinsum_cost_per_iter()
 {
   auto t0 = std::chrono::high_resolution_clock::now();
   SinSum6D integrand;
-  SinSum6D* d_integrand = cuda_copy_to_managed(integrand);
+  SinSum6D* d_integrand = quad::cuda_copy_to_managed(integrand);
   constexpr int ndim = 6;
   double ncall = 2.0e9;
   // size_t BLOCK_DIM_X = 128;
@@ -248,7 +248,7 @@ avg_gauss9D_cost_per_iter()
 {
   auto t0 = std::chrono::high_resolution_clock::now();
   Gauss9D integrand;
-  Gauss9D* d_integrand = cuda_copy_to_managed(integrand);
+  Gauss9D* d_integrand = quad::cuda_copy_to_managed(integrand);
   constexpr int ndim = 9;
   double ncall = 1.0e8;
   // size_t BLOCK_DIM_X = 128;
@@ -291,7 +291,7 @@ avg_genz6_6D_cost_per_iter()
 {
   auto t0 = std::chrono::high_resolution_clock::now();
   GENZ_6_6D integrand;
-  GENZ_6_6D* d_integrand = cuda_copy_to_managed(integrand);
+  GENZ_6_6D* d_integrand = quad::cuda_copy_to_managed(integrand);
   constexpr int ndim = 6;
   double ncall = 2.0e9;
   // size_t BLOCK_DIM_X = 128;
@@ -334,7 +334,7 @@ avg_genz4_8D_cost_per_iter()
 {
   auto t0 = std::chrono::high_resolution_clock::now();
   GENZ_4_8D integrand;
-  GENZ_4_8D* d_integrand = cuda_copy_to_managed(integrand);
+  GENZ_4_8D* d_integrand = quad::cuda_copy_to_managed(integrand);
   constexpr int ndim = 8;
   double ncall = 1.0e8;
   // size_t BLOCK_DIM_X = 128;
@@ -377,7 +377,7 @@ avg_genz3_8D_cost_per_iter()
 {
   auto t0 = std::chrono::high_resolution_clock::now();
   GENZ_3_8D integrand;
-  GENZ_3_8D* d_integrand = cuda_copy_to_managed(integrand);
+  GENZ_3_8D* d_integrand = quad::cuda_copy_to_managed(integrand);
   constexpr int ndim = 8;
   double ncall = 1.0e8;
   // size_t BLOCK_DIM_X = 128;
