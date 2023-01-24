@@ -1,3 +1,5 @@
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 #include <numeric>
 #include <vector>
 #include "common/cuda/Interp1D.cuh"
@@ -52,9 +54,29 @@ Evaluate_test_obj(F* f, double* results)
   }
 }
 
+template<size_t rows, size_t cols>
+std::array<double, rows * cols>
+create_values(std::array<double, rows> xs_2D, std::array<double, cols> ys_2D){
+	auto fxy = [](double x, double y) { return 3 * x * y + 2 * x + 4 * y; };
+	std::array<double, rows * cols> zs_2D;
+	
+	for (std::size_t i = 0; i != rows; ++i) {
+		double x = xs_2D[i];
 
-int main(){
-  constexpr size_t s = 100000;
+		for (std::size_t j = 0; j != cols; ++j) {
+		  double y = ys_2D[j];
+		  zs_2D[j * rows + i] = fxy(x, y);
+		}
+	}
+	return zs_2D;
+}
+
+TEST_CASE("No memory Leak"){
+	
+  double* results = quad::cuda_malloc<double>(1000);  
+  size_t pre_interp_alloc_mem = quad::GetAmountFreeMem();
+  
+  constexpr size_t s = 1000000;
   std::vector<double> xs_1D(s);
   std::vector<double> ys_1D(s);
    
@@ -65,42 +87,27 @@ int main(){
   constexpr std::size_t ny = 2; // cols                                                                                                
   std::array<double, nx> xs_2D = {1., 2., 3.};
   std::array<double, ny> ys_2D = {4., 5.};
-  std::array<double, ny * nx> zs_2D;
-  auto fxy = [](double x, double y) { return 3 * x * y + 2 * x + 4 * y; };
+  auto zs_2D = create_values<nx, ny>(xs_2D, ys_2D);
   
-  for (std::size_t i = 0; i != nx; ++i) {
-    double x = xs_2D[i];
-
-    for (std::size_t j = 0; j != ny; ++j) {
-      double y = ys_2D[j];
-      zs_2D[j * nx + i] = fxy(x, y);
-    }
-  }
-
-  double* results = quad::cuda_malloc<double>(1000);
-
   using IntegT = Test_object<s, nx, ny>;
-  size_t free_physmem, total_physmem;
+  IntegT host_obj(xs_1D.data(), ys_1D.data(), xs_2D, ys_2D, zs_2D);
   
-  {
-    cudaMemGetInfo(&free_physmem, &total_physmem);
+  size_t mem_after_one_host_object = quad::GetAmountFreeMem();
+  size_t approx_obj_size = pre_interp_alloc_mem - mem_after_one_host_object;
+  size_t init_object_capacity = mem_after_one_host_object/approx_obj_size;
   
-    
-    IntegT host_obj(xs_1D.data(), ys_1D.data(), xs_2D, ys_2D, zs_2D);
-  
-    cudaMemGetInfo(&free_physmem, &total_physmem);
+  for(int i=0; i < 1000; ++i){    
   
     IntegT* device_obj = quad::cuda_copy_to_device(host_obj);
-        
-    cudaMemGetInfo(&free_physmem, &total_physmem);
-  
+    size_t mem_after_dev_object = quad::GetAmountFreeMem();;
+	
     Evaluate_test_obj<IntegT><<<1,1>>>(device_obj, results);
     cudaDeviceSynchronize();
+	
+	size_t object_capacity = mem_after_dev_object/approx_obj_size;
+	CHECK(object_capacity >= init_object_capacity - 1);
     cudaFree(device_obj);
   }
-  
-  cudaMemGetInfo(&free_physmem, &total_physmem);
-  std::cout << "free device mem at end:"<< free_physmem << std::endl;
   
   cudaFree(results);
 }
