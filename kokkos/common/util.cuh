@@ -20,7 +20,6 @@ GetAmountFreeMem()
   size_t free_physmem = 0.;
   size_t total_physmem = 0.;
   cudaMemGetInfo(&free_physmem, &total_physmem);
-  // printf("Free %lu/%lu\n", free_physmem, total_physmem);
   return free_physmem;
 #endif
   return 0;
@@ -33,7 +32,6 @@ GetTotalMem()
   size_t free_physmem = 0.;
   size_t total_physmem = 0.;
   cudaMemGetInfo(&free_physmem, &total_physmem);
-  // printf("Free %lu/%lu\n", free_physmem, total_physmem);
   return total_physmem;
 #endif
   return 0;

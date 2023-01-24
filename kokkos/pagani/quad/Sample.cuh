@@ -2,22 +2,22 @@
 #define KOKKOSCUHRE_SAMPLE_CUH
 
 #include "kokkos/pagani/quad/quad.h"
-#include "kokkos/pagani/quad/util/cudaApply.cuh"
+#include "kokkos/common/cudaApply.cuh"
 
 template <typename T>
-__device__ double
+KOKKOS_INLINE_FUNCTION double
 Sq(T x)
 {
   return x * x;
 }
 
 template <typename T>
-__device__ T
+KOKKOS_INLINE_FUNCTION T
 computeReduce(ScratchViewDouble sdata, T sum, const member_type team_member)
 {
   sdata(team_member.team_rank()) = sum;
   team_member.team_barrier();
-  for (size_t offset = BLOCK_SIZE / 2; offset > 0; offset >>= 1) {
+  for (int offset = BLOCK_SIZE / 2; offset > 0; offset >>= 1) {
     if (team_member.team_rank() < offset) {
       sdata(team_member.team_rank()) += sdata(team_member.team_rank() + offset);
     }
@@ -27,11 +27,10 @@ computeReduce(ScratchViewDouble sdata, T sum, const member_type team_member)
 }
 
 template <typename IntegT, typename T, int NDIM>
-__device__ void
+KOKKOS_INLINE_FUNCTION void
 computePermutation(IntegT d_integrand,
                    int pIndex,
                    Bounds* b,
-                   double* g,
                    gpu::cudaArray<T, NDIM>& x,
                    double* sum,
                    // const Structures<T>& constMem,
@@ -52,10 +51,10 @@ computePermutation(IntegT d_integrand,
     x[dim] = 0;
   }
 
-  int gIndex = __ldg(&_gpuGenPermGIndex[pIndex]);
+  int gIndex = (_gpuGenPermGIndex[pIndex]);
 
   for (int dim = 0; dim < NDIM; ++dim) {
-    double generator = __ldg(&generators[FEVAL * dim + pIndex]);
+    double generator = (generators[FEVAL * dim + pIndex]);
     x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
                                           (.5 - generator) * b[dim].upper) *
                                            range[dim];
@@ -65,12 +64,12 @@ computePermutation(IntegT d_integrand,
   sdata[threadIdx] = fun; // target for reduction
 
   for (int rul = 0; rul < NRULES; ++rul) {
-    sum[rul] += fun * __ldg(&_cRuleWt[gIndex * NRULES + rul]);
+    sum[rul] += fun * (_cRuleWt[gIndex * NRULES + rul]);
   }
 }
 
 template <typename IntegT, int NDIM>
-__device__ void
+/*__device__*/KOKKOS_INLINE_FUNCTION void
 Sample(IntegT d_integrand,
        int sIndex,
        // const Structures<double>& constMem,
@@ -98,13 +97,12 @@ Sample(IntegT d_integrand,
   ScratchViewDouble sdata(team_member.team_scratch(0), BLOCK_SIZE);
   Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[sIndex];
   double errcoeff[] = {5, 1, 5};
-  double g[NDIM];
   gpu::cudaArray<double, NDIM> x;
   int perm = 0;
 
   // should probably move this outside of Sample, no need for all threads to
   // compute it
-  double ratio = Sq(__ldg(&_gpuG[2 * NDIM]) / __ldg(&_gpuG[1 * NDIM]));
+  double ratio = Sq((_gpuG[2 * NDIM]) / (_gpuG[1 * NDIM]));
   int offset = 2 * NDIM;
 
   double sum[NRULES];
@@ -119,7 +117,6 @@ Sample(IntegT d_integrand,
     computePermutation<IntegT, double, NDIM>(d_integrand,
                                              pIndex,
                                              region->bounds,
-                                             g,
                                              x,
                                              sum,
                                              /*constMem*/ _gpuGenPermGIndex,
@@ -166,10 +163,9 @@ Sample(IntegT d_integrand,
     computePermutation<IntegT, double, NDIM>(d_integrand,
                                              pIndex,
                                              region->bounds,
-                                             g,
                                              x,
                                              sum,
-                                             /*constMem*/ _gpuGenPermGIndex,
+                                             _gpuGenPermGIndex,
                                              _cRuleWt,
                                              range,
                                              jacobian,
@@ -186,10 +182,9 @@ Sample(IntegT d_integrand,
     computePermutation<IntegT, double, NDIM>(d_integrand,
                                              pIndex,
                                              region->bounds,
-                                             g,
                                              x,
                                              sum,
-                                             /*constMem*/ _gpuGenPermGIndex,
+                                             _gpuGenPermGIndex,
                                              _cRuleWt,
                                              range,
                                              jacobian,
@@ -211,8 +206,8 @@ Sample(IntegT d_integrand,
       for (int s = 0; s < NSETS; ++s) {
         maxerr = max(
           maxerr,
-          fabs(sum[rul + 1] + __ldg(&_GPUScale[s * NRULES + rul]) * sum[rul]) *
-            __ldg(&_GPUNorm[s * NRULES + rul]));
+          fabs(sum[rul + 1] + (_GPUScale[s * NRULES + rul]) * sum[rul]) *
+            (_GPUNorm[s * NRULES + rul]));
       }
       sum[rul] = maxerr;
     }

@@ -5,31 +5,31 @@ namespace gpu {
   template <typename T, std::size_t s>
   class cudaArray {
   public:
-    __host__ __device__ const T*
+    KOKKOS_INLINE_FUNCTION const T*
     begin() const
     {
       return &data[0];
     }
 
-    __host__ __device__ const T*
+    KOKKOS_INLINE_FUNCTION const T*
     end() const
     {
       return (&data[0] + s);
     }
 
-    __host__ __device__ constexpr std::size_t
+    KOKKOS_INLINE_FUNCTION constexpr std::size_t
     size() const
     {
       return s;
     }
 
-    __host__ __device__ T&
+    KOKKOS_INLINE_FUNCTION T&
     operator[](std::size_t i)
     {
       return data[i];
     }
 
-    __host__ __device__ T const&
+    KOKKOS_INLINE_FUNCTION T const&
     operator[](std::size_t i) const
     {
       return data[i];
@@ -40,7 +40,7 @@ namespace gpu {
 
   namespace detail {
     template <class F, size_t N, std::size_t... I>
-    __device__ double
+    KOKKOS_INLINE_FUNCTION double
     apply_impl(F&& f,
                gpu::cudaArray<double, N> const& data,
                std::index_sequence<I...>)
@@ -50,7 +50,7 @@ namespace gpu {
   }
 
   template <class F, size_t N>
-  __device__ double
+  KOKKOS_INLINE_FUNCTION double
   // Unsure if we need to pass 'f' by value, for GPU execution
   apply(F&& f, gpu::cudaArray<double, N> const& data)
   {

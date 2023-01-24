@@ -1,7 +1,7 @@
 #ifndef KOKKOSCUHRE_RULE_CUH
 #define KOKKOSCUHRE_RULE_CUH
 #include "kokkos/pagani/quad/quad.h"
-#include "kokkos/pagani/quad/util/print.cuh"
+#include "kokkos/common/print.cuh"
 
 template <typename T>
 class Rule {

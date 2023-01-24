@@ -6,7 +6,7 @@
 
 class PTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
     return 15.37 + 0 * x * y;
@@ -15,7 +15,7 @@ public:
 
 class NTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
     return -15.37 + 0 * x * y;
@@ -24,7 +24,7 @@ public:
 
 class ZTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
     return 0. + 0 * x * y;

@@ -4,8 +4,8 @@
 #include "kokkos/pagani/quad/Phases.cuh"
 #include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/quad/quad.h"
-#include "kokkos/pagani/quad/util/print.cuh"
-#include "kokkos/pagani/quad/util/util.cuh"
+#include "kokkos/common/print.cuh"
+#include "kokkos/common/util.cuh"
 #include <KokkosBlas1_dot.hpp>
 //#include <KokkosBlas2_gemv.hpp>
 #include <KokkosBlas1_team_dot.hpp>

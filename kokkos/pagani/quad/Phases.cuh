@@ -5,7 +5,7 @@
 #include "kokkos/pagani/quad/quad.h"
 
 template <int NDIM>
-__device__ void
+KOKKOS_INLINE_FUNCTION void
 ActualCompute(ViewVectorDouble generators,
               double* g,
               const Structures<double>& constMem,
@@ -96,7 +96,7 @@ ComputeGenerators(ViewVectorDouble generators,
 }
 
 template <typename IntegT, int NDIM>
-__device__ void
+KOKKOS_INLINE_FUNCTION void
 INIT_REGION_POOL(IntegT d_integrand,
                  double* dRegions,
                  double* dRegionsLength,
