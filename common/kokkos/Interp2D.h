@@ -2,7 +2,7 @@
 #define GPUQUADINTERP2D_H
 
 #include "kokkos/pagani/quad/quad.h"
-#include "kokkos/common/str_to_doubles.hh"
+#include "common/kokkos/str_to_doubles.hh"
 #include <assert.h>
 
 /*

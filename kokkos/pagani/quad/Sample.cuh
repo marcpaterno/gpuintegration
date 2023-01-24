@@ -2,7 +2,7 @@
 #define KOKKOSCUHRE_SAMPLE_CUH
 
 #include "kokkos/pagani/quad/quad.h"
-#include "kokkos/common/cudaApply.cuh"
+#include "common/kokkos/cudaApply.cuh"
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION double

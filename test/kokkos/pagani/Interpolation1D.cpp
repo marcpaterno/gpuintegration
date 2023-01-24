@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "kokkos/pagani/quad/Interp1D.h"
+#include "common/kokkos/Interp1D.h"
 #include <array>
 #include <math.h>
 
