@@ -3,6 +3,7 @@
 
 #include <CL/sycl.hpp>
 #include "common/oneAPI/cudaDebugUtil.h"
+#include "common/oneAPI/cudaMemoryUtil.h"
 
 namespace quad {
 	

@@ -7,162 +7,87 @@
 //#include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
 #include "common/oneAPI/cudaArray.dp.hpp"
+#include "common/oneAPI/cudaMemoryUtil.h"
 //#include <thrust/host_vector.h>
 //#include <thrust/device_vector.h>
 //#include <thrust/universal_vector.h>
 
-namespace noCopyConstr{
- template <typename T>
-  class cudaDynamicArray {
-  public:    
-    cudaDynamicArray()
-    {
-#ifndef DPCT_COMPATIBILITY_TEMP
-        printf("default constructor called from host side\n");
-      #else
-        printf("default constructor called from device side\n");
-      #endif
-      data = nullptr;
-      N = 0;
-    }
 
-    cudaDynamicArray(T const* initData, size_t s) { 
-        printf("constructor with cudaMallocManaged called from host side\n");
-        Initialize(initData, s); 
-    }
-
-    void
-    Initialize(T const* initData, size_t s)
-    {
-	auto q_ct1 = sycl::queue(sycl::gpu_selector());
-    N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
-      q_ct1.memcpy(data, initData, sizeof(T) * s).wait();
-    }
-
-    void
-    Reserve(size_t s)
-    {
-	  auto q_ct1 = sycl::queue(sycl::gpu_selector());	
-      N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
-    }
-    
-    cudaDynamicArray(size_t s)
-    {
-	  auto q_ct1 = sycl::queue(sycl::gpu_selector());	
-      N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
-    }
-    ~cudaDynamicArray()
-    {
-#ifndef SYCL_LANGUAGE_VERSION
-      cudaFree(data);
-#endif
-    }
-
-    const T*
-    begin() const
-    {
-      return &data[0];
-    }
-
-    const T*
-    end() const
-    {
-      return (&data[0] + N);
-    }
-
-    constexpr std::size_t
-    size() const
-    {
-      return N;
-    }
-
-    T& operator[](std::size_t i) { return data[i]; }
-
-    T operator[](std::size_t i) const { return data[i]; }
-
-    T* data;
-    size_t N;
-  }; 
-    
-}
-
-template<typename arrayType>
+template <typename arrayType, typename T>
 void
-Evaluate(arrayType input)
+set_vals_at_indices(T* array, arrayType* indices, arrayType* vals)
 {
-    //make device to device copy and write to copied
-    arrayType input2(input);
-    input2[1] = 9.3;
-    input[1] = 99.;
+	sycl::queue q;
+	q.submit([&](sycl::handler& cgh) {
+		cgh.parallel_for(
+		  sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
+		  [=](sycl::nd_item<3> item_ct1) {
+			  
+			for(int i=0; i < (*indices).size(); ++i){
+				const size_t index_to_change = (*indices)[i];
+				array[index_to_change] = (*vals)[i];
+			}
+		});
+	}).wait();
 }
-
-template<typename arrayType>
-void
-Evaluate_pass_by_ref(arrayType& input)
+	  
+TEST_CASE("Data can be set on the device and accessed on host")
 {
-    input[1] = 99.;
+	using int_array = gpu::cudaDynamicArray<int>;
+	int_array array;
+	array.Reserve(5);
+	
+	for (int i = 0; i < array.size(); ++i)
+		array[i] = i;
+	
+	SECTION("Data can be set and accessed on host"){
+		CHECK(array[0] == 0);
+		CHECK(array[4] == 4);
+	}
+	
+	constexpr int vals_to_edit = 3;
+	std::array<int, vals_to_edit> vals = {11, 33, 44};
+	std::array<int, vals_to_edit> indices = {1, 3, 4};
+	
+	int_array d_vals(vals.data(), vals.size());
+	int_array d_indices(indices.data(), indices.size());
+	
+	SECTION("copy-constructor with c-style array works"){
+		CHECK(d_vals[0] == 11);
+		CHECK(d_vals[1] == 33);
+		CHECK(d_vals[2] == 44);
+		
+		CHECK(d_indices[0] == 1);
+		CHECK(d_indices[1] == 3);
+		CHECK(d_indices[2] == 4);
+	}
+	
+	
+	//create pointer accessible on device memory
+	int_array* d_vals_ptr = quad::cuda_copy_to_managed<int_array>(d_vals);
+	int_array* d_indices_ptr = quad::cuda_copy_to_managed<int_array>(d_indices);	
+
+	SECTION("copy-constructor on managed memory works"){		
+		CHECK((*d_indices_ptr)[0] == 1);
+		CHECK((*d_indices_ptr)[1] == 3);
+		CHECK((*d_indices_ptr)[2] == 4);
+		
+		CHECK((*d_vals_ptr)[0] == 11);
+		CHECK((*d_vals_ptr)[1] == 33);
+		CHECK((*d_vals_ptr)[2] == 44);
+		
+		
+	}
+		
+	//MISSING kernel that passes array by value due to cudaDynamicArray not being device-copyable
+	//that's why we need to pass a pointer, that points to managed memory
+	set_vals_at_indices<int_array, int>(array.data(), d_indices_ptr, d_vals_ptr);
+	
+	SECTION("Can still access data on host after editing on device"){
+		//if we pass pointer to that data (which is allocated in unified memory)
+		//we can get update on the device properly
+		CHECK(array[1] == 11);
+		CHECK(array[3] == 33);
+		CHECK(array[4] == 44);
+	}
 }
-
-void
-evaluate_thrust(double* vec, size_t size)
-{
-    //for(auto& v: vec)
-    //    v = 99.;
-    for(int i=0; i <size; ++i)
-        vec[i] = 99.;
-}
-
-
-TEST_CASE("cudaDynamicArray Data Access")
-{
-    size_t arraySize = 5;
-    gpu::cudaDynamicArray<double> array;
-    array.Reserve(arraySize);
-    
-    //initialize data allocated in unified memory
-    for(int i=0; i<arraySize; ++i)
-        array[i] = i;
-    
-    Evaluate<gpu::cudaDynamicArray<double>><<<1,1>>>(array);
-    cudaDeviceSynchronize();
-    
-    SECTION("No shallow copy when copying device to device")
-    {
-        CHECK(array[1] != 9.3); //redundant but makes point clearer
-    }
-    
-    SECTION("Deep copy from host to device")
-    {
-        CHECK(array[1] == 1.);
-    }
-    
-    SECTION("Default copy-constructor makes shallow copy")
-    {
-        noCopyConstr::cudaDynamicArray<double> input;
-        input.Reserve(arraySize);
-         
-        for(int i=0; i<arraySize; ++i)
-            input[i] = i;
-        
-        Evaluate<noCopyConstr::cudaDynamicArray<double>><<<1,1>>>(input);
-        cudaDeviceSynchronize();
-        
-        CHECK(input[1] == 99.);
-    }
-}
-
-/*TEST_CASE("unified vector test")
-{
-    thrust::universal_vector<double> vec;
-    CHECK(vec.size() == 0);
-    vec.push_back(4.0);
-    CHECK(vec.size() == 1);
-    
-    evaluate_thrust<<<1,1>>>(vec.data(), vec.size());
-    cudaDeviceSynchronize();
-    for(auto const& v: vec)
-        CHECK(v == 99.);
-}*/

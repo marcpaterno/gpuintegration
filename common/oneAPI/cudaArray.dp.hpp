@@ -54,49 +54,33 @@ namespace gpu {
   public:
     
     cudaDynamicArray(const cudaDynamicArray& a){
-	//#ifndef DPCT_COMPATIBILITY_TEMP
-            N = a.N;
-            //cudaMallocManaged((void**)&data, sizeof(T) * a.N);
-            &data = quad::cuda_malloc_managed<T>(a.N);
-			memcpy(data, a.data, sizeof(T) * a.N);
-       /* #else
-            //can't instantiate on device and then access on host
-            N = a.N;
-            data = new T[a.N];
-            memcpy(data, a.data, sizeof(T) * a.N);*/
-        //#endif
+        N = a.N;
+        _data = quad::cuda_malloc_managed<T>(a.N);
+		quad::cuda_memcpy_device_to_device<T>(_data, a._data, a.size());
     }
-    
     
     cudaDynamicArray()
     {
-      data = nullptr;
+      _data = nullptr;
       N = 0;
     }
     
     //make everything host device
     
     cudaDynamicArray(T const* initData, size_t s) { 
-        Initialize(initData, s); 
+        auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+		N = s;
+		_data = quad::cuda_malloc_managed<T>(s);
+		quad::cuda_memcpy_to_device<T>(_data, initData, s);
     }
     
-    void    
-    Initialize(T const* initData, size_t s)
-    {
-      //dpct::device_ext& dev_ct1 = dpct::get_current_device();
-      //sycl::queue& q_ct1 = dev_ct1.default_queue();
-      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      N = s;
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
-      q_ct1.memcpy(data, initData, sizeof(T) * s).wait();
-    }
-
     void
     Reserve(size_t s)
     {
       N = s;
       auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
+	  _data = quad::cuda_malloc_managed<T>(s);
+	  
     }
     
     explicit
@@ -104,55 +88,54 @@ namespace gpu {
     {
       N = s;
       auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      data = (T*)sycl::malloc_shared(sizeof(T) * s, q_ct1);
+	  _data = quad::cuda_malloc_managed<T>(s);
     }
+	
     ~cudaDynamicArray()
     {
-#ifndef SYCL_LANGUAGE_VERSION
-      cudaFree(data);
-#endif
+		auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+		sycl::free(_data, q_ct1);
     }
-
+	
     const T*
     begin() const
     {
-      return &data[0];
+      return &_data[0];
     }
 
     const T*
     end() const
     {
-      return (&data[0] + N);
+      return (&_data[0] + N);
     }
 
-    constexpr std::size_t
+    SYCL_EXTERNAL constexpr std::size_t
     size() const
     {
       return N;
     }
-
-    /*cudaDynamicArray&
-    operator=(const cudaDynamicArray& source)
-    {
-      cudaMallocManaged((void**)&data, sizeof(T) * source.size());
-      cudaMemcpy(data, source.data, sizeof(T) * N, cudaMemcpyHostToDevice);
-      return *this;
-    }*/
-
-    T&
+	
+    SYCL_EXTERNAL T&
     operator[](std::size_t i)
     {
-      return data[i];
+      return _data[i];
     }
 
-    T
+    SYCL_EXTERNAL T
     operator[](std::size_t i) const
     {
-      return data[i];
+      return _data[i];
     }
+	
+	T*
+	data(){
+		return _data;
+	}
 
-    T* data;
-    size_t N;
+	private:
+	
+		T* _data;
+		size_t N;
   }; // cudaDynamicArray
 
 };
