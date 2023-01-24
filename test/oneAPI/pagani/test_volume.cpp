@@ -41,7 +41,7 @@ public:
   }
 };
 
-TEST_CASE("Transform to Non-default Volume")
+TEST_CASE("Correct integration results on various volumes")
 {
   double constexpr epsabs = 1.0e-40;
   int verbose = 0;

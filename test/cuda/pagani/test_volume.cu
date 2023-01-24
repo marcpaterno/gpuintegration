@@ -6,7 +6,7 @@
 
 #include "common/integration_result.hh"
 
-TEST_CASE("Transform to Non-default Volume")
+TEST_CASE("Correct integration results on various volumes")
 {
   double constexpr epsabs = 1.0e-40;
 
