@@ -15,21 +15,3 @@ target_compile_options(kokkos_pagani_RegionSampling PRIVATE "--expt-relaxed-cons
 target_link_libraries(kokkos_pagani_RegionSampling Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_RegionSampling PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_RegionSampling kokkos_pagani_RegionSampling)
-
-add_executable(kokkos_pagani_MemoryUsage MemoryUsage.cpp)
-target_compile_options(kokkos_pagani_MemoryUsage PRIVATE "--expt-relaxed-constexpr")
-target_link_libraries(kokkos_pagani_MemoryUsage Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
-target_include_directories(kokkos_pagani_MemoryUsage PRIVATE ${CMAKE_SOURCE_DIR})
-add_test(kokkos_pagani_MemoryUsage kokkos_pagani_MemoryUsage)
-
-add_executable(kokkos_pagani_Interpolation1D Interpolation1D.cpp)
-target_compile_options(kokkos_pagani_Interpolation1D PRIVATE "--expt-relaxed-constexpr")
-target_link_libraries(kokkos_pagani_Interpolation1D Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
-target_include_directories(kokkos_pagani_Interpolation1D PRIVATE ${CMAKE_SOURCE_DIR})
-add_test(kokkos_pagani_Interpolation1D kokkos_pagani_Interpolation1D)
-
-add_executable(kokkos_pagani_Interpolation2D Interpolation2D.cpp)
-target_compile_options(kokkos_pagani_Interpolation2D PRIVATE "--expt-relaxed-constexpr")
-target_link_libraries(kokkos_pagani_Interpolation2D Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
-target_include_directories(kokkos_pagani_Interpolation2D PRIVATE ${CMAKE_SOURCE_DIR})
-add_test(kokkos_pagani_Interpolation2D kokkos_pagani_Interpolation2D)

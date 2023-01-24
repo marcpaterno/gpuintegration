@@ -1,1 +1,2 @@
 add_subdirectory(pagani)
+add_subdirectory(common)

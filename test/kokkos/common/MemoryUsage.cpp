@@ -1,5 +1,5 @@
 #include "kokkos/pagani/quad/Cuhre.cuh"
-#include "catch.hpp"
+#include "catch2/catch.hpp"
 #include <iostream>
 #include <stdint.h>
 #include <stdio.h>
