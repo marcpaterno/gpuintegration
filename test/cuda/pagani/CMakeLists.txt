@@ -31,36 +31,10 @@ target_compile_options(easy PRIVATE "--expt-relaxed-constexpr")
 add_test(easy easy)
 
 
-add_executable(min_max min_max.cu)
-set_target_properties(min_max PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_include_directories(min_max PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-target_compile_options(min_max PRIVATE "--expt-relaxed-constexpr")
-add_test(min_max min_max)
-
-add_executable(prefix_sum prefix_sum.cu)
-set_target_properties(prefix_sum PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_include_directories(prefix_sum PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(prefix_sum prefix_sum)
-
 add_executable(pagani_loop_test pagani_loop_test.cu)
 set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(pagani_loop_test )
 # This is not added as a test for ctest, because it is to be run using memory diagnostic tools
-
-add_executable(cudaDynamicArray cudaDynamicArray.cu)
-target_link_libraries(cudaDynamicArray cpu_model gpu_model)
-set_target_properties(cudaDynamicArray PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_include_directories(cudaDynamicArray PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(cudaDynamicArray cudaDynamicArray)
 
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model
@@ -84,10 +58,6 @@ target_include_directories(test_cpu_vs_gpu PRIVATE
 )
 add_test(test_cpu_vs_gpu test_cpu_vs_gpu)
 
-add_executable(hello hello.cu)
-set_target_properties(hello PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-add_test(hello hello)
-
 add_library(do_integration_from_c do_integration_from_c.cu)
 set_target_properties(do_integration_from_c PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(do_integration_from_c util )
@@ -99,15 +69,6 @@ target_include_directories(do_integration_from_c PRIVATE
 add_executable(test_integration_from_c test_integration_from_c.c)
 target_link_libraries(test_integration_from_c do_integration_from_c)
 add_test(test_integration_from_c test_integration_from_c)
-
-add_executable(StatefullIntegrand StatefulIntegrand.cu)
-set_target_properties(StatefullIntegrand PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(StatefullIntegrand )
-target_include_directories(StatefullIntegrand PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(StatefullIntegrand StatefullIntegrand)
 
 add_executable(accuracy_improves_with_epsrel accuracy_improves_with_epsrel.cu)
 set_target_properties(accuracy_improves_with_epsrel PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
@@ -136,16 +97,6 @@ target_include_directories(NanIntegral PRIVATE
 )
 add_test(NanIntegral NanIntegral)
 
-add_executable(test_volume test_volume.cu)
-set_target_properties(test_volume PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(test_volume util)
-target_include_directories(test_volume PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(test_volume test_volume)
-
-
 add_executable(RegionSampling RegionSampling.cu)
 set_target_properties(RegionSampling PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(RegionSampling util )
@@ -154,40 +105,3 @@ target_include_directories(RegionSampling PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(RegionSampling RegionSampling)
-
-add_executable(Interpolation1D Interpolation1D.cu)
-set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(Interpolation1D )
-target_include_directories(Interpolation1D PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(Interpolation1D Interpolation1D)
-
-add_executable(Interpolation2D Interpolation2D.cu)
-set_target_properties(Interpolation2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(Interpolation2D )
-target_include_directories(Interpolation2D PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(Interpolation2D Interpolation2D)
-
-add_executable(interpolator_mem_usage interpolator_mem_usage.cu)
-set_target_properties(interpolator_mem_usage PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_compile_options(interpolator_mem_usage PRIVATE "-g" "-lineinfo") 
-target_link_libraries(interpolator_mem_usage)
-target_include_directories(interpolator_mem_usage PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-
-add_executable(Reduction Reduction.cu)
-set_target_properties(Reduction PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_compile_options(Reduction PRIVATE "-g" "-lineinfo") 
-target_link_libraries(Reduction)
-target_include_directories(Reduction PRIVATE
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/externals
-)
-add_test(Reduction Reduction)

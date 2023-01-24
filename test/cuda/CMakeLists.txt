@@ -1,2 +1,2 @@
 add_subdirectory(pagani)
-#add_subdirectory(mcubes)
+add_subdirectory(common)
