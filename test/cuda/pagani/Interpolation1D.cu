@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "cuda/pagani/quad/GPUquad/Interp1D.cuh"
+#include "common/cuda/Interp1D.cuh"
 #include "common/cuda/cudaMemoryUtil.h"
 
 #include <array>

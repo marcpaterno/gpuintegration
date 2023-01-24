@@ -6,9 +6,9 @@
 #include "catch2/catch.hpp"
 #include <numeric>
 #include <vector>
-#include "oneAPI/pagani/quad/GPUquad/Interp1D.dp.hpp"
+#include "common/oneAPI/Interp1D.dp.hpp"
 #include <iostream>
-#include "oneAPI/pagani/quad/GPUquad/Interp2D.dp.hpp"
+#include "common/oneAPI/Interp2D.dp.hpp"
 #include "common/oneAPI/cudaMemoryUtil.h"
 
 //oneAPI does not provide any functions that can query the amount of free memory on the device similar to CUDA's MemGetInfo, thus this test cannot be ported to the DPC++

@@ -1,9 +1,11 @@
 #include <numeric>
 #include <vector>
-#include "cuda/pagani/quad/GPUquad/Interp1D.cuh"
+#include "common/cuda/Interp1D.cuh"
 #include <iostream>
-#include "cuda/pagani/quad/GPUquad/Interp2D.cuh"
+#include "common/cuda/Interp2D.cuh"
 #include "common/cuda/cudaMemoryUtil.h"
+
+//oneAPI test cannot be replicated due to no equivalent to cudaMemGetInfo
 
 __global__ void
 Evaluate(quad::Interp1D interpolator,
@@ -82,20 +84,15 @@ int main(){
   
   {
     cudaMemGetInfo(&free_physmem, &total_physmem);
-    std::cout << "free device mem before host object creation:"<< free_physmem << std::endl;
   
     
     IntegT host_obj(xs_1D.data(), ys_1D.data(), xs_2D, ys_2D, zs_2D);
   
     cudaMemGetInfo(&free_physmem, &total_physmem);
-    std::cout << "free device mem post host object creation:"<< free_physmem << std::endl;
   
-    IntegT* device_obj = quad::cuda_copy_to_device/*managed*/(host_obj);
-    
-    //IntegT* device_obj = quad::cuda_copy_to_managed(host_obj);
-    
+    IntegT* device_obj = quad::cuda_copy_to_device(host_obj);
+        
     cudaMemGetInfo(&free_physmem, &total_physmem);
-    std::cout << "free device mem post device object creation:"<< free_physmem << std::endl;
   
     Evaluate_test_obj<IntegT><<<1,1>>>(device_obj, results);
     cudaDeviceSynchronize();

@@ -2,7 +2,7 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
-#include "oneAPI/pagani/quad/GPUquad/Interp1D.hpp"
+#include "common/oneAPI/Interp1D.hpp"
 #include "common/oneAPI/cudaMemoryUtil.h"
 
 #include <array>

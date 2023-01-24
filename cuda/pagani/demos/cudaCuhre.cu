@@ -6,7 +6,7 @@
 #include "common/cuda/cudaUtil.h"
 #include "cuda/pagani/demos/function.cuh"
 
-#include "cuda/pagani/quad/GPUquad/Interp2D.cuh"
+#include "common/cuda/Interp2D.cuh"
 #include "cuda/pagani/quad/GPUquad/Workspace.cuh"
 #include "common/cuda/Volume.cuh"
 
