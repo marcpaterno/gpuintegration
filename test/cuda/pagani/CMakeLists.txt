@@ -53,14 +53,14 @@ set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on C
 target_link_libraries(pagani_loop_test )
 # This is not added as a test for ctest, because it is to be run using memory diagnostic tools
 
-add_executable(cudaUnifiedArray cudaUnifiedArray.cu)
-target_link_libraries(cudaUnifiedArray cpu_model gpu_model)
-set_target_properties(cudaUnifiedArray PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_include_directories(cudaUnifiedArray PRIVATE
+add_executable(cudaDynamicArray cudaDynamicArray.cu)
+target_link_libraries(cudaDynamicArray cpu_model gpu_model)
+set_target_properties(cudaDynamicArray PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_include_directories(cudaDynamicArray PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
-add_test(cudaUnifiedArray cudaUnifiedArray)
+add_test(cudaDynamicArray cudaDynamicArray)
 
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model
