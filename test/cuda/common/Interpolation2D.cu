@@ -2,7 +2,6 @@
 #include "catch2/catch.hpp"
 #include "common/cuda/Interp2D.cuh"
 #include "common/cuda/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 
 #include <array>
 #include <chrono>

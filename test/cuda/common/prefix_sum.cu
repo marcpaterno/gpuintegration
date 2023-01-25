@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include "cuda/pagani/demos/function.cuh"
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
 #include "common/cuda//Volume.cuh"
 #include "common/cuda//cudaUtil.h"

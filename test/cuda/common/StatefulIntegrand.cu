@@ -1,6 +1,5 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
 #include "common/cuda//cudaArray.cuh"
 #include <cmath>
@@ -9,7 +8,6 @@
 #include <iostream>
 
 using namespace quad;
-
 template <class M>
 M
 make_from_file(char const* filename)

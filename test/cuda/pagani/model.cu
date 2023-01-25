@@ -1,4 +1,3 @@
-#include "cuda/pagani/quad/GPUquad/Pagani.cuh"
 #include "cuda/pagani/quad/quad.h"
 #include "common/cuda/cudaArray.cuh"
 #include "common/cuda/cudaMemoryUtil.h"
