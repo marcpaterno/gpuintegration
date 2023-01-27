@@ -79,7 +79,6 @@ void
 ExpandcuArray(T*& array, int currentSize, int newSize)
 {
   auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-    int copy_size = std::min(currentSize, newSize);
     T* temp = cuda_malloc<T>(newSize);
     sycl::free(array, q_ct1);
     array = temp;
@@ -156,7 +155,7 @@ array_values_smaller_than_val(T* dev_arr, size_t dev_arr_size, C val){
     q_ct1.memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
       .wait();
 
-    for(int i = 0; i < dev_arr_size; i++){
+    for(size_t i = 0; i < dev_arr_size; i++){
         if(host_arr[i] >= static_cast<T>(val))
             return false;
     }
@@ -171,7 +170,7 @@ array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
     q_ct1.memcpy(host_arr, dev_arr, sizeof(double) * dev_arr_size)
       .wait();
 
-    for(int i = 0; i < dev_arr_size; i++){
+    for(size_t i = 0; i < dev_arr_size; i++){
         if(host_arr[i] < static_cast<T>(val)){
             return false;
         }

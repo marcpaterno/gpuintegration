@@ -1,6 +1,6 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
-#include "kokkos/pagani/quad/Rule.cuh"
-#include "kokkos/pagani/demos/demo_utils.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+//#include "kokkos/pagani/quad/GPUquad/Rule.cuh"
+//#include "kokkos/pagani/demos/demo_utils.cuh"
 #include "func.cuh"
 
 class BoxIntegral8_15 {
@@ -30,17 +30,14 @@ main()
   Kokkos::initialize();
   {
     BoxIntegral8_15 integrand;
-
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
     double true_value = 8879.851175413485;
     const int ndim = 8;
-    while (time_and_call<BoxIntegral8_15, ndim>(
-             "B8_15", integrand, epsrel, true_value, std::cout) == true &&
-           epsrel >= epsrel_min) {
-      epsrel /= 5.0;
-    }
+	Sub_regions<double, ndim> regs(2);
+	//regs.print_bounds();
+	std::cout<<"total vol:"<<regs.compute_total_volume();
   }
   Kokkos::finalize();
   return 0;

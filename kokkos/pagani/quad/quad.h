@@ -6,6 +6,8 @@
 
 // headers from cudaUtil.h
 //#include "cudaDebugUtil.h""
+
+#include "common/kokkos/cudaMemoryUtil.h"
 #include <cmath>
 #include <float.h>
 #include <fstream>
@@ -40,45 +42,14 @@ struct GlobalBounds {
   double unScaledLower, unScaledUpper;
 };
 
-//-------------------------------------------------------------------------------
-// Device Views
-typedef Kokkos::View<int*, Kokkos::CudaSpace> ViewVectorInt;
-typedef Kokkos::View<float*, Kokkos::CudaSpace> ViewVectorFloat;
-typedef Kokkos::View<double*, Kokkos::CudaSpace> ViewVectorDouble;
-typedef Kokkos::
-  View<double*, Kokkos::CudaSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-    ViewVectorDoubleNoMang;
-typedef Kokkos::View<size_t*, Kokkos::CudaSpace> ViewVectorSize_t;
-//-------------------------------------------------------------------------------
-// Const Device views
-typedef Kokkos::View<const double*, Kokkos::CudaSpace> constViewVectorDouble;
-typedef Kokkos::View<const int*, Kokkos::CudaSpace> constViewVectorInt;
-typedef Kokkos::View<const size_t*, Kokkos::CudaSpace> constViewVectorSize_t;
-//-------------------------------------------------------------------------------
-// policies
-typedef Kokkos::TeamPolicy<> team_policy;
-typedef Kokkos::TeamPolicy<>::member_type member_type;
-//-------------------------------------------------------------------------------
-// Shared Memory
-typedef Kokkos::View<double*,
-                     Kokkos::DefaultExecutionSpace::scratch_memory_space,
-                     Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-  ScratchViewDouble;
-typedef Kokkos::View<int*,
-                     Kokkos::DefaultExecutionSpace::scratch_memory_space,
-                     Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-  ScratchViewInt;
 typedef Kokkos::View<GlobalBounds*,
                      Kokkos::DefaultExecutionSpace::scratch_memory_space,
                      Kokkos::MemoryTraits<Kokkos::Unmanaged>>
   ScratchViewGlobalBounds;
+
 //-------------------------------------------------------------------------------
-// Host views
-typedef Kokkos::View<int*, Kokkos::Serial> HostVectorInt;
-typedef Kokkos::View<double*, Kokkos::Serial> HostVectorDouble;
-typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
-//-------------------------------------------------------------------------------
-typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
+// Device Views
+
 
 template <typename T>
 struct Structures {

@@ -30,11 +30,11 @@ target_include_directories(easy PRIVATE
 target_compile_options(easy PRIVATE "--expt-relaxed-constexpr")
 add_test(easy easy)
 
+add_executable(cuda_uniform_sub_division Uniform_sub_division.cu)
+set_target_properties(cuda_uniform_sub_division PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 
 add_executable(pagani_loop_test pagani_loop_test.cu)
 set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(pagani_loop_test )
-# This is not added as a test for ctest, because it is to be run using memory diagnostic tools
 
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model

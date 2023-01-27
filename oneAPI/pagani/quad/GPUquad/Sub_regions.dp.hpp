@@ -119,7 +119,6 @@ struct Sub_regions{
 		q_ct1.submit([&](sycl::handler& cgh) {
             auto dLeftCoord_ct1 = dLeftCoord;
             auto dLength_ct2 = dLength;
-            auto ndim_ct5 = ndim;
             
             cgh.parallel_for(sycl::range<1>(num_starting_regions),
                [=](sycl::id<1> reg)

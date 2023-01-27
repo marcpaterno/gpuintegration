@@ -7,6 +7,7 @@
 
 #include "common/integration_result.hh"
 #include <array>
+#include "common/kokkos/cudaMemoryUtil.h"
 
 template <typename T, int NDIM>
 class Cuhre {
