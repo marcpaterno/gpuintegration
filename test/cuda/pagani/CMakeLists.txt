@@ -105,3 +105,12 @@ target_include_directories(RegionSampling PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(RegionSampling RegionSampling)
+
+add_executable(cuda_pagani_region_filtering RegionFiltering.cu)
+set_target_properties(cuda_pagani_region_filtering PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_region_filtering util )
+target_include_directories(cuda_pagani_region_filtering PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(cuda_pagani_region_filtering cuda_pagani_region_filtering)

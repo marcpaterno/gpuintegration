@@ -132,7 +132,7 @@ alignRegions(ViewVectorDouble dRegions,
     if (num_active_regions == 0) {
       return 0;
     }
-
+	
     // I dont' create Regions filtered_regions, because upon destruction it
     // would deallocate and for performance reasons, I don't want a deep_copy to
     // occur here
@@ -166,13 +166,6 @@ alignRegions(ViewVectorDouble dRegions,
     sub_regions.size = num_active_regions;
     region_characteristics.size = num_active_regions;
     return num_active_regions;
-  }
-
-  size_t
-  compute_num_blocks(const size_t num_regions) const
-  {
-    size_t numThreads = BLOCK_SIZE;
-    return num_regions / numThreads + ((num_regions % numThreads) ? 1 : 0);
   }
 
   ~Sub_regions_filter() {}

@@ -350,6 +350,7 @@ host_alloc(size_t size)
 {
   T* temp = new T[size];
   if (temp == nullptr) {
+	printf("cannot allocate on host\n");
     throw std::bad_alloc();
   }
   return temp;
