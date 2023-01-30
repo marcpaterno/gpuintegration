@@ -55,7 +55,7 @@ public:
     rgenerators.outfile.open("cuda_generators.csv");
     rregions.outfile.open("cuda_regions.csv");
 
-	auto print_header = [=]() {
+    auto print_header = [=]() {
       rfevals.outfile << "reg, fid,";
       for (size_t dim = 0; dim < ndim; ++dim)
         rfevals.outfile << "dim" + std::to_string(dim) << +"low"
@@ -142,8 +142,9 @@ public:
     rgenerators.outfile << "i, gen" << std::endl;
     T* h_generators = new T[ndim * pagani::CuhreFuncEvalsPerRegion<ndim>()];
     quad::cuda_memcpy_to_host<T>(h_generators,
-                           d_generators,
-                           ndim * pagani::CuhreFuncEvalsPerRegion<ndim>());
+                                 d_generators,
+                                 ndim *
+                                   pagani::CuhreFuncEvalsPerRegion<ndim>());
 
     for (int i = 0; i < ndim * pagani::CuhreFuncEvalsPerRegion<ndim>(); ++i) {
       rgenerators.outfile << i << "," << std::scientific << h_generators[i]
@@ -170,7 +171,8 @@ public:
 
       quad::cuda_memcpy_to_host<double>(
         ests, estimates.integral_estimates, num_regions);
-      quad::cuda_memcpy_to_host<double>(errs, estimates.error_estimates, num_regions);
+      quad::cuda_memcpy_to_host<double>(
+        errs, estimates.error_estimates, num_regions);
 
       Print_region_evals(ests, errs, num_regions);
 
@@ -190,108 +192,124 @@ public:
     }
   }
 
+  template <typename IntegT>
+  numint::integration_result
+  apply_cubature_integration_rules(const IntegT& integrand,
+                                   const Sub_regs& subregions,
+                                   bool compute_error = true)
+  {
 
-    
-    template<typename IntegT>
-    numint::integration_result apply_cubature_integration_rules(const IntegT& integrand, const  Sub_regs& subregions, bool compute_error = true){
-        
-        IntegT* d_integrand =  quad::make_gpu_integrand<IntegT>(integrand);
-        
-        size_t num_regions = subregions.size;
-        Region_characteristics<ndim> region_characteristics(num_regions);
-        Region_estimates<T, ndim> subregion_estimates(num_regions);
-        
-        quad::set_device_array<int>(region_characteristics.active_regions, num_regions, 1);
+    IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
-        size_t num_blocks = num_regions;
-        constexpr size_t block_size = 64;
-        
-        T epsrel = 1.e-3, epsabs = 1.e-12;
-        
-        quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size><<<num_blocks, block_size>>>
-            (d_integrand, 
-            subregions.dLeftCoord, 
-            subregions.dLength, num_regions, 
-            subregion_estimates.integral_estimates,
-            subregion_estimates.error_estimates, 
-            //region_characteristics.active_regions, 
-            region_characteristics.sub_dividing_dim, 
-            epsrel, 
-            epsabs, 
-            constMem, 
-            integ_space_lows, 
-            integ_space_highs, 
-            0, 
-            generators);
-        cudaDeviceSynchronize();
-        
-        numint::integration_result res;
-        res.estimate = reduction<T, use_custom>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<T, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<T>::infinity();
-        
-        return res;
+    size_t num_regions = subregions.size;
+    Region_characteristics<ndim> region_characteristics(num_regions);
+    Region_estimates<T, ndim> subregion_estimates(num_regions);
+
+    quad::set_device_array<int>(
+      region_characteristics.active_regions, num_regions, 1);
+
+    size_t num_blocks = num_regions;
+    constexpr size_t block_size = 64;
+
+    T epsrel = 1.e-3, epsabs = 1.e-12;
+
+    quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>
+      <<<num_blocks, block_size>>>(d_integrand,
+                                   subregions.dLeftCoord,
+                                   subregions.dLength,
+                                   num_regions,
+                                   subregion_estimates.integral_estimates,
+                                   subregion_estimates.error_estimates,
+                                   // region_characteristics.active_regions,
+                                   region_characteristics.sub_dividing_dim,
+                                   epsrel,
+                                   epsabs,
+                                   constMem,
+                                   integ_space_lows,
+                                   integ_space_highs,
+                                   0,
+                                   generators);
+    cudaDeviceSynchronize();
+
+    numint::integration_result res;
+    res.estimate = reduction<T, use_custom>(
+      subregion_estimates.integral_estimates, num_regions);
+    res.errorest = compute_error ?
+                     reduction<T, use_custom>(
+                       subregion_estimates.error_estimates, num_regions) :
+                     std::numeric_limits<T>::infinity();
+
+    return res;
+  }
+
+  template <typename IntegT, int debug = 0>
+  numint::integration_result
+  apply_cubature_integration_rules(
+    IntegT* d_integrand,
+    int it,
+    const Sub_regs& subregions,
+    const Reg_estimates& subregion_estimates,
+    const Regs_characteristics& region_characteristics,
+    bool compute_error = false)
+  {
+    size_t num_regions = subregions.size;
+    quad::Func_Evals<ndim> dfevals;
+
+    if constexpr (debug >= 2) {
+      constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+      dfevals.fevals_list =
+        quad::cuda_malloc<quad::Feval<ndim>>(num_regions * num_fevals);
     }
-    
-    template<typename IntegT, int debug = 0>
-    numint::integration_result 
-    apply_cubature_integration_rules(IntegT* d_integrand,
-		int it, 
-        const Sub_regs& subregions, 
-        const Reg_estimates& subregion_estimates, 
-        const Regs_characteristics& region_characteristics, 
-        bool compute_error = false)
-    {
-		size_t num_regions = subregions.size;
-		quad::Func_Evals<ndim> dfevals;
-		
-        if constexpr(debug >= 2){
-			constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
-			dfevals.fevals_list = quad::cuda_malloc<quad::Feval<ndim>>(num_regions*num_fevals); 
-        }
-        
-        quad::set_device_array<int>(region_characteristics.active_regions, num_regions, 1.);
-        
-        size_t num_blocks = num_regions;
-        constexpr size_t block_size = 64;
-        
-        T epsrel = 1.e-3, epsabs = 1.e-12;
-		
-		cudaEvent_t start, stop;
-		cudaEventCreate(&start);
-		cudaEventCreate(&stop);
-		
-		cudaProfilerStart();
-		cudaEventRecord(start);
-		quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug><<<num_blocks, block_size>>>
-            (d_integrand, 
-            subregions.dLeftCoord, 
-            subregions.dLength, num_regions, 
-            subregion_estimates.integral_estimates,
-            subregion_estimates.error_estimates, 
-            region_characteristics.sub_dividing_dim, 
-            epsrel, 
-            epsabs, 
-            constMem, 
-            integ_space_lows, 
-            integ_space_highs, 
-            generators,
-			dfevals);
-        cudaDeviceSynchronize();
-		cudaEventRecord(stop);
-		cudaEventSynchronize(stop);
-		float kernel_time = 0;
-		cudaEventElapsedTime(&kernel_time, start, stop);
-		//std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," << kernel_time << std::endl;
-		cudaProfilerStop();
-		
-		print_verbose<debug>(generators, dfevals, subregion_estimates);
-		
-        numint::integration_result res;
-        res.estimate = reduction<T, use_custom>(subregion_estimates.integral_estimates, num_regions);
-        res.errorest = compute_error ? reduction<T, use_custom>(subregion_estimates.error_estimates, num_regions) : std::numeric_limits<T>::infinity();        
-        return res;
-    }
-  
+
+    quad::set_device_array<int>(
+      region_characteristics.active_regions, num_regions, 1.);
+
+    size_t num_blocks = num_regions;
+    constexpr size_t block_size = 64;
+
+    T epsrel = 1.e-3, epsabs = 1.e-12;
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaProfilerStart();
+    cudaEventRecord(start);
+    quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
+      <<<num_blocks, block_size>>>(d_integrand,
+                                   subregions.dLeftCoord,
+                                   subregions.dLength,
+                                   num_regions,
+                                   subregion_estimates.integral_estimates,
+                                   subregion_estimates.error_estimates,
+                                   region_characteristics.sub_dividing_dim,
+                                   epsrel,
+                                   epsabs,
+                                   constMem,
+                                   integ_space_lows,
+                                   integ_space_highs,
+                                   generators,
+                                   dfevals);
+    cudaDeviceSynchronize();
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float kernel_time = 0;
+    cudaEventElapsedTime(&kernel_time, start, stop);
+    // std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," <<
+    // kernel_time << std::endl;
+    cudaProfilerStop();
+
+    print_verbose<debug>(generators, dfevals, subregion_estimates);
+
+    numint::integration_result res;
+    res.estimate = reduction<T, use_custom>(
+      subregion_estimates.integral_estimates, num_regions);
+    res.errorest = compute_error ?
+                     reduction<T, use_custom>(
+                       subregion_estimates.error_estimates, num_regions) :
+                     std::numeric_limits<T>::infinity();
+    return res;
+  }
 
   template <int dim>
   void

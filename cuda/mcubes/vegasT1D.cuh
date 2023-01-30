@@ -20,7 +20,7 @@ Last three arguments are: total iterations, iteration
  */
 #include <chrono>
 #include <stdio.h>
-//#include <malloc.h>
+// #include <malloc.h>
 #include "common/cuda/Volume.cuh"
 #include "common/cuda/cudaApply.cuh"
 #include "common/cuda/cudaArray.cuh"

@@ -89,10 +89,8 @@ cu_time_and_call(char const* id,
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
-  numint::integration_result const result = alg.integrate(integrand,
-                                           epsrel,
-                                           epsabs,
-                                           *vol);
+  numint::integration_result const result =
+    alg.integrate(integrand, epsrel, epsabs, *vol);
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);
@@ -101,12 +99,12 @@ cu_time_and_call(char const* id,
   if (result.status == 0 || result.status == 2) {
     good = true;
   }
-  
+
   outfile.precision(17);
-  outfile << std::fixed << std::scientific << id << "," 
-          << true_value << "," << epsrel << "," << epsabs << ","
-          << result.estimate << "," << result.errorest << "," << result.nregions
-          << "," << result.nFinishedRegions << "," << result.status << ","
+  outfile << std::fixed << std::scientific << id << "," << true_value << ","
+          << epsrel << "," << epsabs << "," << result.estimate << ","
+          << result.errorest << "," << result.nregions << ","
+          << result.nFinishedRegions << "," << result.status << ","
           << config._final << "," << result.lastPhase << "," << dt.count()
           << std::endl;
   return good;
@@ -138,10 +136,8 @@ cu_time_and_call_100(char const* id,
   for (int i = 0; i < 50; i++) {
     auto const t0 = std::chrono::high_resolution_clock::now();
     // nvtxRangePushA("init_host_data");
-    numint::integration_result const result = alg.integrate(integrand,
-                                             epsrel,
-                                             epsabs,
-                                             *vol);
+    numint::integration_result const result =
+      alg.integrate(integrand, epsrel, epsabs, *vol);
 
     // nvtxRangePop();
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
@@ -151,16 +147,13 @@ cu_time_and_call_100(char const* id,
       good = true;
     }
 
-
-    
-
     outfile.precision(17);
-    outfile << std::fixed << std::scientific << id << ","
-            << true_value << "," << epsrel << "," << epsabs << ","
-            << result.estimate << "," << result.errorest << ","
-            << result.nregions << "," << result.nFinishedRegions << ","
-            << result.status << "," << config._final << "," << result.lastPhase
-            << "," << dt.count() << std::endl;
+    outfile << std::fixed << std::scientific << id << "," << true_value << ","
+            << epsrel << "," << epsabs << "," << result.estimate << ","
+            << result.errorest << "," << result.nregions << ","
+            << result.nFinishedRegions << "," << result.status << ","
+            << config._final << "," << result.lastPhase << "," << dt.count()
+            << std::endl;
   }
 
   return good;
@@ -189,10 +182,8 @@ common_header_pagani_time_and_call(std::string alg_id,
 
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
-  numint::integration_result const result = alg.integrate(integrand,
-                                           epsrel,
-                                           epsabs,
-                                           *vol);
+  numint::integration_result const result =
+    alg.integrate(integrand, epsrel, epsabs, *vol);
 
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;

@@ -143,7 +143,7 @@ namespace cuda_mcubes {
     for (j = 0; j < ND - 2; j++) {
       dp[j + 2] = dp[j + 1] * NINTV;
     }
-	
+
     for (j = 0; j < ND; j++) {
       t0 = dp[ND - j - 1];
       t1 = m / t0;
@@ -197,8 +197,8 @@ namespace cuda_mcubes {
   {
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
-	
-	#pragma unroll ndim  // unroll needed
+
+#pragma unroll ndim // unroll needed
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
@@ -212,19 +212,18 @@ namespace cuda_mcubes {
       //      //randoms[index] = ran00;
       //  }
       // }
-	
-	  
+
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 
-	 //TODO redundant memory access below xi[j * ndmx1 + ia[j] - 1]
-      
-	  if (ia[j] > 1) {
-		const double binA = (xi[j * ndmx1 + ia[j]]) ;
-		const double binB = (xi[j * ndmx1 + ia[j] - 1]);
-        xo = binA - binB; // bin
-                                                                    // length
+      // TODO redundant memory access below xi[j * ndmx1 + ia[j] - 1]
+
+      if (ia[j] > 1) {
+        const double binA = (xi[j * ndmx1 + ia[j]]);
+        const double binB = (xi[j * ndmx1 + ia[j] - 1]);
+        xo = binA - binB;              // bin
+                                       // length
         rc = binB + (xn - ia[j]) * xo; // scaling ran00 to bin bounds
       } else {
         xo = (xi[j * ndmx1 + ia[j]]);
@@ -263,9 +262,9 @@ namespace cuda_mcubes {
                       double* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-	
+
     for (int k = 1; k <= npg; k++) {
-	  
+
       double wgt = xjac;
       Setup_Integrand_Eval<ndim, DEBUG_MCUBES, GeneratorType>(
         rand_num_generator,
@@ -284,15 +283,15 @@ namespace cuda_mcubes {
         randoms);
 
       gpu::cudaArray<double, ndim> xx;
-	  #pragma unroll ndim //unroll needed
+#pragma unroll ndim // unroll needed
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
 
-	  double tmp = 0.;
+      double tmp = 0.;
       /*const double*/ tmp += gpu::apply(*d_integrand, xx);
-	  
-	  const double f = wgt * tmp;
+
+      const double f = wgt * tmp;
 
       // if constexpr(DEBUG_MCUBES){
       // if constexpr(DEBUG_MCUBES){
@@ -302,17 +301,16 @@ namespace cuda_mcubes {
       //         //funcevals[index] = f;
       //     }
       // }
-		
+
       double f2 = f * f;
       fb += f;
       f2b += f2;
-	  
-	  for (int j = 1; j <= ndim; j++) {
-		const int index = ia[j] * mxdim_p1 + j;
-		// d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
-		atomicAdd(&d[index], f2);
-	  }
-	  
+
+      for (int j = 1; j <= ndim; j++) {
+        const int index = ia[j] * mxdim_p1 + j;
+        // d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
+        atomicAdd(&d[index], f2);
+      }
     }
   }
 
@@ -344,7 +342,7 @@ namespace cuda_mcubes {
                  double* randoms = nullptr,
                  double* funcevals = nullptr)
   {
-	
+
     for (int t = 0; t < chunkSize; t++) {
       double fb = 0.,
              f2b = 0.0; // init to zero for each interval processed by thread
@@ -358,7 +356,7 @@ namespace cuda_mcubes {
                       is_custom_generator()) {
         rand_num_generator->SetSeed(cube_id);
       }
-	
+
       Process_npg_samples<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
         d_integrand,
         npg,
@@ -383,15 +381,13 @@ namespace cuda_mcubes {
       f2b = sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb);
 
-      if (f2b <= 0.0) 
-	  {
+      if (f2b <= 0.0) {
         f2b = TINY;
       }
 
-	  
       fbg += fb;
       f2bg += f2b;
-		
+
       for (int k = ndim; k >= 1; k--) {
         kg[k] %= ng;
 
@@ -439,7 +435,7 @@ namespace cuda_mcubes {
     double fbg = 0., f2bg = 0.;
 
     if (m < totalNumThreads) {
-		
+
       size_t cube_id_offset =
         (blockIdx.x * blockDim.x + threadIdx.x) * chunkSize;
 
@@ -478,12 +474,12 @@ namespace cuda_mcubes {
     __syncthreads();
     fbg = blockReduceSum(fbg);
     f2bg = blockReduceSum(f2bg);
-	
+
     if (tx == 0) {
-       //result_dev[0] += fbg;
-       //result_dev[1] += f2bg;
-      
-	  atomicAdd(&result_dev[0], fbg);
+      // result_dev[0] += fbg;
+      // result_dev[1] += f2bg;
+
+      atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
     }
     // end of subcube if
@@ -573,7 +569,7 @@ namespace cuda_mcubes {
           for (int i = 0; i < ndim; i++) {
             xx[i] = x[i + 1];
           }
-		
+
           tmp = gpu::apply(*d_integrand, xx);
 
           f = wgt * tmp;
@@ -590,7 +586,7 @@ namespace cuda_mcubes {
 
         if (f2b <= 0.0)
           f2b = TINY;
-	  
+
         fbg += fb;
         f2bg += f2b;
 
@@ -608,8 +604,8 @@ namespace cuda_mcubes {
 
     if (tx == 0) {
       // printf("Block %i done\n", blockIdx.x);
-       //result_dev[0] += fbg;
-       //result_dev[1] += f2bg;
+      // result_dev[0] += fbg;
+      // result_dev[1] += f2bg;
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
     }
@@ -724,7 +720,7 @@ namespace cuda_mcubes {
 
     calls = (double)npg * (double)k;
     dxg = 1.0 / ng;
-	
+
     double ing = dxg;
     for (dv2g = 1, i = 1; i <= ndim; i++)
       dv2g *= dxg;
@@ -777,7 +773,7 @@ namespace cuda_mcubes {
     cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
     int chunkSize = GetChunkSize(ncall);
-	//chunkSize = 4;
+    // chunkSize = 4;
     uint32_t totalNumThreads =
       (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
 
@@ -817,14 +813,14 @@ namespace cuda_mcubes {
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
-                          static_cast<unsigned int>(it);
-	  
-	  cudaEvent_t start, stop;
-	  cudaEventCreate(&start);
-	  cudaEventCreate(&stop);
-		
-	  cudaProfilerStart();
-	  cudaEventRecord(start);
+        static_cast<unsigned int>(it);
+
+      cudaEvent_t start, stop;
+      cudaEventCreate(&start);
+      cudaEventCreate(&stop);
+
+      cudaProfilerStart();
+      cudaEventRecord(start);
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,
                                               ng,
@@ -849,13 +845,14 @@ namespace cuda_mcubes {
                                               data_collector.randoms,
                                               data_collector.funcevals);
       cudaDeviceSynchronize();
-	  cudaEventRecord(stop);
-	  cudaEventSynchronize(stop);
-	  float kernel_time = 0;
-	  cudaEventElapsedTime(&kernel_time, start, stop);
-	  //std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time << std::endl;
-	  //std::cout<<"\textra cubes:"<< extra << "," << "time:" << kernel_time << std::endl;
-	  params.set_alternate(chunkSize);
+      cudaEventRecord(stop);
+      cudaEventSynchronize(stop);
+      float kernel_time = 0;
+      cudaEventElapsedTime(&kernel_time, start, stop);
+      // std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time <<
+      // std::endl; std::cout<<"\textra cubes:"<< extra << "," << "time:" <<
+      // kernel_time << std::endl;
+      params.set_alternate(chunkSize);
       cudaProfilerStop();
       cudaMemcpy(xi,
                  xi_dev,

@@ -190,9 +190,7 @@ namespace quad {
 
   template <typename T, int NDIM>
   __global__ void
-  ComputeGenerators(T* generators,
-                    size_t FEVAL,
-                    const Structures<T> constMem)
+  ComputeGenerators(T* generators, size_t FEVAL, const Structures<T> constMem)
   {
     size_t perm = 0;
     T g[NDIM] = {0.};
@@ -313,7 +311,7 @@ namespace quad {
                    T* lows,
                    T* highs,
                    T* generators,
-				   quad::Func_Evals<NDIM>& fevals)
+                   quad::Func_Evals<NDIM>& fevals)
   {
     const size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -329,7 +327,7 @@ namespace quad {
       vol = 1.;
       T maxRange = 0;
 
-	  #pragma unroll NDIM
+#pragma unroll NDIM
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
@@ -367,20 +365,22 @@ namespace quad {
 
   template <typename IntegT, typename T, int NDIM, int blockDim, int debug = 0>
   __global__ void
-  INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
-                       T* dRegions,
-                       T* dRegionsLength,
-                       size_t numRegions,
-                       T* dRegionsIntegral,
-                       T* dRegionsError,
-                       int* subDividingDimension,
-                       T epsrel,
-                       T epsabs,
-                       Structures<T> constMem, //switch to const ptr:  Structures<double> const * const constMem,
-                       T* lows,
-                       T* highs,
-                       T* generators,
-					   quad::Func_Evals<NDIM> fevals)
+  INTEGRATE_GPU_PHASE1(
+    IntegT* d_integrand,
+    T* dRegions,
+    T* dRegionsLength,
+    size_t numRegions,
+    T* dRegionsIntegral,
+    T* dRegionsError,
+    int* subDividingDimension,
+    T epsrel,
+    T epsabs,
+    Structures<T> constMem, // switch to const ptr:  Structures<double> const *
+                            // const constMem,
+    T* lows,
+    T* highs,
+    T* generators,
+    quad::Func_Evals<NDIM> fevals)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
@@ -414,19 +414,19 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockDim>
   __device__ void
   VEGAS_ASSISTED_INIT_REGION_POOL(IntegT* d_integrand,
-                   T* dRegions,
-                   T* dRegionsLength,
-                   size_t numRegions,
-                   Structures<T>& constMem,
-                   //int FEVAL,
-                   //int NSETS,
-                   Region<NDIM> sRegionPool[],
-                   GlobalBounds sBound[],
-                   T* lows,
-                   T* highs,
-                   T* generators,
-				   quad::Func_Evals<NDIM>& fevals,
-				   unsigned int seed_init)
+                                  T* dRegions,
+                                  T* dRegionsLength,
+                                  size_t numRegions,
+                                  Structures<T>& constMem,
+                                  // int FEVAL,
+                                  // int NSETS,
+                                  Region<NDIM> sRegionPool[],
+                                  GlobalBounds sBound[],
+                                  T* lows,
+                                  T* highs,
+                                  T* generators,
+                                  quad::Func_Evals<NDIM>& fevals,
+                                  unsigned int seed_init)
   {
     size_t index = blockIdx.x;
     // may not be worth pre-computing
@@ -480,20 +480,20 @@ namespace quad {
   template <typename IntegT, typename T, int NDIM, int blockDim>
   __global__ void
   VEGAS_ASSISTED_INTEGRATE_GPU_PHASE1(IntegT* d_integrand,
-                       T* dRegions,
-                       T* dRegionsLength,
-                       size_t numRegions,
-                       T* dRegionsIntegral,
-                       T* dRegionsError,
-                       int* subDividingDimension,
-                       T epsrel,
-                       T epsabs,
-                       Structures<T> constMem,
-                       T* lows,
-                       T* highs,
-                       T* generators,
-					   quad::Func_Evals<NDIM> fevals,
-					   unsigned int seed_init)
+                                      T* dRegions,
+                                      T* dRegionsLength,
+                                      size_t numRegions,
+                                      T* dRegionsIntegral,
+                                      T* dRegionsError,
+                                      int* subDividingDimension,
+                                      T epsrel,
+                                      T epsabs,
+                                      Structures<T> constMem,
+                                      T* lows,
+                                      T* highs,
+                                      T* generators,
+                                      quad::Func_Evals<NDIM> fevals,
+                                      unsigned int seed_init)
   {
     __shared__ Region<NDIM> sRegionPool[1];
     __shared__ GlobalBounds sBound[NDIM];
