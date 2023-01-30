@@ -16,19 +16,7 @@ TEST_CASE("New Unit-Volume 2D")
 
   SECTION("Total Volume of GPU regions is 1.0")
   {
-    double gpu_volume = 0.;
-    Kokkos::parallel_reduce(
-      "Sub-volume Reduction",
-      regions.size,
-      KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
-        double sub_region_volume = 1.;
-        for (int dim = 0; dim < ndim; ++dim) {
-          sub_region_volume *= regions.dLength[dim * regions.size + index];
-        }
-        valueToUpdate += sub_region_volume;
-      },
-      gpu_volume);
-
+    double gpu_volume = regions.compute_total_volume();
     CHECK(gpu_volume == 1.);
   }
 
@@ -73,19 +61,7 @@ TEST_CASE("New Unit-Volume 5D")
 
   SECTION("Total Volume of GPU regions is 1.0")
   {
-    double gpu_volume = 0.;
-    Kokkos::parallel_reduce(
-      "Sub-volume Reduction",
-      regions.size,
-      KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
-        double sub_region_volume = 1.;
-        for (int dim = 0; dim < ndim; ++dim) {
-          sub_region_volume *= regions.dLength(dim * regions.size + index);
-        }
-        valueToUpdate += sub_region_volume;
-      },
-      gpu_volume);
-    
+    double gpu_volume = regions.compute_total_volume();
     CHECK(gpu_volume == Approx(1.).epsilon(1.e-9));
   }
 
@@ -106,7 +82,7 @@ TEST_CASE("New Unit-Volume 5D")
 		CHECK(RegionsLength[dim * regions.size + index] < 1.);
 		CHECK(RegionsLength[dim * regions.size + index] > 0.);
       }
-	 
+	  
 	  CHECK(sub_region_volume < 1.);
 	  CHECK(sub_region_volume > 0.);
 	  CHECK(sub_region_volume == Approx(1./static_cast<double>(regions.size)));
@@ -125,19 +101,7 @@ TEST_CASE("New Unit-Volume 8D")
 
   SECTION("Total Volume of GPU regions is 1.0")
   {
-    double gpu_volume = 0.;
-    Kokkos::parallel_reduce(
-      "Sub-volume Reduction",
-      regions.size,
-      KOKKOS_LAMBDA(const int index, double& valueToUpdate) {
-        double sub_region_volume = 1.;
-        for (int dim = 0; dim < ndim; ++dim) {
-          sub_region_volume *= regions.dLength(dim * regions.size + index);
-        }
-        valueToUpdate += sub_region_volume;
-      },
-      gpu_volume);
-
+    double gpu_volume = regions.compute_total_volume();
     CHECK(gpu_volume == Approx(1.).epsilon(1.e-9));
   }
 
@@ -158,7 +122,6 @@ TEST_CASE("New Unit-Volume 8D")
 		CHECK(RegionsLength[dim * regions.size + index] < 1.);
 		CHECK(RegionsLength[dim * regions.size + index] > 0.);
       }
-
 	  	CHECK(sub_region_volume < 1.);
 		CHECK(sub_region_volume > 0.);
 		CHECK(sub_region_volume == Approx(1./static_cast<double>(regions.size)));

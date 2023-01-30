@@ -15,11 +15,21 @@ struct Sub_regions {
   // for clarity, current way is counter-intuitive since the other sub-region
   // related structs allocate with their constructors
   Sub_regions() {}
-
+	
   Sub_regions(const size_t partitions_per_axis)
   {
     uniform_split(partitions_per_axis);
   }
+
+  Sub_regions(const Sub_regions<T,ndim>& other)
+  {
+    device_init(other.size);
+	dLeftCoord = other.dLeftCoord;
+	dLength = other.dLength;
+	//Kokkos::deep_copy(dLeftCoord, other.dLeftCoord);
+	//Kokkos::deep_copy(dLength, other.dLength);
+  }
+
 
   ~Sub_regions()
   {}
@@ -30,7 +40,6 @@ struct Sub_regions {
 		size_t num_starting_regions = pow((double)numOfDivisionPerRegionPerDimension, (double)ndim);
 		double starting_axis_length = 1./(double)numOfDivisionPerRegionPerDimension;
 		device_init(num_starting_regions);
-
 		Kokkos::parallel_for(
 		  "GenerateInitialRegions",
 		  Kokkos::RangePolicy<>(0, num_starting_regions),
@@ -41,7 +50,6 @@ struct Sub_regions {
 					dLeftCoord[num_starting_regions * dim + reg] = static_cast<double>(_id) * static_cast<double>(starting_axis_length);  
 					dLength[num_starting_regions * dim + reg] = starting_axis_length;
 				}
-			
 		  });
 		size = num_starting_regions;
 	}	
@@ -77,22 +85,13 @@ struct Sub_regions {
   }
 
   T
-  compute_region_volume(size_t const regionID)
+  compute_region_volume(size_t region_id, double* region_lengths, size_t nregions)
   {
-	auto LeftCoord = Kokkos::create_mirror_view(dLeftCoord);
-    auto Length = Kokkos::create_mirror_view(dLength);
-	
-	//replace with sub-view, dont do whole allocation for a single region
-	//this is not really used anywhere besides tests right now
-	
-	Kokkos::deep_copy(LeftCoord, dLeftCoord);
-	Kokkos::deep_copy(Length, dLength);    
-		
     T reg_vol = 1.;
     for (size_t dim = 0; dim < ndim; dim++) {
-      size_t region_index = size * dim + regionID;
-
-      reg_vol *= Length[region_index];
+      size_t region_index = size * dim + region_id;
+		
+      reg_vol *= region_lengths[region_index];
     }
     return reg_vol;
   }
@@ -100,6 +99,8 @@ struct Sub_regions {
   T
   compute_total_volume()
   {
+	  
+	printf("about to compute_total_volume\n");
 	auto LeftCoord = Kokkos::create_mirror_view(dLeftCoord);
     auto Length = Kokkos::create_mirror_view(dLength);
 	
@@ -108,7 +109,7 @@ struct Sub_regions {
 
     T total_vol = 0.;
     for (size_t regID = 0; regID < size; regID++) {
-      total_vol += compute_region_volume(regID);
+      total_vol += compute_region_volume(regID, Length.data(), Length.extent(0));
     }
 
     return total_vol;

@@ -49,6 +49,14 @@ struct Sub_regions {
     uniform_split(partitions_per_axis);
   }
 
+
+  Sub_regions(const Sub_regions<T, ndim>& other){
+	  size = other.size;
+	  device_init(size);
+	  quad::cuda_memcpy_device_to_device<double>(dLeftCoord, other.dLeftCoord, size);
+	  quad::cuda_memcpy_device_to_device<double>(dLength, other.dLength, size);
+  }
+
   ~Sub_regions()
   {
     delete[] LeftCoord;
@@ -101,8 +109,8 @@ struct Sub_regions {
   void
   device_init(size_t const numRegions)
   {
-    cudaFree(dLeftCoord);
-    cudaFree(dLength);
+    //cudaFree(dLeftCoord);
+    //cudaFree(dLength);
     size = numRegions;
     dLeftCoord = quad::cuda_malloc<T>(numRegions * ndim);
     dLength = quad::cuda_malloc<T>(numRegions * ndim);
