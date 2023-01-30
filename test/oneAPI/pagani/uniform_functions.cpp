@@ -4,17 +4,15 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
 #include <string>
-//#include <oneapi/mkl.hpp>
-//#include "oneapi/mkl/stats.hpp"
+// #include <oneapi/mkl.hpp>
+// #include "oneapi/mkl/stats.hpp"
 
 #include "common/oneAPI/cuhreResult.dp.hpp"
 #include "common/oneAPI/Volume.dp.hpp"
-
-
 
 #include <chrono>
 #include <cmath>
@@ -22,13 +20,14 @@
 #include <iomanip>
 #include <iostream>
 
-//using namespace quad;
+// using namespace quad;
 
 class PTest {
 public:
   SYCL_EXTERNAL double
   operator()(double x, double y)
-  { double res = 15.37;
+  {
+    double res = 15.37;
     return res;
   }
 };
@@ -52,11 +51,7 @@ public:
   }
 };
 
-
-
 #include "oneAPI/pagani/demos/new_time_and_call.dp.hpp"
-
-
 
 using namespace quad;
 
@@ -71,7 +66,6 @@ namespace detail {
   };
 }
 
-
 TEST_CASE("Positive Value Function")
 {
   constexpr int ndim = 2;
@@ -84,8 +78,9 @@ TEST_CASE("Positive Value Function")
   Workspace<ndim> pagani;
   quad::Volume<double, ndim> vol;
   constexpr bool debug = false;
-  cuhreResult res = pagani.integrate<PTest, debug>(integrand, epsrel, epsabs, vol);
-    
+  cuhreResult res =
+    pagani.integrate<PTest, debug>(integrand, epsrel, epsabs, vol);
+
   double integral = res.estimate;
   double error = res.errorest;
   CHECK(Approx(15.37) == integral);
@@ -103,15 +98,15 @@ TEST_CASE("Negative Value Function")
   Workspace<ndim> pagani;
   quad::Volume<double, ndim> vol;
   constexpr bool debug = false;
-  cuhreResult res = pagani.integrate<NTest, debug>(integrand, epsrel, epsabs, vol);
-    
+  cuhreResult res =
+    pagani.integrate<NTest, debug>(integrand, epsrel, epsabs, vol);
+
   double integral = res.estimate;
   double error = res.errorest;
   CHECK(Approx(-15.37) == integral);
 }
 
-
- TEST_CASE("Zero Value Function2")
+TEST_CASE("Zero Value Function2")
 {
   constexpr int ndim = 2;
   size_t numRegions = 16;
@@ -121,10 +116,11 @@ TEST_CASE("Negative Value Function")
   double epsrel = 1.0e-3;
   double epsabs = 1.0e-12;
   quad::Volume<double, ndim> vol;
-    
+
   Workspace<ndim> pagani;
-  constexpr bool debug = false;   
-  cuhreResult res = pagani.integrate<ZTest, debug>(integrand, epsrel, epsabs, vol);
+  constexpr bool debug = false;
+  cuhreResult res =
+    pagani.integrate<ZTest, debug>(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
   double error = res.errorest;

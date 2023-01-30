@@ -83,7 +83,7 @@ TEST_CASE("Correct integration results on various volumes")
     auto res = alg.integrate(integrand, epsrel, epsabs, vol);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
-	
+
     CHECK(res.status == 0);
     CHECK(relative_error <= epsrel);
     CHECK(error <= res.errorest);
@@ -126,7 +126,7 @@ TEST_CASE("Correct integration results on various volumes")
     auto res = alg.integrate(integrand, epsrel, epsabs, vol);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
-	
+
     CHECK(res.status == 0);
     CHECK(relative_error <= epsrel);
     CHECK(error <= res.errorest);
@@ -147,7 +147,7 @@ TEST_CASE("Correct integration results on various volumes")
     auto res = alg.integrate(integrand, epsrel, epsabs, vol);
     double error = fabs(true_answer - res.estimate);
     double relative_error = error / true_answer;
-		
+
     CHECK(res.status == 0);
     CHECK(relative_error <= epsrel);
     CHECK(error <= res.errorest);

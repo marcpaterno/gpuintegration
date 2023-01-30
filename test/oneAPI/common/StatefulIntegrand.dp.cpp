@@ -123,12 +123,12 @@ toy_integration_algorithm(IntegT const& on_host)
 
   double* device_result = cuda_malloc_managed<double>();
   int* device_rc = cuda_malloc_managed<int>();
-    q_ct1.parallel_for(
-      sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
-      [=](sycl::nd_item<3> item_ct1) {
-          do_gpu_stuff<IntegT>(
-            ptr_to_thing_in_unified_memory, device_result, device_rc);
-      });
+  q_ct1.parallel_for(sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
+                     [=](sycl::nd_item<3> item_ct1) {
+                       do_gpu_stuff<IntegT>(ptr_to_thing_in_unified_memory,
+                                            device_result,
+                                            device_rc);
+                     });
   dev_ct1.queues_wait_and_throw();
   sycl::free(ptr_to_thing_in_unified_memory, q_ct1);
   result = *device_result;

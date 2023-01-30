@@ -27,9 +27,10 @@ do_integration_from_c(double* res)
   Integrand integrand;
   constexpr int ndim = 2;
   quad::Volume<double, ndim> vol;
-  
+
   Workspace<double, ndim> pagani;
-  auto const result = pagani.integrate<Integrand>(integrand, epsrel, epsabs, vol);
+  auto const result =
+    pagani.integrate<Integrand>(integrand, epsrel, epsabs, vol);
   int rc = result.status;
   if (rc == 0)
     *res = result.estimate;

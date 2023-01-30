@@ -16,7 +16,10 @@ TEST_CASE("Appropriate Decrease in Monitored Available GPU Memory")
   Cuhre<double, 2> cuhre;
   size_t totalMem2 = GetTotalMem();
 
-  SECTION("Total Mem Constant") { CHECK(totalMem2 == totalMem1); }
+  SECTION("Total Mem Constant")
+  {
+    CHECK(totalMem2 == totalMem1);
+  }
 
   size_t numDoublesToFit = initial_free_mem / sizeof(double);
 

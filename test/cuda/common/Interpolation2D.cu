@@ -43,7 +43,9 @@ clamp(quad::Interp2D f, double x, double y)
   return hResult;
 }
 
-void test_clamp_interface(){
+void
+test_clamp_interface()
+{
   constexpr std::size_t nx = 3; // rows
   constexpr std::size_t ny = 2; // cols
   std::array<double, nx> xs = {1., 2., 3.};
@@ -107,7 +109,9 @@ void test_clamp_interface(){
   }
 }
 
-void test_interpolation_at_knots(){
+void
+test_interpolation_at_knots()
+{
   constexpr std::size_t nx = 3;
   constexpr std::size_t ny = 2;
   std::array<double, nx> const xs = {1., 2., 3.};
@@ -135,7 +139,9 @@ void test_interpolation_at_knots(){
   }
 }
 
-void test_on_bilinear(){
+void
+test_on_bilinear()
+{
   constexpr std::size_t nx = 3;
   constexpr std::size_t ny = 4;
   std::array<double, nx> const xs = {1., 2., 3.};
@@ -153,18 +159,19 @@ void test_on_bilinear(){
     }
   }
 
-
   quad::Interp2D f(xs, ys, zs);
   using IntegType = quad::Interp2D;
-  
+
   double interpResult = Evaluate(f, 2.5, 1.5);
   CHECK(interpResult == 4.5);
 }
 
-TEST_CASE("clamp interface works"){
-	test_clamp_interface();
+TEST_CASE("clamp interface works")
+{
+  test_clamp_interface();
 }
 
-TEST_CASE("Interp2D exact at knots"){
-	test_interpolation_at_knots();
+TEST_CASE("Interp2D exact at knots")
+{
+  test_interpolation_at_knots();
 }

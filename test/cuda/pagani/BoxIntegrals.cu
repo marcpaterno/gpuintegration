@@ -24,8 +24,8 @@ TEST_CASE("BoxIntegral8_15")
   BoxIntegral8_15 integrand;
   double true_value = 8879.851175413485;
 
-  auto const result = pagani.integrate<BoxIntegral8_15>(
-    integrand, epsrel, epsabs, vol);
+  auto const result =
+    pagani.integrate<BoxIntegral8_15>(integrand, epsrel, epsabs, vol);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);
@@ -41,8 +41,8 @@ TEST_CASE("BoxIntegral8_25")
   BoxIntegral8_25 integrand;
   double true_value = 14996089.096112404019;
 
-  auto const result = pagani.integrate<BoxIntegral8_25>(
-    integrand, epsrel, epsabs, vol);
+  auto const result =
+    pagani.integrate<BoxIntegral8_25>(integrand, epsrel, epsabs, vol);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);
@@ -58,8 +58,8 @@ TEST_CASE("BoxIntegral8_22")
   BoxIntegral8_22 integrand;
   double true_value = 1495369.283757217694;
 
-  auto const result = pagani.integrate<BoxIntegral8_22>(
-    integrand, epsrel, epsabs, vol);
+  auto const result =
+    pagani.integrate<BoxIntegral8_22>(integrand, epsrel, epsabs, vol);
 
   double true__rel_err = abs(true_value - result.estimate) / true_value;
   CHECK(true__rel_err <= epsrel);

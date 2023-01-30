@@ -35,34 +35,33 @@ struct Genz_1abs_5d {
   }
 };
 
+TEST_CASE("Accuracy Improves on Smaller Relative Error Tolerances")
+{
+  // We start with a very large error tolerance, and will
+  // repeatedly decrease the tolerance.
 
-TEST_CASE("Accuracy Improves on Smaller Relative Error Tolerances"){
-    // We start with a very large error tolerance, and will
-    // repeatedly decrease the tolerance.
+  double epsrel = 1.0e-3;
+  double constexpr epsabs = 1.0e-40;
+  constexpr int ndim = 6;
 
-    double epsrel = 1.0e-3;
-	double constexpr epsabs = 1.0e-40;
-	constexpr int ndim = 6;
+  quad::Volume<double, ndim> vol;
+  Workspace<double, ndim> alg;
 
-	quad::Volume<double, ndim> vol;
-	Workspace<double, ndim> alg;
+  double previous_error_estimate = 1.0; // larger than ever should be returned
+  Fun6 integrand;
+  while (epsrel > 1.0e-6) {
+    auto const res = alg.integrate<Fun6>(integrand, epsrel, epsabs, vol);
 
-	double previous_error_estimate = 1.0; // larger than ever should be returned
-	Fun6 integrand;
-	while (epsrel > 1.0e-6) {
-		auto const res = alg.integrate<Fun6>(integrand, epsrel, epsabs, vol);
+    CHECK(res.status == 0);
 
-		CHECK(res.status == 0);
+    if (res.status == true)
+      CHECK(res.errorest / res.estimate <= epsrel);
 
-		if (res.status == true)
-			CHECK(res.errorest / res.estimate <= epsrel);
+    // The error estimate should be no larger than the previous iteration.
+    CHECK(res.errorest <= previous_error_estimate);
 
-		// The error estimate should be no larger than the previous iteration.
-		CHECK(res.errorest <= previous_error_estimate);
-
-		// Prepare for the next loop.
-		previous_error_estimate = res.errorest;
-		epsrel /= 2.0;
-	}
+    // Prepare for the next loop.
+    previous_error_estimate = res.errorest;
+    epsrel /= 2.0;
+  }
 }
-

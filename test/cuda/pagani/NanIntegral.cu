@@ -31,6 +31,7 @@ TEST_CASE("Return NAN")
   Workspace<double, ndim> pagani;
   NaN_Integral integrand;
 
-  auto const result = pagani.integrate<NaN_Integral>(integrand, epsrel, epsabs, vol);
+  auto const result =
+    pagani.integrate<NaN_Integral>(integrand, epsrel, epsabs, vol);
   CHECK(std::isnan(result.estimate) == true);
 };

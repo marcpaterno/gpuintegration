@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #include "catch2/catch.hpp"
 #include "common/oneAPI/Interp2D.hpp"
 #include "common/oneAPI/cudaMemoryUtil.h"
@@ -20,13 +20,12 @@ gEvaluate(quad::Interp2D* f, double x, double y, double* result)
 double
 Evaluate(quad::Interp2D* f, double x, double y)
 {
-  auto q_ct1 = sycl::queue(sycl::gpu_selector());;
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());
+  ;
   double* result = quad::cuda_malloc_managed<double>(1);
-    q_ct1.parallel_for(
-      sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
-      [=](sycl::nd_item<3> item_ct1) {
-          gEvaluate(f, x, y, result);
-      });
+  q_ct1.parallel_for(
+    sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
+    [=](sycl::nd_item<3> item_ct1) { gEvaluate(f, x, y, result); });
   q_ct1.wait_and_throw();
   double hResult = *result;
   sycl::free(result, q_ct1);
@@ -42,13 +41,12 @@ gClamp(quad::Interp2D* f, double x, double y, double* result)
 double
 clamp(quad::Interp2D* f, double x, double y)
 {
-  auto q_ct1 = sycl::queue(sycl::gpu_selector());;
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());
+  ;
   double* result = quad::cuda_malloc_managed<double>(1);
-    q_ct1.parallel_for(
-      sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
-      [=](sycl::nd_item<3> item_ct1) {
-          gClamp(f, 2.5, 4.5, result);
-      });
+  q_ct1.parallel_for(
+    sycl::nd_range(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
+    [=](sycl::nd_item<3> item_ct1) { gClamp(f, 2.5, 4.5, result); });
   q_ct1.wait_and_throw();
   double hResult = *result;
   sycl::free(result, q_ct1);
@@ -75,7 +73,7 @@ TEST_CASE("clamp interface works")
 
   quad::Interp2D f(xs, ys, zs);
   quad::Interp2D* d_f = cuda_copy_to_managed(f);
-  
+
   SECTION("interpolation works")
   {
     double x = 2.5;
@@ -140,7 +138,7 @@ TEST_CASE("Interp2D exact at knots", "[interpolation][2d]")
 
   quad::Interp2D f(xs, ys, zs);
   quad::Interp2D* d_f = cuda_copy_to_managed(f);
-  
+
   for (std::size_t i = 0; i != nx; ++i) {
     double x = xs[i];
     for (std::size_t j = 0; j != ny; ++j) {
@@ -173,9 +171,7 @@ TEST_CASE("Interp2D on bilinear")
 
   quad::Interp2D f(xs, ys, zs);
   quad::Interp2D* d_f = cuda_copy_to_managed(f);
-  
+
   double interpResult = Evaluate(d_f, 2.5, 1.5);
   CHECK(interpResult == 4.5);
 }
-
-

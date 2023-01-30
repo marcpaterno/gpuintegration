@@ -27,80 +27,83 @@ Evaluate(quad::Interp1D interpolator, double value, double* result)
 }
 
 void
-interpolate_at_knots(){
-	const size_t s = 9;
-	std::array<double, s> xs = {1., 2., 3., 4., 5., 6, 7., 8., 9.};
-	std::array<double, s> ys = xs;
+interpolate_at_knots()
+{
+  const size_t s = 9;
+  std::array<double, s> xs = {1., 2., 3., 4., 5., 6, 7., 8., 9.};
+  std::array<double, s> ys = xs;
 
-	auto Transform = [](std::array<double, s>& ys) {
-		for (double& elem : ys)
-			elem = 2 * elem * (3 - elem) * std::cos(elem);
-	};
-	
-	Transform(ys);
-	quad::Interp1D interpObj(xs, ys);
+  auto Transform = [](std::array<double, s>& ys) {
+    for (double& elem : ys)
+      elem = 2 * elem * (3 - elem) * std::cos(elem);
+  };
 
-	double* input = quad::cuda_malloc_managed<double>(s);
-	for (size_t i = 0; i < s; i++)
-		input[i] = xs[i];
+  Transform(ys);
+  quad::Interp1D interpObj(xs, ys);
 
-	double* results = quad::cuda_malloc_managed<double>(s);
+  double* input = quad::cuda_malloc_managed<double>(s);
+  for (size_t i = 0; i < s; i++)
+    input[i] = xs[i];
 
-	Evaluate<<<1, 1>>>(interpObj, s, input, results);
-	cudaDeviceSynchronize();
+  double* results = quad::cuda_malloc_managed<double>(s);
 
-	for (std::size_t i = 0; i < s; ++i) {
-		CHECK(ys[i] == results[i]);
-	}
-	cudaFree(results);
+  Evaluate<<<1, 1>>>(interpObj, s, input, results);
+  cudaDeviceSynchronize();
+
+  for (std::size_t i = 0; i < s; ++i) {
+    CHECK(ys[i] == results[i]);
+  }
+  cudaFree(results);
 }
 
 void
-interpolate_on_quadratic(){
-	const size_t s = 5;
-	std::array<double, s> xs = {1., 2., 3., 4., 5.};
-	std::array<double, s> ys = xs;
+interpolate_on_quadratic()
+{
+  const size_t s = 5;
+  std::array<double, s> xs = {1., 2., 3., 4., 5.};
+  std::array<double, s> ys = xs;
 
-	auto Transform = [](std::array<double, s>& ys) {
-		for (auto& elem : ys)
-		elem = elem * elem;
-	};
-	Transform(ys);
-	quad::Interp1D interpObj(xs, ys);
+  auto Transform = [](std::array<double, s>& ys) {
+    for (auto& elem : ys)
+      elem = elem * elem;
+  };
+  Transform(ys);
+  quad::Interp1D interpObj(xs, ys);
 
-	double* result = quad::cuda_malloc_managed<double>(1);
-	double interp_point = 1.41421;
-	double true_interp_res = 2.24263;
-	Evaluate<<<1, 1>>>(interpObj, interp_point, result);
-	cudaDeviceSynchronize();
-	CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-  
-	interp_point = 2.41421;
-	true_interp_res = 6.07105;
-	Evaluate<<<1, 1>>>(interpObj, interp_point, result);
-	cudaDeviceSynchronize();
-	CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-  
-	interp_point = 3.41421;
-	true_interp_res = 11.89947;
-	Evaluate<<<1, 1>>>(interpObj, interp_point, result);
-	cudaDeviceSynchronize();
-	CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
-	
-	interp_point = 4.41421;
-	true_interp_res = 19.72789;
-	Evaluate<<<1, 1>>>(interpObj, interp_point, result);
-	cudaDeviceSynchronize();
-	CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+  double* result = quad::cuda_malloc_managed<double>(1);
+  double interp_point = 1.41421;
+  double true_interp_res = 2.24263;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
 
-	cudaFree(result);
+  interp_point = 2.41421;
+  true_interp_res = 6.07105;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+
+  interp_point = 3.41421;
+  true_interp_res = 11.89947;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+
+  interp_point = 4.41421;
+  true_interp_res = 19.72789;
+  Evaluate<<<1, 1>>>(interpObj, interp_point, result);
+  cudaDeviceSynchronize();
+  CHECK(*result == Approx(true_interp_res).epsilon(1e-4));
+
+  cudaFree(result);
 }
 
 TEST_CASE("Interp1D exact at knots", "[interpolation][1d]")
 {
-	interpolate_at_knots();
+  interpolate_at_knots();
 }
 
-TEST_CASE(){
-	interpolate_on_quadratic();
+TEST_CASE()
+{
+  interpolate_on_quadratic();
 }

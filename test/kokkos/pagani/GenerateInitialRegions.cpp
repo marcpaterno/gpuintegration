@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
 TEST_CASE("New Unit-Volume 2D")
 {
   constexpr int ndim = 2;
@@ -20,7 +18,8 @@ TEST_CASE("New Unit-Volume 2D")
     CHECK(gpu_volume == 1.);
   }
 
-  ViewVectorDouble::HostMirror Regions = Kokkos::create_mirror_view(regions.dLeftCoord);
+  ViewVectorDouble::HostMirror Regions =
+    Kokkos::create_mirror_view(regions.dLeftCoord);
   ViewVectorDouble::HostMirror RegionsLength =
     Kokkos::create_mirror_view(regions.dLength);
   Kokkos::deep_copy(Regions, regions.dLeftCoord);
@@ -34,19 +33,17 @@ TEST_CASE("New Unit-Volume 2D")
       for (int dim = 0; dim < ndim; ++dim) {
         sub_region_volume *= RegionsLength(dim * regions.size + index);
 
-		CHECK(Regions[dim * regions.size + index] >= 0.);
-		CHECK(RegionsLength[dim * regions.size + index] < 1.);
-		CHECK(RegionsLength[dim * regions.size + index] > 0.);
+        CHECK(Regions[dim * regions.size + index] >= 0.);
+        CHECK(RegionsLength[dim * regions.size + index] < 1.);
+        CHECK(RegionsLength[dim * regions.size + index] > 0.);
       }
-	  
-	  CHECK(sub_region_volume < 1.);
-	  CHECK(sub_region_volume > 0.);
-	  CHECK(sub_region_volume == Approx(1./static_cast<double>(regions.size)));
 
+      CHECK(sub_region_volume < 1.);
+      CHECK(sub_region_volume > 0.);
+      CHECK(sub_region_volume ==
+            Approx(1. / static_cast<double>(regions.size)));
 
-     
       cpu_volume += sub_region_volume;
-	  
     }
     CHECK(cpu_volume == 1.);
   }
@@ -65,7 +62,8 @@ TEST_CASE("New Unit-Volume 5D")
     CHECK(gpu_volume == Approx(1.).epsilon(1.e-9));
   }
 
-  ViewVectorDouble::HostMirror Regions = Kokkos::create_mirror_view(regions.dLeftCoord);
+  ViewVectorDouble::HostMirror Regions =
+    Kokkos::create_mirror_view(regions.dLeftCoord);
   ViewVectorDouble::HostMirror RegionsLength =
     Kokkos::create_mirror_view(regions.dLength);
   Kokkos::deep_copy(Regions, regions.dLeftCoord);
@@ -78,14 +76,15 @@ TEST_CASE("New Unit-Volume 5D")
       double sub_region_volume = 1.;
       for (int dim = 0; dim < ndim; ++dim) {
         sub_region_volume *= RegionsLength(dim * regions.size + index);
-		CHECK(Regions[dim * regions.size + index] >= 0.);
-		CHECK(RegionsLength[dim * regions.size + index] < 1.);
-		CHECK(RegionsLength[dim * regions.size + index] > 0.);
+        CHECK(Regions[dim * regions.size + index] >= 0.);
+        CHECK(RegionsLength[dim * regions.size + index] < 1.);
+        CHECK(RegionsLength[dim * regions.size + index] > 0.);
       }
-	  
-	  CHECK(sub_region_volume < 1.);
-	  CHECK(sub_region_volume > 0.);
-	  CHECK(sub_region_volume == Approx(1./static_cast<double>(regions.size)));
+
+      CHECK(sub_region_volume < 1.);
+      CHECK(sub_region_volume > 0.);
+      CHECK(sub_region_volume ==
+            Approx(1. / static_cast<double>(regions.size)));
       cpu_volume += sub_region_volume;
     }
     CHECK(cpu_volume == Approx(1.).epsilon(1.e-9));
@@ -105,7 +104,8 @@ TEST_CASE("New Unit-Volume 8D")
     CHECK(gpu_volume == Approx(1.).epsilon(1.e-9));
   }
 
-  ViewVectorDouble::HostMirror Regions = Kokkos::create_mirror_view(regions.dLeftCoord);
+  ViewVectorDouble::HostMirror Regions =
+    Kokkos::create_mirror_view(regions.dLeftCoord);
   ViewVectorDouble::HostMirror RegionsLength =
     Kokkos::create_mirror_view(regions.dLength);
   Kokkos::deep_copy(Regions, regions.dLeftCoord);
@@ -118,13 +118,14 @@ TEST_CASE("New Unit-Volume 8D")
       double sub_region_volume = 1.;
       for (int dim = 0; dim < ndim; ++dim) {
         sub_region_volume *= RegionsLength(dim * regions.size + index);
-		CHECK(Regions[dim * regions.size + index] >= 0.);
-		CHECK(RegionsLength[dim * regions.size + index] < 1.);
-		CHECK(RegionsLength[dim * regions.size + index] > 0.);
+        CHECK(Regions[dim * regions.size + index] >= 0.);
+        CHECK(RegionsLength[dim * regions.size + index] < 1.);
+        CHECK(RegionsLength[dim * regions.size + index] > 0.);
       }
-	  	CHECK(sub_region_volume < 1.);
-		CHECK(sub_region_volume > 0.);
-		CHECK(sub_region_volume == Approx(1./static_cast<double>(regions.size)));
+      CHECK(sub_region_volume < 1.);
+      CHECK(sub_region_volume > 0.);
+      CHECK(sub_region_volume ==
+            Approx(1. / static_cast<double>(regions.size)));
       cpu_volume += sub_region_volume;
     }
     CHECK(cpu_volume == Approx(1.).epsilon(1.e-9));
