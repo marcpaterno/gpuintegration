@@ -43,7 +43,7 @@ namespace quad {
         sRegionPool[item_ct1.get_local_id(2)].result.avg;
       dRegionsError[item_ct1.get_group(2)] =
         sRegionPool[item_ct1.get_local_id(2)].result.err;
-      
+
       item_ct1.barrier();
     }
   }
@@ -97,7 +97,6 @@ namespace quad {
     if (feval_index < FEVAL) {
       ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
-
 
     item_ct1.barrier();
     for (perm = 1; perm < FEVAL / block_size; ++perm) {
@@ -234,13 +233,14 @@ namespace quad {
       *Jacobian = 1.;
       *vol = 1.;
       T maxRange = 0;
-	  
+
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
         sRegionPool[0].bounds[dim].upper =
           lower + dRegionsLength[dim * numRegions + index];
-        *vol *= sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
+        *vol *=
+          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
 
         sBound[dim].unScaledLower = lows[dim];
         sBound[dim].unScaledUpper = highs[dim];
@@ -282,7 +282,7 @@ namespace quad {
                        size_t numRegions,
                        T* dRegionsIntegral,
                        T* dRegionsError,
-                       //double* activeRegions,
+                       // double* activeRegions,
                        int* subDividingDimension,
                        T epsrel,
                        T epsabs,
@@ -323,7 +323,8 @@ namespace quad {
                                                        fevals);
 
     if (item_ct1.get_local_id(0) == 0) {
-      subDividingDimension[item_ct1.get_group(0)] = sRegionPool[0].result.bisectdim;
+      subDividingDimension[item_ct1.get_group(0)] =
+        sRegionPool[0].result.bisectdim;
       dRegionsIntegral[item_ct1.get_group(0)] = sRegionPool[0].result.avg;
 
       dRegionsError[item_ct1.get_group(0)] = sRegionPool[0].result.err;

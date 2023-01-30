@@ -1,5 +1,5 @@
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #ifndef CUDACUHRE_QUAD_UTIL_CUDAARCH_UTIL_H
 #define CUDACUHRE_QUAD_UTIL_CUDAARCH_UTIL_H
 namespace quad {

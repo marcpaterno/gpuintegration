@@ -217,7 +217,7 @@ namespace quad {
                             4 * NDIM * (NDIM - 1) * (NDIM - 2) / 3,
                             1 << NDIM};
 
-      //#if DIM >= 3
+      // #if DIM >= 3
       if (NDIM >= 3) {
         indxCnt9[7] = 3;
         indxCnt9[8] = NDIM;
@@ -226,7 +226,7 @@ namespace quad {
         indxCnt9[8] = NDIM;
       }
       // int indxCnt9[]={0, 1, 1, 1, 1, 2, 2, 3, NDIM};
-      //#elif DIM == 2
+      // #elif DIM == 2
       // int CPUGeneratorCount9[]={1, 2*NDIM, 2*NDIM, 2*NDIM, 2*NDIM,
       // 2*NDIM*(NDIM - 1), 2*NDIM*(NDIM - 1), 4*NDIM*(NDIM - 1), 0, 1 << NDIM};
       // int cpuGenCount9[]={1, 2*NDIM, 2*NDIM, 2*NDIM, 2*NDIM, 2*NDIM*(NDIM -
@@ -323,7 +323,7 @@ namespace quad {
     display(K* array, size_t size)
     {
       K* tmp = (K*)malloc(sizeof(K) * size);
-      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      auto q_ct1 = sycl::queue(sycl::gpu_selector());
       q_ct1.memcpy(tmp, array, sizeof(K) * size).wait();
       for (int i = 0; i < size; ++i) {
         // printf("%.20lf \n", (T)tmp[i]);
@@ -362,26 +362,49 @@ namespace quad {
     void
     loadDeviceConstantMemory(Structures<T>* constMem)
     {
-      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+      auto q_ct1 = sycl::queue(sycl::gpu_selector());
       constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
       constMem->_cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
-	  constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
+      constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
       constMem->_GPUScale = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
       constMem->_GPUNorm = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
-      constMem->_gpuGenPos = sycl::malloc_device<int>(PERMUTATIONS_POS_ARRAY_SIZE, q_ct1);
-	  constMem->_gpuGenPermVarCount = sycl::malloc_device<int>(FEVAL, q_ct1);
-	  constMem->_gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
-      constMem->_gpuGenPermVarStart =sycl::malloc_device<int>((FEVAL + 1), q_ct1);
-      
-      q_ct1.memcpy(constMem->_gpuG, cpuG,                       sizeof(T) * NDIM * NSETS).wait();
-      q_ct1.memcpy(constMem->_cRuleWt, CPURuleWt,               sizeof(T) * NRULES * NSETS).wait();
-      q_ct1.memcpy(constMem->_cGeneratorCount,CPUGeneratorCount,sizeof(size_t) * NSETS).wait();
-      q_ct1.memcpy(constMem->_GPUScale, CPUScale,               sizeof(T) * NSETS * NRULES).wait();
-      q_ct1.memcpy(constMem->_GPUNorm, CPUNorm,                 sizeof(T) * NSETS * NRULES).wait();
-      q_ct1.memcpy(constMem->_gpuGenPos,genPtr,                 sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE).wait();
-      q_ct1.memcpy(constMem->_gpuGenPermVarCount,cpuGenPermVarCount, sizeof(int) * FEVAL).wait();
-      q_ct1.memcpy(constMem->_gpuGenPermGIndex, cpuGenPermGIndex, sizeof(int) * FEVAL).wait();
-      q_ct1.memcpy(constMem->_gpuGenPermVarStart, cpuGenPermVarStart, sizeof(int) * (FEVAL + 1)).wait();
+      constMem->_gpuGenPos =
+        sycl::malloc_device<int>(PERMUTATIONS_POS_ARRAY_SIZE, q_ct1);
+      constMem->_gpuGenPermVarCount = sycl::malloc_device<int>(FEVAL, q_ct1);
+      constMem->_gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
+      constMem->_gpuGenPermVarStart =
+        sycl::malloc_device<int>((FEVAL + 1), q_ct1);
+
+      q_ct1.memcpy(constMem->_gpuG, cpuG, sizeof(T) * NDIM * NSETS).wait();
+      q_ct1.memcpy(constMem->_cRuleWt, CPURuleWt, sizeof(T) * NRULES * NSETS)
+        .wait();
+      q_ct1
+        .memcpy(
+          constMem->_cGeneratorCount, CPUGeneratorCount, sizeof(size_t) * NSETS)
+        .wait();
+      q_ct1.memcpy(constMem->_GPUScale, CPUScale, sizeof(T) * NSETS * NRULES)
+        .wait();
+      q_ct1.memcpy(constMem->_GPUNorm, CPUNorm, sizeof(T) * NSETS * NRULES)
+        .wait();
+      q_ct1
+        .memcpy(constMem->_gpuGenPos,
+                genPtr,
+                sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE)
+        .wait();
+      q_ct1
+        .memcpy(constMem->_gpuGenPermVarCount,
+                cpuGenPermVarCount,
+                sizeof(int) * FEVAL)
+        .wait();
+      q_ct1
+        .memcpy(
+          constMem->_gpuGenPermGIndex, cpuGenPermGIndex, sizeof(int) * FEVAL)
+        .wait();
+      q_ct1
+        .memcpy(constMem->_gpuGenPermVarStart,
+                cpuGenPermVarStart,
+                sizeof(int) * (FEVAL + 1))
+        .wait();
     }
 
     void

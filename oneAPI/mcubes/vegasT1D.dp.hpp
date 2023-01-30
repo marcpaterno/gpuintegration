@@ -15,13 +15,13 @@ Last three arguments are: total iterations, iteration
 #include <dpct/dpct.hpp>
 #include <chrono>
 #include <stdio.h>
-//#include <malloc.h>
-//#include "./Volume.dp.hpp"
-//#include "./cudaApply.dp.hpp"
-//#include "./cudaArray.dp.hpp"
-//#include "./func.dp.hpp"
-//#include "./vegas_utils.dp.hpp"
-//#include "./verbose_utils.dp.hpp"
+// #include <malloc.h>
+// #include "./Volume.dp.hpp"
+// #include "./cudaApply.dp.hpp"
+// #include "./cudaArray.dp.hpp"
+// #include "./func.dp.hpp"
+// #include "./vegas_utils.dp.hpp"
+// #include "./verbose_utils.dp.hpp"
 
 #include "cuda/pagani/quad/quad.h"
 #include "cuda/pagani/quad/util/Volume.dp.hpp"
@@ -81,10 +81,10 @@ namespace mcubes1D {
   }
 
   __inline__ double
-  blockReduceSum(double val, sycl::nd_item<3> item_ct1, double *shared)
+  blockReduceSum(double val, sycl::nd_item<3> item_ct1, double* shared)
   {
 
-     // Shared mem for 32 partial sums
+    // Shared mem for 32 partial sums
     int lane = item_ct1.get_local_id(2) %
                item_ct1.get_sub_group().get_local_range().get(0);
     int wid = item_ct1.get_local_id(2) /
@@ -105,9 +105,9 @@ namespace mcubes1D {
     // read from shared memory only if that warp existed
     val = (item_ct1.get_local_id(2) <
            item_ct1.get_local_range().get(2) /
-               item_ct1.get_sub_group().get_local_range().get(0))
-              ? shared[lane]
-              : 0;
+             item_ct1.get_sub_group().get_local_range().get(0)) ?
+            shared[lane] :
+            0;
 
     if (wid == 0)
       val = warpReduceSum(val, item_ct1); // Final reduce within first warp
@@ -162,7 +162,7 @@ namespace mcubes1D {
                int LastChunk,
                unsigned int seed_init,
                sycl::nd_item<3> item_ct1,
-               double *shared,
+               double* shared,
                double* randoms = nullptr,
                double* funcevals = nullptr)
   {
@@ -334,7 +334,7 @@ namespace mcubes1D {
                 int LastChunk,
                 unsigned int seed_init,
                 sycl::nd_item<3> item_ct1,
-                double *shared)
+                double* shared)
   {
 
     constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
@@ -478,12 +478,14 @@ namespace mcubes1D {
           int skip,
           quad::Volume<double, ndim> const* vol)
   {
-  dpct::device_ext &dev_ct1 = dpct::get_current_device();
-  sycl::queue &q_ct1 = dev_ct1.default_queue();
-                
-  //Display Device Name
-  std::cout << "Device: " << q_ct1.get_device().get_info<sycl::info::device::name>() << "\n";
-                
+    dpct::device_ext& dev_ct1 = dpct::get_current_device();
+    sycl::queue& q_ct1 = dev_ct1.default_queue();
+
+    // Display Device Name
+    std::cout << "Device: "
+              << q_ct1.get_device().get_info<sycl::info::device::name>()
+              << "\n";
+
     auto t0 = std::chrono::high_resolution_clock::now();
 
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
@@ -561,15 +563,15 @@ namespace mcubes1D {
 
     result_dev = sycl::malloc_device<double>(2, q_ct1);
     cudaCheckError();
-    d_dev = (double *)sycl::malloc_device(
-        sizeof(double) * (ndmx_p1) * (mxdim_p1), q_ct1);
+    d_dev = (double*)sycl::malloc_device(
+      sizeof(double) * (ndmx_p1) * (mxdim_p1), q_ct1);
     cudaCheckError();
     dx_dev = sycl::malloc_device<double>((mxdim_p1), q_ct1);
     cudaCheckError();
     x_dev = sycl::malloc_device<double>((mxdim_p1), q_ct1);
     cudaCheckError();
-    xi_dev = (double *)sycl::malloc_device(
-        sizeof(double) * (mxdim_p1) * (ndmx_p1), q_ct1);
+    xi_dev = (double*)sycl::malloc_device(
+      sizeof(double) * (mxdim_p1) * (ndmx_p1), q_ct1);
     cudaCheckError();
     regn_dev = sycl::malloc_device<double>(((ndim * 2) + 1), q_ct1);
     cudaCheckError();
@@ -622,23 +624,44 @@ namespace mcubes1D {
       limit. To get the device limit, query info::device::max_work_group_size.
       Adjust the workgroup size if needed.
       */
-      q_ct1.submit([&](sycl::handler &cgh) {
-         sycl::accessor<double, 1, sycl::access_mode::read_write,
-                        sycl::access::target::local>
-             shared_acc_ct1(sycl::range<1>(32), cgh);
+      q_ct1.submit([&](sycl::handler& cgh) {
+        sycl::accessor<double,
+                       1,
+                       sycl::access_mode::read_write,
+                       sycl::access::target::local>
+          shared_acc_ct1(sycl::range<1>(32), cgh);
 
-         cgh.parallel_for(
-             sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) *
-                                   sycl::range<3>(1, 1, nThreads),
-                               sycl::range<3>(1, 1, nThreads)),
-             [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-                vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
-                    d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
-                    d_dev, dx_dev, regn_dev, ncubes, it, sc, sci, ing,
-                    chunkSize, totalNumThreads, LastChunk, seed + it, item_ct1,
-                    shared_acc_ct1.get_pointer(), data_collector.randoms,
-                    data_collector.funcevals);
-             });
+        cgh.parallel_for(
+          sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) *
+                              sycl::range<3>(1, 1, nThreads),
+                            sycl::range<3>(1, 1, nThreads)),
+          [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+            vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
+              d_integrand,
+              ng,
+              npg,
+              xjac,
+              dxg,
+              result_dev,
+              xnd,
+              xi_dev,
+              d_dev,
+              dx_dev,
+              regn_dev,
+              ncubes,
+              it,
+              sc,
+              sci,
+              ing,
+              chunkSize,
+              totalNumThreads,
+              LastChunk,
+              seed + it,
+              item_ct1,
+              shared_acc_ct1.get_pointer(),
+              data_collector.randoms,
+              data_collector.funcevals);
+          });
       });
 
       q_ct1.memcpy(xi, xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1)).wait();
@@ -701,7 +724,7 @@ namespace mcubes1D {
           for (i = 1; i <= nd; i++) {
             // if (d[i * mxdim_p1 + j] < TINY) d[i * mxdim_p1 + j] = TINY;
             r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
-                           (log(dt[j]) - log(d[i * mxdim_p1 + j])),
+                         (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
             rc += r[i];
           }
@@ -734,22 +757,42 @@ namespace mcubes1D {
       limit. To get the device limit, query info::device::max_work_group_size.
       Adjust the workgroup size if needed.
       */
-      q_ct1.submit([&](sycl::handler &cgh) {
-         sycl::accessor<double, 1, sycl::access_mode::read_write,
-                        sycl::access::target::local>
-             shared_acc_ct1(sycl::range<1>(32), cgh);
+      q_ct1.submit([&](sycl::handler& cgh) {
+        sycl::accessor<double,
+                       1,
+                       sycl::access_mode::read_write,
+                       sycl::access::target::local>
+          shared_acc_ct1(sycl::range<1>(32), cgh);
 
-         cgh.parallel_for(
-             sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) *
-                                   sycl::range<3>(1, 1, nThreads),
-                               sycl::range<3>(1, 1, nThreads)),
-             [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-                vegas_kernelF<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
-                    d_integrand, ng, npg, xjac, dxg, result_dev, xnd, xi_dev,
-                    d_dev, dx_dev, regn_dev, ncubes, it, sc, sci, ing,
-                    chunkSize, totalNumThreads, LastChunk, seed + it, item_ct1,
-                    shared_acc_ct1.get_pointer());
-             });
+        cgh.parallel_for(
+          sycl::nd_range<3>(sycl::range<3>(1, 1, nBlocks) *
+                              sycl::range<3>(1, 1, nThreads),
+                            sycl::range<3>(1, 1, nThreads)),
+          [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+            vegas_kernelF<IntegT, ndim, DEBUG_MCUBES, GeneratorType>(
+              d_integrand,
+              ng,
+              npg,
+              xjac,
+              dxg,
+              result_dev,
+              xnd,
+              xi_dev,
+              d_dev,
+              dx_dev,
+              regn_dev,
+              ncubes,
+              it,
+              sc,
+              sci,
+              ing,
+              chunkSize,
+              totalNumThreads,
+              LastChunk,
+              seed + it,
+              item_ct1,
+              shared_acc_ct1.get_pointer());
+          });
       });
       q_ct1.memcpy(result, result_dev, sizeof(double) * 2).wait();
 

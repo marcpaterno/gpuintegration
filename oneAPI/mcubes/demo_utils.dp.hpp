@@ -2,7 +2,7 @@
 #define VEGAS_DEMO_UTILS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/vegasT.dp.hpp"
 #include <chrono>
 #include <iomanip>
@@ -42,16 +42,15 @@ struct VegasParams {
 void
 print_mcubes_header()
 {
-    /*
-  std::cout << "id, epsrel, integral, estimate, errorest, chi, iters, "
-               "adj_iters, skip_iters, completed_iters, ncall, neval,"
-               "time, status\n";
-               */
-    std::cout << "id, integral, estimate, errorest, time\n";
+  /*
+std::cout << "id, epsrel, integral, estimate, errorest, chi, iters, "
+             "adj_iters, skip_iters, completed_iters, ncall, neval,"
+             "time, status\n";
+             */
+  std::cout << "id, integral, estimate, errorest, time\n";
 }
 
-template <typename F,
-          int ndim>
+template <typename F, int ndim>
 bool
 mcubes_time_and_call(F integrand,
                      double epsrel,
@@ -66,17 +65,16 @@ mcubes_time_and_call(F integrand,
   double constexpr epsabs = 1.0e-20;
   bool success = false;
   int run = 0;
-  do {             
+  do {
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = cuda_mcubes::integrate<F, ndim>(
-      integrand,
-      epsrel,
-      epsabs,
-      params.ncall,
-      volume,
-      params.t_iter,
-      params.num_adjust_iters,
-      params.num_skip_iters);
+    auto res = cuda_mcubes::integrate<F, ndim>(integrand,
+                                               epsrel,
+                                               epsabs,
+                                               params.ncall,
+                                               volume,
+                                               params.t_iter,
+                                               params.num_adjust_iters,
+                                               params.num_skip_iters);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
@@ -89,19 +87,16 @@ mcubes_time_and_call(F integrand,
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
                 << res.status << "\n";
-                
 
     if (run == 0 && !success)
       AdjustParams(params.ncall, params.t_iter);
     if (success)
       run++;
-   } while (success == false &&
-           CanAdjustNcallOrIters(params.ncall, params.t_iter) == true);   
-
+  } while (success == false &&
+           CanAdjustNcallOrIters(params.ncall, params.t_iter) == true);
 
   return success;
 }
-
 
 template <typename F,
           int ndim,
@@ -109,13 +104,13 @@ template <typename F,
           typename GeneratorType = Curand_generator>
 bool
 common_header_mcubes_time_and_call(F integrand,
-                     double epsrel,
-                     double correct_answer,
-                     double difficulty,
-                     std::string alg_id,
-                    std::string integ_id, 
-                     VegasParams& params,
-                     quad::Volume<double, ndim>* volume)
+                                   double epsrel,
+                                   double correct_answer,
+                                   double difficulty,
+                                   std::string alg_id,
+                                   std::string integ_id,
+                                   VegasParams& params,
+                                   quad::Volume<double, ndim>* volume)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -140,16 +135,11 @@ common_header_mcubes_time_and_call(F integrand,
     std::cout.precision(17);
 
     if (success)
-      std::cout << integ_id << ","    
-                << std::scientific << alg_id << "," 
-                << difficulty << ","
-                << epsrel << "," 
-                << epsabs << "," 
-                << std::scientific<< correct_answer << "," 
-                << std::scientific << res.estimate
-                << "," << std::scientific  << res.errorest << "," 
-                << dt.count() << ","
-                << res.status << "\n";
+      std::cout << integ_id << "," << std::scientific << alg_id << ","
+                << difficulty << "," << epsrel << "," << epsabs << ","
+                << std::scientific << correct_answer << "," << std::scientific
+                << res.estimate << "," << std::scientific << res.errorest << ","
+                << dt.count() << "," << res.status << "\n";
 
     if (run == 0 && !success)
       AdjustParams(params.ncall, params.t_iter);
@@ -161,40 +151,40 @@ common_header_mcubes_time_and_call(F integrand,
   return success;
 }
 
-template <typename F,
-          int ndim>
+template <typename F, int ndim>
 bool
 signle_invocation_time_and_call(F integrand,
-                     double epsrel,
-                     double correct_answer,
-                     char const* integralName,
-                     VegasParams& params,
-                     quad::Volume<double, ndim>* volume,
-					 int num_repeats = 100)
+                                double epsrel,
+                                double correct_answer,
+                                char const* integralName,
+                                VegasParams& params,
+                                quad::Volume<double, ndim>* volume,
+                                int num_repeats = 100)
 {
   bool success = false;
-  for(int i=0; i < num_repeats; ++i){
-  using MilliSeconds =
-    std::chrono::duration<double, std::chrono::milliseconds::period>;
-  // We make epsabs so small that epsrel is always the stopping condition.
-	double constexpr epsabs = 1.0e-20;
-	bool success = false;
-             
+  for (int i = 0; i < num_repeats; ++i) {
+    using MilliSeconds =
+      std::chrono::duration<double, std::chrono::milliseconds::period>;
+    // We make epsabs so small that epsrel is always the stopping condition.
+    double constexpr epsabs = 1.0e-20;
+    bool success = false;
+
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = cuda_mcubes::integrate<F, ndim>(
-      integrand,
-      epsrel,
-      epsabs,
-      params.ncall,
-      volume,
-      params.t_iter,
-      params.num_adjust_iters,
-      params.num_skip_iters);
+    auto res = cuda_mcubes::integrate<F, ndim>(integrand,
+                                               epsrel,
+                                               epsabs,
+                                               params.ncall,
+                                               volume,
+                                               params.t_iter,
+                                               params.num_adjust_iters,
+                                               params.num_skip_iters);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
-	
-	std::cout << "estimates:" << std::scientific << std::setprecision(15) << std::scientific << res.estimate << "," <<  params.ncall <<std::endl;
+
+    std::cout << "estimates:" << std::scientific << std::setprecision(15)
+              << std::scientific << res.estimate << "," << params.ncall
+              << std::endl;
     if (success)
       std::cout << integralName << "," << epsrel << "," << std::scientific
                 << correct_answer << "," << std::scientific << res.estimate
@@ -203,32 +193,33 @@ signle_invocation_time_and_call(F integrand,
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
                 << res.status << "\n";
-    
   }
-	return success;
+  return success;
 }
 
-template<typename F, int ndim>
-void call_mcubes_kernel(int num_repeats){
-	std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
-	double ncall = 1.0e8;
-	int titer = 1;
-	int itmax = 1;
-	int skip = 0;
-	VegasParams params(ncall, titer, itmax, skip);
-	F integrand;
-	quad::Volume<double, ndim> volume;
-	size_t run = 0;
-	double epsrel = 1.e-3;
-	double true_value = 0.;
-	for(auto num_samples : required_ncall){
-		params.ncall = num_samples;
-    
-		signle_invocation_time_and_call<F, ndim>(
-			integrand, epsrel, true_value, "f", params, &volume, num_repeats);
-	run++;
-	if(run > required_ncall.size())
-		break;
+template <typename F, int ndim>
+void
+call_mcubes_kernel(int num_repeats)
+{
+  std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
+  double ncall = 1.0e8;
+  int titer = 1;
+  int itmax = 1;
+  int skip = 0;
+  VegasParams params(ncall, titer, itmax, skip);
+  F integrand;
+  quad::Volume<double, ndim> volume;
+  size_t run = 0;
+  double epsrel = 1.e-3;
+  double true_value = 0.;
+  for (auto num_samples : required_ncall) {
+    params.ncall = num_samples;
+
+    signle_invocation_time_and_call<F, ndim>(
+      integrand, epsrel, true_value, "f", params, &volume, num_repeats);
+    run++;
+    if (run > required_ncall.size())
+      break;
   }
 }
 

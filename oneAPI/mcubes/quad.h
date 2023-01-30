@@ -2,17 +2,17 @@
 #define CUDACUHRE_QUAD_QUAD_h
 
 #define TIMING_DEBUG 1
-//#define BLOCK_SIZE 256
-//#define BLOCK_SIZE 128
+// #define BLOCK_SIZE 256
+// #define BLOCK_SIZE 128
 #define BLOCK_SIZE 64
-//#define BLOCK_SIZE 32
+// #define BLOCK_SIZE 32
 #define SM_REGION_POOL_SIZE 128
 
 #define GLOBAL_ERROR 1
 #define MAX_GLOBALPOOL_SIZE 2048
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -24,8 +24,8 @@ static int FIRST_PHASE_MAXREGIONS = (1 << 14);
 // dpct::constant_memory<TYPE, 1> errcoeff(sycl::range<1>(1), {5, 1, 5});
 
 // Utilities
-//#include "./cudaArchUtil.h"
-//#include "./cudaDebugUtil.h"
+// #include "./cudaArchUtil.h"
+// #include "./cudaDebugUtil.h"
 
 class VerboseResults {
 public:

@@ -2,11 +2,11 @@
 #define VEGAS_UTILS_CUH
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/seqCodesDefs.hh"
 
 #define BLOCK_DIM_X 128
-#define RAND_MAX        2147483647
+#define RAND_MAX 2147483647
 
 #include <cmath>
 
@@ -27,7 +27,7 @@ public:
   {
     temp = a * custom_seed + c;
     custom_seed = temp & (p - 1);
-	//return (double)custom_seed / (double)p;
+    // return (double)custom_seed / (double)p;
     return static_cast<double>(custom_seed) / static_cast<double>(p);
   }
 
@@ -38,19 +38,11 @@ public:
   }
 };
 
-
 class Curand_generator {
 public:
-  
-  Curand_generator(sycl::nd_item<3> item_ct1)
-  {
-  }
+  Curand_generator(sycl::nd_item<3> item_ct1) {}
 
-  
-  Curand_generator(unsigned int seed, sycl::nd_item<3> item_ct1)
-  {
-
-  }
+  Curand_generator(unsigned int seed, sycl::nd_item<3> item_ct1) {}
 
   double
   operator()()

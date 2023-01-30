@@ -2,7 +2,7 @@
 #define CUDACUHRE_QUAD_UTIL_CUDADEBUGUTIL_H
 
 #include <CL/sycl.hpp>
-//#include <dpct/dpct.hpp>
+// #include <dpct/dpct.hpp>
 #include "oneAPI/mcubes/cudaArchUtil.h"
 #include <iostream>
 #include <stdio.h>
@@ -70,12 +70,11 @@ namespace quad {
   __cudaCheckError(const char* file, const int line)
   try {
 #ifdef CUDA_ERROR_CHECK
-    
+
     int err = 0;
 
-    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-    auto dev = q_ct1.get_device()
-    err = (dev.queues_wait_and_throw(), 0);
+    auto q_ct1 = sycl::queue(sycl::gpu_selector());
+    auto dev = q_ct1.get_device() err = (dev.queues_wait_and_throw(), 0);
 
 #endif
 
