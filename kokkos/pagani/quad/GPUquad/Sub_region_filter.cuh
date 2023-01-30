@@ -6,8 +6,6 @@
 #include "kokkos/pagani/quad/GPUquad/heuristic_classifier.cuh"
 #include "common/kokkos/util.cuh"
 
-
-
 template <typename T, size_t ndim>
 class Sub_regions_filter {
 public:
@@ -27,14 +25,14 @@ public:
     int last_element = -1;
     int num_active = 0;
     int lastScanned = 0.;
-	
-	 ReturnLastIndexValues(
+
+    ReturnLastIndexValues(
       active_regions, scanned_array, last_element, lastScanned);
-	num_active = static_cast<size_t>(lastScanned);
-	
-    if (last_element == 1){
+    num_active = static_cast<size_t>(lastScanned);
+
+    if (last_element == 1) {
       num_active++;
-	}
+    }
 
     return static_cast<size_t>(num_active);
   }
@@ -56,13 +54,13 @@ public:
 
     deep_copy(hostA_sub, A_sub);
     deep_copy(hostB_sub, B_sub);
-	
+
     lastA = hostA_sub(0);
     lastB = hostB_sub(0);
   }
 
-void
-alignRegions(ViewVectorDouble dRegions,
+  void
+  alignRegions(ViewVectorDouble dRegions,
                ViewVectorDouble dRegionsLength,
                ViewVectorInt activeRegions,
                ViewVectorDouble dRegionsIntegral,
@@ -77,8 +75,8 @@ alignRegions(ViewVectorDouble dRegions,
                size_t numRegions,
                size_t newNumRegions,
                size_t numOfDivisionOnDimension)
-{
-  size_t numThreads = 64;
+  {
+    size_t numThreads = 64;
     size_t numBlocks =
       numRegions / numThreads + ((numRegions % numThreads) ? 1 : 0);
 
@@ -108,14 +106,14 @@ alignRegions(ViewVectorDouble dRegions,
 
           dRegionsParentIntegral(interval_index) = dRegionsIntegral(tid);
           dRegionsParentError(interval_index) = dRegionsError(tid);
-		  		  
+
           for (size_t i = 0; i < numOfDivisionOnDimension; ++i) {
             newActiveRegionsBisectDim(i * newNumRegions + interval_index) =
               subDividingDimension(tid);
           }
         }
       });
-}
+  }
 
   // filter out finished regions
   size_t
@@ -132,33 +130,35 @@ alignRegions(ViewVectorDouble dRegions,
     if (num_active_regions == 0) {
       return 0;
     }
-	
+
     // I dont' create Regions filtered_regions, because upon destruction it
     // would deallocate and for performance reasons, I don't want a deep_copy to
     // occur here
-    ViewVectorDouble filtered_leftCoord = quad::cuda_malloc<T>(num_active_regions * ndim);
-    ViewVectorDouble filtered_length = quad::cuda_malloc<T>(num_active_regions * ndim);
-    ViewVectorInt filtered_sub_dividing_dim = quad::cuda_malloc<int>(num_active_regions);
-	
+    ViewVectorDouble filtered_leftCoord =
+      quad::cuda_malloc<T>(num_active_regions * ndim);
+    ViewVectorDouble filtered_length =
+      quad::cuda_malloc<T>(num_active_regions * ndim);
+    ViewVectorInt filtered_sub_dividing_dim =
+      quad::cuda_malloc<int>(num_active_regions);
+
     parent_ests.reallocate(num_active_regions);
     const int numOfDivisionOnDimension = 1;
 
     alignRegions(sub_regions.dLeftCoord,
-                                   sub_regions.dLength,
-                                   region_characteristics.active_regions,
-                                   region_ests.integral_estimates,
-                                   region_ests.error_estimates,
-                                   parent_ests.integral_estimates,
-                                   parent_ests.error_estimates,
-                                   region_characteristics.sub_dividing_dim,
-                                   scanned_array,
-                                   filtered_leftCoord,
-                                   filtered_length,
-                                   filtered_sub_dividing_dim,
-                                   current_num_regions,
-                                   num_active_regions,
-                                   numOfDivisionOnDimension);
-
+                 sub_regions.dLength,
+                 region_characteristics.active_regions,
+                 region_ests.integral_estimates,
+                 region_ests.error_estimates,
+                 parent_ests.integral_estimates,
+                 parent_ests.error_estimates,
+                 region_characteristics.sub_dividing_dim,
+                 scanned_array,
+                 filtered_leftCoord,
+                 filtered_length,
+                 filtered_sub_dividing_dim,
+                 current_num_regions,
+                 num_active_regions,
+                 numOfDivisionOnDimension);
 
     sub_regions.dLeftCoord = filtered_leftCoord;
     sub_regions.dLength = filtered_length;

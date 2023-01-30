@@ -53,21 +53,21 @@ public:
             bool collect_iters = false,
             int debug = 0>
   numint::integration_result integrate(const IntegT& integrand,
-                           Sub_regions<T, ndim>& subregions,
-                           T epsrel,
-                           T epsabs,
-                           quad::Volume<T, ndim> const& vol,
-                           bool relerr_classification = true);
+                                       Sub_regions<T, ndim>& subregions,
+                                       T epsrel,
+                                       T epsabs,
+                                       quad::Volume<T, ndim> const& vol,
+                                       bool relerr_classification = true);
 
   template <typename IntegT,
             bool predict_split = false,
             bool collect_iters = false,
             int debug = 0>
   numint::integration_result integrate(const IntegT& integrand,
-                           T epsrel,
-                           T epsabs,
-                           quad::Volume<T, ndim> const& vol,
-                           bool relerr_classification = true);
+                                       T epsrel,
+                                       T epsabs,
+                                       quad::Volume<T, ndim> const& vol,
+                                       bool relerr_classification = true);
 };
 
 template <typename T, size_t ndim, bool use_custom>
@@ -179,13 +179,14 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    numint::integration_result iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
-      d_integrand,
-      it,
-      subregions,
-      estimates,
-      characteristics,
-      compute_relerr_error_reduction);
+    numint::integration_result iter =
+      rules.template apply_cubature_integration_rules<IntegT, debug>(
+        d_integrand,
+        it,
+        subregions,
+        estimates,
+        characteristics,
+        compute_relerr_error_reduction);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
     if constexpr (predict_split) {
@@ -230,8 +231,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    numint::integration_result finished = compute_finished_estimates<T, ndim, use_custom>(
-      estimates, characteristics, iter);
+    numint::integration_result finished =
+      compute_finished_estimates<T, ndim, use_custom>(
+        estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);
     if (heuristic_classify(classifier,
@@ -309,13 +311,14 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     Estimates estimates(subregions.size);
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    numint::integration_result iter = rules.template apply_cubature_integration_rules<IntegT, debug>(
-      d_integrand,
-      it,
-      subregions,
-      estimates,
-      characteristics,
-      compute_relerr_error_reduction);
+    numint::integration_result iter =
+      rules.template apply_cubature_integration_rules<IntegT, debug>(
+        d_integrand,
+        it,
+        subregions,
+        estimates,
+        characteristics,
+        compute_relerr_error_reduction);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
     if constexpr (predict_split) {
@@ -360,8 +363,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     quad::CudaCheckError();
     classifier.store_estimate(cummulative.estimate + iter.estimate);
-    numint::integration_result finished = compute_finished_estimates<T, ndim, use_custom>(
-      estimates, characteristics, iter);
+    numint::integration_result finished =
+      compute_finished_estimates<T, ndim, use_custom>(
+        estimates, characteristics, iter);
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);
     if (heuristic_classify(classifier,

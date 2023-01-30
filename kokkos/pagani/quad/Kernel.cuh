@@ -7,7 +7,7 @@
 #include "common/kokkos/print.cuh"
 #include "common/kokkos/util.cuh"
 #include <KokkosBlas1_dot.hpp>
-//#include <KokkosBlas2_gemv.hpp>
+// #include <KokkosBlas2_gemv.hpp>
 #include <KokkosBlas1_team_dot.hpp>
 #include <utility> //for make_pair to make a subview
 

@@ -5,7 +5,7 @@
 #include <Kokkos_Core.hpp>
 
 // headers from cudaUtil.h
-//#include "cudaDebugUtil.h""
+// #include "cudaDebugUtil.h""
 
 #include "common/kokkos/cudaMemoryUtil.h"
 #include <cmath>
@@ -50,7 +50,6 @@ typedef Kokkos::View<GlobalBounds*,
 //-------------------------------------------------------------------------------
 // Device Views
 
-
 template <typename T>
 struct Structures {
   constViewVectorDouble _gpuG;
@@ -68,9 +67,8 @@ typedef Kokkos::View<Structures<double>*, Kokkos::Cuda> ViewStructures;
 
 #define NRULES 5
 
-inline
-  __device__ __host__ double
-  MaxErr(double avg, double epsrel, double epsabs)
+inline __device__ __host__ double
+MaxErr(double avg, double epsrel, double epsabs)
 {
   return max(epsrel * std::abs(avg), epsabs);
 }

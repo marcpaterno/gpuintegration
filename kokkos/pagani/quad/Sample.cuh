@@ -69,7 +69,7 @@ computePermutation(IntegT d_integrand,
 }
 
 template <typename IntegT, int NDIM>
-/*__device__*/KOKKOS_INLINE_FUNCTION void
+/*__device__*/ KOKKOS_INLINE_FUNCTION void
 Sample(IntegT d_integrand,
        int sIndex,
        // const Structures<double>& constMem,
@@ -204,10 +204,10 @@ Sample(IntegT d_integrand,
     for (int rul = 1; rul < NRULES - 1; ++rul) {
       double maxerr = 0;
       for (int s = 0; s < NSETS; ++s) {
-        maxerr = max(
-          maxerr,
-          fabs(sum[rul + 1] + (_GPUScale[s * NRULES + rul]) * sum[rul]) *
-            (_GPUNorm[s * NRULES + rul]));
+        maxerr =
+          max(maxerr,
+              fabs(sum[rul + 1] + (_GPUScale[s * NRULES + rul]) * sum[rul]) *
+                (_GPUNorm[s * NRULES + rul]));
       }
       sum[rul] = maxerr;
     }
