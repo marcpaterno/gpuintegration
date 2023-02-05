@@ -1,5 +1,5 @@
-#ifndef CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
-#define CUDACUHRE_QUAD_GPUQUAD_RULE_CUH
+#ifndef KOKKOS_QUAD_GPUQUAD_RULE_CUH
+#define KOKKOS_QUAD_GPUQUAD_RULE_CUH
 
 #include "common/kokkos/cudaMemoryUtil.h"
 #include "kokkos/pagani/quad/quad.h"

@@ -1,10 +1,8 @@
-#ifndef SUB_REGIONS_CUH
-#define SUB_REGIONS_CUH
+#ifndef KOKKOS_SUB_REGIONS_CUH
+#define KOKKOS_SUB_REGIONS_CUH
 
 #include <iostream>
 #include "common/kokkos/cudaMemoryUtil.h"
-#include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
-#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
 #include "common/kokkos/Volume.cuh"
 
 template <typename T, size_t ndim>
@@ -29,8 +27,6 @@ struct Sub_regions {
     // Kokkos::deep_copy(dLeftCoord, other.dLeftCoord);
     // Kokkos::deep_copy(dLength, other.dLength);
   }
-
-  ~Sub_regions() {}
 
   void
   create_uniform_split(size_t numOfDivisionPerRegionPerDimension)
@@ -88,9 +84,7 @@ struct Sub_regions {
   }
 
   T
-  compute_region_volume(size_t region_id,
-                        double* region_lengths,
-                        size_t nregions)
+  compute_region_volume(size_t region_id, double* region_lengths)
   {
     T reg_vol = 1.;
     for (size_t dim = 0; dim < ndim; dim++) {
@@ -114,8 +108,7 @@ struct Sub_regions {
 
     T total_vol = 0.;
     for (size_t regID = 0; regID < size; regID++) {
-      total_vol +=
-        compute_region_volume(regID, Length.data(), Length.extent(0));
+      total_vol += compute_region_volume(regID, Length.data());
     }
 
     return total_vol;
@@ -190,8 +183,6 @@ struct Sub_regions {
 
   ViewVectorDouble snapshot_dLeftCoord;
   ViewVectorDouble snapshot_dLength;
-  Region_characteristics<ndim>* characteristics;
-  Region_estimates<T, ndim>* region_estimates;
 
   size_t size = 0;
   size_t host_data_size = 0;

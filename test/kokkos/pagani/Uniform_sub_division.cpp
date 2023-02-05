@@ -1,15 +1,12 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
 #include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "catch2/catch.hpp"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-TEST_CASE("New Unit-Volume 2D")
+TEST_CASE("New Unit-Volume 3D")
 {
-  constexpr int ndim = 2;
-  Kernel<double, ndim> kernel(0);
-
+  constexpr int ndim = 3;
   Sub_regions<double, ndim> regions(2);
 
   SECTION("Total Volume of GPU regions is 1.0")
@@ -52,7 +49,6 @@ TEST_CASE("New Unit-Volume 2D")
 TEST_CASE("New Unit-Volume 5D")
 {
   constexpr int ndim = 5;
-  Kernel<double, ndim> kernel(0);
 
   Sub_regions<double, ndim> regions(3);
 
@@ -91,10 +87,9 @@ TEST_CASE("New Unit-Volume 5D")
   }
 };
 
-TEST_CASE("New Unit-Volume 8D")
+TEST_CASE("New Unit-Volume 10D")
 {
-  constexpr int ndim = 8;
-  Kernel<double, ndim> kernel(0);
+  constexpr int ndim = 10;
 
   Sub_regions<double, ndim> regions(4);
 

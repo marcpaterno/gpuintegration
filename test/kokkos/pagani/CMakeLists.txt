@@ -4,12 +4,6 @@ add_custom_command(TARGET kokkos_catch_main POST_BUILD
   COMMAND strip -S $<TARGET_FILE:kokkos_catch_main>
   )
 
-add_executable(kokkos_pagani_GenerateRegions GenerateInitialRegions.cpp)
-target_compile_options(kokkos_pagani_GenerateRegions PRIVATE "--expt-relaxed-constexpr")
-target_link_libraries(kokkos_pagani_GenerateRegions Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
-target_include_directories(kokkos_pagani_GenerateRegions PRIVATE ${CMAKE_SOURCE_DIR})
-add_test(kokkos_pagani_GenerateRegions kokkos_pagani_GenerateRegions)
-
 add_executable(kokkos_pagani_RegionSampling RegionSampling.cpp)
 target_compile_options(kokkos_pagani_RegionSampling PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(kokkos_pagani_RegionSampling Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
@@ -21,3 +15,15 @@ target_compile_options(kokkos_pagani_region_filtering PRIVATE "--expt-relaxed-co
 target_link_libraries(kokkos_pagani_region_filtering Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_region_filtering PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_region_filtering kokkos_pagani_region_filtering)
+
+add_executable(kokkos_pagani_uniform_sub_division Uniform_sub_division.cpp)
+target_compile_options(kokkos_pagani_uniform_sub_division PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_uniform_sub_division Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_uniform_sub_division PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_uniform_sub_division kokkos_pagani_uniform_sub_division)
+
+add_executable(kokkos_pagani_RegionSplitting RegionSplitting.cpp)
+target_compile_options(kokkos_pagani_RegionSplitting PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_RegionSplitting Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_RegionSplitting PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_RegionSplitting kokkos_pagani_RegionSplitting)

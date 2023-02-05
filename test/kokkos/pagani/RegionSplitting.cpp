@@ -1,26 +1,25 @@
-#define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
-#include "cuda/pagani/demos/function.cuh"
-#include "cuda/pagani/quad/GPUquad/Sample.cuh"
-#include "cuda/pagani/quad/quad.h"
-#include "common/cuda/cudaMemoryUtil.h"
-#include "common/cuda/Volume.cuh"
-#include "common/cuda/cudaUtil.h"
-#include "common/cuda/custom_functions.cuh"
-#include "common/cuda/thrust_utils.cuh"
-#include <chrono>
-#include <cmath>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <numeric>
+#include "kokkos/pagani/quad/quad.h"
+#include "common/kokkos/cudaMemoryUtil.h"
+#include "common/kokkos/Volume.cuh"
+// #include <chrono>
+// #include <cmath>
+// #include <fstream>
+// #include <iomanip>
+// #include <iostream>
+// #include <numeric>
 
-#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
-#include "cuda/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_region_splitter.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
 
-#include "common/cuda/integrands.cuh"
-#include "common/integration_result.hh"
+// #include "common/integration_result.hh"
+
+/*#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "catch2/catch.hpp"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>*/
 
 template <size_t ndim>
 bool
@@ -41,38 +40,36 @@ is_free_of_duplicates(Sub_regions<double, ndim>& regions)
 TEST_CASE("Split all regions at dim 1")
 {
   constexpr int ndim = 2;
-  Sub_regions<double, ndim> regions(5);
+  Sub_regions<double, ndim> regions(2);
   const size_t n = regions.size;
 
   Sub_region_splitter<double, ndim> splitter(n);
   Region_characteristics<ndim> classifications(n);
 
-  int* sub_div_dim = quad::host_alloc<int>(n);
-  double* orig_leftcoord = quad::host_alloc<double>(n * ndim);
-  double* orig_length = quad::host_alloc<double>(n * ndim);
+  auto sub_div_dim =
+    Kokkos::create_mirror_view(classifications.sub_dividing_dim);
+  auto orig_leftcoord = Kokkos::create_mirror_view(regions.dLeftCoord);
+  auto orig_length = Kokkos::create_mirror_view(regions.dLength);
 
-  quad::cuda_memcpy_to_host<double>(
-    orig_leftcoord, regions.dLeftCoord, n * ndim);
-  quad::cuda_memcpy_to_host<double>(orig_length, regions.dLength, n * ndim);
+  Kokkos::deep_copy(orig_leftcoord, regions.dLeftCoord);
+  Kokkos::deep_copy(orig_length, regions.dLength);
 
-  for (int i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     sub_div_dim[i] = 1;
   }
 
-  quad::cuda_memcpy_to_device<int>(
-    classifications.sub_dividing_dim, sub_div_dim, n);
+  Kokkos::deep_copy(classifications.sub_dividing_dim, sub_div_dim);
   splitter.split(regions, classifications);
 
-  double* new_leftcoord = quad::host_alloc<double>(2 * n * ndim);
-  double* new_length = quad::host_alloc<double>(2 * n * ndim);
+  auto new_leftcoord = Kokkos::create_mirror_view(regions.dLeftCoord);
+  auto new_length = Kokkos::create_mirror_view(regions.dLength);
 
-  quad::cuda_memcpy_to_host<double>(
-    new_leftcoord, regions.dLeftCoord, n * 2 * ndim);
-  quad::cuda_memcpy_to_host<double>(new_length, regions.dLength, n * 2 * ndim);
+  Kokkos::deep_copy(new_leftcoord, regions.dLeftCoord);
+  Kokkos::deep_copy(new_length, regions.dLength);
 
   SECTION("Dimension zero is intact")
   {
-    for (int i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
       const size_t dim = 0;
       const size_t par_index = i + dim * n;
       const size_t left = i + dim * n * 2;
@@ -88,7 +85,7 @@ TEST_CASE("Split all regions at dim 1")
 
   SECTION("Dimension one is changed")
   {
-    for (int i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
       const size_t dim = 1;
       const size_t par_index = i + dim * n;
       const size_t left = i + dim * n * 2;
@@ -102,10 +99,6 @@ TEST_CASE("Split all regions at dim 1")
       CHECK(new_length[right] == Approx(orig_length[par_index] / 2));
     }
   }
-
-  delete[] new_length;
-  delete[] new_leftcoord;
-  delete[] sub_div_dim;
 }
 
 TEST_CASE("Split first region at dim 0 the rest at dim 1")
@@ -117,34 +110,32 @@ TEST_CASE("Split first region at dim 0 the rest at dim 1")
   Sub_region_splitter<double, ndim> splitter(n);
   Region_characteristics<ndim> classifications(n);
 
-  int* sub_div_dim = quad::host_alloc<int>(n);
-  double* orig_leftcoord = quad::host_alloc<double>(n * ndim);
-  double* orig_length = quad::host_alloc<double>(n * ndim);
+  auto sub_div_dim =
+    Kokkos::create_mirror_view(classifications.sub_dividing_dim);
+  auto orig_leftcoord = Kokkos::create_mirror_view(regions.dLeftCoord);
+  auto orig_length = Kokkos::create_mirror_view(regions.dLength);
 
-  quad::cuda_memcpy_to_host<double>(
-    orig_leftcoord, regions.dLeftCoord, n * ndim);
-  quad::cuda_memcpy_to_host<double>(orig_length, regions.dLength, n * ndim);
+  Kokkos::deep_copy(orig_leftcoord, regions.dLeftCoord);
+  Kokkos::deep_copy(orig_length, regions.dLength);
 
   sub_div_dim[0] = 0;
-  for (int i = 1; i < n; ++i) {
+  for (size_t i = 1; i < n; ++i) {
     sub_div_dim[i] = 1;
   }
 
-  quad::cuda_memcpy_to_device<int>(
-    classifications.sub_dividing_dim, sub_div_dim, n);
+  Kokkos::deep_copy(classifications.sub_dividing_dim, sub_div_dim);
   splitter.split(regions, classifications);
 
-  double* new_leftcoord = quad::host_alloc<double>(2 * n * ndim);
-  double* new_length = quad::host_alloc<double>(2 * n * ndim);
+  auto new_leftcoord = Kokkos::create_mirror_view(regions.dLeftCoord);
+  auto new_length = Kokkos::create_mirror_view(regions.dLength);
 
-  quad::cuda_memcpy_to_host<double>(
-    new_leftcoord, regions.dLeftCoord, n * 2 * ndim);
-  quad::cuda_memcpy_to_host<double>(new_length, regions.dLength, n * 2 * ndim);
+  Kokkos::deep_copy(new_leftcoord, regions.dLeftCoord);
+  Kokkos::deep_copy(new_length, regions.dLength);
 
   SECTION("Dimension zero is changed only for the first region")
   {
     // check regions split at dim 1
-    for (int reg = 1; reg < n; ++reg) {
+    for (size_t reg = 1; reg < n; ++reg) {
 
       const size_t dim = 0;
       const size_t par_index = reg + dim * n;
@@ -172,7 +163,7 @@ TEST_CASE("Split first region at dim 0 the rest at dim 1")
 
   SECTION("Dimension one is changed for all but the first region")
   {
-    for (int reg = 0; reg < n; ++reg) {
+    for (size_t reg = 0; reg < n; ++reg) {
       const size_t dim = 1;
       const size_t par_index = reg + dim * n;
       const size_t left = reg + dim * n * 2;
@@ -196,8 +187,4 @@ TEST_CASE("Split first region at dim 0 the rest at dim 1")
       }
     }
   }
-
-  delete[] new_length;
-  delete[] new_leftcoord;
-  delete[] sub_div_dim;
 }

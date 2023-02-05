@@ -20,8 +20,6 @@ regions_same(double* listA,
   for (int dim = 0; dim < ndim; ++dim) {
     bool diff = listA[indexA + dim * nregionsA] !=
                 Approx(listB[indexB + dim * nregionsB]);
-    // printf("dim:%i %f, %f: bool:%i\n", dim, listA[index + dim * nregions],
-    // listB[index + dim * nregions], diff);
     if (diff)
       return false;
   }
@@ -407,8 +405,6 @@ TEST_CASE("filter: first and last regions are inactive")
 
   // check index the index inactive region to see if filtered out, check
   // surrounding indices to detect any errors for(int i =0; i < n; ++i)
-  //	printf("region %i %f +- %f\n", i, filtered_integrals[i],
-  //filtered_errors[i]);
 
   CHECK(filtered_integrals[0] == 1000.);
   CHECK(filtered_integrals[1] == 1000.);

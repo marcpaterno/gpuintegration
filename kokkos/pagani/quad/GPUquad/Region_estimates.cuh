@@ -1,8 +1,8 @@
-#ifndef REGION_ESTIMATES_CUH
-#define REGION_ESTIMATES_CUH
+#ifndef KOKKOS_REGION_ESTIMATES_CUH
+#define KOKKOS_REGION_ESTIMATES_CUH
 
 #include <iostream>
-#include "common/cuda/cudaMemoryUtil.h"
+#include "common/kokkos/cudaMemoryUtil.h"
 
 template <typename T, size_t ndim>
 class Region_estimates {

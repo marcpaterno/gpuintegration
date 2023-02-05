@@ -1,16 +1,16 @@
-#ifndef ONEAPI_WORKSPACE_CUH
-#define ONEAPI_WORKSPACE_CUH
+#ifndef KOKKOS_WORKSPACE_CUH
+#define KOKKOS_WORKSPACE_CUH
 
-#include "oneAPI/pagani/quad/GPUquad/Region_estimates.cuh"
-#include "oneAPI/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "oneAPI/pagani/quad/GPUquad/Region_characteristics.cuh"
-#include "oneAPI/pagani/quad/GPUquad/hybrid.cuh"
-#include "oneAPI/pagani/quad/GPUquad/PaganiUtils.cuh"
-#include "oneAPI/pagani/quad/GPUquad/Sub_region_splitter.cuh"
-#include "oneAPI/pagani/quad/GPUquad/Sub_region_filter.cuh"
-#include "oneAPI/pagani/quad/GPUquad/heuristic_classifier.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "kokkos/pagani/quad/GPUquad/hybrid.cuh"
+#include "kokkos/pagani/quad/GPUquad/PaganiUtils.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_region_splitter.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_region_filter.cuh"
+#include "kokkos/pagani/quad/GPUquad/heuristic_classifier.cuh"
 #include "common/integration_result.hh"
-#include "common/cuda/Volume.cuh"
+#include "common/kokkos/Volume.cuh"
 
 template <bool debug_ters = false>
 void

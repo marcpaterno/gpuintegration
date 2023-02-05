@@ -1,9 +1,9 @@
-#ifndef SUB_REGION_SPLITTER_CUH
-#define SUB_REGION_SPLITTER_CUH
+#ifndef KOKKOS_SUB_REGION_SPLITTER_CUH
+#define KOKKOS_SUB_REGION_SPLITTER_CUH
 
-#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "common/cuda/cudaMemoryUtil.h"
-#include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "common/kokkos/cudaMemoryUtil.h"
 
 template <typename T, size_t ndim>
 class Sub_region_splitter {
@@ -19,9 +19,6 @@ public:
     if (num_regions == 0)
       return;
 
-    size_t num_threads = BLOCK_SIZE;
-    size_t num_blocks =
-      num_regions / num_threads + ((num_regions % num_threads) ? 1 : 0);
     size_t children_per_region = 2;
 
     ViewVectorDouble children_left_coord(
@@ -29,11 +26,11 @@ public:
     ViewVectorDouble children_length("children_length",
                                      num_regions * ndim * children_per_region);
 
-    divideIntervalsGPU(children_left_coord,
-                       children_length,
-                       sub_regions.dLeftCoord,
-                       sub_regions.dLength,
-                       classifiers.sub_dividing_dim,
+    divideIntervalsGPU(children_left_coord.data(),
+                       children_length.data(),
+                       sub_regions.dLeftCoord.data(),
+                       sub_regions.dLength.data(),
+                       classifiers.sub_dividing_dim.data(),
                        num_regions,
                        children_per_region);
 
@@ -72,29 +69,29 @@ public:
 
         if (tid < numActiveRegions) {
 
-          int bisectdim = activeRegionsBisectDim(tid);
+          int bisectdim = activeRegionsBisectDim[tid];
           size_t data_size = numActiveRegions * numOfDivisionOnDimension;
 
           for (int i = 0; i < numOfDivisionOnDimension; ++i) {
-            for (int dim = 0; dim < ndim; ++dim) {
-              genRegions(i * numActiveRegions + dim * data_size + tid) =
-                activeRegions(dim * numActiveRegions + tid);
-              genRegionsLength(i * numActiveRegions + dim * data_size + tid) =
-                activeRegionsLength(dim * numActiveRegions + tid);
+            for (size_t dim = 0; dim < ndim; ++dim) {
+              genRegions[i * numActiveRegions + dim * data_size + tid] =
+                activeRegions[dim * numActiveRegions + tid];
+              genRegionsLength[i * numActiveRegions + dim * data_size + tid] =
+                activeRegionsLength[dim * numActiveRegions + tid];
             }
           }
 
           for (int i = 0; i < numOfDivisionOnDimension; ++i) {
 
             double interval_length =
-              activeRegionsLength(bisectdim * numActiveRegions + tid) /
+              activeRegionsLength[bisectdim * numActiveRegions + tid] /
               numOfDivisionOnDimension;
 
-            genRegions(bisectdim * data_size + i * numActiveRegions + tid) =
-              activeRegions(bisectdim * numActiveRegions + tid) +
+            genRegions[bisectdim * data_size + i * numActiveRegions + tid] =
+              activeRegions[bisectdim * numActiveRegions + tid] +
               i * interval_length;
-            genRegionsLength(i * numActiveRegions + bisectdim * data_size +
-                             tid) = interval_length;
+            genRegionsLength[i * numActiveRegions + bisectdim * data_size +
+                             tid] = interval_length;
           }
         }
       });

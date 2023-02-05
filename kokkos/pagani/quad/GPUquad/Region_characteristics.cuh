@@ -1,10 +1,10 @@
-#ifndef REGION_CHARACTERISTICS_CUH
-#define REGION_CHARACTERISTICS_CUH
+#ifndef KOKKOS_REGION_CHARACTERISTICS_CUH
+#define KOKKOS_REGION_CHARACTERISTICS_CUH
 
 #include <iostream>
 
 // helper routines
-#include "common/cuda/cudaMemoryUtil.h"
+#include "common/kokkos/cudaMemoryUtil.h"
 
 template <size_t ndim>
 class Region_characteristics {
@@ -25,8 +25,6 @@ public:
     sub_dividing_dim = quad::cuda_malloc<int>(num_regions);
     size = num_regions;
   }
-
-  ~Region_characteristics() {}
 
   size_t size = 0;
   ViewVectorInt active_regions;

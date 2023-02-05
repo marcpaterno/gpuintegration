@@ -1,9 +1,10 @@
-#ifndef SUB_REGION_FILTER_CUH
-#define SUB_REGION_FILTER_CUH
+#ifndef KOKKOS_SUB_REGION_FILTER_CUH
+#define KOKKOS_SUB_REGION_FILTER_CUH
 
 #include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
 #include "common/kokkos/cudaMemoryUtil.h"
-#include "kokkos/pagani/quad/GPUquad/heuristic_classifier.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
 #include "common/kokkos/util.cuh"
 
 template <typename T, size_t ndim>
