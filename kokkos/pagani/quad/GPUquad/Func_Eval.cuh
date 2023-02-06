@@ -1,7 +1,8 @@
-#ifndef CUDA_FUNC_EVAL
-#define CUDA_FUNC_EVAL
+#ifndef KOKKOS_FUNC_EVAL
+#define KOKKOS_FUNC_EVAL
 
-#include "common/cuda/cudaArray.cuh"
+#include "common/kokkos/cudaApply.cuh"
+#include "kokkos/pagani/quad/quad.h"
 
 namespace quad {
 
@@ -29,7 +30,7 @@ namespace quad {
       feval = other.feval;
     }
 
-    __host__ __device__ void
+    KOKKOS_INLINE_FUNCTION void
     store(gpu::cudaArray<double, ndim> x,
           GlobalBounds globalBounds[],
           Bounds sub_region[])
@@ -41,7 +42,7 @@ namespace quad {
       }
     }
 
-    __host__ __device__ void
+    KOKKOS_INLINE_FUNCTION void
     store(double res, size_t feval_id)
     {
       feval = res;
@@ -54,9 +55,9 @@ namespace quad {
   public:
     // put allocation of funct_eval here, and we will just create the object
     const size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
-    Feval<ndim>* fevals_list = nullptr;
+    Kokkos::View<Feval<ndim>*, Kokkos::CudaSpace> fevals_list;
 
-    __host__ __device__ quad::Feval<ndim>&
+    KOKKOS_INLINE_FUNCTION quad::Feval<ndim>&
     operator[](std::size_t i)
     {
       return fevals_list[i];

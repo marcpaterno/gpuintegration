@@ -1,32 +1,25 @@
-#ifndef PAGANI_UTILS_CUH
-#define PAGANI_UTILS_CUH
+#ifndef KOKKOS_PAGANI_UTILS_CUH
+#define KOKKOS_PAGANI_UTILS_CUH
 
-#include "common/cuda/Volume.cuh"
-#include "common/cuda/cudaApply.cuh"
-#include "common/cuda/cudaArray.cuh"
-#include "common/cuda/cudaUtil.h"
-// #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
-#include "cuda/pagani/quad/GPUquad/Phases.cuh"
-#include "cuda/pagani/quad/GPUquad/Sample.cuh"
+#include "common/kokkos/Volume.cuh"
+#include "common/kokkos/cudaApply.cuh"
+#include "common/kokkos/cudaMemoryUtil.h"
 #include "common/integration_result.hh"
-#include "cuda/pagani/quad/GPUquad/Rule.cuh"
+#include "common/kokkos/thrust_utils.cuh"
 
-#include "cuda/pagani/quad/GPUquad/hybrid.cuh"
-#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "cuda/pagani/quad/GPUquad/Region_estimates.cuh"
-#include "cuda/pagani/quad/GPUquad/Region_characteristics.cuh"
-#include "cuda/pagani/quad/GPUquad/Sub_region_filter.cuh"
-#include "cuda/pagani/quad/quad.h"
-#include "cuda/pagani/quad/GPUquad/Sub_region_splitter.cuh"
-// #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
-#include "common/cuda/custom_functions.cuh"
-#include "cuda/pagani/quad/GPUquad/Func_Eval.cuh"
+#include "kokkos/pagani/quad/GPUquad/Phases.cuh"
+#include "kokkos/pagani/quad/GPUquad/Rule.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_region_filter.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_region_splitter.cuh"
+#include "kokkos/pagani/quad/GPUquad/Func_Eval.cuh"
+#include "kokkos/pagani/quad/quad.h"
+
 #include <stdlib.h>
 #include <fstream>
 #include <string>
-#include <cuda_profiler_api.h>
-
-__constant__ size_t dFEvalPerRegion;
 
 template <typename T, size_t ndim, bool use_custom = false>
 class Cubature_rules {
@@ -81,11 +74,9 @@ public:
     const int key = 0;
     const int verbose = 0;
     rule.Init(ndim, fEvalPerRegion, key, verbose, &constMem);
-    generators = quad::cuda_malloc<T>(sizeof(T) * ndim * fEvalPerRegion);
+    generators = quad::cuda_malloc<T>(ndim * fEvalPerRegion);
 
-    size_t block_size = 64;
-    quad::ComputeGenerators<T, ndim>
-      <<<1, block_size>>>(generators, fEvalPerRegion, constMem);
+    quad::ComputeGenerators<T, ndim>(generators, fEvalPerRegion, constMem);
 
     integ_space_lows = quad::cuda_malloc<T>(ndim);
     integ_space_highs = quad::cuda_malloc<T>(ndim);
@@ -97,34 +88,27 @@ public:
   set_device_volume(T const* lows = nullptr, T const* highs = nullptr)
   {
 
-    if (lows == nullptr && highs == nullptr) {
-      std::array<T, ndim> _lows = {0.};
-      std::array<T, ndim> _highs;
-      std::fill_n(_highs.begin(), ndim, 1.);
+    auto _lows = Kokkos::create_mirror_view(integ_space_lows);
+    auto _highs = Kokkos::create_mirror_view(integ_space_highs);
 
-      quad::cuda_memcpy_to_device<T>(integ_space_highs, _highs.data(), ndim);
-      quad::cuda_memcpy_to_device<T>(integ_space_lows, _lows.data(), ndim);
+    if (lows == nullptr && highs == nullptr) {
+      std::fill_n(_highs.data(), ndim, 1.);
+      Kokkos::deep_copy(integ_space_highs, _highs);
+      Kokkos::deep_copy(integ_space_lows, _lows);
+
     } else {
-      quad::cuda_memcpy_to_device<T>(integ_space_highs, highs, ndim);
-      quad::cuda_memcpy_to_device<T>(integ_space_lows, lows, ndim);
+
+      for (int dim = 0; dim < ndim; ++dim) {
+        _lows[dim] = lows[dim];
+        _highs[dim] = highs[dim];
+      }
+
+      Kokkos::deep_copy(integ_space_highs, _highs);
+      Kokkos::deep_copy(integ_space_lows, _lows);
     }
   }
 
-  ~Cubature_rules()
-  {
-    cudaFree(generators);
-    cudaFree(integ_space_lows);
-    cudaFree(integ_space_highs);
-    cudaFree(constMem.gpuG);
-    cudaFree(constMem.cRuleWt);
-    cudaFree(constMem.GPUScale);
-    cudaFree(constMem.GPUNorm);
-    cudaFree(constMem.gpuGenPos);
-    cudaFree(constMem.gpuGenPermGIndex);
-    cudaFree(constMem.gpuGenPermVarCount);
-    cudaFree(constMem.gpuGenPermVarStart);
-    cudaFree(constMem.cGeneratorCount);
-  }
+  ~Cubature_rules() {}
 
   void
   Print_region_evals(T* ests, T* errs, const size_t num_regions)
@@ -137,20 +121,16 @@ public:
   }
 
   void
-  print_generators(T* d_generators)
+  print_generators(ViewVectorDouble d_generators)
   {
     rgenerators.outfile << "i, gen" << std::endl;
-    T* h_generators = new T[ndim * pagani::CuhreFuncEvalsPerRegion<ndim>()];
-    quad::cuda_memcpy_to_host<T>(h_generators,
-                                 d_generators,
-                                 ndim *
-                                   pagani::CuhreFuncEvalsPerRegion<ndim>());
+    auto h_generators = Kokkos::create_mirror_view(d_generators);
+    Kokkos::deep_copy(h_generators, d_generators);
 
     for (int i = 0; i < ndim * pagani::CuhreFuncEvalsPerRegion<ndim>(); ++i) {
       rgenerators.outfile << i << "," << std::scientific << h_generators[i]
                           << std::endl;
     }
-    delete[] h_generators;
   }
 
   template <int debug = 0>
@@ -166,33 +146,21 @@ public:
       constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
       const size_t num_regions = estimates.size;
 
-      double* ests = new double[num_regions];
-      double* errs = new double[num_regions];
+      auto ests = Kokkos::create_mirror_view(estimates.integral_estimates);
+      auto errs = Kokkos::create_mirror_view(estimates.error_estimates);
 
-      quad::cuda_memcpy_to_host<double>(
-        ests, estimates.integral_estimates, num_regions);
-      quad::cuda_memcpy_to_host<double>(
-        errs, estimates.error_estimates, num_regions);
-
+      Kokkos::deep_copy(ests, estimates.integral_estimates);
+      Kokkos::deep_copy(errs, estimates.error_estimates);
       Print_region_evals(ests, errs, num_regions);
 
       if constexpr (debug >= 2) {
-        quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
-        hfevals->fevals_list = new quad::Feval<ndim>[num_regions * num_fevals];
-        quad::cuda_memcpy_to_host<quad::Feval<ndim>>(
-          hfevals->fevals_list, dfevals.fevals_list, num_regions * num_fevals);
-        Print_func_evals(*hfevals, ests, errs, num_regions);
-        delete[] hfevals->fevals_list;
-        delete hfevals;
-        cudaFree(dfevals.fevals_list);
+        auto hfevals = Kokkos::create_mirror_view(dfevals.fevals_list);
+        Print_func_evals(hfevals, ests, errs, num_regions);
       }
-
-      delete[] ests;
-      delete[] errs;
     }
   }
 
-  template <typename IntegT>
+  /*template <typename IntegT>
   numint::integration_result
   apply_cubature_integration_rules(const IntegT& integrand,
                                    const Sub_regs& subregions,
@@ -214,22 +182,21 @@ public:
     T epsrel = 1.e-3, epsabs = 1.e-12;
 
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>
-      <<<num_blocks, block_size>>>(d_integrand,
-                                   subregions.dLeftCoord,
-                                   subregions.dLength,
+      (d_integrand,
+                                   subregions.dLeftCoord.data(),
+                                   subregions.dLength.data(),
                                    num_regions,
-                                   subregion_estimates.integral_estimates,
-                                   subregion_estimates.error_estimates,
+                                   subregion_estimates.integral_estimates.data(),
+                                   subregion_estimates.error_estimates.data(),
                                    // region_characteristics.active_regions,
-                                   region_characteristics.sub_dividing_dim,
+                                   region_characteristics.sub_dividing_dim.data(),
                                    epsrel,
                                    epsabs,
                                    constMem,
-                                   integ_space_lows,
-                                   integ_space_highs,
+                                   integ_space_lows.data(),
+                                   integ_space_highs.data(),
                                    0,
-                                   generators);
-    cudaDeviceSynchronize();
+                                   generators.data());
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
@@ -241,7 +208,7 @@ public:
 
     return res;
   }
-
+*/
   template <typename IntegT, int debug = 0>
   numint::integration_result
   apply_cubature_integration_rules(
@@ -262,44 +229,28 @@ public:
     }
 
     quad::set_device_array<int>(
-      region_characteristics.active_regions, num_regions, 1.);
+      region_characteristics.active_regions.data(), num_regions, 1.);
 
-    size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
-
     T epsrel = 1.e-3, epsabs = 1.e-12;
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>(
+      d_integrand,
+      subregions.dLeftCoord.data(),
+      subregions.dLength.data(),
+      num_regions,
+      subregion_estimates.integral_estimates.data(),
+      subregion_estimates.error_estimates.data(),
+      region_characteristics.sub_dividing_dim.data(),
+      epsrel,
+      epsabs,
+      constMem,
+      integ_space_lows.data(),
+      integ_space_highs.data(),
+      generators.data(),
+      dfevals);
 
-    cudaProfilerStart();
-    cudaEventRecord(start);
-    quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
-      <<<num_blocks, block_size>>>(d_integrand,
-                                   subregions.dLeftCoord,
-                                   subregions.dLength,
-                                   num_regions,
-                                   subregion_estimates.integral_estimates,
-                                   subregion_estimates.error_estimates,
-                                   region_characteristics.sub_dividing_dim,
-                                   epsrel,
-                                   epsabs,
-                                   constMem,
-                                   integ_space_lows,
-                                   integ_space_highs,
-                                   generators,
-                                   dfevals);
-    cudaDeviceSynchronize();
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float kernel_time = 0;
-    cudaEventElapsedTime(&kernel_time, start, stop);
-    // std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," <<
-    // kernel_time << std::endl;
-    cudaProfilerStop();
-
-    print_verbose<debug>(generators, dfevals, subregion_estimates);
+    print_verbose<debug>(generators.data(), dfevals, subregion_estimates);
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
@@ -328,10 +279,10 @@ public:
   }
 
   Structures<T> constMem;
-  T* generators = nullptr;
+  Kokkos::View<T*, Kokkos::CudaSpace> generators;
 
-  T* integ_space_lows = nullptr;
-  T* integ_space_highs = nullptr;
+  Kokkos::View<T*, Kokkos::CudaSpace> integ_space_lows;
+  Kokkos::View<T*, Kokkos::CudaSpace> integ_space_highs;
 };
 
 template <typename T, size_t ndim, bool use_custom = false>
@@ -342,14 +293,11 @@ compute_finished_estimates(const Region_estimates<T, ndim>& estimates,
 {
   numint::integration_result finished;
   finished.estimate =
-    iter.estimate -
-    dot_product<int, T, use_custom>(
-      classifiers.active_regions, estimates.integral_estimates, estimates.size);
-  ;
+    iter.estimate - dot_product<int, T, use_custom>(
+                      classifiers.active_regions, estimates.integral_estimates);
   finished.errorest =
     iter.errorest - dot_product<int, T, use_custom>(classifiers.active_regions,
-                                                    estimates.error_estimates,
-                                                    estimates.size);
+                                                    estimates.error_estimates);
   return finished;
 }
 
@@ -369,118 +317,6 @@ accuracy_reached(T epsrel, T epsabs, numint::integration_result res)
   if (res.errorest / res.estimate <= epsrel || res.errorest <= epsabs)
     return true;
   return false;
-}
-
-template <typename T, typename IntegT, int ndim>
-numint::integration_result
-pagani_clone(const IntegT& integrand,
-             Sub_regions<T, ndim>& subregions,
-             T epsrel = 1.e-3,
-             T epsabs = 1.e-12,
-             bool relerr_classification = true)
-{
-  using Reg_estimates = Region_estimates<T, ndim>;
-  using Sub_regs = Sub_regions<T, ndim>;
-  using Regs_characteristics = Region_characteristics<ndim>;
-  using Res = numint::integration_result;
-  using Filter = Sub_regions_filter<T, ndim>;
-  using Splitter = Sub_region_splitter<T, ndim>;
-  Reg_estimates prev_iter_estimates;
-
-  Res cummulative;
-  Cubature_rules<T, ndim> cubature_rules;
-  Heuristic_classifier<T, ndim> hs_classify(epsrel, epsabs);
-  bool accuracy_termination = false;
-  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
-
-  for (size_t it = 0; it < 700 && !accuracy_termination; it++) {
-    size_t num_regions = subregions.size;
-    Regs_characteristics classifiers(num_regions);
-    Reg_estimates estimates(num_regions);
-
-    Res iter = cubature_rules.apply_cubature_integration_rules(
-      d_integrand, subregions, estimates, classifiers);
-    computute_two_level_errorest<ndim>(
-      estimates, prev_iter_estimates, classifiers, relerr_classification);
-    iter.errorest = reduction<T>(estimates.error_estimates, num_regions);
-
-    accuracy_termination =
-      accuracy_reached(epsrel,
-                       epsabs,
-                       std::abs(cummulative.estimate + iter.estimate),
-                       cummulative.errorest + iter.errorest);
-
-    // where are the conditions to hs_classify (gpu mem and convergence?)
-    if (!accuracy_termination) {
-
-      // 1. store the latest estimate so that we can check whether estimate
-      // convergence happens
-      hs_classify.store_estimate(cummulative.estimate + iter.estimate);
-
-      // 2.get the actual finished estimates, needs to happen before hs
-      // heuristic classification
-      Res finished;
-      finished.estimate =
-        iter.estimate - dot_product<int, T>(classifiers.active_regions,
-                                            estimates.integral_estimates,
-                                            num_regions);
-      finished.errorest =
-        iter.errorest - dot_product<int, T>(classifiers.active_regions,
-                                            estimates.error_estimates,
-                                            num_regions);
-
-      // 3. try classification
-      // THIS SEEMS WRONG WHY WE PASS ITER.ERROREST TWICE? LAST PARAM SHOULD BE
-      // TOTAL FINISHED ERROREST, SO CUMMULATIVE.ERROREST
-      Classification_res<T> hs_results =
-        hs_classify.classify(classifiers.active_regions,
-                             estimates.error_estimates,
-                             num_regions,
-                             iter.errorest,
-                             finished.errorest,
-                             iter.errorest);
-
-      // 4. check if classification actually happened or was successful
-      bool hs_classify_success =
-        hs_results.pass_mem && hs_results.pass_errorest_budget;
-      // printf("hs_results will leave %lu regions active\n",
-      // hs_results.num_active);
-
-      if (hs_classify_success) {
-        // 5. if classification happened and was successful, update finished
-        // estimates
-        classifiers.active_regions = hs_results.active_flags;
-        finished.estimate =
-          iter.estimate - dot_product<int, T>(classifiers.active_regions,
-                                              estimates.integral_estimates,
-                                              num_regions);
-
-        finished.errorest = hs_results.finished_errorest;
-      }
-
-      // 6. update cummulative estimates with finished contributions
-      cummulative.estimate += finished.estimate;
-      cummulative.errorest += finished.errorest;
-
-      // printf("num regions pre filtering:%lu\n", subregions->size);
-      // 7. Filter out finished regions
-      Filter region_errorest_filter(num_regions);
-      num_regions = region_errorest_filter.filter(
-        subregions, classifiers, estimates, prev_iter_estimates);
-      // printf("num regions after filtering:%lu\n", subregions->size);
-      quad::CudaCheckError();
-      // split regions
-      // printf("num regions pre split:%lu\n", subregions->size);
-      Splitter reg_splitter(num_regions);
-      reg_splitter.split(subregions, classifiers);
-      // printf("num regions after split:%lu\n", subregions->size);
-    } else {
-      cummulative.estimate += iter.estimate;
-      cummulative.errorest += iter.errorest;
-    }
-  }
-
-  return cummulative;
 }
 
 #endif

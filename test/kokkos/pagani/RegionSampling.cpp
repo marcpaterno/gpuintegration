@@ -1,4 +1,4 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
+#include "kokkos/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "catch2/catch.hpp"
 #include <stdint.h>
 #include <stdio.h>
@@ -6,149 +6,157 @@
 
 class PTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
-    return 15.37 + 0 * x * y;
+    double res = 15.37 + x * 0 + y * 0;
+    return res;
   }
 };
 
 class NTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
-    return -15.37 + 0 * x * y;
+    double res = -15.37 + x * 0 + y * 0;
+    return res;
   }
 };
 
 class ZTest {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y)
   {
-    return 0. + 0 * x * y;
+    return x * 0 + y * 0;
   }
 };
 
 TEST_CASE("Constant Positive Value Function")
 {
   constexpr int ndim = 2;
-  double hRegsIntegral[16] = {0.};
-  double hRegsError[16] = {0.};
-  double hRegs[16 * ndim] = {0.};
-  double hRegsLength[16 * ndim] = {0.};
+  constexpr bool use_custom = true;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
 
-  size_t numRegions = 16;
   PTest integrand;
-  size_t maxIters = 1;
-  int heuristicID = 0;
-  double epsrel = 1.0e-3;
-  double epsabs = 1.0e-12;
-  Cuhre<double, ndim> cuhre(
-    hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  cuhre.Integrate<PTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  PTest* d_integrand = quad::cuda_copy_to_managed<PTest>(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<double, ndim, use_custom> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = 15.37;
 
-  double firstEstimate = hRegsIntegral[0];
-  double totalEstimate = firstEstimate;
-  double totalErrorEst = 0.;
-  bool nonZeroErrFound = false;
-  bool diffIntegralFound = false;
+  for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
+    Sub_regions<double, ndim> sub_regions(splits_per_dim);
+    size_t nregions = sub_regions.size;
+    Region_characteristics<ndim> characteristics(nregions);
+    Region_estimates<double, ndim> estimates(nregions);
 
-  SECTION("Sub-Regions Have the same Integral Estimate")
-  {
-    for (size_t regID = 1; regID < numRegions; regID++) {
-      diffIntegralFound = hRegsIntegral[regID] == firstEstimate ? false : true;
-      nonZeroErrFound = hRegsError[regID] >= 0.00000000000001 ? true : false;
-      totalEstimate += hRegsIntegral[regID];
-      totalErrorEst += hRegsError[regID];
+    auto result = rules.template apply_cubature_integration_rules<PTest>(
+      d_integrand,
+      iteration,
+      sub_regions,
+      estimates,
+      characteristics,
+      compute_relerr_error_reduction);
+
+    auto h_estimates = Kokkos::create_mirror_view(estimates.integral_estimates);
+    Kokkos::deep_copy(h_estimates, estimates.integral_estimates);
+    double sum = 0.;
+    for (size_t i = 0; i < nregions; ++i)
+      sum += h_estimates[i];
+    double true_val = integral_val / nregions;
+
+    for (size_t i = 0; i < nregions; ++i) {
+      CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
     }
-
-    CHECK(diffIntegralFound == false);
   }
-
-  CHECK(totalEstimate == Approx(15.37));
-  CHECK(nonZeroErrFound == false);
-  CHECK(totalErrorEst <= 0.00000000000001);
 }
 
-TEST_CASE("Constant Negative Value Function")
+TEST_CASE("Negative Positive Value Function")
 {
+  constexpr bool use_custom = true;
   constexpr int ndim = 2;
-  double hRegsIntegral[16] = {0.};
-  double hRegsError[16] = {0.};
-  double hRegs[16 * ndim] = {0.};
-  double hRegsLength[16 * ndim] = {0.};
-  size_t numRegions = 16;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
+
   NTest integrand;
-  size_t maxIters = 1;
-  int heuristicID = 0;
-  double epsrel = 1.0e-3;
-  double epsabs = 1.0e-12;
-  Cuhre<double, 2> cuhre(
-    hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  cuhre.Integrate<NTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  NTest* d_integrand = quad::cuda_copy_to_managed(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<double, ndim, use_custom> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = -15.37;
 
-  double firstEstimate = hRegsIntegral[0];
-  double totalEstimate = firstEstimate;
-  double totalErrorEst = 0.;
-  bool nonZeroErrFound = false;
-  bool diffIntegralFound = false;
+  for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
+    Sub_regions<double, ndim> sub_regions(splits_per_dim);
+    size_t nregions = sub_regions.size;
+    Region_characteristics<ndim> characteristics(nregions);
+    Region_estimates<double, ndim> estimates(nregions);
 
-  SECTION("Sub-Regions Have the same Integral Estimate")
-  {
-    for (size_t regID = 1; regID < numRegions; regID++) {
-      diffIntegralFound = hRegsIntegral[regID] == firstEstimate ? false : true;
-      nonZeroErrFound = hRegsError[regID] >= 0.00000000000001 ? true : false;
-      totalEstimate += hRegsIntegral[regID];
-      totalErrorEst += hRegsError[regID];
+    auto result = rules.template apply_cubature_integration_rules<NTest>(
+      d_integrand,
+      iteration,
+      sub_regions,
+      estimates,
+      characteristics,
+      compute_relerr_error_reduction);
+
+    auto h_estimates = Kokkos::create_mirror_view(estimates.integral_estimates);
+    Kokkos::deep_copy(h_estimates, estimates.integral_estimates);
+
+    double sum = 0.;
+    for (size_t i = 0; i < nregions; ++i)
+      sum += h_estimates[i];
+
+    double true_val = integral_val / nregions;
+
+    for (size_t i = 0; i < nregions; ++i) {
+      CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
     }
-
-    CHECK(diffIntegralFound == false);
   }
-
-  // returns are never precisely equal to 0. and -15.37
-  CHECK(totalEstimate == Approx(-15.37));
-  CHECK(nonZeroErrFound == false);
-  CHECK(totalErrorEst <= 0.00000000000001);
 }
 
-TEST_CASE("Constant Zero Value Function")
+TEST_CASE("Zero Positive Value Function")
 {
+  constexpr bool use_custom = true;
+
   constexpr int ndim = 2;
-  double hRegsIntegral[16] = {0.};
-  double hRegsError[16] = {0.};
-  double hRegs[16 * ndim] = {0.};
-  double hRegsLength[16 * ndim] = {0.};
-  size_t numRegions = 16;
+  int iteration = 0;
+  bool compute_relerr_error_reduction = false;
+
   ZTest integrand;
-  size_t maxIters = 1;
-  int heuristicID = 0;
-  double epsrel = 1.0e-3;
-  double epsabs = 1.0e-12;
-  Cuhre<double, 2> cuhre(
-    hRegsIntegral, hRegsError, hRegs, hRegsLength, numRegions);
-  cuhre.Integrate<ZTest>(integrand, epsrel, epsabs, heuristicID, maxIters);
+  ZTest* d_integrand = quad::cuda_copy_to_managed(integrand);
+  quad::Volume<double, ndim> vol;
+  Cubature_rules<double, ndim, use_custom> rules;
+  rules.set_device_volume(vol.lows, vol.highs);
+  double integral_val = 0.;
 
-  double firstEstimate = hRegsIntegral[0];
-  double totalEstimate = firstEstimate;
-  double totalErrorEst = 0.;
-  bool nonZeroErrFound = false;
-  bool diffIntegralFound = false;
+  for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
+    Sub_regions<double, ndim> sub_regions(splits_per_dim);
+    size_t nregions = sub_regions.size;
+    Region_characteristics<ndim> characteristics(nregions);
+    Region_estimates<double, ndim> estimates(nregions);
 
-  SECTION("Sub-Regions Have the same Integral Estimate")
-  {
-    for (size_t regID = 1; regID < numRegions; regID++) {
-      diffIntegralFound = hRegsIntegral[regID] == firstEstimate ? false : true;
-      nonZeroErrFound = hRegsError[regID] >= 0.00000000000001 ? true : false;
-      totalEstimate += hRegsIntegral[regID];
-      totalErrorEst += hRegsError[regID];
+    auto result = rules.template apply_cubature_integration_rules<ZTest>(
+      d_integrand,
+      iteration,
+      sub_regions,
+      estimates,
+      characteristics,
+      compute_relerr_error_reduction);
+
+    auto h_estimates = Kokkos::create_mirror_view(estimates.integral_estimates);
+    Kokkos::deep_copy(h_estimates, estimates.integral_estimates);
+
+    double sum = 0.;
+    for (size_t i = 0; i < nregions; ++i)
+      sum += h_estimates[i];
+
+    double true_val = integral_val / nregions;
+
+    for (size_t i = 0; i < nregions; ++i) {
+      CHECK(h_estimates[i] == Approx(true_val).epsilon(1.e-6));
     }
-
-    CHECK(diffIntegralFound == false);
   }
-
-  CHECK(Approx(totalEstimate) == 0.0);
-  CHECK(nonZeroErrFound == false);
-  CHECK(totalErrorEst <= 0.00000000000001);
 }

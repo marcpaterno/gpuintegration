@@ -52,25 +52,36 @@ typedef Kokkos::View<GlobalBounds*,
 
 template <typename T>
 struct Structures {
-  constViewVectorDouble _gpuG;
-  constViewVectorDouble _cRuleWt;
-  constViewVectorDouble _GPUScale;
-  constViewVectorDouble _GPUNorm;
-  constViewVectorInt _gpuGenPos;
-  constViewVectorInt _gpuGenPermGIndex;
-  constViewVectorInt _gpuGenPermVarCount;
-  constViewVectorInt _gpuGenPermVarStart;
-  ViewVectorSize_t _cGeneratorCount;
+  constViewVectorDouble gpuG;
+  constViewVectorDouble cRuleWt;
+  constViewVectorDouble GPUScale;
+  constViewVectorDouble GPUNorm;
+  constViewVectorInt gpuGenPos;
+  constViewVectorInt gpuGenPermGIndex;
+  constViewVectorInt gpuGenPermVarCount;
+  constViewVectorInt gpuGenPermVarStart;
+  ViewVectorSize_t cGeneratorCount;
 };
 
 typedef Kokkos::View<Structures<double>*, Kokkos::Cuda> ViewStructures;
 
 #define NRULES 5
 
-inline __device__ __host__ double
+KOKKOS_INLINE_FUNCTION double
 MaxErr(double avg, double epsrel, double epsabs)
 {
   return max(epsrel * std::abs(avg), epsabs);
+}
+
+namespace pagani {
+  template <size_t ndim>
+  KOKKOS_INLINE_FUNCTION constexpr size_t
+  CuhreFuncEvalsPerRegion()
+  {
+    return (1 + 2 * ndim + 2 * ndim + 2 * ndim + 2 * ndim +
+            2 * ndim * (ndim - 1) + 4 * ndim * (ndim - 1) +
+            4 * ndim * (ndim - 1) * (ndim - 2) / 3 + (1 << ndim));
+  }
 }
 
 template <typename T, int NDIM>

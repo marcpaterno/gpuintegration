@@ -61,6 +61,7 @@ computePermutation(IntegT d_integrand,
   }
 
   double fun = gpu::apply(d_integrand(0), x) * (jacobian);
+  printf("feval:%.5e\n", fun);
   sdata[threadIdx] = fun; // target for reduction
 
   for (int rul = 0; rul < NRULES; ++rul) {
@@ -69,7 +70,7 @@ computePermutation(IntegT d_integrand,
 }
 
 template <typename IntegT, int NDIM>
-/*__device__*/ KOKKOS_INLINE_FUNCTION void
+KOKKOS_INLINE_FUNCTION void
 Sample(IntegT d_integrand,
        int sIndex,
        // const Structures<double>& constMem,
@@ -90,7 +91,7 @@ Sample(IntegT d_integrand,
        GlobalBounds* sBound,
        const member_type team_member)
 {
-
+  printf("in Sample\n");
   int threadIdx = team_member.team_rank();
   int blockIdx = team_member.league_rank();
 

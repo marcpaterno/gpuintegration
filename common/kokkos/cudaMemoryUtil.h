@@ -1,6 +1,7 @@
 #ifndef KOKKOS_PAGANI_KOKKOS_QUAD_UTIL_CUDAMEMORY_UTIL_H
 #define KOKKOS_PAGANI_KOKKOS_QUAD_UTIL_CUDAMEMORY_UTIL_H
 #include <Kokkos_Core.hpp>
+#include <fstream>
 
 typedef Kokkos::View<int*, Kokkos::CudaSpace> ViewVectorInt;
 typedef Kokkos::View<float*, Kokkos::CudaSpace> ViewVectorFloat;
@@ -37,6 +38,26 @@ typedef Kokkos::View<size_t*, Kokkos::Serial> HostVectorSize_t;
 //-------------------------------------------------------------------------------
 typedef Kokkos::View<double*, Kokkos::CudaUVMSpace> ViewDouble;
 
+template <int debug = 0>
+class Recorder {
+public:
+  std::ofstream outfile;
+
+  Recorder() = default;
+
+  Recorder(std::string filename)
+  {
+    if constexpr (debug > 0)
+      outfile.open(filename.c_str());
+  }
+
+  ~Recorder()
+  {
+    if constexpr (debug > 0)
+      outfile.close();
+  }
+};
+
 namespace quad {
 
   size_t
@@ -47,171 +68,11 @@ namespace quad {
     return free_physmem;
   }
 
-  class Managed {
-  public:
-    void*
-    operator new(size_t len)
-    {
-      void* ptr;
-      cudaMallocManaged(&ptr, len);
-      cudaDeviceSynchronize();
-      return ptr;
-    }
-
-    void
-    operator delete(void* ptr)
-    {
-      cudaDeviceSynchronize();
-      cudaFree(ptr);
-    }
-  };
-
-  template <typename T>
-  class MemoryUtil {};
-
-  template <typename T>
-  class HostMemory : public MemoryUtil<T> {
-  public:
-    void*
-    AllocateMemory(void* ptr, size_t n)
-    {
-      ptr = malloc(n);
-      return ptr;
-    }
-
-    void
-    ReleaseMemory(void* ptr)
-    {
-      free(ptr);
-    }
-  };
-
-  template <typename T>
-  class DeviceMemory : public MemoryUtil<T> {
-  public:
-    double
-    GetFreeMemPercentage()
-    {
-      size_t free_physmem, total_physmem;
-      (cudaMemGetInfo(&free_physmem, &total_physmem));
-      return (double)free_physmem / total_physmem;
-    }
-
-    size_t
-    GetAmountFreeMem()
-    {
-      size_t free_physmem, total_physmem;
-      (cudaMemGetInfo(&free_physmem, &total_physmem));
-      return free_physmem;
-    }
-
-    cudaError_t
-    AllocateMemory(void** d_ptr, size_t n)
-    {
-      return cudaMalloc(d_ptr, n);
-    }
-
-    cudaError_t
-    AllocateUnifiedMemory(void** d_ptr, size_t n)
-    {
-      return cudaMallocManaged(d_ptr, n);
-    }
-
-    cudaError_t
-    ReleaseMemory(void* d_ptr)
-    {
-      return cudaFree(d_ptr);
-    }
-
-    cudaError_t
-    SetHeapSize(size_t hSize = (size_t)2 * 1024 * 1024 * 1024)
-    {
-      return cudaDeviceSetLimit(cudaLimitMallocHeapSize, hSize);
-    }
-
-    cudaError_t
-    CopyHostToDeviceConstantMemory(const char* d_ptr, void* h_ptr, size_t n)
-    {
-      return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
-    }
-
-    cudaError_t
-    CopyHostToDeviceConstantMemory(const void* d_ptr, void* h_ptr, size_t n)
-    {
-      return cudaMemcpyToSymbol(d_ptr, h_ptr, n);
-    }
-
-    //@brief Initialize Device
-    cudaError_t
-    DeviceInit(int dev = -1, int verbose = 0)
-    {
-      cudaError_t error = cudaSuccess;
-
-      do {
-        int deviceCount;
-        error = (cudaGetDeviceCount(&deviceCount));
-        if (error)
-          break;
-        if (deviceCount == 0) {
-          fprintf(stderr, "No devices supporting CUDA.\n");
-          exit(1);
-        }
-
-        if ((dev > deviceCount - 1) || (dev < 0)) {
-          dev = 0;
-        }
-
-        // error = (cudaSetDevice(dev));
-        if (error)
-          break;
-
-        size_t free_physmem, total_physmem;
-        (cudaMemGetInfo(&free_physmem, &total_physmem));
-
-        cudaDeviceProp deviceProp;
-        error = (cudaGetDeviceProperties(&deviceProp, dev));
-        if (error)
-          break;
-
-        if (deviceProp.major < 1) {
-          fprintf(stderr, "Device does not support CUDA.\n");
-          exit(1);
-        }
-        if (false && verbose) {
-          printf("Using device %d: %s (SM%d, %d SMs, %lld free / %lld total MB "
-                 "physmem, ECC %s)\n",
-                 dev,
-                 deviceProp.name,
-                 deviceProp.major * 100 + deviceProp.minor * 10,
-                 deviceProp.multiProcessorCount,
-                 (unsigned long long)free_physmem / 1024 / 1024,
-                 (unsigned long long)total_physmem / 1024 / 1024,
-                 (deviceProp.ECCEnabled) ? "on" : "off");
-          fflush(stdout);
-        }
-
-      } while (0);
-      return error;
-    }
-  };
-
   template <class T>
   T*
   cuda_malloc_managed(size_t size)
   {
-    T* temp = nullptr;
-    auto rc = cudaMallocManaged(&temp, sizeof(T) * size);
-    if (rc != cudaSuccess) {
-      temp = nullptr;
-
-      size_t free_physmem, total_physmem;
-      cudaMemGetInfo(&free_physmem, &total_physmem);
-      printf("cuda_malloc_managed(size) allocating size %lu free mem:%lu\n",
-             size,
-             free_physmem);
-
-      throw std::bad_alloc();
-    }
+    Kokkos::View<T*, Kokkos::CudaUVMSpace> temp("temp", size);
     return temp;
   }
 
@@ -233,16 +94,16 @@ namespace quad {
     return temp;
   }
 
-  template <class T>
+  template <typename T>
   T*
   cuda_copy_to_managed(T const& on_host)
   {
-    T* buffer = cuda_malloc_managed<T>();
+    T* buffer = (T*)(Kokkos::kokkos_malloc<Kokkos::CudaUVMSpace>(sizeof(T)));
     try {
       new (buffer) T(on_host);
     }
     catch (...) {
-      cudaFree(buffer);
+      Kokkos::kokkos_free(buffer);
       throw;
     }
     return buffer;
@@ -391,92 +252,77 @@ namespace quad {
   IntegT*
   make_gpu_integrand(const IntegT& integrand)
   {
-    IntegT* d_integrand;
-    cudaMallocManaged((void**)&d_integrand, sizeof(IntegT));
-    memcpy(d_integrand, &integrand, sizeof(IntegT));
-    return d_integrand;
-  }
-
-  template <typename T>
-  __global__ void
-  set_array_to_value(T* array, size_t size, T val)
-  {
-    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid < size) {
-      array[tid] = val;
-    }
-  }
-
-  template <typename T>
-  __global__ void
-  set_array_range_to_value(T* array,
-                           size_t first_to_change,
-                           size_t last_to_change,
-                           size_t total_size,
-                           T val)
-  {
-    size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid >= first_to_change && tid <= last_to_change && tid < total_size) {
-      array[tid] = val;
-    }
+    return cuda_copy_to_managed<IntegT>(integrand);
   }
 
   template <typename T>
   void
-  set_device_array_range(T* arr,
-                         size_t first_to_change,
-                         size_t last_to_change,
-                         size_t size,
-                         T val)
+  set_array_to_value(T* array, size_t size, T val)
   {
-    size_t num_threads = 64;
-    size_t num_blocks = size / num_threads + ((size % num_threads) ? 1 : 0);
-    set_array_range_to_value<T><<<num_blocks, num_threads>>>(
-      arr, first_to_change, last_to_change, size, val);
-    cudaDeviceSynchronize();
+    Kokkos::parallel_for(
+      "Loop1", size, KOKKOS_LAMBDA(const int& i) { array[i] = val; });
+  }
+
+  template <typename T>
+  void
+  set_array_range_to_value(T* array,
+                           size_t first_to_change,
+                           size_t last_to_change,
+                           size_t size,
+                           T val)
+  {
+    Kokkos::parallel_for(
+      "Loop1", size, KOKKOS_LAMBDA(const int& i) {
+        if (i >= first_to_change && i <= last_to_change) {
+          array[i] = val;
+        }
+      });
   }
 
   template <typename T>
   void
   set_device_array(T* arr, size_t size, T val)
   {
-    size_t num_threads = 64;
-    size_t num_blocks = size / num_threads + ((size % num_threads) ? 1 : 0);
-    set_array_to_value<T><<<num_blocks, num_threads>>>(arr, size, val);
-    cudaDeviceSynchronize();
+    Kokkos::parallel_for(
+      "Loop1", size, KOKKOS_LAMBDA(const int& i) { arr[i] = val; });
   }
 
   template <typename T, typename C = T>
   bool
-  array_values_smaller_than_val(T* dev_arr, size_t dev_arr_size, C val)
+  array_values_smaller_than_val(T* dev_arr, size_t size, C val)
   {
-    double* host_arr = host_alloc<double>(dev_arr_size);
-    cudaMemcpy(
-      host_arr, dev_arr, sizeof(double) * dev_arr_size, cudaMemcpyDeviceToHost);
+    size_t res = 0;
+    Kokkos::parallel_reduce(
+      "ProParRed1",
+      size,
+      KOKKOS_LAMBDA(const int64_t index, T& res) {
+        if (dev_arr[index] > val)
+          res += 1;
+      },
+      res);
 
-    for (int i = 0; i < dev_arr_size; i++) {
-      if (host_arr[i] >= static_cast<T>(val))
-        return false;
-    }
-    return true;
+    if (res == 0)
+      return true;
+    return false;
   }
 
   template <typename T, typename C = T>
   bool
-  array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val)
+  array_values_larger_than_val(T* dev_arr, size_t size, C val)
   {
-    double* host_arr = host_alloc<double>(dev_arr_size);
-    cudaMemcpy(
-      host_arr, dev_arr, sizeof(double) * dev_arr_size, cudaMemcpyDeviceToHost);
+    size_t res = 0;
+    Kokkos::parallel_reduce(
+      "ProParRed1",
+      size,
+      KOKKOS_LAMBDA(const int64_t index, T& res) {
+        if (dev_arr[index] < val)
+          res += 1;
+      },
+      res);
 
-    for (int i = 0; i < dev_arr_size; i++) {
-      if (host_arr[i] < static_cast<T>(val)) {
-        std::cout << "host_arr[" << i << "]:" << host_arr[i] << " val:" << val
-                  << "\n";
-        return false;
-      }
-    }
-    return true;
+    if (res == 0)
+      return true;
+    return false;
   }
 
 }

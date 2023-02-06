@@ -1,10 +1,9 @@
-#ifndef HEURISTIC_CLASSIFIER_CUH
-#define HEURISTIC_CLASSIFIER_CUH
+#ifndef KOKKOS_HEURISTIC_CLASSIFIER_CUH
+#define KOKKOS_HEURISTIC_CLASSIFIER_CUH
 
-#include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "common/cuda/cudaMemoryUtil.h"
-#include "common/cuda/thrust_utils.cuh"
-#include "common/cuda/custom_functions.cuh"
+#include "kokkos/pagani/quad/GPUquad/Sub_regions.cuh"
+#include "common/kokkos/cudaMemoryUtil.h"
+#include "common/kokkos/thrust_utils.cuh"
 
 #include <string>
 
@@ -25,7 +24,7 @@ public:
   Classification_res() = default;
   Classification_res(quad::Range<T> some_range) : threshold_range(some_range) {}
 
-  ~Classification_res() {}
+  //~Classification_res() {}
 
   void
   decrease_threshold()
@@ -48,7 +47,7 @@ public:
   T errorest_budget_covered = 0.;
   T percent_mem_active = 0.;
   quad::Range<T> threshold_range; // change to threshold_range
-  int* active_flags = nullptr;
+  ViewVectorInt active_flags;
   size_t num_active = 0;
   T finished_errorest = 0.;
 
@@ -58,19 +57,18 @@ public:
 };
 
 template <typename T>
-__global__ void
+void
 device_set_true_for_larger_than(const T* arr,
                                 const T val,
                                 const size_t size,
                                 int* output_flags)
 {
-  size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (tid < size) {
-    // printf("setting active[%lu]: %i becuase arr[%lu]:%f val:%f\n", tid,
-    // arr[tid] > val, tid, arr[tid], val);
-    output_flags[tid] = arr[tid] > val;
-  }
+  Kokkos::parallel_for(
+    "Loop1", size, KOKKOS_LAMBDA(const int& i) {
+      if (i < size) {
+        output_flags[i] = arr[i] > val;
+      }
+    });
 }
 
 template <typename T>
@@ -80,12 +78,7 @@ set_true_for_larger_than(const T* arr,
                          const size_t size,
                          int* output_flags)
 {
-  size_t num_threads = 1024;
-  size_t num_blocks = size / num_threads + (size % num_threads == 0 ? 0 : 1);
-  device_set_true_for_larger_than<T>
-    <<<num_blocks, num_threads>>>(arr, val, size, output_flags);
-  cudaDeviceSynchronize();
-  quad::CudaCheckError();
+  device_set_true_for_larger_than<T>(arr, val, size, output_flags);
 }
 
 size_t
@@ -283,32 +276,25 @@ public:
 
   void
   apply_threshold(Classification_res<T>& res,
-                  const T* errorests,
+                  ViewVectorDouble errorests,
                   const size_t num_regions) const
   {
-
     auto int_division = [](int x, int y) {
       return static_cast<T>(x) / static_cast<T>(y);
     };
 
     set_true_for_larger_than<T>(
-      errorests, res.threshold, num_regions, res.active_flags);
+      errorests.data(), res.threshold, num_regions, res.active_flags.data());
     res.num_active = static_cast<size_t>(
       reduction<int, use_custom>(res.active_flags, num_regions));
     res.percent_mem_active = int_division(res.num_active, num_regions);
-    // std::cout<<"res.num_active:"<< res.num_active << std::endl;
-    // std::cout<<"res.percent_mem_active:"<<res.percent_mem_active<<std::endl;
-    // std::cout<<"max_active_regions_percentage:"<<max_active_regions_percentage<<std::endl;
     res.pass_mem = res.percent_mem_active <= max_active_regions_percentage;
-    // std::cout<<"heuristic classifier reduction (num_active_regions:)"<<
-    // res.num_active << std::endl;
   }
 
   void
   evaluate_error_budget(Classification_res<T>& res,
-                        T* error_estimates,
-                        int* active_flags,
-                        const size_t num_regions,
+                        ViewVectorDouble error_estimates,
+                        ViewVectorInt active_flags,
                         const T target_error,
                         const T active_errorest,
                         const T iter_finished_errorest,
@@ -316,10 +302,10 @@ public:
                         const T max_percent_err_budget) const
   {
 
-    const T extra_f_errorest = active_errorest -
-                               dot_product<T, int, use_custom>(
-                                 error_estimates, active_flags, num_regions) -
-                               iter_finished_errorest;
+    const T extra_f_errorest =
+      active_errorest -
+      dot_product<int, T, use_custom>(active_flags, error_estimates) -
+      iter_finished_errorest;
     const T error_budget = target_error - total_f_errorest;
     res.pass_errorest_budget =
       extra_f_errorest <= max_percent_err_budget * error_budget;
@@ -328,11 +314,9 @@ public:
 
   void
   get_larger_threshold_results(Classification_res<T>& thres_search,
-                               const int* active_flags,
-                               const T* errorests,
+                               ViewVectorDouble errorests,
                                const size_t num_regions) const
   {
-
     thres_search.pass_mem = false;
     const size_t max_attempts = 20;
     size_t counter = 0;
@@ -353,12 +337,6 @@ public:
     T ratio = static_cast<T>(device_mem_required_for_full_split(num_regions)) /
               static_cast<T>(free_device_mem(num_regions, ndim));
 
-    printf("Ratio:%f estimate_convergence:%i mem_neededed:%lu estimated "
-           "free_mem:%lu\n",
-           ratio,
-           estimate_converged(),
-           device_mem_required_for_full_split(num_regions),
-           free_device_mem(num_regions, ndim));
     if (ratio > 1.) {
       return true;
     } else if (ratio > .1 && estimate_converged()) {
@@ -369,16 +347,15 @@ public:
   }
 
   Classification_res<T>
-  classify(int* active_flags, // remove this param, it's unused
-           T* errorests,
+  classify(ViewVectorInt active_flags, // remove this param, it's unused
+           ViewVectorDouble errorests,
            const size_t num_regions,
            const T iter_errorest,
            const T iter_finished_errorest,
            const T total_finished_errorest)
   {
-
     Classification_res<T> thres_search =
-      (device_array_min_max<T, use_custom>(errorests, num_regions));
+      (device_array_min_max<T, use_custom>(errorests));
     thres_search.data_allocated = true;
 
     const T min_errorest = thres_search.threshold_range.low;
@@ -394,16 +371,11 @@ public:
 
     int threshold_changed =
       0; // keeps track of where the threshold is being pulled (left or right)
-         // std::cout << "pass_mem:"<< thres_search.pass_mem << std::endl;
-         // std::cout<< "pass_error_budget:"<< thres_search.pass_errorest_budget
-         // << std::endl;
 
     do {
-      // std::cout<<"classifying"<<std::endl;
       if (!thres_search.pass_mem &&
           num_thres_increases <= max_thres_increases) {
-        get_larger_threshold_results(
-          thres_search, active_flags, errorests, num_regions);
+        get_larger_threshold_results(thres_search, errorests, num_regions);
         num_thres_increases++;
       }
 
@@ -411,7 +383,6 @@ public:
         evaluate_error_budget(thres_search,
                               errorests,
                               thres_search.active_flags,
-                              num_regions,
                               target_error,
                               iter_errorest,
                               iter_finished_errorest,
@@ -446,16 +417,11 @@ public:
       }
     } while (!thres_search.pass_mem || !thres_search.pass_errorest_budget);
 
-    if (!thres_search.pass_mem || !thres_search.pass_errorest_budget) {
-      cudaFree(thres_search.active_flags);
-    }
-
     thres_search.max_budget_perc_to_cover = max_percent_error_budget;
     thres_search.max_active_perc = max_active_regions_percentage;
 
     max_active_regions_percentage = .5;
     max_percent_error_budget = .25;
-
     return thres_search;
   }
 };

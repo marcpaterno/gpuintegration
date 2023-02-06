@@ -7,7 +7,7 @@
 #include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
 #include "common/kokkos/util.cuh"
 
-template <typename T, size_t ndim>
+template <typename T, size_t ndim, bool use_custom = false>
 class Sub_regions_filter {
 public:
   using Regions = Sub_regions<T, ndim>;

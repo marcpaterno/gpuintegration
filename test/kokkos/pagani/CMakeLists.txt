@@ -27,3 +27,15 @@ target_compile_options(kokkos_pagani_RegionSplitting PRIVATE "--expt-relaxed-con
 target_link_libraries(kokkos_pagani_RegionSplitting Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_RegionSplitting PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_RegionSplitting kokkos_pagani_RegionSplitting)
+
+add_executable(kokkos_pagani_Easy_Integrals Easy_Integrals.cpp)
+target_compile_options(kokkos_pagani_Easy_Integrals PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_Easy_Integrals Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_Easy_Integrals PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_Easy_Integrals kokkos_pagani_Easy_Integrals)
+
+add_executable(kokkos_pagani_test_heuristic_classifier test_heuristic_classifier.cpp)
+target_compile_options(kokkos_pagani_test_heuristic_classifier PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_test_heuristic_classifier Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_test_heuristic_classifier PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_test_heuristic_classifier kokkos_pagani_test_heuristic_classifier)

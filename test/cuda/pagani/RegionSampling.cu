@@ -18,7 +18,7 @@ using namespace quad;
 
 class PTest {
 public:
-  __device__ __host__ double
+  __host__ __device__ double
   operator()(double x, double y)
   {
     double res = 15.37;
@@ -28,7 +28,7 @@ public:
 
 class NTest {
 public:
-  __device__ __host__ double
+  __host__ __device__ double
   operator()(double x, double y)
   {
     double res = -15.37;
@@ -38,7 +38,7 @@ public:
 
 class ZTest {
 public:
-  __device__ __host__ double
+  __host__ __device__ double
   operator()(double x, double y)
   {
     return 0.;

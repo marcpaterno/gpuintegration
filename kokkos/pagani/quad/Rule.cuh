@@ -267,16 +267,16 @@ public:
     Kokkos::deep_copy(_gpuGenPermGIndex, cpuGenPermGIndex);
     Kokkos::deep_copy(_gpuGenPermVarStart, cpuGenPermVarStart);
 
-    constMem->_gpuG = _gpuG;
-    constMem->_cRuleWt = _cRuleWt;
+    constMem->gpuG = _gpuG;
+    constMem->cRuleWt = _cRuleWt;
 
-    constMem->_cGeneratorCount = _cGeneratorCount;
-    constMem->_GPUScale = _GPUScale;
-    constMem->_GPUNorm = _GPUNorm;
-    constMem->_gpuGenPos = _gpuGenPos;
-    constMem->_gpuGenPermVarCount = _gpuGenPermVarCount;
-    constMem->_gpuGenPermGIndex = _gpuGenPermGIndex;
-    constMem->_gpuGenPermVarStart = _gpuGenPermVarStart;
+    constMem->cGeneratorCount = _cGeneratorCount;
+    constMem->GPUScale = _GPUScale;
+    constMem->GPUNorm = _GPUNorm;
+    constMem->gpuGenPos = _gpuGenPos;
+    constMem->gpuGenPermVarCount = _gpuGenPermVarCount;
+    constMem->gpuGenPermGIndex = _gpuGenPermGIndex;
+    constMem->gpuGenPermVarStart = _gpuGenPermVarStart;
   }
 
   void

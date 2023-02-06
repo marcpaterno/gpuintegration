@@ -1,5 +1,7 @@
-#ifndef CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
-#define CUDACUHRE_QUAD_UTIL_CUDAAPPLY_CUH
+#ifndef KOKKOS_QUAD_UTIL_CUDAAPPLY_CUH
+#define KOKKOS_QUAD_UTIL_CUDAAPPLY_CUH
+
+#include "common/kokkos/cudaMemoryUtil.h"
 
 namespace gpu {
   template <typename T, std::size_t s>

@@ -1,12 +1,12 @@
-#ifndef HYBRID_CUH
-#define HYBRID_CUH
+#ifndef KOKKOS_HYBRID_CUH
+#define KOKKOS_HYBRID_CUH
 
 #include <iostream>
 
-// #include "cuda/pagani/quad/GPUquad/Sub_regions.cuh"
-#include "cuda/pagani/quad/GPUquad/Region_characteristics.cuh"
-#include "cuda/pagani/quad/GPUquad/Region_estimates.cuh"
-#include "cuda/pagani/quad/GPUquad/Phases.cuh"
+#include "common/kokkos/cudaMemoryUtil.h"
+#include "kokkos/pagani/quad/GPUquad/Region_characteristics.cuh"
+#include "kokkos/pagani/quad/GPUquad/Region_estimates.cuh"
+#include "kokkos/pagani/quad/GPUquad/Phases.cuh"
 
 template <typename T, size_t ndim>
 void
@@ -17,30 +17,25 @@ two_level_errorest_and_relerr_classify(
   T epsrel,
   bool relerr_classification = true)
 {
-
   size_t num_regions = current_iter_raw_estimates.size;
-  size_t block_size = 64;
-  size_t numBlocks =
-    num_regions / block_size + ((num_regions % block_size) ? 1 : 0);
   bool forbid_relerr_classification = !relerr_classification;
   if (prev_iter_two_level_estimates.size == 0) {
     return;
   }
 
-  T* new_two_level_errorestimates = quad::cuda_malloc<T>(num_regions);
-  quad::RefineError<T><<<numBlocks, block_size>>>(
-    current_iter_raw_estimates.integral_estimates,
-    current_iter_raw_estimates.error_estimates,
-    prev_iter_two_level_estimates.integral_estimates,
-    prev_iter_two_level_estimates.error_estimates,
-    new_two_level_errorestimates,
-    reg_classifiers.active_regions,
-    num_regions,
-    epsrel,
-    forbid_relerr_classification);
+  ViewVectorDouble new_two_level_errorestimates("two-level-errorests",
+                                                num_regions);
 
-  cudaDeviceSynchronize();
-  cudaFree(current_iter_raw_estimates.error_estimates);
+  quad::RefineError<T>(current_iter_raw_estimates.integral_estimates.data(),
+                       current_iter_raw_estimates.error_estimates.data(),
+                       prev_iter_two_level_estimates.integral_estimates.data(),
+                       prev_iter_two_level_estimates.error_estimates.data(),
+                       new_two_level_errorestimates.data(),
+                       reg_classifiers.active_regions.data(),
+                       num_regions,
+                       epsrel,
+                       forbid_relerr_classification);
+
   current_iter_raw_estimates.error_estimates = new_two_level_errorestimates;
 }
 
@@ -75,8 +70,6 @@ computute_two_level_errorest(
     epsrel,
     forbid_relerr_classification);
 
-  cudaDeviceSynchronize();
-  cudaFree(current_iter_raw_estimates.error_estimates);
   current_iter_raw_estimates.error_estimates = new_two_level_errorestimates;
 }
 #endif

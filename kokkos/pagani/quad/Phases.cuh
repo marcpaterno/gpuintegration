@@ -21,19 +21,19 @@ ActualCompute(ViewVectorDouble generators,
   int threadIdx = team_member.team_rank();
   int blockIdx = team_member.league_rank();
 
-  int posCnt = constMem._gpuGenPermVarStart(feval_index + 1) -
-               constMem._gpuGenPermVarStart(feval_index);
-  int gIndex = constMem._gpuGenPermGIndex(feval_index);
+  int posCnt = constMem.gpuGenPermVarStart(feval_index + 1) -
+               constMem.gpuGenPermVarStart(feval_index);
+  int gIndex = constMem.gpuGenPermGIndex(feval_index);
 
   for (int posIter = 0; posIter < posCnt; ++posIter) {
-    int pos = constMem._gpuGenPos((constMem._gpuGenPermVarStart(feval_index)) +
-                                  posIter);
+    int pos =
+      constMem.gpuGenPos((constMem.gpuGenPermVarStart(feval_index)) + posIter);
     int absPos = abs(pos);
 
     if (pos == absPos) {
-      g[absPos - 1] = constMem._gpuG(gIndex * NDIM + posIter);
+      g[absPos - 1] = constMem.gpuG(gIndex * NDIM + posIter);
     } else {
-      g[absPos - 1] = -constMem._gpuG(gIndex * NDIM + posIter);
+      g[absPos - 1] = -constMem.gpuG(gIndex * NDIM + posIter);
     }
   }
 

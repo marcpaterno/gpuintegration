@@ -15,3 +15,9 @@ target_compile_options(kokkos_pagani_Interpolation2D PRIVATE "--expt-relaxed-con
 target_link_libraries(kokkos_pagani_Interpolation2D Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_Interpolation2D PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_Interpolation2D kokkos_pagani_Interpolation2D)
+
+add_executable(kokkos_pagani_Reduction Reduction.cpp)
+target_compile_options(kokkos_pagani_Reduction PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_Reduction Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_Reduction PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_Reduction kokkos_pagani_Reduction)
