@@ -4,7 +4,7 @@
 
 class SinSum6D {
 public:
- KOKKOS_INLINE_FUNCTION double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y, double z, double k, double l, double m)
   {
     return sin(x + y + z + k + l + m);

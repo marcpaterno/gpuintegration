@@ -4,70 +4,70 @@
 #include <Kokkos_Core.hpp>
 
 class Addition_8D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-       operator()(double x,
-               double y,
-               double z,
-               double k,
-               double m,
-               double n,
-               double p,
-               double q)
-    {
-		return x + y + z + k + m + n + p + q;
-    }
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p,
+             double q)
+  {
+    return x + y + z + k + m + n + p + q;
+  }
 };
 
 class Addition_7D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-       operator()(double x,
-               double y,
-               double z,
-               double k,
-               double m,
-               double n,
-               double p)
-    {
-		return x + y + z + k + m + n + p;
-    }
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p)
+  {
+    return x + y + z + k + m + n + p;
+  }
 };
 
 class Addition_6D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-    operator()(double x, double y, double z, double w, double v, double m)
-    {
-	  return x + y + z + w + v + m;
-    }
-  };
-  
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x, double y, double z, double w, double v, double m)
+  {
+    return x + y + z + w + v + m;
+  }
+};
+
 class Addition_5D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-    operator()(double x, double y, double z, double w, double v)
-    {
-	  return x + y + z + w + v;
-    }
-  };
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x, double y, double z, double w, double v)
+  {
+    return x + y + z + w + v;
+  }
+};
 
 class Addition_4D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-    operator()(double x, double y, double z, double w)
-    {
-	  return x + y + z + w;
-    }
-  };
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x, double y, double z, double w)
+  {
+    return x + y + z + w;
+  }
+};
 
 class Addition_3D {
-  public:
-    KOKKOS_INLINE_FUNCTION double
-    operator()(double x, double y, double z)
-    {
-		return x + y + z;
-    }
+public:
+  KOKKOS_INLINE_FUNCTION double
+  operator()(double x, double y, double z)
+  {
+    return x + y + z;
+  }
 };
 
 class SinSum_3D {
@@ -109,7 +109,13 @@ public:
 class SinSum_7D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x, double y, double z, double k, double l, double m, double n)
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n)
   {
     return sin(x + y + z + k + l + m + n);
   }
@@ -118,7 +124,14 @@ public:
 class SinSum_8D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x, double y, double z, double k, double l, double m, double n, double p)
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double l,
+             double m,
+             double n,
+             double p)
   {
     return sin(x + y + z + k + l + m + n + p);
   }
@@ -145,15 +158,15 @@ class F_2_8D {
 public:
   __device__ __host__ double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-   
+
     const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
@@ -165,51 +178,51 @@ public:
     const double term_7 = 1. / ((1. / pow(a, 2.)) + pow(t - b, 2.));
     const double term_8 = 1. / ((1. / pow(a, 2.)) + pow(s - b, 2.));
 
-    double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
+    double val =
+      term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
     return val;
   }
 };
 
-class F_3_8D{
+class F_3_8D {
 public:
   __device__ __host__ double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-	return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x +
+                 2. * y + z,
+               -9.);
   }
 };
 
 class F_4_8D {
-  public:
-    __device__ __host__ double
-    operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
-    {
-	  //return x / y / z / w / v / u / t / s;
-	  double beta = .5;
-      return exp(
-        -1.0 * (pow(25., 2.) * pow(x - beta, 2.) + 
-				pow(25., 2.) * pow(y - beta, 2.) +
-                pow(25., 2.) * pow(z - beta, 2.) + 
-				pow(25., 2.) * pow(w - beta, 2.) +
-                pow(25., 2.) * pow(v - beta, 2.) + 
-				pow(25., 2.) * pow(u - beta, 2.) + 
-				pow(25., 2.) * pow(t - beta, 2.) + 
-				pow(25., 2.) * pow(s - beta, 2.)));
-    }
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    // return x / y / z / w / v / u / t / s;
+    double beta = .5;
+    return exp(
+      -1.0 *
+      (pow(25., 2.) * pow(x - beta, 2.) + pow(25., 2.) * pow(y - beta, 2.) +
+       pow(25., 2.) * pow(z - beta, 2.) + pow(25., 2.) * pow(w - beta, 2.) +
+       pow(25., 2.) * pow(v - beta, 2.) + pow(25., 2.) * pow(u - beta, 2.) +
+       pow(25., 2.) * pow(t - beta, 2.) + pow(25., 2.) * pow(s - beta, 2.)));
+  }
 };
 
 class F_5_8D {
@@ -224,9 +237,9 @@ public:
              double p,
              double q)
   {
-	//return x / y / z / k / m / n / p / q;
-  
-	double beta = .5;
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
     double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
                 10. * fabs(z - beta) - 10. * fabs(k - beta) -
                 10. * fabs(m - beta) - 10. * fabs(n - beta) -
@@ -238,25 +251,29 @@ public:
 class F_6_8D {
 public:
   __device__ __host__ double
-  operator()(double u, double v, double w, double x, double y, double z, double p, double t)
+  operator()(double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z,
+             double p,
+             double t)
   {
-	//return u / v / w / x / y / z / p / t;
-	if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4 || p > .3 || t > .2)
+    // return u / v / w / x / y / z / p / t;
+    if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4 || p > .3 ||
+        t > .2)
       return 0.;
     else
-      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u + 4. *p + 3. * t);
+      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u + 4. * p +
+                 3. * t);
   }
 };
 
 class F_1_6D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double s,
-             double t,
-             double u,
-             double v,
-             double w,
-             double x)
+  operator()(double s, double t, double u, double v, double w, double x)
   {
     return cos(s + 2. * t + 3. * u + 4. * v + 5. * w + 6. * x);
   }
@@ -265,16 +282,11 @@ public:
 class F_2_6D {
 public:
   __device__ __host__ double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u)
+  operator()(double x, double y, double z, double w, double v, double u)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	const double a = 50.;
+    // return x / y / z / w / v / u / t / s;
+
+    const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
     const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
@@ -288,57 +300,40 @@ public:
   }
 };
 
-class F_3_6D{
+class F_3_6D {
 public:
   __device__ __host__ double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u)
+  operator()(double x, double y, double z, double w, double v, double u)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	return pow(1. + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    // return x / y / z / w / v / u / t / s;
+
+    return pow(1. + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
   }
 };
 
 class F_4_6D {
-  public:
-    __device__ __host__ double
-    operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u)
-    {
-	  //return x / y / z / w / v / u / t / s;
-	  double beta = .5;
-      return exp(
-        -1.0 * (pow(25., 2.) * pow(x - beta, 2.) + 
-				pow(25., 2.) * pow(y - beta, 2.) +
-                pow(25., 2.) * pow(z - beta, 2.) + 
-				pow(25., 2.) * pow(w - beta, 2.) +
-                pow(25., 2.) * pow(v - beta, 2.) + 
-				pow(25., 2.) * pow(u - beta, 2.)));
-    }
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double u)
+  {
+    // return x / y / z / w / v / u / t / s;
+    double beta = .5;
+    return exp(
+      -1.0 *
+      (pow(25., 2.) * pow(x - beta, 2.) + pow(25., 2.) * pow(y - beta, 2.) +
+       pow(25., 2.) * pow(z - beta, 2.) + pow(25., 2.) * pow(w - beta, 2.) +
+       pow(25., 2.) * pow(v - beta, 2.) + pow(25., 2.) * pow(u - beta, 2.)));
+  }
 };
 
 class F_5_6D {
 public:
   __device__ __host__ double
-  operator()(double x,
-             double y,
-             double z,
-             double k,
-             double m,
-             double n)
+  operator()(double x, double y, double z, double k, double m, double n)
   {
-	//return x / y / z / k / m / n / p / q;
-  
-	double beta = .5;
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
     double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
                 10. * fabs(z - beta) - 10. * fabs(k - beta) -
                 10. * fabs(m - beta) - 10. * fabs(n - beta);
@@ -351,8 +346,8 @@ public:
   __device__ __host__ double
   operator()(double u, double v, double w, double x, double y, double z)
   {
-	//return u / v / w / x / y / z / p / t;
-	if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
+    // return u / v / w / x / y / z / p / t;
+    if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
       return 0.;
     else
       return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u);
@@ -378,16 +373,16 @@ class F_2_7D {
 public:
   __device__ __host__ double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	const double a = 50.;
+    // return x / y / z / w / v / u / t / s;
+
+    const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
     const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
@@ -395,52 +390,51 @@ public:
     const double term_4 = 1. / ((1. / pow(a, 2.)) + pow(w - b, 2.));
     const double term_5 = 1. / ((1. / pow(a, 2.)) + pow(v - b, 2.));
     const double term_6 = 1. / ((1. / pow(a, 2.)) + pow(u - b, 2.));
-	const double term_7 = 1. / ((1. / pow(a, 2.)) + pow(t - b, 2.));
+    const double term_7 = 1. / ((1. / pow(a, 2.)) + pow(t - b, 2.));
 
     double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7;
     return val;
   }
 };
 
-class F_3_7D{
+class F_3_7D {
 public:
   __device__ __host__ double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	return pow(1. + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    // return x / y / z / w / v / u / t / s;
+
+    return pow(1. + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z,
+               -9.);
   }
 };
 
 class F_4_7D {
-  public:
-    __device__ __host__ double
-    operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t)
-    {
-	  //return x / y / z / w / v / u / t / s;
-	  double beta = .5;
-      return exp(
-        -1.0 * (pow(25., 2.) * pow(x - beta, 2.) + 
-				pow(25., 2.) * pow(y - beta, 2.) +
-                pow(25., 2.) * pow(z - beta, 2.) + 
-				pow(25., 2.) * pow(w - beta, 2.) +
-                pow(25., 2.) * pow(v - beta, 2.) + 
-				pow(25., 2.) * pow(u - beta, 2.) + 
-				pow(25., 2.) * pow(t - beta, 2.)));
-    }
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
+  {
+    // return x / y / z / w / v / u / t / s;
+    double beta = .5;
+    return exp(
+      -1.0 *
+      (pow(25., 2.) * pow(x - beta, 2.) + pow(25., 2.) * pow(y - beta, 2.) +
+       pow(25., 2.) * pow(z - beta, 2.) + pow(25., 2.) * pow(w - beta, 2.) +
+       pow(25., 2.) * pow(v - beta, 2.) + pow(25., 2.) * pow(u - beta, 2.) +
+       pow(25., 2.) * pow(t - beta, 2.)));
+  }
 };
 
 class F_5_7D {
@@ -454,9 +448,9 @@ public:
              double n,
              double p)
   {
-	//return x / y / z / k / m / n / p / q;
-  
-	double beta = .5;
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
     double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
                 10. * fabs(z - beta) - 10. * fabs(k - beta) -
                 10. * fabs(m - beta) - 10. * fabs(n - beta) -
@@ -468,24 +462,26 @@ public:
 class F_6_7D {
 public:
   __device__ __host__ double
-  operator()(double u, double v, double w, double x, double y, double z, double p)
+  operator()(double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z,
+             double p)
   {
-	//return u / v / w / x / y / z / p / t;
-	if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4 || p > .3)
+    // return u / v / w / x / y / z / p / t;
+    if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4 || p > .3)
       return 0.;
     else
-      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u + 4. *p);
+      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u + 4. * p);
   }
 };
 
 class F_1_5D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double s,
-             double t,
-             double u,
-             double v,
-             double w)
+  operator()(double s, double t, double u, double v, double w)
   {
     return cos(s + 2. * t + 3. * u + 4. * v + 5. * w);
   }
@@ -494,15 +490,11 @@ public:
 class F_2_5D {
 public:
   __device__ __host__ double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v)
+  operator()(double x, double y, double z, double w, double v)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	const double a = 50.;
+    // return x / y / z / w / v / u / t / s;
+
+    const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
     const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
@@ -515,53 +507,40 @@ public:
   }
 };
 
-class F_3_5D{
+class F_3_5D {
 public:
   __device__ __host__ double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v)
+  operator()(double x, double y, double z, double w, double v)
   {
-	//return x / y / z / w / v / u / t / s;
-  
-	return pow(1. + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    // return x / y / z / w / v / u / t / s;
+
+    return pow(1. + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
   }
 };
 
 class F_4_5D {
-  public:
-    __device__ __host__ double
-    operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v)
-    {
-	  //return x / y / z / w / v / u / t / s;
-	  double beta = .5;
-      return exp(
-        -1.0 * (pow(25., 2.) * pow(x - beta, 2.) + 
-				pow(25., 2.) * pow(y - beta, 2.) +
-                pow(25., 2.) * pow(z - beta, 2.) + 
-				pow(25., 2.) * pow(w - beta, 2.) +
-                pow(25., 2.) * pow(v - beta, 2.)));
-    }
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v)
+  {
+    // return x / y / z / w / v / u / t / s;
+    double beta = .5;
+    return exp(
+      -1.0 *
+      (pow(25., 2.) * pow(x - beta, 2.) + pow(25., 2.) * pow(y - beta, 2.) +
+       pow(25., 2.) * pow(z - beta, 2.) + pow(25., 2.) * pow(w - beta, 2.) +
+       pow(25., 2.) * pow(v - beta, 2.)));
+  }
 };
 
 class F_5_5D {
 public:
   __device__ __host__ double
-  operator()(double x,
-             double y,
-             double z,
-             double k,
-             double m)
+  operator()(double x, double y, double z, double k, double m)
   {
-	//return x / y / z / k / m / n / p / q;
-  
-	double beta = .5;
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
     double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
                 10. * fabs(z - beta) - 10. * fabs(k - beta) -
                 10. * fabs(m - beta);
@@ -574,8 +553,8 @@ public:
   __device__ __host__ double
   operator()(double u, double v, double w, double x, double y)
   {
-	//return u / v / w / x / y / z / p / t;
-	if (y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
+    // return u / v / w / x / y / z / p / t;
+    if (y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
       return 0.;
     else
       return exp(9. * y + 8. * x + 7. * w + 6. * v + 5. * u);

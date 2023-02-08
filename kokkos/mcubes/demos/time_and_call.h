@@ -70,7 +70,9 @@ PrintHeader()
                "time, status\n";
 }
 
-template <typename F, int ndim, typename GeneratorType = kokkos_mcubes::Curand_generator>
+template <typename F,
+          int ndim,
+          typename GeneratorType = kokkos_mcubes::Curand_generator>
 bool
 mcubes_time_and_call(F integrand,
                      double epsrel,
@@ -88,14 +90,15 @@ mcubes_time_and_call(F integrand,
 
   do {
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = kokkos_mcubes::integrate<F, ndim, GeneratorType>(integrand,
-                                                 epsrel,
-                                                 epsabs,
-                                                 params.ncall,
-                                                 volume,
-                                                 params.t_iter,
-                                                 params.num_adjust_iters,
-                                                 params.num_skip_iters);
+    auto res =
+      kokkos_mcubes::integrate<F, ndim, GeneratorType>(integrand,
+                                                       epsrel,
+                                                       epsabs,
+                                                       params.ncall,
+                                                       volume,
+                                                       params.t_iter,
+                                                       params.num_adjust_iters,
+                                                       params.num_skip_iters);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
@@ -122,7 +125,6 @@ mcubes_time_and_call(F integrand,
   return success;
 }
 
-
 template <typename F, int ndim>
 bool
 signle_invocation_time_and_call(F integrand,
@@ -141,28 +143,29 @@ signle_invocation_time_and_call(F integrand,
       std::chrono::duration<double, std::chrono::milliseconds::period>;
     // We make epsabs so small that epsrel is always the stopping condition.
     double constexpr epsabs = 1.0e-20;
-	std::cout<<"about to call integrate"<<std::endl;
+    std::cout << "about to call integrate" << std::endl;
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = kokkos_mcubes::integrate<F, ndim, kokkos_mcubes::Custom_generator>(
-      integrand,
-      epsrel,
-      epsabs,
-      params.ncall,
-      volume,
-      params.t_iter,
-      params.num_adjust_iters,
-      params.num_skip_iters);
+    auto res =
+      kokkos_mcubes::integrate<F, ndim, kokkos_mcubes::Custom_generator>(
+        integrand,
+        epsrel,
+        epsabs,
+        params.ncall,
+        volume,
+        params.t_iter,
+        params.num_adjust_iters,
+        params.num_skip_iters);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
-    
+
     std::cout << integralName << "," << epsrel << "," << std::scientific
-                << correct_answer << "," << std::scientific << res.estimate
-                << "," << std::scientific << res.errorest << "," << res.chi_sq
-                << "," << params.t_iter << "," << params.num_adjust_iters << ","
-                << params.num_skip_iters << "," << res.iters << ","
-                << params.ncall << "," << res.neval << "," << dt.count() << ","
-                << res.status << "\n";
+              << correct_answer << "," << std::scientific << res.estimate << ","
+              << std::scientific << res.errorest << "," << res.chi_sq << ","
+              << params.t_iter << "," << params.num_adjust_iters << ","
+              << params.num_skip_iters << "," << res.iters << ","
+              << params.ncall << "," << res.neval << "," << dt.count() << ","
+              << res.status << "\n";
   }
 
   return success;
@@ -183,7 +186,7 @@ call_mcubes_kernel(int num_repeats)
   size_t run = 0;
   double epsrel = 1.e-3;
   double true_value = 0.;
-  
+
   for (auto num_samples : required_ncall) {
     params.ncall = num_samples;
 

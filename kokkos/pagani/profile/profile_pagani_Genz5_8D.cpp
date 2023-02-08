@@ -14,7 +14,7 @@ public:
              double p,
              double q)
   {
-	double beta = .5;
+    double beta = .5;
     double t1 = -10. * fabs(x - beta) - 10. * fabs(y - beta) -
                 10. * fabs(z - beta) - 10. * fabs(k - beta) -
                 10. * fabs(m - beta) - 10. * fabs(n - beta) -
@@ -26,7 +26,7 @@ public:
 int
 main(int argc, char** argv)
 {
-  Kokkos::initialize();	
+  Kokkos::initialize();
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
   constexpr int ndim = 8;
   F_5_8D integrand;

@@ -39,7 +39,7 @@ struct Sub_regions {
     Kokkos::parallel_for(
       "GenerateInitialRegions",
       Kokkos::RangePolicy<>(0, num_starting_regions),
-      [=, *this] __host__ __device__ (const int reg) {
+      [=, *this] __host__ __device__(const int reg) {
         for (int dim = 0; dim < (int)ndim; ++dim) {
           size_t _id =
             (int)(reg / pow((double)numOfDivisionPerRegionPerDimension, dim)) %

@@ -6,15 +6,17 @@ class Pow_of_sum {
 public:
   __device__ __host__ double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-    return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, 9.);
+    return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x +
+                 2. * y + z,
+               9.);
   }
 };
 

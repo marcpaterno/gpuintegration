@@ -28,16 +28,15 @@ main()
   Kokkos::initialize();
   {
     BoxIntegral8_15 integrand;
-	constexpr bool use_custom = true;
-	constexpr int debug = 0;
+    constexpr bool use_custom = true;
+    constexpr int debug = 0;
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
     double true_value = 8879.851175413485;
     const int ndim = 8;
-	 while (time_and_call<BoxIntegral8_15, ndim, use_custom, debug>(
-             "f1", integrand, epsrel, true_value) ==
-             true &&
+    while (time_and_call<BoxIntegral8_15, ndim, use_custom, debug>(
+             "f1", integrand, epsrel, true_value) == true &&
            epsrel >= epsrel_min) {
       epsrel /= 5.0;
     }

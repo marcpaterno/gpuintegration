@@ -318,7 +318,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
           false :
           true;
     }
-	
+
     two_level_errorest_and_relerr_classify<T, ndim>(estimates,
                                                     prev_iter_estimates,
                                                     characteristics,

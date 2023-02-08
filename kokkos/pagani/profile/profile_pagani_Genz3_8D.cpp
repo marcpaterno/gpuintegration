@@ -6,16 +6,18 @@ class F_3_8D {
 public:
   KOKKOS_INLINE_FUNCTION double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-	//return x + y + z + w + v + u + t + s;
-	return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    // return x + y + z + w + v + u + t + s;
+    return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x +
+                 2. * y + z,
+               -9.);
   }
 };
 

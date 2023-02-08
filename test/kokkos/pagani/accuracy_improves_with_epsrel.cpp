@@ -12,8 +12,6 @@ struct Fun6 {
   }
 };
 
-
-
 TEST_CASE("Accuracy Improves on Smaller Relative Error Tolerances")
 {
   // We start with a very large error tolerance, and will
@@ -32,7 +30,9 @@ TEST_CASE("Accuracy Improves on Smaller Relative Error Tolerances")
   double previous_error_estimate = 1.0; // larger than ever should be returned
   Fun6 integrand;
   while (epsrel > 1.0e-6) {
-    auto const res = alg.integrate<Fun6, collect_iters, predict_split, debug_level>(integrand, epsrel, epsabs, vol);
+    auto const res =
+      alg.integrate<Fun6, collect_iters, predict_split, debug_level>(
+        integrand, epsrel, epsabs, vol);
 
     CHECK(res.status == 0);
 

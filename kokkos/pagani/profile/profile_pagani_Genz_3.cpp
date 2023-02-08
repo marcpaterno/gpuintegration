@@ -2,122 +2,110 @@
 #include <Kokkos_Core.hpp>
 #include "kokkos/pagani/demos/demo_utils.cuh"
 
-template<bool Regular>
+template <bool Regular>
 class F_3_2D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x,
-               double y)
+  operator()(double x, double y)
   {
-	if constexpr(Regular == true)  
-		return pow(1. + x + 2. * y, -3.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + x + 2. * y, -3.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_3D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x,
-               double y,
-               double z)
+  operator()(double x, double y, double z)
   {
-	if constexpr(Regular == true)  
-		return pow(1. + 3. * x + 2. * y + z, -4.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 3. * x + 2. * y + z, -4.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_4D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x,
-               double y,
-               double z,
-               double w)
+  operator()(double x, double y, double z, double w)
   {
-	if constexpr(Regular == true)    
-		return pow(1. + 4. * w + 3. * x + 2. * y + z, -5.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 4. * w + 3. * x + 2. * y + z, -5.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_5D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v)
+  operator()(double x, double y, double z, double w, double v)
   {
-	if constexpr(Regular == true)    
-		return pow(1. + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_6D {
 public:
   KOKKOS_INLINE_FUNCTION double
-  operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u)
+  operator()(double x, double y, double z, double w, double v, double u)
   {
-	if constexpr(Regular == true)    
-		return pow(1. + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -7.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -7.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_7D {
 public:
   KOKKOS_INLINE_FUNCTION double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
   {
-	if constexpr(Regular == true)    
-		return pow(1. + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -8.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z,
+                 -8.);
+    else
+      return 1.;
   }
 };
 
-template<bool Regular>
+template <bool Regular>
 class F_3_8D {
 public:
   KOKKOS_INLINE_FUNCTION double
   operator()(double x,
-               double y,
-               double z,
-               double w,
-               double v,
-               double u,
-               double t,
-               double s)
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
   {
-	if constexpr(Regular == true)    
-		return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x + 2. * y + z, -9.);
-	else
-		return 1.;
+    if constexpr (Regular == true)
+      return pow(1. + 8. * s + 7. * t + 6. * u + 5. * v + 4. * w + 3. * x +
+                   2. * y + z,
+                 -9.);
+    else
+      return 1.;
   }
 };
 

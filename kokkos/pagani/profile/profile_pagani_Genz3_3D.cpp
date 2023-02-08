@@ -7,11 +7,10 @@ public:
   KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y, double z)
   {
-  return 0.1;
+    return 0.1;
     return pow(1 + 3 * x + 2 * y + z, -4);
   }
 };
-
 
 int
 main(int argc, char** argv)

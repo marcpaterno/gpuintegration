@@ -14,35 +14,36 @@ template <typename T>
 T
 custom_reduce(Kokkos::View<T*, Kokkos::CudaSpace> arr, size_t size)
 {
-    T res = 0.;
-    Kokkos::parallel_reduce(
-      "Estimate computation",
-      size,
-      KOKKOS_LAMBDA(const int64_t index, T& valueToUpdate) {
-        valueToUpdate += arr(index);
-      },
-      res);
+  T res = 0.;
+  Kokkos::parallel_reduce(
+    "Estimate computation",
+    size,
+    KOKKOS_LAMBDA(const int64_t index, T& valueToUpdate) {
+      valueToUpdate += arr(index);
+    },
+    res);
 
   return res;
 }
 
 template <typename T1, typename T2>
 T2
-custom_inner_product(Kokkos::View<T1*, Kokkos::CudaSpace> arr1, Kokkos::View<T2*, Kokkos::CudaSpace> arr2)
+custom_inner_product(Kokkos::View<T1*, Kokkos::CudaSpace> arr1,
+                     Kokkos::View<T2*, Kokkos::CudaSpace> arr2)
 {
-	size_t size = std::min(arr1.extent(0), arr2.extent(0));
-	T2 res;
-    Kokkos::parallel_reduce(
-      "ProParRed1",
-      size,
-      KOKKOS_LAMBDA(const int64_t index, T2& valueToUpdate) {
-        valueToUpdate += static_cast<T2>(arr1(index)) * arr2(index);
-      },
-      res);
+  size_t size = std::min(arr1.extent(0), arr2.extent(0));
+  T2 res;
+  Kokkos::parallel_reduce(
+    "ProParRed1",
+    size,
+    KOKKOS_LAMBDA(const int64_t index, T2& valueToUpdate) {
+      valueToUpdate += static_cast<T2>(arr1(index)) * arr2(index);
+    },
+    res);
   return res;
 }
 
-template<typename T>
+template <typename T>
 double
 ComputeMax(Kokkos::View<T*, Kokkos::CudaSpace> list)
 {
@@ -57,7 +58,7 @@ ComputeMax(Kokkos::View<T*, Kokkos::CudaSpace> list)
   return max;
 }
 
-template<typename T>
+template <typename T>
 T
 ComputeMin(Kokkos::View<T*, Kokkos::CudaSpace> list)
 {

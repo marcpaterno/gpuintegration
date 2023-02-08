@@ -4,13 +4,15 @@
 #include <array>
 #include "common/kokkos/integrands.cuh"
 
-int main(int argc, char** argv){
+int
+main(int argc, char** argv)
+{
   Kokkos::initialize();
   size_t num_invocations = argc > 1 ? std::stoi(argv[1]) : 100000;
-  std::array<double, 8> point_8D = {0.1, 0.2, 0.3, 0.4 , 0.5, 0.6, 0.7, 0.8};
-  std::array<double, 7> point_7D = {0.1, 0.2, 0.3, 0.4 , 0.5, 0.6, 0.7};
-  std::array<double, 6> point_6D = {0.1, 0.2, 0.3, 0.4 , 0.5, 0.6};
-  std::array<double, 5> point_5D = {0.1, 0.2, 0.3, 0.4 , 0.5};
+  std::array<double, 8> point_8D = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+  std::array<double, 7> point_7D = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
+  std::array<double, 6> point_6D = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+  std::array<double, 5> point_5D = {0.1, 0.2, 0.3, 0.4, 0.5};
   std::array<double, 4> point_4D = {0.1, 0.2, 0.3, 0.4};
   std::array<double, 3> point_3D = {0.1, 0.2, 0.3};
 

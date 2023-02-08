@@ -7,11 +7,11 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z, double k, double l, double m)
   {
-	
-	double sum = 0.;
-	for(int i=0; i < 1000; ++i)
-		sum += (x*y*z*k*l*m)/(x/y/z/k/l/m);
-	return sum;
+
+    double sum = 0.;
+    for (int i = 0; i < 1000; ++i)
+      sum += (x * y * z * k * l * m) / (x / y / z / k / l / m);
+    return sum;
   }
 };
 

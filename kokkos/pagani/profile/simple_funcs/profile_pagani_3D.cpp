@@ -7,18 +7,17 @@ public:
   __device__ __host__ double
   operator()(double x, double y, double z)
   {
-	double sum = 0.;
-	for(int i=0; i < 1000; ++i)
-		sum += (x*y*z)/(x/y/z);
-	return sum;
+    double sum = 0.;
+    for (int i = 0; i < 1000; ++i)
+      sum += (x * y * z) / (x / y / z);
+    return sum;
   }
 };
-
 
 int
 main(int argc, char** argv)
 {
-  Kokkos::initialize();	
+  Kokkos::initialize();
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
   constexpr int ndim = 3;
   Simple_3_3D integrand;

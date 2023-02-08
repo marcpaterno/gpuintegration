@@ -20,8 +20,8 @@ main()
   Kokkos::initialize();
   {
     GENZ_5_5D integrand;
-	constexpr bool use_custom = true;
-	constexpr int debug = 0;
+    constexpr bool use_custom = true;
+    constexpr int debug = 0;
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;

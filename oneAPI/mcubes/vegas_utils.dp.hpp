@@ -87,10 +87,11 @@ public:
   {
     return ndmx;
   }
-  
+
   static constexpr double
-  get_TINY(){
-	return tiny;
+  get_TINY()
+  {
+    return tiny;
   }
 
   static constexpr int

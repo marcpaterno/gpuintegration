@@ -6,7 +6,7 @@
 
 class GENZ_4_8D {
 public:
- KOKKOS_INLINE_FUNCTION double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x,
              double y,
              double z,
@@ -32,8 +32,8 @@ main()
   Kokkos::initialize();
   {
     GENZ_4_8D integrand;
-	constexpr bool use_custom = true;
-	constexpr int debug = 0;
+    constexpr bool use_custom = true;
+    constexpr int debug = 0;
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;

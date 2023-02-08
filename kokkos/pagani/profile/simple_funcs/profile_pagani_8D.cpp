@@ -14,17 +14,17 @@ public:
              double p,
              double q)
   {
-	  double sum = 0.;
-	for(int i=0; i < 1000; ++i)
-		sum += (x*y*z*k*m*n*p*q)/(x/y/z/k/m/n/p/q);
-	return sum;
+    double sum = 0.;
+    for (int i = 0; i < 1000; ++i)
+      sum += (x * y * z * k * m * n * p * q) / (x / y / z / k / m / n / p / q);
+    return sum;
   }
 };
 
 int
 main(int argc, char** argv)
 {
-  Kokkos::initialize();	
+  Kokkos::initialize();
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 11;
   constexpr int ndim = 8;
   Simple_5_8D integrand;

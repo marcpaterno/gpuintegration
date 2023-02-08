@@ -34,7 +34,7 @@ main(int argc, char** argv)
   call_mcubes_kernel<SinSum_5D, 5>(num_repeats);
   call_mcubes_kernel<SinSum_4D, 4>(num_repeats);
   call_mcubes_kernel<SinSum_3D, 3>(num_repeats);
-  
+
   call_mcubes_kernel<Addition_8D, 8>(num_repeats);
   call_mcubes_kernel<Addition_7D, 7>(num_repeats);
   call_mcubes_kernel<Addition_6D, 6>(num_repeats);

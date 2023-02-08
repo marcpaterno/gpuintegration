@@ -75,12 +75,11 @@ call_cubature_rules(F integrand,
 
 template <typename F, int ndim>
 void
-call_cubature_rules(int num_repeats = 11)
+call_cubature_rules(int num_repeats = 11, std::string integrand_name("placeholder"))
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   // cudaDeviceReset();
-  std::cout << "num-repeats:" << num_repeats << std::endl;
   for (int i = 0; i < num_repeats; ++i) {
     for (int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15;
          splits_per_dim++) {
@@ -95,7 +94,6 @@ call_cubature_rules(int num_repeats = 11)
       Region_characteristics<ndim> characteristics(sub_regions.size);
       Region_estimates<double, ndim> estimates(sub_regions.size);
       Cubature_rules<double, ndim> rules;
-      std::cout << "Initial regions:" << sub_regions.size << std::endl;
       rules.set_device_volume(vol.lows, vol.highs);
       int iteration = 0;
       bool compute_relerr_error_reduction = false;

@@ -26,9 +26,9 @@ main()
   Kokkos::initialize();
   {
     GENZ_1_8D integrand;
-	constexpr bool use_custom = true;
-	constexpr int debug = 0;
-	
+    constexpr bool use_custom = true;
+    constexpr int debug = 0;
+
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
@@ -37,8 +37,7 @@ main()
                         (sin(37. / 2.) - sin(35. / 2.));
     const int ndim = 8;
     while (time_and_call<GENZ_1_8D, ndim, use_custom, debug>(
-             "f1", integrand, epsrel, true_value) ==
-             true &&
+             "f1", integrand, epsrel, true_value) == true &&
            epsrel >= epsrel_min) {
       epsrel /= 5.0;
     }

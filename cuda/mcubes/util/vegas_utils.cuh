@@ -145,13 +145,13 @@ public:
   {
     return ndmx;
   }
-  
-  __host__ __device__
-  static constexpr double
-	get_TINY(){
-	return tiny;
-	}
-	
+
+  __host__ __device__ static constexpr double
+  get_TINY()
+  {
+    return tiny;
+  }
+
   __host__ __device__ static constexpr int
   get_NDMX_p1()
   {

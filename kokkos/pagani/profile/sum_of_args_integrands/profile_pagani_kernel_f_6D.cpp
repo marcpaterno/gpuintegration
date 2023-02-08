@@ -6,7 +6,7 @@
 int
 main(int argc, char** argv)
 {
-  Kokkos::initialize();	
+  Kokkos::initialize();
   int num_repeats = argc > 1 ? std::stoi(argv[1]) : 100;
   constexpr int ndim = 6;
   Addition_6D integrand;

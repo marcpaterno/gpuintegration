@@ -13,7 +13,7 @@ main(int argc, char** argv)
   F_4_5D integrand;
   quad::Volume<double, ndim> vol;
   call_cubature_rules<F_4_5D, ndim, use_custom>(integrand, vol, num_repeats);
-  std::cout<<"done\n";
+  std::cout << "done\n";
   Kokkos::finalize();
   return 0;
 }
