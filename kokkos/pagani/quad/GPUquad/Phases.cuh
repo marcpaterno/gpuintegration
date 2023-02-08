@@ -350,8 +350,6 @@ namespace quad {
     T* dRegionsIntegral,
     T* dRegionsError,
     int* subDividingDimension,
-    T epsrel,
-    T epsabs,
     Structures<T> constMem, // switch to const ptr:  Structures<double> const *
                             // const constMem,
     T* lows,
@@ -389,10 +387,10 @@ namespace quad {
       ScratchViewDouble::shmem_size(BLOCK_SIZE);  // for sdata
 
     Kokkos::parallel_for(
-      "Phase1",
+      "INTEGRATE_GPU_PHASE1",
       mainKernelPolicy.set_scratch_size(0, Kokkos::PerTeam(shMemBytes)),
       KOKKOS_LAMBDA(const member_type team_member) {
-        // Kokkos::parallel_for( "Phase1", team_policy(nBlocks,
+        // Kokkos::parallel_for( "INTEGRATE_GPU_PHASE1", team_policy(nBlocks,
         // nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)),
         // KOKKOS_LAMBDA (const member_type team_member) {
 

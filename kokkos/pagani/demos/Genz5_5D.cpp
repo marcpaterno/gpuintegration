@@ -1,11 +1,9 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
-#include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/demos/demo_utils.cuh"
 #include "kokkos/pagani/quad/func.cuh"
 
 class GENZ_5_5D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x, double y, double z, double k, double m)
   {
     double beta = .5;
@@ -22,14 +20,15 @@ main()
   Kokkos::initialize();
   {
     GENZ_5_5D integrand;
-
+	constexpr bool use_custom = true;
+	constexpr int debug = 0;
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
     double true_value = 0.0003093636;
     const int ndim = 5;
-    while (time_and_call<GENZ_5_5D, ndim>(
-             "5D f5", integrand, epsrel, true_value, std::cout) == true &&
+    while (time_and_call<GENZ_5_5D, ndim, use_custom, debug>(
+             "5D f5", integrand, epsrel, true_value) == true &&
            epsrel >= epsrel_min) {
       epsrel /= 5.0;
     }

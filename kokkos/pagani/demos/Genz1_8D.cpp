@@ -1,14 +1,11 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
-#include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/demos/demo_utils.cuh"
-#include "kokkos/pagani/quad/func.cuh"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 class GENZ_1_8D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double s,
              double t,
              double u,
@@ -29,7 +26,9 @@ main()
   Kokkos::initialize();
   {
     GENZ_1_8D integrand;
-    int heuristicID = 1;
+	constexpr bool use_custom = true;
+	constexpr int debug = 0;
+	
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
@@ -37,8 +36,8 @@ main()
                         sin(5. / 2.) * sin(3.) * sin(7. / 2.) * sin(4.) *
                         (sin(37. / 2.) - sin(35. / 2.));
     const int ndim = 8;
-    while (time_and_call<GENZ_1_8D, ndim>(
-             "8D f1", integrand, epsrel, true_value, std::cout, heuristicID) ==
+    while (time_and_call<GENZ_1_8D, ndim, use_custom, debug>(
+             "f1", integrand, epsrel, true_value) ==
              true &&
            epsrel >= epsrel_min) {
       epsrel /= 5.0;

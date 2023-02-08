@@ -50,7 +50,7 @@ call_cubature_rules(F integrand,
       Region_characteristics<ndim> characteristics(sub_regions.size);
       Region_estimates<double, ndim> estimates(sub_regions.size);
       Cubature_rules<double, ndim> rules;
-      std::cout << "Initial regions:" << sub_regions.size << std::endl;
+
       rules.set_device_volume(vol.lows, vol.highs);
       int iteration = 0;
       bool compute_relerr_error_reduction = false;

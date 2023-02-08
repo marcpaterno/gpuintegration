@@ -1,11 +1,9 @@
-#include "kokkos/pagani/quad/Cuhre.cuh"
-#include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/demos/demo_utils.cuh"
 #include "kokkos/pagani/quad/func.cuh"
 
 class GENZ_6_2D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double y, double z)
   {
     if (z > .9 || y > .8)
@@ -21,14 +19,15 @@ main()
   Kokkos::initialize();
   {
     GENZ_6_2D integrand;
-
+	constexpr bool use_custom = true;
+	constexpr int debug = 0;
     double epsrel = 1.0e-3;
     // double epsabs = 1.0e-12;
     double epsrel_min = 1.0e-10;
     double true_value = 1495369.283757217694;
     const int ndim = 2;
-    while (time_and_call<GENZ_6_2D, ndim>(
-             "GENZ_6_2D", integrand, epsrel, true_value, std::cout) == true &&
+    while (time_and_call<GENZ_6_2D, ndim, use_custom, debug>(
+             "GENZ_6_2D", integrand, epsrel, true_value) == true &&
            epsrel >= epsrel_min) {
       epsrel /= 5.0;
     }

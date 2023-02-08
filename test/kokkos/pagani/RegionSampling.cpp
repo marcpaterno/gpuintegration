@@ -37,7 +37,6 @@ TEST_CASE("Constant Positive Value Function")
 {
   constexpr int ndim = 2;
   constexpr bool use_custom = true;
-  int iteration = 0;
   bool compute_relerr_error_reduction = false;
 
   PTest integrand;
@@ -55,7 +54,6 @@ TEST_CASE("Constant Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<PTest>(
       d_integrand,
-      iteration,
       sub_regions,
       estimates,
       characteristics,
@@ -78,7 +76,6 @@ TEST_CASE("Negative Positive Value Function")
 {
   constexpr bool use_custom = true;
   constexpr int ndim = 2;
-  int iteration = 0;
   bool compute_relerr_error_reduction = false;
 
   NTest integrand;
@@ -96,7 +93,6 @@ TEST_CASE("Negative Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<NTest>(
       d_integrand,
-      iteration,
       sub_regions,
       estimates,
       characteristics,
@@ -122,7 +118,6 @@ TEST_CASE("Zero Positive Value Function")
   constexpr bool use_custom = true;
 
   constexpr int ndim = 2;
-  int iteration = 0;
   bool compute_relerr_error_reduction = false;
 
   ZTest integrand;
@@ -140,7 +135,6 @@ TEST_CASE("Zero Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<ZTest>(
       d_integrand,
-      iteration,
       sub_regions,
       estimates,
       characteristics,

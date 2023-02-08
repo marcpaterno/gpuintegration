@@ -213,7 +213,6 @@ public:
   numint::integration_result
   apply_cubature_integration_rules(
     IntegT* d_integrand,
-    int it,
     const Sub_regs& subregions,
     const Reg_estimates& subregion_estimates,
     const Regs_characteristics& region_characteristics,
@@ -242,8 +241,6 @@ public:
       subregion_estimates.integral_estimates.data(),
       subregion_estimates.error_estimates.data(),
       region_characteristics.sub_dividing_dim.data(),
-      epsrel,
-      epsabs,
       constMem,
       integ_space_lows.data(),
       integ_space_highs.data(),
@@ -251,7 +248,7 @@ public:
       dfevals);
 
     print_verbose<debug>(generators.data(), dfevals, subregion_estimates);
-
+	std::cout<<"about to do reduction"<<std::endl;
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);

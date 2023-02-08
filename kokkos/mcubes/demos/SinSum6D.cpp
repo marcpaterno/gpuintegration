@@ -1,5 +1,5 @@
 #include "time_and_call.h"
-
+#include "common/kokkos/Volume.cuh"
 class SinSum6D {
 public:
   __device__ __host__ double
@@ -31,7 +31,7 @@ main()
 
   double lows[] = {0., 0., 0., 0., 0., 0.};
   double highs[] = {10., 10., 10., 10., 10., 10.};
-  Volume<double, ndim> volume(lows, highs);
+  quad::Volume<double, ndim> volume(lows, highs);
   SinSum6D integrand;
   
   //mcubes_time_and_call<GENZ_4_5D, ndim>(integrand, epsrel, true_value, "f4 5D", params, &volume);

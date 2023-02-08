@@ -4,7 +4,6 @@
 #include "kokkos/pagani/quad/Kernel.cuh"
 #include "kokkos/pagani/quad/Rule.cuh"
 #include "kokkos/pagani/quad/quad.h"
-
 #include "common/integration_result.hh"
 #include <array>
 #include "common/kokkos/cudaMemoryUtil.h"

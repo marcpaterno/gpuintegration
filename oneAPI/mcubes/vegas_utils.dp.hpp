@@ -79,12 +79,18 @@ class Internal_Vegas_Params {
   static constexpr int ndmx = 500;
   static constexpr int mxdim = 20;
   static constexpr double alph = 1.5;
+  static constexpr double tiny = 1.0e-30;
 
 public:
   static constexpr int
   get_NDMX()
   {
     return ndmx;
+  }
+  
+  static constexpr double
+  get_TINY(){
+	return tiny;
   }
 
   static constexpr int

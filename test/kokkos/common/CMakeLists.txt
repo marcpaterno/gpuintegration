@@ -21,3 +21,10 @@ target_compile_options(kokkos_pagani_Reduction PRIVATE "--expt-relaxed-constexpr
 target_link_libraries(kokkos_pagani_Reduction Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_Reduction PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_Reduction kokkos_pagani_Reduction)
+
+
+add_executable(kokkos_pagani_exclusive_parallel_scan exclusive_parallel_scan.cpp)
+target_compile_options(kokkos_pagani_exclusive_parallel_scan PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_exclusive_parallel_scan Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_pagani_exclusive_parallel_scan PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_pagani_exclusive_parallel_scan kokkos_pagani_exclusive_parallel_scan)

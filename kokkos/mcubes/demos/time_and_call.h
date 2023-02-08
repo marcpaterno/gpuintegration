@@ -1,3 +1,6 @@
+#ifndef KOKKOS_MCUBES_DEMO_UTILS_CUH
+#define KOKKOS_MCUBES_DEMO_UTILS_CUH
+
 #include <iomanip>
 #include <chrono>
 #include <iostream>
@@ -5,6 +8,7 @@
 #include <string>
 
 #include "kokkos/mcubes/mcubes.h"
+#include "common/kokkos/Volume.cuh"
 
 using std::cout;
 using std::chrono::duration;
@@ -66,14 +70,14 @@ PrintHeader()
                "time, status\n";
 }
 
-template <typename F, int ndim, typename GeneratorType = Curand_generator>
+template <typename F, int ndim, typename GeneratorType = kokkos_mcubes::Curand_generator>
 bool
 mcubes_time_and_call(F integrand,
                      double epsrel,
                      double correct_answer,
                      char const* id,
                      VegasParams& params,
-                     Volume<double, ndim>* volume)
+                     quad::Volume<double, ndim> const* volume)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -84,7 +88,7 @@ mcubes_time_and_call(F integrand,
 
   do {
     auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = integrate<F, ndim, GeneratorType>(integrand,
+    auto res = kokkos_mcubes::integrate<F, ndim, GeneratorType>(integrand,
                                                  epsrel,
                                                  epsabs,
                                                  params.ncall,
@@ -117,3 +121,78 @@ mcubes_time_and_call(F integrand,
 
   return success;
 }
+
+
+template <typename F, int ndim>
+bool
+signle_invocation_time_and_call(F integrand,
+                                double epsrel,
+                                double correct_answer,
+                                char const* integralName,
+                                VegasParams& params,
+                                quad::Volume<double, ndim> const* volume,
+                                int num_repeats = 100)
+{
+
+  bool success = false;
+  for (int i = 0; i < num_repeats; ++i) {
+
+    using MilliSeconds =
+      std::chrono::duration<double, std::chrono::milliseconds::period>;
+    // We make epsabs so small that epsrel is always the stopping condition.
+    double constexpr epsabs = 1.0e-20;
+	std::cout<<"about to call integrate"<<std::endl;
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = kokkos_mcubes::integrate<F, ndim, kokkos_mcubes::Custom_generator>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      volume,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    success = (res.status == 0);
+    std::cout.precision(15);
+    
+    std::cout << integralName << "," << epsrel << "," << std::scientific
+                << correct_answer << "," << std::scientific << res.estimate
+                << "," << std::scientific << res.errorest << "," << res.chi_sq
+                << "," << params.t_iter << "," << params.num_adjust_iters << ","
+                << params.num_skip_iters << "," << res.iters << ","
+                << params.ncall << "," << res.neval << "," << dt.count() << ","
+                << res.status << "\n";
+  }
+
+  return success;
+}
+
+template <typename F, int ndim>
+void
+call_mcubes_kernel(int num_repeats)
+{
+  std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
+  double ncall = 1.0e8;
+  int titer = 1;
+  int itmax = 1;
+  int skip = 0;
+  VegasParams params(ncall, titer, itmax, skip);
+  F integrand;
+  quad::Volume<double, ndim> volume;
+  size_t run = 0;
+  double epsrel = 1.e-3;
+  double true_value = 0.;
+  
+  for (auto num_samples : required_ncall) {
+    params.ncall = num_samples;
+
+    signle_invocation_time_and_call<F, ndim>(
+      integrand, epsrel, true_value, "f", params, &volume, num_repeats);
+    run++;
+    if (run > required_ncall.size())
+      break;
+  }
+}
+
+#endif

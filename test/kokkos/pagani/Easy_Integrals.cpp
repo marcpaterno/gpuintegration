@@ -10,7 +10,7 @@
 #include "kokkos/pagani/quad/GPUquad/PaganiUtils.cuh"
 #include "kokkos/pagani/quad/GPUquad/Workspace.cuh"
 #include "common/integration_result.hh"
-#include "common/kokkos/integrands.h"
+#include "common/kokkos/integrands.cuh"
 #include "common/kokkos/cudaMemoryUtil.h"
 #include "common/kokkos/Volume.cuh"
 

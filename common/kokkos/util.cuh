@@ -192,8 +192,6 @@ exclusive_prefix_scan(ViewVectorInt input, ViewVectorInt output)
         output(i) = update;
       }
       update += val_i;
-	  if(i == 100)
-		printf("INDEX 99:%i,%i\n", input(i), output(i));
     });
   return update;
 }

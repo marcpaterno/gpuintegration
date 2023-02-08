@@ -1,4 +1,5 @@
 #include "time_and_call.h"
+#include "common/kokkos/Volume.cuh"
 
 class GENZ_4_5D {
   public:
@@ -33,7 +34,7 @@ main()
 
   double lows[] = {0., 0., 0., 0., 0.};
   double highs[] = {1., 1., 1., 1., 1.};
-  Volume<double, ndim> volume(lows, highs);
+  quad::Volume<double, ndim> volume(lows, highs);
   GENZ_4_5D integrand;
   
   //mcubes_time_and_call<GENZ_4_5D, ndim>(integrand, epsrel, true_value, "f4 5D", params, &volume);
