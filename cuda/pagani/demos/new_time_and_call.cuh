@@ -75,7 +75,7 @@ call_cubature_rules(F integrand,
 
 template <typename F, int ndim>
 void
-call_cubature_rules(int num_repeats = 11, std::string integrand_name("placeholder"))
+call_cubature_rules(int num_repeats = 11)
 {
   using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
