@@ -73,7 +73,6 @@ add_test(test_volume test_volume)
 
 add_executable(Interpolation1D Interpolation1D.cu)
 set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(Interpolation1D )
 target_include_directories(Interpolation1D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -82,12 +81,20 @@ add_test(Interpolation1D Interpolation1D)
 
 add_executable(Interpolation2D Interpolation2D.cu)
 set_target_properties(Interpolation2D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
-target_link_libraries(Interpolation2D )
 target_include_directories(Interpolation2D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(Interpolation2D Interpolation2D)
+
+add_executable(cuda_Interpolation3D Interpolation3D.cu)
+set_target_properties(cuda_Interpolation3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_Interpolation3D)
+target_include_directories(cuda_Interpolation3D PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+add_test(cuda_Interpolation3D cuda_Interpolation3D)
 
 add_executable(interpolator_mem_usage interpolator_mem_usage.cu)
 set_target_properties(interpolator_mem_usage PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
