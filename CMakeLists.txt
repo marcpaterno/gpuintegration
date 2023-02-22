@@ -19,17 +19,29 @@ SET(CMAKE_CUDA_FLAGS_DEBUG "-g -lineinfo")
 
 
 # TODO: Modernize CMake usage; we should not use a global "include_directories"
-include_directories(AFTER cubacpp externals ${TOP_DIR})
+include_directories(AFTER cubacpp externals ${CMAKE_SOURCE_DIR})
+
+if ((NOT GPUINTEGRATION_BUILD_CUDA) AND
+    (NOT GPUINTEGRATION_BUILD_KOKKOS) AND
+    (NOT GPUINTEGRATION_BUILD_ONEAPI))
+    message(FATAL_ERROR "No back-end selected")
+endif()
 
 if (GPUINTEGRATION_BUILD_CUDA)
+  message(STATUS "Building the CUDA back-end")
+  if (NOT TARGET_ARCH)
+    message(FATAL_ERROR "You must specify TARGET_ARCH for CUDA builds")
+  endif()
   add_subdirectory(cuda)
 endif()
 
 if (GPUINTEGRATION_BUILD_KOKKOS)
+  message(STATUS "Building the Kokkos back-end")
   add_subdirectory(kokkos)
 endif()
 
 if (GPUINTEGRATION_BUILD_ONEAPI)
+  message(STATUS "Building the oneAPI back-end")
   include_directories(AFTER ${DPCT_DIR} ${DPL_DIR} ${SYCL_DIR})
   if(CUDA_BACKEND)
 	set(CMAKE_CXX_COMPILER clang++)
