@@ -294,8 +294,8 @@ template <typename T>
 void
 blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
                sycl::nd_item<3> item_ct1,
-               dpct_placeholder/*Fix the type mannually*/ *shared_max,
-               dpct_placeholder/*Fix the type mannually*/ *shared_min)
+               T/*Fix the type mannually*/ *shared_max,
+               T/*Fix the type mannually*/ *shared_min)
 {
   const int tid = item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
                   item_ct1.get_local_id(2);
@@ -332,8 +332,8 @@ template <typename T>
 void
 block0_min_max(T* mins, T* maxs, const int size, T* min, T* max,
                sycl::nd_item<3> item_ct1,
-               dpct_placeholder/*Fix the type mannually*/ *shared_max,
-               dpct_placeholder/*Fix the type mannually*/ *shared_min)
+               T/*Fix the type mannually*/ *shared_max,
+               T/*Fix the type mannually*/ *shared_min)
 {
   const int tid = item_ct1.get_local_id(2);
 
@@ -372,12 +372,12 @@ min_max(T* input, const int size)
   Adjust the workgroup size if needed.
   */
   q_ct1.submit([&](sycl::handler& cgh) {
-    sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
+    sycl::accessor<T /*Fix the type mannually*/,
                    1,
                    sycl::access_mode::read_write,
                    sycl::access::target::local>
       shared_max_acc_ct1(sycl::range(32), cgh);
-    sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
+    sycl::accessor<T /*Fix the type mannually*/,
                    1,
                    sycl::access_mode::read_write,
                    sycl::access::target::local>

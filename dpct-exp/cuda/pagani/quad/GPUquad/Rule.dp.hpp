@@ -320,73 +320,17 @@ namespace quad {
     {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
-      /*
-      DPCT1003:93: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->gpuG) = (<dependent type>)sycl::malloc_device(
-                   sizeof(T) * NDIM * NSETS, q_ct1),
-                 0));
 
-      /*
-      DPCT1003:94: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->cRuleWt) = (<dependent type>)sycl::malloc_device(
-                   sizeof(T) * NRULES * NSETS, q_ct1),
-                 0));
-      /*
-      DPCT1003:95: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(
-        ((constMem->cGeneratorCount) =
-           (<dependent type>)sycl::malloc_device(sizeof(size_t) * NSETS, q_ct1),
-         0));
-      /*
-      DPCT1003:96: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->GPUScale) = (<dependent type>)sycl::malloc_device(
-                   sizeof(T) * NSETS * NRULES, q_ct1),
-                 0));
-      /*
-      DPCT1003:97: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->GPUNorm) = (<dependent type>)sycl::malloc_device(
-                   sizeof(T) * NSETS * NRULES, q_ct1),
-                 0));
-      /*
-      DPCT1003:98: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->gpuGenPos) = (<dependent type>)sycl::malloc_device(
-                   sizeof(int) * PERMUTATIONS_POS_ARRAY_SIZE, q_ct1),
-                 0));
-      /*
-      DPCT1003:99: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(
-        ((constMem->gpuGenPermVarCount) =
-           (<dependent type>)sycl::malloc_device(sizeof(int) * FEVAL, q_ct1),
-         0));
-      /*
-      DPCT1003:100: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(
-        ((constMem->gpuGenPermGIndex) =
-           (<dependent type>)sycl::malloc_device(sizeof(int) * FEVAL, q_ct1),
-         0));
-      /*
-      DPCT1003:101: Migrated API does not return error code. (*, 0) is inserted.
-      You may need to rewrite this code.
-      */
-      QuadDebug(((constMem->gpuGenPermVarStart) = (<dependent type>)
-                   sycl::malloc_device(sizeof(int) * (FEVAL + 1), q_ct1),
-                 0));
+  constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
+  constMem->_cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
+  constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
+  constMem->_GPUScale = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
+  constMem->_GPUNorm = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
+  constMem->_gpuGenPos = sycl::malloc_device<int>(PERMUTATIONS_POS_ARRAY_SIZE, q_ct1);
+  constMem->_gpuGenPermVarCount = sycl::malloc_device<int>(FEVAL, q_ct1);
+  constMem->_gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
+  constMem->_gpuGenPermVarStart = sycl::malloc_device<int>((FEVAL + 1), q_ct1);
+
       /*
       DPCT1003:102: Migrated API does not return error code. (*, 0) is inserted.
       You may need to rewrite this code.
