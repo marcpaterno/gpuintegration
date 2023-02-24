@@ -189,7 +189,6 @@ struct Sub_regions {
   {
 
     if (LeftCoord == nullptr || Length == nullptr) {
-      // printf("host_init to be invoked within Sub_regions::extra_region\n");
       host_init();
     }
     refresh_host_device();

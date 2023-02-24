@@ -443,9 +443,6 @@ pagani_clone(const IntegT& integrand,
       // 4. check if classification actually happened or was successful
       bool hs_classify_success =
         hs_results.pass_mem && hs_results.pass_errorest_budget;
-      // printf("hs_results will leave %lu regions active\n",
-      // hs_results.num_active);
-
       if (hs_classify_success) {
         // 5. if classification happened and was successful, update finished
         // estimates
@@ -462,18 +459,14 @@ pagani_clone(const IntegT& integrand,
       cummulative.estimate += finished.estimate;
       cummulative.errorest += finished.errorest;
 
-      // printf("num regions pre filtering:%lu\n", subregions->size);
       // 7. Filter out finished regions
       Filter region_errorest_filter(num_regions);
       num_regions = region_errorest_filter.filter(
         subregions, classifiers, estimates, prev_iter_estimates);
-      // printf("num regions after filtering:%lu\n", subregions->size);
       quad::CudaCheckError();
       // split regions
-      // printf("num regions pre split:%lu\n", subregions->size);
       Splitter reg_splitter(num_regions);
       reg_splitter.split(subregions, classifiers);
-      // printf("num regions after split:%lu\n", subregions->size);
     } else {
       cummulative.estimate += iter.estimate;
       cummulative.errorest += iter.errorest;

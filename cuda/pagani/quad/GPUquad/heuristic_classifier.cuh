@@ -67,8 +67,6 @@ device_set_true_for_larger_than(const T* arr,
   size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (tid < size) {
-    // printf("setting active[%lu]: %i becuase arr[%lu]:%f val:%f\n", tid,
-    // arr[tid] > val, tid, arr[tid], val);
     output_flags[tid] = arr[tid] > val;
   }
 }
@@ -352,13 +350,6 @@ public:
   {
     T ratio = static_cast<T>(device_mem_required_for_full_split(num_regions)) /
               static_cast<T>(free_device_mem(num_regions, ndim));
-
-    printf("Ratio:%f estimate_convergence:%i mem_neededed:%lu estimated "
-           "free_mem:%lu\n",
-           ratio,
-           estimate_converged(),
-           device_mem_required_for_full_split(num_regions),
-           free_device_mem(num_regions, ndim));
     if (ratio > 1.) {
       return true;
     } else if (ratio > .1 && estimate_converged()) {

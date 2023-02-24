@@ -265,9 +265,6 @@ namespace quad {
           }
           CPUScale[idx * NRULES + r] = scale;
           CPUNorm[idx * NRULES + r] = 1 / sum;
-
-          // printf("CPUNorm[%i]:%.15f\n",idx*(int)NRULES+r, CPUNorm[idx *
-          // NRULES + r]);
         }
       }
     }
@@ -279,7 +276,6 @@ namespace quad {
       K* tmp = (K*)malloc(sizeof(K) * size);
       cudaMemcpy(tmp, array, sizeof(K) * size, cudaMemcpyDeviceToHost);
       for (int i = 0; i < size; ++i) {
-        // printf("%.20lf \n", (T)tmp[i]);
         std::cout.precision(17);
         std::cout << "list[" << i << "]:" << tmp[i] << std::endl;
       }

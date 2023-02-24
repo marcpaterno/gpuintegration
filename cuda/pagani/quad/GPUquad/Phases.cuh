@@ -199,7 +199,6 @@ namespace quad {
     }*/
 
     size_t feval_index = perm * BLOCK_SIZE + threadIdx.x;
-    // printf("[%i] Processing feval_index:%i\n", threadIdx.x, feval_index);
     if (feval_index < FEVAL) {
       ActualCompute<T, NDIM>(generators, g, constMem, feval_index, FEVAL);
     }
