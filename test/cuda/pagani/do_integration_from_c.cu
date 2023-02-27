@@ -22,7 +22,7 @@ do_integration_from_c(double* res)
 {
   if (!res)
     return 1;
-  double const epsrel = 1.0e-3;
+  double const epsrel = 1.0e-6;
   double const epsabs = 1.0e-12;
   Integrand integrand;
   constexpr int ndim = 2;
