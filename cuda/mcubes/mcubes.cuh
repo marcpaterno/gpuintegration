@@ -3,7 +3,6 @@
 
 #include "cubacpp/arity.hh"
 #include "cuda/pagani/quad/quad.h"
-#include "cuda/mcubes/util/util.cuh"
 #include "cuda/mcubes/vegasT.cuh"
 #include "common/integration_result.hh"
 
