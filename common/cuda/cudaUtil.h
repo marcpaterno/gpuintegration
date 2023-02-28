@@ -21,7 +21,6 @@ __global__ void
 warmUpKernel()
 {}
 
-#define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
 
 inline __device__ __host__ double

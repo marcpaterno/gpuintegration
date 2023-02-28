@@ -266,7 +266,7 @@ blockReduceMinMax(T& min, T& max, sycl::nd_item<3> item_ct1, T *shared_max,
     min =
       (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
         shared_min[lane] :
-        DBL_MAX;
+        std::numeric_limits<T>::max();
         max = (item_ct1.get_local_id(2) <
                (item_ct1.get_local_range().get(2) >> 5)) ?
                 shared_max[lane] :
@@ -292,8 +292,8 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
         const int total_num_threads =
           item_ct1.get_local_range().get(2) * item_ct1.get_group_range(2);
 
-    T localMax = 0.f;
-    T localMin = DBL_MAX;
+    T localMax = 0;
+    T localMin = std::numeric_limits<T>::max();
 	
 	for (int i = tid; i < size; i += total_num_threads){
         T val = input[tid];
@@ -323,8 +323,8 @@ void block0_min_max(T* mins, T* maxs, const int size, T* min, T* max,
 {
         const int tid = item_ct1.get_local_id(2);
 
-    T localMax = tid < size ? maxs[tid] : 0.;
-    T localMin = tid < size ? mins[tid] : DBL_MAX;
+    T localMax = tid < size ? maxs[tid] : 0;
+    T localMin = tid < size ? mins[tid] : std::numeric_limits<T>::max();
 
     blockReduceMinMax(localMin, localMax, item_ct1, shared_max, shared_min);
 

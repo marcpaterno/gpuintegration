@@ -23,7 +23,6 @@ void
 warmUpKernel()
 {}
 
-#define INFTY DBL_MAX
 #define Zap(d) memset(d, 0, sizeof(d))
 
 inline double
