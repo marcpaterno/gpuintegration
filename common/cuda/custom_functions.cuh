@@ -172,8 +172,8 @@ blockReduceMinMax(T& min, T& max)
   __syncthreads(); // Wait for all partial reductions
 
   // read from shared memory only if that warp existed
-  min = (threadIdx.x < (blockDim.x >> 5)) ? shared_min[lane] : DBL_MAX;
-  max = (threadIdx.x < (blockDim.x >> 5)) ? shared_max[lane] : 0.;
+  min = (threadIdx.x < (blockDim.x >> 5)) ? shared_min[lane] : std::numeric_limits<T>::max();
+  max = (threadIdx.x < (blockDim.x >> 5)) ? shared_max[lane] : 0;
 
   if (wid == 0) {
     min = warpReduceMin(min);
@@ -189,7 +189,7 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max)
   const int total_num_threads = blockDim.x * gridDim.x;
 
   T localMax = 0;
-  T localMin = DBL_MAX;
+  T localMin = std::numeric_limits<T>::max();
 
   for (size_t i = tid; i < size; i += total_num_threads) {
     T val = input[tid];
@@ -220,8 +220,8 @@ block0_min_max(T* mins, T* maxs, const int size, T* min, T* max)
 {
   const int tid = threadIdx.x;
 
-  T localMax = tid < size ? maxs[tid] : 0.;
-  T localMin = tid < size ? mins[tid] : DBL_MAX;
+  T localMax = tid < size ? maxs[tid] : 0;
+  T localMin = tid < size ? mins[tid] : std::numeric_limits<T>::max();
 
   blockReduceMinMax(localMin, localMax);
 

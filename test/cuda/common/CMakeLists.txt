@@ -63,6 +63,7 @@ add_test(StatefullIntegrand StatefullIntegrand)
 
 add_executable(test_volume test_volume.cu)
 set_target_properties(test_volume PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(test_volume PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(test_volume util)
 target_include_directories(test_volume PRIVATE
   ${CMAKE_SOURCE_DIR}

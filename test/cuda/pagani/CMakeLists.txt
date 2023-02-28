@@ -35,6 +35,7 @@ set_target_properties(cuda_uniform_sub_division PROPERTIES POSITION_INDEPENDENT_
 
 add_executable(pagani_loop_test pagani_loop_test.cu)
 set_target_properties(pagani_loop_test PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(pagani_loop_test PRIVATE "--expt-relaxed-constexpr")
 
 add_library(cpu_model model.cc)
 target_include_directories(cpu_model
@@ -60,6 +61,7 @@ add_test(test_cpu_vs_gpu test_cpu_vs_gpu)
 
 add_library(do_integration_from_c do_integration_from_c.cu)
 set_target_properties(do_integration_from_c PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(do_integration_from_c PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(do_integration_from_c util )
 target_include_directories(do_integration_from_c PRIVATE
   ${CMAKE_SOURCE_DIR}
@@ -72,6 +74,7 @@ add_test(test_integration_from_c test_integration_from_c)
 
 add_executable(accuracy_improves_with_epsrel accuracy_improves_with_epsrel.cu)
 set_target_properties(accuracy_improves_with_epsrel PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(accuracy_improves_with_epsrel PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(accuracy_improves_with_epsrel util )
 target_include_directories(accuracy_improves_with_epsrel PRIVATE
   ${CMAKE_SOURCE_DIR}
@@ -81,6 +84,7 @@ add_test(accuracy_improves_with_epsrel accuracy_improves_with_epsrel)
 
 add_executable(BoxIntegrals BoxIntegrals.cu)
 set_target_properties(BoxIntegrals PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(BoxIntegrals PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(BoxIntegrals util )
 target_include_directories(BoxIntegrals PRIVATE
   ${CMAKE_SOURCE_DIR}
@@ -90,6 +94,7 @@ add_test(BoxIntegrals BoxIntegrals)
 
 add_executable(NanIntegral NanIntegral.cu)
 set_target_properties(NanIntegral PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(NanIntegral PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(NanIntegral util )
 target_include_directories(NanIntegral PRIVATE
   ${CMAKE_SOURCE_DIR}
