@@ -84,17 +84,17 @@ public:
 
   // filter out finished regions
   size_t
-  filter(Regions& sub_regions,
-         Region_char& region_characteristics,
-         const Region_ests& region_ests,
-         Region_ests& parent_ests)
+  filter(Regions* sub_regions,
+         Region_char* region_characteristics,
+         const Region_ests* region_ests,
+         Region_ests* parent_ests)
   {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
 
-    const size_t current_num_regions = sub_regions.size;
+    const size_t current_num_regions = sub_regions->size;
     const size_t num_active_regions = get_num_active_regions(
-      region_characteristics.active_regions, current_num_regions);
+      region_characteristics->active_regions, current_num_regions);
 
     if (num_active_regions == 0) {
       return 0;
@@ -107,7 +107,7 @@ public:
     T* filtered_length = quad::cuda_malloc<T>(num_active_regions * ndim);
     int* filtered_sub_dividing_dim = quad::cuda_malloc<int>(num_active_regions);
 
-    parent_ests.reallocate(num_active_regions);
+    parent_ests->reallocate(num_active_regions);
     const int numOfDivisionOnDimension = 1;
     const size_t num_blocks = compute_num_blocks(current_num_regions);
 
@@ -119,14 +119,14 @@ public:
                                       sycl::range(1, 1, BLOCK_SIZE)),
                        [=](sycl::nd_item<3> item_ct1) {
                          alignRegions<T, static_cast<int>(ndim)>(
-                           sub_regions.dLeftCoord,
-                           sub_regions.dLength,
-                           region_characteristics.active_regions,
-                           region_ests.integral_estimates,
-                           region_ests.error_estimates,
-                           parent_ests.integral_estimates,
-                           parent_ests.error_estimates,
-                           region_characteristics.sub_dividing_dim,
+                           sub_regions->dLeftCoord,
+                           sub_regions->dLength,
+                           region_characteristics->active_regions,
+                           region_ests->integral_estimates,
+                           region_ests->error_estimates,
+                           parent_ests->integral_estimates,
+                           parent_ests->error_estimates,
+                           region_characteristics->sub_dividing_dim,
                            scanned_array_ct8,
                            filtered_leftCoord,
                            filtered_length,
@@ -139,14 +139,14 @@ public:
     });
 
     dev_ct1.queues_wait_and_throw();
-    sycl::free(sub_regions.dLeftCoord, q_ct1);
-    sycl::free(sub_regions.dLength, q_ct1);
-    sycl::free(region_characteristics.sub_dividing_dim, q_ct1);
-    sub_regions.dLeftCoord = filtered_leftCoord;
-    sub_regions.dLength = filtered_length;
-    region_characteristics.sub_dividing_dim = filtered_sub_dividing_dim;
-    sub_regions.size = num_active_regions;
-    region_characteristics.size = num_active_regions;
+    sycl::free(sub_regions->dLeftCoord, q_ct1);
+    sycl::free(sub_regions->dLength, q_ct1);
+    sycl::free(region_characteristics->sub_dividing_dim, q_ct1);
+    sub_regions->dLeftCoord = filtered_leftCoord;
+    sub_regions->dLength = filtered_length;
+    region_characteristics->sub_dividing_dim = filtered_sub_dividing_dim;
+    sub_regions->size = num_active_regions;
+    region_characteristics->size = num_active_regions;
     quad::CudaCheckError();
     return num_active_regions;
   }

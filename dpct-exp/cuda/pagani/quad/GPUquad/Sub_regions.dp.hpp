@@ -33,7 +33,7 @@ create_uniform_split(const T length,
     for (int dim = 0; dim < ndim; ++dim) {
       size_t id =
         (size_t)(local_id /
-                 sycl::pown((T)numOfDivisionsPerRegionPerDimension, (T)dim)) %
+                 sycl::pown((T)numOfDivisionsPerRegionPerDimension, dim)) %
         numOfDivisionsPerRegionPerDimension;
       newRegions[newNumOfRegions * dim + threadId] = id * length;
       newRegionsLength[newNumOfRegions * dim + threadId] = length;

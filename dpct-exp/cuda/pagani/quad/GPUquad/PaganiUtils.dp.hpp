@@ -98,7 +98,7 @@ public:
       cgh.parallel_for(sycl::nd_range(sycl::range(1, 1, block_size),
                                       sycl::range(1, 1, block_size)),
                        [=](sycl::nd_item<3> item_ct1) {
-                         ComputeGenerators<T, ndim>(generators_ct0,
+                         quad::ComputeGenerators<T, ndim>(generators_ct0,
                                                     fEvalPerRegion,
                                                     constMem_ct2,
                                                     item_ct1);
@@ -212,131 +212,19 @@ public:
     }
   }
 
-  template <typename IntegT>
-  numint::integration_result
-  apply_cubature_integration_rules(const IntegT& integrand,
-                                   const Sub_regs& subregions,
-                                   bool compute_error = true)
-  {
-
-    IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
-
-    size_t num_regions = subregions.size;
-    Region_characteristics<ndim> region_characteristics(num_regions);
-    Region_estimates<T, ndim> subregion_estimates(num_regions);
-
-    quad::set_device_array<int>(
-      region_characteristics.active_regions, num_regions, 1);
-
-    size_t num_blocks = num_regions;
-    constexpr size_t block_size = 64;
-
-    T epsrel = 1.e-3, epsabs = 1.e-12;
-
-    dpct::get_default_queue().submit([&](sycl::handler& cgh) {
-      sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
-                     1,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        shared_acc_ct1(sycl::range(8), cgh);
-      sycl::accessor<T,
-                     1,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        sdata_acc_ct1(sycl::range(block_size), cgh);
-      sycl::accessor<T,
-                     0,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        Jacobian_acc_ct1(cgh);
-      sycl::accessor<int,
-                     0,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        maxDim_acc_ct1(cgh);
-      sycl::accessor<T,
-                     0,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        vol_acc_ct1(cgh);
-      sycl::accessor<T,
-                     1,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        ranges_acc_ct1(sycl::range(ndim), cgh);
-      sycl::accessor<Region<ndim>,
-                     1,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        sRegionPool_acc_ct1(sycl::range(1), cgh);
-      sycl::accessor<GlobalBounds,
-                     1,
-                     sycl::access_mode::read_write,
-                     sycl::access::target::local>
-        sBound_acc_ct1(sycl::range(ndim), cgh);
-
-      auto constMem_ct9 = constMem;
-      auto integ_space_lows_ct10 = integ_space_lows;
-      auto integ_space_highs_ct11 = integ_space_highs;
-      auto generators_ct13 = generators;
-
-      cgh.parallel_for(
-        sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                         sycl::range(1, 1, block_size),
-                       sycl::range(1, 1, block_size)),
-        [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-          INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>(
-            d_integrand,
-            subregions.dLeftCoord,
-            subregions.dLength,
-            num_regions,
-            subregion_estimates.integral_estimates,
-            subregion_estimates.error_estimates,
-            region_characteristics.sub_dividing_dim,
-            epsrel,
-            epsabs,
-            constMem_ct9,
-            integ_space_lows_ct10,
-            integ_space_highs_ct11,
-            0,
-            generators_ct13,
-            item_ct1,
-            shared_acc_ct1.get_pointer(),
-            sdata_acc_ct1.get_pointer(),
-            Jacobian_acc_ct1.get_pointer(),
-            maxDim_acc_ct1.get_pointer(),
-            vol_acc_ct1.get_pointer(),
-            ranges_acc_ct1.get_pointer(),
-            sRegionPool_acc_ct1.get_pointer(),
-            sBound_acc_ct1.get_pointer());
-        });
-    });
-    dpct::get_current_device().queues_wait_and_throw();
-
-    numint::integration_result res;
-    res.estimate = reduction<T, use_custom>(
-      subregion_estimates.integral_estimates, num_regions);
-    res.errorest = compute_error ?
-                     reduction<T, use_custom>(
-                       subregion_estimates.error_estimates, num_regions) :
-                     std::numeric_limits<T>::infinity();
-
-    return res;
-  }
-
   template <typename IntegT, int debug = 0>
   numint::integration_result
   apply_cubature_integration_rules(
     IntegT* d_integrand,
     int it,
-    const Sub_regs& subregions,
-    const Reg_estimates& subregion_estimates,
-    const Regs_characteristics& region_characteristics,
+    Sub_regs* subregions,
+    Reg_estimates* subregion_estimates,
+    Regs_characteristics* region_characteristics,
     bool compute_error = false)
   {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
-    size_t num_regions = subregions.size;
+    size_t num_regions = subregions->size;
     quad::Func_Evals<ndim> dfevals;
 
     if constexpr (debug >= 2) {
@@ -346,7 +234,7 @@ public:
     }
 
     quad::set_device_array<int>(
-      region_characteristics.active_regions, num_regions, 1.);
+      region_characteristics->active_regions, num_regions, 1.);
 
     size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
@@ -366,18 +254,13 @@ public:
     */
 
     /*
-    DPCT1007:155: Migration of this CUDA API is not supported by the Intel(R)
-    DPC++ Compatibility Tool.
-    */
-    cudaProfilerStart();
-    /*
     DPCT1012:156: Detected kernel execution time measurement pattern and
     generated an initial code for time measurements in SYCL. You can change the
     way time is measured depending on your goals.
     */
     start_ct1 = std::chrono::steady_clock::now();
     stop = q_ct1.submit([&](sycl::handler& cgh) {
-      sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
+      sycl::accessor<T /*Fix the type mannually*/,
                      1,
                      sycl::access_mode::read_write,
                      sycl::access::target::local>
@@ -430,12 +313,12 @@ public:
         [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
           INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>(
             d_integrand,
-            subregions.dLeftCoord,
-            subregions.dLength,
+            subregions->dLeftCoord,
+            subregions->dLength,
             num_regions,
-            subregion_estimates.integral_estimates,
-            subregion_estimates.error_estimates,
-            region_characteristics.sub_dividing_dim,
+            subregion_estimates->integral_estimates,
+            subregion_estimates->error_estimates,
+            region_characteristics->sub_dividing_dim,
             epsrel,
             epsabs,
             constMem_ct9,
@@ -471,16 +354,15 @@ public:
     DPCT1007:158: Migration of this CUDA API is not supported by the Intel(R)
     DPC++ Compatibility Tool.
     */
-    cudaProfilerStop();
 
-    print_verbose<debug>(generators, dfevals, subregion_estimates);
+    //print_verbose<debug>(generators, dfevals, subregion_estimates);
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
-      subregion_estimates.integral_estimates, num_regions);
+      subregion_estimates->integral_estimates, num_regions);
     res.errorest = compute_error ?
                      reduction<T, use_custom>(
-                       subregion_estimates.error_estimates, num_regions) :
+                       subregion_estimates->error_estimates, num_regions) :
                      std::numeric_limits<T>::infinity();
     return res;
   }

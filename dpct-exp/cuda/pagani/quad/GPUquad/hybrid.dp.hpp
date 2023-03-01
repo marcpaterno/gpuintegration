@@ -13,21 +13,21 @@
 template <typename T, size_t ndim>
 void
 two_level_errorest_and_relerr_classify(
-  Region_estimates<T, ndim>& current_iter_raw_estimates,
-  const Region_estimates<T, ndim>& prev_iter_two_level_estimates,
-  const Region_characteristics<ndim>& reg_classifiers,
+  Region_estimates<T, ndim>* current_iter_raw_estimates,
+  const Region_estimates<T, ndim>* prev_iter_two_level_estimates,
+  const Region_characteristics<ndim>* reg_classifiers,
   T epsrel,
   bool relerr_classification = true)
 {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
 
-  size_t num_regions = current_iter_raw_estimates.size;
+  size_t num_regions = current_iter_raw_estimates->size;
   size_t block_size = 64;
   size_t numBlocks =
     num_regions / block_size + ((num_regions % block_size) ? 1 : 0);
   bool forbid_relerr_classification = !relerr_classification;
-  if (prev_iter_two_level_estimates.size == 0) {
+  if (prev_iter_two_level_estimates->size == 0) {
     return;
   }
 
@@ -41,12 +41,12 @@ two_level_errorest_and_relerr_classify(
     sycl::nd_range(sycl::range(1, 1, numBlocks) * sycl::range(1, 1, block_size),
                    sycl::range(1, 1, block_size)),
     [=](sycl::nd_item<3> item_ct1) {
-      RefineError<T>(current_iter_raw_estimates.integral_estimates,
-                     current_iter_raw_estimates.error_estimates,
-                     prev_iter_two_level_estimates.integral_estimates,
-                     prev_iter_two_level_estimates.error_estimates,
+      quad::RefineError<T>(current_iter_raw_estimates->integral_estimates,
+                     current_iter_raw_estimates->error_estimates,
+                     prev_iter_two_level_estimates->integral_estimates,
+                     prev_iter_two_level_estimates->error_estimates,
                      new_two_level_errorestimates,
-                     reg_classifiers.active_regions,
+                     reg_classifiers->active_regions,
                      num_regions,
                      epsrel,
                      forbid_relerr_classification,
@@ -54,8 +54,8 @@ two_level_errorest_and_relerr_classify(
     });
 
   dev_ct1.queues_wait_and_throw();
-  sycl::free(current_iter_raw_estimates.error_estimates, q_ct1);
-  current_iter_raw_estimates.error_estimates = new_two_level_errorestimates;
+  sycl::free(current_iter_raw_estimates->error_estimates, q_ct1);
+  current_iter_raw_estimates->error_estimates = new_two_level_errorestimates;
 }
 
 template <typename T, size_t ndim>

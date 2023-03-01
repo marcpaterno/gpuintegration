@@ -61,9 +61,9 @@ call_cubature_rules(F integrand,
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
           iteration,
-          sub_regions,
-          estimates,
-          characteristics,
+          &sub_regions,
+          &estimates,
+          &characteristics,
           compute_relerr_error_reduction);
 
       // sub_regions.print_bounds();
@@ -104,9 +104,9 @@ call_cubature_rules(int num_repeats = 11)
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
           iteration,
-          sub_regions,
-          estimates,
-          characteristics,
+          &sub_regions,
+          &estimates,
+          &characteristics,
           compute_relerr_error_reduction);
 
       // sub_regions.print_bounds();

@@ -57,8 +57,8 @@ public:
   Sub_region_splitter(size_t size) : num_regions(size) {}
 
   void
-  split(Sub_regions<T, ndim>& sub_regions,
-        const Region_characteristics<ndim>& classifiers)
+  split(Sub_regions<T, ndim>* sub_regions,
+        const Region_characteristics<ndim>* classifiers)
   {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
@@ -90,20 +90,20 @@ public:
                          divideIntervalsGPU<T, ndim>(
                            children_left_coord,
                            children_length,
-                           sub_regions.dLeftCoord,
-                           sub_regions.dLength,
-                           classifiers.sub_dividing_dim,
+                           sub_regions->dLeftCoord,
+                           sub_regions->dLength,
+                           classifiers->sub_dividing_dim,
                            num_regions_ct5,
                            children_per_region,
                            item_ct1);
                        });
     });
     dev_ct1.queues_wait_and_throw();
-    sycl::free(sub_regions.dLeftCoord, q_ct1);
-    sycl::free(sub_regions.dLength, q_ct1);
-    sub_regions.size = num_regions * children_per_region;
-    sub_regions.dLeftCoord = children_left_coord;
-    sub_regions.dLength = children_length;
+    sycl::free(sub_regions->dLeftCoord, q_ct1);
+    sycl::free(sub_regions->dLength, q_ct1);
+    sub_regions->size = num_regions * children_per_region;
+    sub_regions->dLeftCoord = children_left_coord;
+    sub_regions->dLength = children_length;
     quad::CudaCheckError();
   }
 };

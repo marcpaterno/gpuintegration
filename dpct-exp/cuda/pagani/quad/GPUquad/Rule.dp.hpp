@@ -321,15 +321,15 @@ namespace quad {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
 
-  constMem->_gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
-  constMem->_cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
-  constMem->_cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
-  constMem->_GPUScale = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
-  constMem->_GPUNorm = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
-  constMem->_gpuGenPos = sycl::malloc_device<int>(PERMUTATIONS_POS_ARRAY_SIZE, q_ct1);
-  constMem->_gpuGenPermVarCount = sycl::malloc_device<int>(FEVAL, q_ct1);
-  constMem->_gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
-  constMem->_gpuGenPermVarStart = sycl::malloc_device<int>((FEVAL + 1), q_ct1);
+  constMem->gpuG = sycl::malloc_device<T>(NDIM * NSETS, q_ct1);
+  constMem->cRuleWt = sycl::malloc_device<double>(NRULES * NSETS, q_ct1);
+  constMem->cGeneratorCount = sycl::malloc_device<size_t>(NSETS, q_ct1);
+  constMem->GPUScale = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
+  constMem->GPUNorm = sycl::malloc_device<T>(NSETS * NRULES, q_ct1);
+  constMem->gpuGenPos = sycl::malloc_device<int>(PERMUTATIONS_POS_ARRAY_SIZE, q_ct1);
+  constMem->gpuGenPermVarCount = sycl::malloc_device<int>(FEVAL, q_ct1);
+  constMem->gpuGenPermGIndex = sycl::malloc_device<int>(FEVAL, q_ct1);
+  constMem->gpuGenPermVarStart = sycl::malloc_device<int>((FEVAL + 1), q_ct1);
 
       /*
       DPCT1003:102: Migrated API does not return error code. (*, 0) is inserted.

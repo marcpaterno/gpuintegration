@@ -23,7 +23,7 @@ doubleToString(T val, int prec_level)
 
 // needs renaming
 template <typename T>
-struct Classification_res {
+class Classification_res {
 public:
   Classification_res() = default;
   Classification_res(quad::Range<T> some_range) : threshold_range(some_range) {}

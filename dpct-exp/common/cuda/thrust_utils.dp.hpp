@@ -1,15 +1,18 @@
 #ifndef QUAD_THRUST_UTILS_CUH
 #define QUAD_THRUST_UTILS_CUH
 
+#include <CL/sycl.hpp>
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/algorithm>
-#include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include <dpct/dpl_utils.hpp>
-
+#include "oneapi/mkl.hpp"
+#include "oneapi/mkl/stats.hpp"
 #include "dpct-exp/common/cuda/custom_functions.dp.hpp"
 #include "dpct-exp/common/cuda/cudaMemoryUtil.h"
-#include <numeric>
+
+
+
 
 // https://www.apriorit.com/dev-blog/614-cpp-cuda-accelerate-algorithm-cpu-gpu
 
@@ -17,22 +20,18 @@ template <typename T1, typename T2, bool use_custom = false>
 double
 dot_product(T1* arr1, T2* arr2, const size_t size)
 {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-
-  if constexpr (use_custom == false) {
-    dpct::device_pointer<T1> wrapped_mask_1 = dpct::get_device_pointer(arr1);
-    dpct::device_pointer<T2> wrapped_mask_2 = dpct::get_device_pointer(arr2);
-    double res =
-      dpct::inner_product(oneapi::dpl::execution::make_device_policy(q_ct1),
-                          oneapi::dpl::execution::make_device_policy(q_ct1),
-                          wrapped_mask_2,
-                          wrapped_mask_2 + size,
-                          wrapped_mask_1,
-                          0.);
-
-    return res;
-  }
+  //dpct::device_ext& dev_ct1 = dpct::get_current_device();
+  //sycl::queue& q_ct1 = dev_ct1.default_queue();
+  sycl::queue q_ct1;
+  /*if constexpr (use_custom == false) {
+	 T1* res = sycl::malloc_shared<T1>(1, q_ct1);
+		auto est_ev =
+		  oneapi::mkl::blas::column_major::dot(q_ct1, size, arr1, 1, arr2, 1, res);
+		est_ev.wait();
+		double result = res[0];
+		sycl::free(res, q_ct1);
+		return result;
+  }*/
 
   double res = custom_inner_product_atomics<T1, T2>(arr1, arr2, size);
   return res;
@@ -91,14 +90,24 @@ device_array_min_max(T* arr, size_t size)
 {
   quad::Range<T> range;
   if (use_custom == false) {
-    dpct::device_pointer<T> d_ptrE = dpct::get_device_pointer(arr);
-    /*
-    DPCT1007:149: Migration of this CUDA API is not supported by the Intel(R)
-    DPC++ Compatibility Tool.
-    */
-    auto __tuple = thrust::minmax_element(d_ptrE, d_ptrE + size);
-    range.low = *__tuple.first;
-    range.high = *__tuple.second;
+	auto q = dpct::get_default_queue();
+    int64_t* min = sycl::malloc_shared<int64_t>(1, q);
+    int64_t* max = sycl::malloc_shared<int64_t>(1, q);
+    const int stride = 1;
+
+    sycl::event est_ev =
+      oneapi::mkl::blas::column_major::iamax(q, size, arr, stride, max);
+
+    sycl::event est_ev2 =
+      oneapi::mkl::blas::column_major::iamin(q, size, arr, stride, min);
+
+    est_ev.wait();
+    est_ev2.wait();
+
+    quad::cuda_memcpy_to_host<T>(&range.low, &arr[min[0]], 1);
+    quad::cuda_memcpy_to_host<T>(&range.high, &arr[max[0]], 1);
+    free(min, q);
+    free(max, q);
     return range;
   }
 

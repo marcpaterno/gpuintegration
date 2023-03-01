@@ -34,7 +34,7 @@ class Workspace {
   std::ofstream outiters;
 
 private:
-  void fix_error_budget_overflow(Region_characteristics<ndim>& classifiers,
+  void fix_error_budget_overflow(Region_characteristics<ndim>* classifiers,
                                  const numint::integration_result& finished,
                                  const numint::integration_result& iter,
                                  numint::integration_result& iter_finished,
@@ -128,7 +128,7 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
 template <typename T, size_t ndim, bool use_custom>
 void
 Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
-  Region_characteristics<ndim>& characteristics,
+  Region_characteristics<ndim>* characteristics,
   const numint::integration_result& cummulative_finished,
   const numint::integration_result& iter,
   numint::integration_result& iter_finished,
@@ -141,8 +141,8 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
 
   if (leaves_finished_errorest > abs(leaves_estimate) * epsrel) {
     size_t num_threads = 256;
-    size_t num_blocks = characteristics.size / num_threads +
-                        (characteristics.size % num_threads == 0 ? 0 : 1);
+    size_t num_blocks = characteristics->size / num_threads +
+                        (characteristics->size % num_threads == 0 ? 0 : 1);
     /*
     DPCT1049:160: The workgroup size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
@@ -153,8 +153,8 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
       [=](sycl::nd_item<3> item_ct1) {
-        set_array_to_value<int>(
-          characteristics.active_regions, characteristics.size, 1, item_ct1);
+        quad::set_array_to_value<int>(
+          characteristics->active_regions, characteristics->size, 1, item_ct1);
       });
     dpct::get_current_device().queues_wait_and_throw();
 
@@ -204,9 +204,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       rules.template apply_cubature_integration_rules<IntegT, debug>(
         d_integrand,
         it,
-        subregions,
-        estimates,
-        characteristics,
+        &subregions,
+        &estimates,
+        &characteristics,
         compute_relerr_error_reduction);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
@@ -216,9 +216,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
           false :
           true;
     }
-    two_level_errorest_and_relerr_classify<T, ndim>(estimates,
-                                                    prev_iter_estimates,
-                                                    characteristics,
+    two_level_errorest_and_relerr_classify<T, ndim>(&estimates,
+                                                    &prev_iter_estimates,
+                                                    &characteristics,
                                                     epsrel,
                                                     relerr_classification);
     iter.errorest =
@@ -256,7 +256,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       compute_finished_estimates<T, ndim, use_custom>(
         estimates, characteristics, iter);
     fix_error_budget_overflow(
-      characteristics, cummulative, iter, finished, epsrel);
+      &characteristics, cummulative, iter, finished, epsrel);
     if (heuristic_classify(classifier,
                            characteristics,
                            estimates,
@@ -275,12 +275,12 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     quad::CudaCheckError();
     Filter filter_obj(subregions.size);
     size_t num_active_regions = filter_obj.filter(
-      subregions, characteristics, estimates, prev_iter_estimates);
+      &subregions, &characteristics, &estimates, &prev_iter_estimates);
     cummulative.nregions += num_regions - num_active_regions;
     subregions.size = num_active_regions;
     quad::CudaCheckError();
     Splitter splitter(subregions.size);
-    splitter.split(subregions, characteristics);
+    splitter.split(&subregions, &characteristics);
     cummulative.iters++;
   }
   cummulative.nregions += subregions.size;
@@ -350,9 +350,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
           false :
           true;
     }
-    two_level_errorest_and_relerr_classify<T, ndim>(estimates,
-                                                    prev_iter_estimates,
-                                                    characteristics,
+    two_level_errorest_and_relerr_classify<T, ndim>(&estimates,
+                                                    &prev_iter_estimates,
+                                                    &characteristics,
                                                     epsrel,
                                                     relerr_classification);
     iter.errorest =
@@ -390,7 +390,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       compute_finished_estimates<T, ndim, use_custom>(
         estimates, characteristics, iter);
     fix_error_budget_overflow(
-      characteristics, cummulative, iter, finished, epsrel);
+      &characteristics, cummulative, iter, finished, epsrel);
     if (heuristic_classify(classifier,
                            characteristics,
                            estimates,
@@ -409,12 +409,12 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     quad::CudaCheckError();
     Filter filter_obj(subregions.size);
     size_t num_active_regions = filter_obj.filter(
-      subregions, characteristics, estimates, prev_iter_estimates);
+      &subregions, &characteristics, &estimates, &prev_iter_estimates);
     cummulative.nregions += num_regions - num_active_regions;
     subregions.size = num_active_regions;
     quad::CudaCheckError();
     Splitter splitter(subregions.size);
-    splitter.split(subregions, characteristics);
+    splitter.split(&subregions, &characteristics);
     cummulative.iters++;
   }
   cummulative.nregions += subregions.size;

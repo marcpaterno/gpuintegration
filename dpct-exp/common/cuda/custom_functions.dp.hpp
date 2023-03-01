@@ -3,6 +3,7 @@
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
+#include <dpct/dpl_utils.hpp>
 #include <iostream>
 #include <limits>
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Sample.dp.hpp"
@@ -304,7 +305,7 @@ blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
 
   T localMax = 0;
   T localMin = DBL_MAX;
-
+	
   for (size_t i = tid; i < size; i += total_num_threads) {
     T val = input[tid];
 
@@ -403,12 +404,12 @@ min_max(T* input, const int size)
   Adjust the workgroup size if needed.
   */
   q_ct1.submit([&](sycl::handler& cgh) {
-    sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
+    sycl::accessor<T /*Fix the type mannually*/,
                    1,
                    sycl::access_mode::read_write,
                    sycl::access::target::local>
       shared_max_acc_ct1(sycl::range(32), cgh);
-    sycl::accessor<dpct_placeholder /*Fix the type mannually*/,
+    sycl::accessor<T /*Fix the type mannually*/,
                    1,
                    sycl::access_mode::read_write,
                    sycl::access::target::local>
