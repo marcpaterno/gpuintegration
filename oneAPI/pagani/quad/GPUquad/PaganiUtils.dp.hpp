@@ -268,9 +268,9 @@ public:
   cuhreResult<double>
   apply_cubature_integration_rules(
     IntegT* d_integrand,
-    /*const*/ Sub_regs* subregions,
-    /*const*/ Reg_estimates* subregion_estimates,
-    /*const*/ Regs_characteristics* region_characteristics,
+    Sub_regs* subregions,
+    Reg_estimates* subregion_estimates,
+    Regs_characteristics* region_characteristics,
     bool compute_error = false)
   {
     size_t num_regions = subregions->size;

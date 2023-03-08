@@ -157,7 +157,7 @@ public:
   //return 1.;
     //return x + y + z + w + v + u + t + s;/*
 	
-	const double a = 50.;
+	/*const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / (a*a)) + ((x - b)*(x - b)));
     const double term_2 = 1. / ((1. / (a*a)) + ((y - b)*(y - b)));
@@ -169,8 +169,8 @@ public:
 	const double term_8 = 1. / ((1. / (a*a)) + ((s - b)*(s - b)));
 
     double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
-    return val;
-	/*const double a = 50.;
+    return val;*/
+	const double a = 50.;
     const double b = .5;
     const double term_1 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(x - b, 2.));
     const double term_2 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(y - b, 2.));
@@ -182,7 +182,7 @@ public:
 	const double term_8 = 1. / ((1. / sycl::pow(a, 2.)) + sycl::pow(s - b, 2.));
 
     double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
-    return val;*/
+    return val;
 	
   }
 };
