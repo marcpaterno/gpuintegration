@@ -5,6 +5,11 @@ add_executable(profile_mcubes_Genz2_6D profile_mcubes_Genz2_6D.cu)
 target_compile_options(profile_mcubes_Genz2_6D PRIVATE "-DCURAND")
 set_target_properties(profile_mcubes_Genz2_6D PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
 
+add_executable(profile_mcubes_Genz2_8D profile_mcubes_Genz2_8D.cu)
+target_compile_options(profile_mcubes_Genz2_8D PRIVATE "-DCURAND")
+set_target_properties(profile_mcubes_Genz2_8D PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
+
 add_executable(profile_mcubes_Genz3_3D profile_mcubes_Genz3_3D.cu)
 target_compile_options(profile_mcubes_Genz3_3D PRIVATE "-DCURAND")
 set_target_properties(profile_mcubes_Genz3_3D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})

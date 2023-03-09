@@ -1,26 +1,51 @@
 #ifndef VEGAS_VEGAS_T_CUH
 #define VEGAS_VEGAS_T_CUH
 
+/*
+
+code works for gaussian and sin using switch statement. device pointerr/template
+slow down the code by 2x
+
+chunksize needs to be tuned based on the ncalls. For now hardwired using a
+switch statement
+
+
+nvcc -O2 -DCUSTOM -o vegas vegasT.cu -arch=sm_70
+OR
+nvcc -O2 -DCURAND -o vegas vegasT.cu -arch=sm_70
+3
+example run command
+
+nvprof ./vegas 0 6 0.0  10.0  1.0E+09  10 0 0 0
+
+nvprof  ./vegas 1 9 -1.0  1.0  1.0E+07 15 10 10
+
+nvprof ./vegas 2 2 -1.0 1.0  1.0E+09 1 0 0
+
+Last three arguments are: total iterations, iteration
+
+*/
+
 //__device__ long idum = -1;
 
 #define OUTFILEVAR 0
 
 #include <CL/sycl.hpp>
-// #include <dpct/dpct.hpp>
-#include "oneAPI/pagani/quad/quad.h"
-#include "common/oneAPI/Volume.dp.hpp"
-#include "common/oneAPI/cudaApply.dp.hpp"
-#include "common/oneAPI/cudaArray.dp.hpp"
-#include "oneAPI/mcubes/seqCodesDefs.hh"
-#include "common/oneAPI/cudaMemoryUtil.h"
-#include "oneAPI/mcubes/vegas_utils.dp.hpp"
-#include "oneAPI/mcubes/verbose_utils.dp.hpp"
-
+#include <dpct/dpct.hpp>
+#include "dpct-exp/common/cuda/cudaMemoryUtil.h"
+#include "dpct-exp/cuda/pagani/quad/quad.h"
+#include "dpct-exp/common/cuda/Volume.dp.hpp"
+#include "dpct-exp/common/cuda/cudaApply.dp.hpp"
+#include "dpct-exp/common/cuda/cudaArray.dp.hpp"
+#include "dpct-exp/cuda/mcubes/seqCodesDefs.hh"
+#include "dpct-exp/cuda/mcubes/util/vegas_utils.dp.hpp"
+#include "dpct-exp/cuda/mcubes/util/verbose_utils.dp.hpp"
 #include <assert.h>
 #include <chrono>
 #include <ctime>
-// #include <oneapi/mkl.hpp>
-// #include <oneapi/mkl/rng/device.hpp>
+#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/rng/device.hpp>
+#include <dpct/rng_utils.hpp>
 
 #include <fstream>
 #include <inttypes.h>
@@ -31,10 +56,22 @@
 #include <stdlib.h>
 #include <string>
 
-// #define TINY 1.0e-200
+#include "dpct-exp/common/integration_result.hh"
+#include <chrono>
+
 #define WARP_SIZE 32
 #define BLOCK_DIM_X 128
 
+// Macro for checking cuda errors following a cuda launch or api call
+/*
+DPCT1010:9: SYCL uses exceptions to report errors and does not use the error
+codes. The call was replaced with 0. You need to rewrite this code.
+*/
+/*
+DPCT1009:10: SYCL uses exceptions to report errors and does not use the error
+codes. The original code was commented out and a warning string was inserted.
+You need to rewrite this code.
+*/
 #define cudaCheckError()                                                       \
   {                                                                            \
     int e = 0;                                                                 \
@@ -58,79 +95,25 @@ namespace cuda_mcubes {
 #define EPS 1.2e-7
 #define RNMX (1.0 - EPS)
 
-  double
-  ran2(long* idum)
-  {
-    int j;
-    long k;
-    static long idum2 = 123456789;
-    static long iy = 0;
-    static long iv[NTAB];
-    double temp;
-
-    if (*idum <= 0) {
-      if (-(*idum) < 1)
-        *idum = 1;
-      else
-        *idum = -(*idum);
-      idum2 = (*idum);
-      for (j = NTAB + 7; j >= 0; j--) {
-        k = (*idum) / IQ1;
-        *idum = IA1 * (*idum - k * IQ1) - k * IR1;
-        if (*idum < 0)
-          *idum += IM1;
-        if (j < NTAB)
-          iv[j] = *idum;
-      }
-      iy = iv[0];
-    }
-    k = (*idum) / IQ1;
-    *idum = IA1 * (*idum - k * IQ1) - k * IR1;
-    if (*idum < 0)
-      *idum += IM1;
-    k = idum2 / IQ2;
-    idum2 = IA2 * (idum2 - k * IQ2) - k * IR2;
-    if (idum2 < 0)
-      idum2 += IM2;
-    j = iy / NDIV;
-    iy = iv[j] - idum2;
-    iv[j] = *idum;
-    if (iy < 1)
-      iy += IMM1;
-    if ((temp = AM * iy) > RNMX)
-      return RNMX;
-    else
-      return temp;
-  }
-
   __inline__ double
-  warpReduceSum(double val, sycl::nd_item<1> item_ct1)
+  warpReduceSum(double val, sycl::nd_item<3> item_ct1)
   {
-
-    // could there be an issue if block has fewer than 32 threads running?
-    // at least with 1 thread and warpReduceSm commneted out, we still ahve
-    // chi-sq issues and worse absolute error
-
-    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 16);
-
-    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 8);
-
-    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 4);
-
-    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 2);
-
-    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 1);
+    val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 16);
+    val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 8);
+    val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 4);
+    val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 2);
+    val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 1);
     return val;
   }
 
   __inline__ double
-  blockReduceSum(double val, sycl::nd_item<1> item_ct1, double* shared)
+  blockReduceSum(double val, sycl::nd_item<3> item_ct1, double *shared)
   {
 
-    // Shared mem for 32 partial sums
-    int lane = item_ct1.get_local_id(0) %
+    /*static*/ // Shared mem for 32 partial sums
+    int lane = item_ct1.get_local_id(2) %
                item_ct1.get_sub_group().get_local_range().get(0);
-    int wid = item_ct1.get_local_id(0) /
+    int wid = item_ct1.get_local_id(2) /
               item_ct1.get_sub_group().get_local_range().get(0);
 
     val = warpReduceSum(val, item_ct1); // Each warp performs partial reduction
@@ -141,8 +124,8 @@ namespace cuda_mcubes {
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
-    val = (item_ct1.get_local_id(0) <
-           item_ct1.get_local_range().get(0) /
+    val = (item_ct1.get_local_id(2) <
+           item_ct1.get_local_range(2) /
              item_ct1.get_sub_group().get_local_range().get(0)) ?
             shared[lane] :
             0;
@@ -186,7 +169,7 @@ namespace cuda_mcubes {
                 int it,
                 std::ofstream& interval_myfile)
   {
-    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
 
     if (it == 1)
       interval_myfile << "m, kg[1], kg[2], kg[3], it\n";
@@ -202,9 +185,11 @@ namespace cuda_mcubes {
     }
   }
 
-  template <int ndim>
+  template <int ndim,
+            bool DEBUG_MCUBES = false,
+            typename GeneratorType = Custom_generator>
   __inline__ void
-  Setup_Integrand_Eval(Custom_generator* rand_num_generator,
+  Setup_Integrand_Eval(GeneratorType* rand_num_generator,
                        double xnd,
                        double dxg,
                        const double* const xi,
@@ -222,24 +207,15 @@ namespace cuda_mcubes {
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
 
-    #pragma unroll ndim
+    #pragma unroll ndim // unroll needed
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
-
-      // if constexpr(DEBUG_MCUBES) {
-      //  if(randoms != nullptr){
-      //      size_t nums_per_cube = npg*ndim;
-      //      size_t nums_per_sample = ndim;
-      //      size_t index = cube_id*nums_per_cube +
-      //      nums_per_sample*(sampleID-1) + j-1;
-      //      //randoms[index] = ran00;
-      //  }
-      // }
-
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
+
+      // TODO redundant memory access below xi[j * ndmx1 + ia[j] - 1]
 
       if (ia[j] > 1) {
         const double binA = (xi[j * ndmx1 + ia[j]]);
@@ -258,13 +234,15 @@ namespace cuda_mcubes {
     }
   }
 
-  template <typename IntegT, int ndim>
+  template <typename IntegT,
+            int ndim,
+            bool DEBUG_MCUBES = false>
   void
   Process_npg_samples(IntegT* d_integrand,
                       int npg,
                       double xnd,
                       double xjac,
-                      Custom_generator* rand_num_generator, // replace type here
+                      Custom_generator* rand_num_generator,
                       double dxg,
                       const double* const regn,
                       const double* const dx,
@@ -276,52 +254,48 @@ namespace cuda_mcubes {
                       double* d,
                       double& fb,
                       double& f2b,
-                      uint32_t cube_id)
+                      uint32_t cube_id,
+                      double* randoms = nullptr,
+                      double* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
     for (int k = 1; k <= npg; k++) {
 
       double wgt = xjac;
-      Setup_Integrand_Eval<ndim>(rand_num_generator,
-                                 xnd,
-                                 dxg,
-                                 xi,
-                                 regn,
-                                 dx,
-                                 kg,
-                                 ia,
-                                 x,
-                                 wgt,
-                                 npg,
-                                 k,
-                                 cube_id);
+      Setup_Integrand_Eval<ndim, DEBUG_MCUBES, Custom_generator>(
+        rand_num_generator,
+        xnd,
+        dxg,
+        xi,
+        regn,
+        dx,
+        kg,
+        ia,
+        x,
+        wgt,
+        npg,
+        k,
+        cube_id,
+        randoms);
 
       gpu::cudaArray<double, ndim> xx;
-    #pragma unroll ndim
+      #pragma unroll ndim // unroll needed
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
 
       double tmp = 0.;
-      /*const double*/ tmp = gpu::apply(*d_integrand, xx);
-      const double f = wgt * tmp;
+      /*const double*/ tmp += gpu::apply(*d_integrand, xx);
 
-      // if constexpr(DEBUG_MCUBES){
-      //     if(funcevals != nullptr){
-      //         size_t nums_evals_per_cube = npg;
-      //         size_t index = cube_id*nums_evals_per_cube + (k-1);
-      //         //funcevals[index] = f;
-      //     }
-      // }
+      const double f = wgt * tmp;
 
       double f2 = f * f;
       fb += f;
       f2b += f2;
 
-    #pragma unroll ndim
       for (int j = 1; j <= ndim; j++) {
-        // d[ia[j] * mxdim_p1 + j] += f2;
+        // d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
         const int index = ia[j] * mxdim_p1 + j;
         auto v =
           sycl::atomic_ref<double,
@@ -333,7 +307,9 @@ namespace cuda_mcubes {
     }
   }
 
-  template <typename IntegT, int ndim>
+  template <typename IntegT,
+            int ndim,
+            bool DEBUG_MCUBES = false>
   __inline__ void
   Process_chunks(IntegT* d_integrand,
                  int chunkSize,
@@ -354,7 +330,9 @@ namespace cuda_mcubes {
                  double* d,
                  double& fbg,
                  double& f2bg,
-                 size_t cube_id_offset)
+                 size_t cube_id_offset,
+                 double* randoms = nullptr,
+                 double* funcevals = nullptr)
   {
 
     for (int t = 0; t < chunkSize; t++) {
@@ -366,26 +344,29 @@ namespace cuda_mcubes {
       // can't do if statement checking whether typename GeneratorType ==
       // Curand_generator if constexpr (mcubes::is_same<GeneratorType,
       // Custom_generator>())
+        rand_num_generator->SetSeed(cube_id);
+      
 
-      rand_num_generator->SetSeed(cube_id);
-
-      Process_npg_samples<IntegT, ndim>(d_integrand,
-                                        npg,
-                                        xnd,
-                                        xjac,
-                                        rand_num_generator,
-                                        dxg,
-                                        regn,
-                                        dx,
-                                        xi,
-                                        kg,
-                                        ia,
-                                        x,
-                                        wgt,
-                                        d,
-                                        fb,
-                                        f2b,
-                                        cube_id);
+      Process_npg_samples<IntegT, ndim, DEBUG_MCUBES>(
+        d_integrand,
+        npg,
+        xnd,
+        xjac,
+        rand_num_generator,
+        dxg,
+        regn,
+        dx,
+        xi,
+        kg,
+        ia,
+        x,
+        wgt,
+        d,
+        fb,
+        f2b,
+        cube_id,
+        randoms,
+        funcevals);
 
       f2b = sycl::sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb);
@@ -406,7 +387,9 @@ namespace cuda_mcubes {
     }
   }
 
-  template <typename IntegT, int ndim>
+  template <typename IntegT,
+            int ndim,
+            bool DEBUG_MCUBES = false>
   void
   vegas_kernel(IntegT* d_integrand,
                int ng,
@@ -428,13 +411,15 @@ namespace cuda_mcubes {
                uint32_t totalNumThreads,
                int LastChunk,
                unsigned int seed_init,
-               sycl::nd_item<1> item_ct1,
-               double* shared)
+               sycl::nd_item<3> item_ct1,
+               double *shared,
+               double* randoms = nullptr,
+               double* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
-                 item_ct1.get_local_id(0);
-    uint32_t tx = item_ct1.get_local_id(0);
+    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range(2) +
+                 item_ct1.get_local_id(2);
+    uint32_t tx = item_ct1.get_local_id(2);
     double wgt;
     uint32_t kg[mxdim_p1];
     int ia[mxdim_p1];
@@ -444,8 +429,8 @@ namespace cuda_mcubes {
     if (m < totalNumThreads) {
 
       size_t cube_id_offset =
-        (item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
-         item_ct1.get_local_id(0)) *
+        (item_ct1.get_group(2) * item_ct1.get_local_range(2) +
+         item_ct1.get_local_id(2)) *
         chunkSize;
 
       if (m == totalNumThreads - 1)
@@ -454,35 +439,34 @@ namespace cuda_mcubes {
       Custom_generator rand_num_generator(seed_init);
       get_indx(cube_id_offset, &kg[1], ndim, ng);
 
-      Process_chunks<IntegT, ndim>(d_integrand,
-                                   chunkSize,
-                                   LastChunk,
-                                   ng,
-                                   npg,
-                                   &rand_num_generator,
-                                   dxg,
-                                   xnd,
-                                   xjac,
-                                   regn,
-                                   dx,
-                                   xi,
-                                   kg,
-                                   ia,
-                                   x,
-                                   wgt,
-                                   d,
-                                   fbg,
-                                   f2bg,
-                                   cube_id_offset);
+      Process_chunks<IntegT, ndim, DEBUG_MCUBES>(
+        d_integrand,
+        chunkSize,
+        LastChunk,
+        ng,
+        npg,
+        &rand_num_generator,
+        dxg,
+        xnd,
+        xjac,
+        regn,
+        dx,
+        xi,
+        kg,
+        ia,
+        x,
+        wgt,
+        d,
+        fbg,
+        f2bg,
+        cube_id_offset,
+        randoms,
+        funcevals);
     }
 
-    // testing if synch is needed
-
-    item_ct1.barrier(sycl::access::fence_space::local_space);
-    fbg = /*reduce_over_group(item_ct1.get_group(), fbg, sycl::plus<>());*/
-      blockReduceSum(fbg, item_ct1, shared);
-    f2bg = /*reduce_over_group(item_ct1.get_group(), f2bg, sycl::plus<>());*/
-      blockReduceSum(f2bg, item_ct1, shared);
+    item_ct1.barrier();
+    fbg = blockReduceSum(fbg, item_ct1, shared);
+    f2bg = blockReduceSum(f2bg, item_ct1, shared);
 
     if (tx == 0) {
       // result_dev[0] += fbg;
@@ -504,7 +488,9 @@ namespace cuda_mcubes {
     // end of subcube if
   }
 
-  template <typename IntegT, int ndim>
+  template <typename IntegT,
+            int ndim,
+            typename GeneratorType = Custom_generator>
   void
   vegas_kernelF(IntegT* d_integrand,
                 int ng,
@@ -526,20 +512,20 @@ namespace cuda_mcubes {
                 uint32_t totalNumThreads,
                 int LastChunk,
                 unsigned int seed_init,
-                sycl::nd_item<1> item_ct1,
-                double* shared)
+                sycl::nd_item<3> item_ct1,
+                double *shared)
   {
 
-    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int ndmx = 500;    // Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx_p1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
 
-    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
-                 item_ct1.get_local_id(0);
-    int tx = item_ct1.get_local_id(0);
+    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range(2) +
+                 item_ct1.get_local_id(2);
+    int tx = item_ct1.get_local_id(2);
     size_t cube_id_offset =
-      (item_ct1.get_group(0) * item_ct1.get_local_range().get(0) +
-       item_ct1.get_local_id(0)) *
+      (item_ct1.get_group(2) * item_ct1.get_local_range(2) +
+       item_ct1.get_local_id(2)) *
       chunkSize;
 
     double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
@@ -553,9 +539,8 @@ namespace cuda_mcubes {
 
       if (m == totalNumThreads - 1)
         chunkSize = LastChunk;
-      // use the actual random generator compatible with oneAPI, no need for
-      // templates and abstractions to take different generators
-      Custom_generator rand_num_generator(seed_init);
+
+      Random_num_generator<GeneratorType> rand_num_generator(seed_init);
 
       fbg = f2bg = 0.0;
       get_indx(cube_id_offset, &kg[1], ndim, ng);
@@ -622,8 +607,9 @@ namespace cuda_mcubes {
     f2bg = blockReduceSum(f2bg, item_ct1, shared);
 
     if (tx == 0) {
-
       // printf("Block %i done\n", blockIdx.x);
+      // result_dev[0] += fbg;
+      // result_dev[1] += f2bg;
       auto v = sycl::atomic_ref<double,
                                 sycl::memory_order::relaxed,
                                 sycl::memory_scope::device,
@@ -636,8 +622,6 @@ namespace cuda_mcubes {
                                  sycl::access::address_space::global_space>(
         result_dev[1]);
       v2 += f2bg;
-      // dpct::atomic_fetch_add(&result_dev[0], fbg);
-      // dpct::atomic_fetch_add(&result_dev[1], f2bg);
     }
 
     // end of subcube if
@@ -666,36 +650,12 @@ namespace cuda_mcubes {
     xi[nd] = 1.0;
   }
 
+  template <typename IntegT,
+            int ndim,
+            bool DEBUG_MCUBES = false,
+            typename GeneratorType = typename ::Custom_generator>
   void
-  ShowDevice(sycl::queue& q)
-  {
-    // using namespace sycl;
-    // Output platform and device information.
-    auto device = q.get_device();
-    auto p_name = device.get_platform().get_info<sycl::info::platform::name>();
-    std::cout << "Platform Name: " << p_name << "\n";
-    auto p_version =
-      device.get_platform().get_info<sycl::info::platform::version>();
-    std::cout << "Platform Version: " << p_version << "\n";
-    auto d_name = device.get_info<sycl::info::device::name>();
-    std::cout << "Device Name: " << d_name << "\n";
-    auto max_work_group =
-      device.get_info<sycl::info::device::max_work_group_size>();
-
-    auto max_compute_units =
-      device.get_info<sycl::info::device::max_compute_units>();
-    std::cout << "Max Compute Units: " << max_compute_units << "\n\n";
-    std::cout << "max_mem_alloc_size "
-              << device.get_info<sycl::info::device::max_mem_alloc_size>()
-              << std::endl;
-    std::cout << "local_mem_size "
-              << device.get_info<sycl::info::device::local_mem_size>()
-              << std::endl;
-  }
-
-  template <typename IntegT, int ndim>
-  void
-  vegas(IntegT integrand,
+  vegas(IntegT const& integrand,
         double epsrel,
         double epsabs,
         double ncall,
@@ -709,19 +669,17 @@ namespace cuda_mcubes {
         int skip,
         quad::Volume<double, ndim> const* vol)
   {
-    double total_time = 0.;
-    sycl::queue q_ct1(sycl::gpu_selector(),
-                      sycl::property::queue::enable_profiling{});
-    //ShowDevice(q_ct1);
-    // Display Device Name
-    //  Mcubes_state mcubes_state(ncall, ndim);
-    //  all of the ofstreams below will be removed, replaced by DataLogger
+  dpct::device_ext& dev_ct1 = dpct::get_current_device();
+  sycl::queue& q_ct1 = dev_ct1.default_queue();
+    // Mcubes_state mcubes_state(ncall, ndim);
+    // all of the ofstreams below will be removed, replaced by DataLogger
     auto t0 = std::chrono::high_resolution_clock::now();
 
-    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
-    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int ndmx = 500;    // Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx_p1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
 
+    // IntegT* d_integrand = quad::cuda_copy_to_device(integrand);
     IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
     double regn[2 * mxdim_p1];
 
@@ -830,18 +788,25 @@ namespace cuda_mcubes {
     q_ct1.memset(ia_dev, 0, sizeof(int) * (mxdim_p1)).wait();
 
     int chunkSize = GetChunkSize(ncall);
-    uint32_t totalNumThreads = (uint32_t)((ncubes) / chunkSize);
+    // chunkSize = 4;
+    uint32_t totalNumThreads =
+      (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
 
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
 
     Kernel_Params params(ncall, chunkSize, ndim);
-    /*uint32_t nBlocks =
-      ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
-      1; // compute blocks based on chunk_size, ncubes, and block_dim_x
-    uint32_t nThreads = BLOCK_DIM_X;*/
-    std::cout << "\textra cubes:" << extra << std::endl;
+    // uint32_t nBlocks =
+    //   ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
+    //   1; // compute blocks based on chunk_size, ncubes, and block_dim_x
+
+    // uint32_t nBlocks = ncubes % BLOCK_DIM_X == 0 ? (ncubes/BLOCK_DIM_X) :
+    // (ncubes/BLOCK_DIM_X) + 1; uint32_t nThreads = BLOCK_DIM_X;
+
+    IterDataLogger<DEBUG_MCUBES> data_collector(
+      totalNumThreads, chunkSize, extra, npg, ndim);
+
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
       ti = tsi = 0.0;
       for (j = 1; j <= ndim; j++) {
@@ -857,61 +822,83 @@ namespace cuda_mcubes {
 
       using MilliSeconds =
         std::chrono::duration<double, std::chrono::milliseconds::period>;
-      std::cout << "\tfevals:" << ncubes * 2 << std::endl;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
-                          static_cast<unsigned int>(it);
+        static_cast<unsigned int>(it);
 
-      sycl::event e = q_ct1.submit([&](sycl::handler& cgh) {
-        sycl::accessor<double,
-                       1,
-                       sycl::access_mode::read_write,
-                       sycl::access::target::local>
-          shared_acc_ct1(sycl::range<1>(32), cgh);
+      sycl::event start, stop;
+      std::chrono::time_point<std::chrono::steady_clock> start_ct1;
+      std::chrono::time_point<std::chrono::steady_clock> stop_ct1;
 
-        cgh.parallel_for(
-          sycl::nd_range<1>(sycl::range<1>(params.nBlocks) *
-                              sycl::range<1>(params.nThreads),
-                            sycl::range<1>(params.nThreads)),
-          [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-            vegas_kernel<IntegT, ndim>(d_integrand,
-                                       ng,
-                                       npg,
-                                       xjac,
-                                       dxg,
-                                       result_dev,
-                                       xnd,
-                                       xi_dev,
-                                       d_dev,
-                                       dx_dev,
-                                       regn_dev,
-                                       ncubes,
-                                       it,
-                                       sc,
-                                       sci,
-                                       ing,
-                                       chunkSize,
-                                       totalNumThreads,
-                                       LastChunk,
-                                       seed + it,
-                                       item_ct1,
-                                       shared_acc_ct1.get_pointer());
-          });
-      });
-      q_ct1.wait();
+      start_ct1 = std::chrono::steady_clock::now();
+      start = q_ct1.ext_oneapi_submit_barrier();
+      auto randoms = data_collector.randoms;
+      auto funcevals = data_collector.funcevals;
+      /*
+      DPCT1049:16: The work-group size passed to the SYCL kernel may exceed the
+      limit. To get the device limit, query info::device::max_work_group_size.
+      Adjust the work-group size if needed.
+      */
+         q_ct1.submit([&](sycl::handler& cgh) {
+            sycl::accessor<double,
+                           1,
+                           sycl::access_mode::read_write,
+                           sycl::access::target::local>
+              shared_acc_ct1(sycl::range(32), cgh);
 
-      double time = (e.template get_profiling_info<
-                       sycl::info::event_profiling::command_end>() -
-                     e.template get_profiling_info<
-                       sycl::info::event_profiling::command_start>());
-      // std::cout<< "time:" << std::scientific << 1 << "," << time/1.e6 << ","
-      // << ndim << ","<< ncall << std::endl;
-      std::cout << "vegas_kernel:" << params.nBlocks << "," << time / 1.e6
-                << std::endl;
-
-      total_time += time;
-
+            cgh.parallel_for(
+              sycl::nd_range(sycl::range(/*1, 1, */params.nBlocks) *
+                               sycl::range(/*1, 1, */params.nThreads),
+                             sycl::range(/*1, 1, */params.nThreads)),
+              [=](sycl::nd_item<3> item_ct1)
+                [[intel::reqd_sub_group_size(32)]] {
+                   vegas_kernel<IntegT, ndim, DEBUG_MCUBES>(
+                     d_integrand,
+                     ng,
+                     npg,
+                     xjac,
+                     dxg,
+                     result_dev,
+                     xnd,
+                     xi_dev,
+                     d_dev,
+                     dx_dev,
+                     regn_dev,
+                     ncubes,
+                     it,
+                     sc,
+                     sci,
+                     ing,
+                     chunkSize,
+                     totalNumThreads,
+                     LastChunk,
+                     seed + it,
+                     item_ct1,
+                     shared_acc_ct1.get_pointer(),
+                     randoms,
+                     funcevals);
+                });
+         });
+      dev_ct1.queues_wait_and_throw();
+      /*
+      DPCT1012:15: Detected kernel execution time measurement pattern and
+      generated an initial code for time measurements in SYCL. You can change
+      the way time is measured depending on your goals.
+      */
+      dpct::get_current_device().queues_wait_and_throw();
+      stop_ct1 = std::chrono::steady_clock::now();
+      stop = q_ct1.ext_oneapi_submit_barrier();
+      float kernel_time = 0;
+      kernel_time =
+        std::chrono::duration<float, std::milli>(stop_ct1 - start_ct1).count();
+      // std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time <<
+      // std::endl; std::cout<<"\textra cubes:"<< extra << "," << "time:" <<
+      // kernel_time << std::endl;
+      params.set_alternate(chunkSize);
+      /*
+      DPCT1007:17: Migration of cudaProfilerStop is not supported.
+      */
       q_ct1.memcpy(xi, xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1)).wait();
       cudaCheckError();
 
@@ -922,13 +909,8 @@ namespace cuda_mcubes {
 
       ti = result[0];
       tsi = result[1];
-      std::cout<<"ti"<<ti<<std::endl;
-
       tsi *= dv2g;
-      // printf("-------------------------------------------\n");
-      // printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it,
-      // ti, sqrt(tsi), tsi, dv2g);
-
+      std::cout<<"ti"<<ti<<std::endl;
       if (it > skip) {
         wgt = 1.0 / tsi;
         si += wgt * ti;
@@ -943,6 +925,13 @@ namespace cuda_mcubes {
         *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
         // printf("%i %.15f +- %.15f iteration: %.15f +- %.15f chi:%.15f\n", it,
         // *tgral, *sd, ti, sqrt(tsi), *chi2a);
+      }
+
+      if constexpr (DEBUG_MCUBES == true) {
+        data_collector.PrintBins(it, xi, d, ndim);
+        // data_collector.PrintRandomNums(it, ncubes, npg, ndim);
+        // data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
       }
 
       // replace above with datalogger.print();
@@ -974,7 +963,7 @@ namespace cuda_mcubes {
             // d[i*mxdim_p1+j]);
             r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                          (log(dt[j]) - log(d[i * mxdim_p1 + j])),
-                       Internal_Vegas_Params::get_ALPH());
+                       1.5);
             rc += r[i]; // rc is it the total number of sub-increments
           }
           rebin(
@@ -1002,50 +991,50 @@ namespace cuda_mcubes {
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
                           static_cast<unsigned int>(it);
+      /*
+      DPCT1049:18: The work-group size passed to the SYCL kernel may exceed the
+      limit. To get the device limit, query info::device::max_work_group_size.
+      Adjust the work-group size if needed.
+      */
+         q_ct1.submit([&](sycl::handler& cgh) {
+            sycl::accessor<double,
+                           1,
+                           sycl::access_mode::read_write,
+                           sycl::access::target::local>
+              shared_acc_ct1(sycl::range(32), cgh);
 
-      /*sycl::event e =*/q_ct1.submit([&](sycl::handler& cgh) {
-        sycl::accessor<double,
-                       1,
-                       sycl::access_mode::read_write,
-                       sycl::access::target::local>
-          shared_acc_ct1(sycl::range<1>(32), cgh);
-
-        cgh.parallel_for(
-          sycl::nd_range<1>(sycl::range<1>(/*1, 1, */ params.nBlocks) *
-                              sycl::range<1>(/*1, 1,*/ params.nThreads),
-                            sycl::range<1>(/*1, 1, */ params.nThreads)),
-          [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-            vegas_kernelF<IntegT, ndim>(d_integrand,
-                                        ng,
-                                        npg,
-                                        xjac,
-                                        dxg,
-                                        result_dev,
-                                        xnd,
-                                        xi_dev,
-                                        d_dev,
-                                        dx_dev,
-                                        regn_dev,
-                                        ncubes,
-                                        it,
-                                        sc,
-                                        sci,
-                                        ing,
-                                        chunkSize,
-                                        totalNumThreads,
-                                        LastChunk,
-                                        seed + it,
-                                        item_ct1,
-                                        shared_acc_ct1.get_pointer());
-          });
-      });
-      q_ct1.wait();
-      /*double time = (e.template
-      get_profiling_info<sycl::info::event_profiling::command_end>()  -
-      e.template
-      get_profiling_info<sycl::info::event_profiling::command_start>());
-      std::cout<< "time:" << std::scientific << 0 << "," << time/1.e6 << "," <<
-      ndim << ","<< ncall << std::endl;*/
+            cgh.parallel_for(
+              sycl::nd_range(sycl::range(1, 1, params.nBlocks) *
+                               sycl::range(1, 1, params.nThreads),
+                             sycl::range(1, 1, params.nThreads)),
+              [=](sycl::nd_item<3> item_ct1)
+                [[intel::reqd_sub_group_size(32)]] {
+                   vegas_kernelF<IntegT, ndim, GeneratorType>(
+                     d_integrand,
+                     ng,
+                     npg,
+                     xjac,
+                     dxg,
+                     result_dev,
+                     xnd,
+                     xi_dev,
+                     d_dev,
+                     dx_dev,
+                     regn_dev,
+                     ncubes,
+                     it,
+                     sc,
+                     sci,
+                     ing,
+                     chunkSize,
+                     totalNumThreads,
+                     LastChunk,
+                     seed + it,
+                     item_ct1,
+                     shared_acc_ct1.get_pointer());
+                });
+         });
+      dev_ct1.queues_wait_and_throw();
       q_ct1.memcpy(result, result_dev, sizeof(double) * 2).wait();
 
       ti = result[0];
@@ -1068,12 +1057,15 @@ namespace cuda_mcubes {
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
       // printf("%i, %.15f,  %.15f, %.15f, %.15f, %.15f\n", it, *tgral, *sd, ti,
       // sqrt(tsi), *chi2a);
-
+      if constexpr (DEBUG_MCUBES) {
+        data_collector.PrintBins(it, xi, d, ndim);
+        // data_collector.PrintRandomNums(it, ncubes, npg, ndim);
+        // data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
+      }
       // printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n",
       // it, *tgral, *sd, *chi2a);
     } // end of iterations
-
-    std::cout << "total_time:" << total_time / 1e6 << std::endl;
 
     free(d);
     free(dt);
@@ -1084,6 +1076,7 @@ namespace cuda_mcubes {
     free(xin);
     free(r);
 
+    d_integrand->~IntegT();
     sycl::free(d_dev, q_ct1);
     sycl::free(dx_dev, q_ct1);
     sycl::free(ia_dev, q_ct1);
@@ -1091,13 +1084,15 @@ namespace cuda_mcubes {
     sycl::free(xi_dev, q_ct1);
     sycl::free(regn_dev, q_ct1);
     sycl::free(result_dev, q_ct1);
-    d_integrand->~IntegT();
     sycl::free(d_integrand, q_ct1);
   }
 
-  template <typename IntegT, int NDIM>
-  cuhreResult<double>
-  integrate(IntegT ig,
+  template <typename IntegT,
+            int NDIM,
+            bool DEBUG_MCUBES = false,
+            typename GeneratorType = typename ::Custom_generator>
+  numint::integration_result
+  integrate(IntegT& ig,
             double epsrel,
             double epsabs,
             double ncall,
@@ -1106,27 +1101,75 @@ namespace cuda_mcubes {
             int adjustIters = 15,
             int skipIters = 5)
   {
-    cuhreResult<double> result;
+
+    numint::integration_result result;
     result.status = 1;
-    vegas<IntegT, NDIM>(ig,
-                        epsrel,
-                        epsabs,
-                        ncall,
-                        &result.estimate,
-                        &result.errorest,
-                        &result.chi_sq,
-                        &result.status,
-                        &result.iters,
-                        totalIters,
-                        adjustIters,
-                        skipIters,
-                        volume);
+    vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(ig,
+                                                     epsrel,
+                                                     epsabs,
+                                                     ncall,
+                                                     &result.estimate,
+                                                     &result.errorest,
+                                                     &result.chi_sq,
+                                                     &result.status,
+                                                     &result.iters,
+                                                     totalIters,
+                                                     adjustIters,
+                                                     skipIters,
+                                                     volume);
     return result;
   }
 
-  template <typename IntegT, int NDIM>
-  cuhreResult<double>
-  simple_integrate(IntegT integrand,
+  class mcubes {
+  public:
+    mcubes(double epsrel,
+           double epsabs,
+           double ncall,
+           int totalIters = 15,
+           int adjustIters = 15,
+           int skipIters = 5)
+      : epsrel_(epsrel)
+      , epsabs_(epsabs)
+      , ncall_(ncall)
+      , totalIters_(totalIters)
+      , adjustIters_(adjustIters)
+      , skipIters_(skipIters)
+    {}
+
+    template <typename F, int NDIM>
+    numint::integration_result integrate(
+      F& integrand,
+      quad::Volume<double, NDIM> const* volume);
+
+  private:
+    double epsrel_;
+    double epsabs_;
+    double ncall_;
+    int totalIters_;
+    int adjustIters_;
+    int skipIters_;
+  };
+
+  template <typename F, int NDIM>
+  numint::integration_result
+  mcubes::integrate(F& integrand, quad::Volume<double, NDIM> const* volume)
+  {
+    return mcubes::integrate<F, NDIM>(integrand,
+                                      epsrel_,
+                                      epsabs_,
+                                      ncall_,
+                                      volume,
+                                      totalIters_,
+                                      adjustIters_,
+                                      skipIters_);
+  }
+
+  template <typename IntegT,
+            int NDIM,
+            bool DEBUG_MCUBES = false,
+            typename GeneratorType = typename ::Custom_generator>
+  numint::integration_result
+  simple_integrate(IntegT const& integrand,
                    double epsrel,
                    double epsabs,
                    double ncall,
@@ -1136,28 +1179,27 @@ namespace cuda_mcubes {
                    int skipIters = 5)
   {
 
-    cuhreResult<double> result;
+    numint::integration_result result;
     result.status = 1;
 
     do {
-      vegas<IntegT, NDIM>(integrand,
-                          epsrel,
-                          epsabs,
-                          ncall,
-                          &result.estimate,
-                          &result.errorest,
-                          &result.chi_sq,
-                          &result.status,
-                          &result.iters,
-                          totalIters,
-                          adjustIters,
-                          skipIters,
-                          volume);
+      vegas<IntegT, NDIM, DEBUG_MCUBES, GeneratorType>(integrand,
+                                                       epsrel,
+                                                       epsabs,
+                                                       ncall,
+                                                       &result.estimate,
+                                                       &result.errorest,
+                                                       &result.chi_sq,
+                                                       &result.status,
+                                                       &result.iters,
+                                                       totalIters,
+                                                       adjustIters,
+                                                       skipIters,
+                                                       volume);
     } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
     return result;
   }
 
 }
-
 #endif

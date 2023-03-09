@@ -3,3 +3,4 @@ if (NOT DEFINED ONEAPI_TARGET_ARCH AND CUDA_BACKEND)
 endif()
 
 add_subdirectory(pagani)
+add_subdirectory(mcubes)

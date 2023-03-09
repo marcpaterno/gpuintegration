@@ -1,0 +1,8 @@
+add_executable(profile_dpct_repeat_mcubes_Genz2_6D Genz2_6D.dp.cpp)
+target_compile_options(profile_dpct_repeat_mcubes_Genz2_6D PRIVATE "-mllvm" "-inline-threshold=10000" )
+
+add_executable(profile_dpct_repeat_mcubes_kernel_Genz2_6D profile_Genz2_6D.dp.cpp)
+target_compile_options(profile_dpct_repeat_mcubes_kernel_Genz2_6D PRIVATE "-mllvm" "-inline-threshold=10000" )
+
+add_executable(profile_dpct_repeat_mcubes_kernel_Genz2_8D profile_Genz2_8D.dp.cpp)
+target_compile_options(profile_dpct_repeat_mcubes_kernel_Genz2_8D PRIVATE "-mllvm" "-inline-threshold=10000" )
