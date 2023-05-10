@@ -1,3 +1,4 @@
+
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/async>
 #define CATCH_CONFIG_MAIN
@@ -8,7 +9,7 @@
 #include "common/oneAPI/cudaMemoryUtil.h"
 #include "common/oneAPI/thrust_utils.dp.hpp"
 #include "common/oneAPI/custom_functions.dp.hpp"
-
+//#include <dpct/dpct.hpp>
 template <typename T, size_t size>
 T*
 make_gpu_arr(std::array<T, size> arr)

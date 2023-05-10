@@ -224,10 +224,13 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
                             << "," << subregions.size << std::endl;
-    std::cout << it << "," << cummulative.estimate + iter.estimate << ","
+      std::cout << it << "," << cummulative.estimate + iter.estimate << ","
               << cummulative.errorest + iter.errorest << "," << subregions.size
               << std::endl;
+
     }
+
+
     if (accuracy_reached(epsrel,
                          epsabs,
                          std::abs(cummulative.estimate + iter.estimate),

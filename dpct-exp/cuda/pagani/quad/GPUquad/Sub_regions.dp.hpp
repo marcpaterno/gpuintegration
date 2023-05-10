@@ -48,7 +48,7 @@ struct Sub_regions {
   // not partition the axis, that should be turned to a specific method instead
   // for clarity, current way is counter-intuitive since the other sub-region
   // related structs allocate with their constructors
-  Sub_regions() {}
+  Sub_regions() = default;
 
   Sub_regions(const size_t partitions_per_axis)
   {
@@ -66,8 +66,8 @@ struct Sub_regions {
 
   ~Sub_regions()
   {
-	dpct::device_ext& dev_ct1 = dpct::get_current_device();
-	sycl::queue& q_ct1 = dev_ct1.default_queue();
+	  dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	  sycl::queue& q_ct1 = dev_ct1.default_queue();
     delete[] LeftCoord;
     delete[] Length;
     sycl::free(dLeftCoord, q_ct1);

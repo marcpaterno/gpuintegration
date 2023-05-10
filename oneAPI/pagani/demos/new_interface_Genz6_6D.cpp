@@ -25,7 +25,6 @@ class GENZ_6_6D {
 		}
 };
 
-
 int
 main()
 {

@@ -112,7 +112,7 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
   if (hs_classify_success) {
     sycl::free(characteristics.active_regions, dpct::get_default_queue());
     characteristics.active_regions = hs_results.active_flags;
-    finished.estimate = iter.estimate - dot_product<int, T, use_custom>(
+    finished.estimate = iter.estimate - dot_product<T, T, use_custom>(
                                           characteristics.active_regions,
                                           estimates.integral_estimates,
                                           characteristics.size);
@@ -153,7 +153,7 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
                        sycl::range(1, 1, num_threads),
                      sycl::range(1, 1, num_threads)),
       [=](sycl::nd_item<3> item_ct1) {
-        quad::set_array_to_value<int>(
+        quad::set_array_to_value<double>(
           characteristics->active_regions, characteristics->size, 1, item_ct1);
       });
     dpct::get_current_device().queues_wait_and_throw();
@@ -228,9 +228,9 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
                             << "," << subregions.size << std::endl;
-    // std::cout << it << "," << cummulative.estimate + iter.estimate << "," <<
-    // cummulative.errorest + iter.errorest << "," << subregions.size  <<
-    // std::endl;
+     std::cout << it << "," << cummulative.estimate + iter.estimate << "," <<
+     cummulative.errorest + iter.errorest << "," << subregions.size  <<
+     std::endl;
 
     if constexpr (predict_split) {
       if (cummulative.nregions == 0 && it == 15) {

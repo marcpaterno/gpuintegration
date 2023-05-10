@@ -1,27 +1,6 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
-
-class F_2_6D {
-  public:
-    __host__ __device__ double
-    operator()(double x, double y, double z, double k, double l, double m)
-    {
-		//	return x + y + z + k + l + m;
-
-        const double a = 50.;
-        const double b = .5;
-
-        const double term_1 = 1. / ((1. / pow(a, 2.)) + pow(x - b, 2.));
-        const double term_2 = 1. / ((1. / pow(a, 2.)) + pow(y - b, 2.));
-        const double term_3 = 1. / ((1. / pow(a, 2.)) + pow(z - b, 2.));
-        const double term_4 = 1. / ((1. / pow(a, 2.)) + pow(k - b, 2.));
-        const double term_5 = 1. / ((1. / pow(a, 2.)) + pow(l - b, 2.));
-        const double term_6 = 1. / ((1. / pow(a, 2.)) + pow(m - b, 2.));
-        
-        double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
-        return val;
-    }
-};
+#include "common/cuda/integrands.cuh"
 
 
 int

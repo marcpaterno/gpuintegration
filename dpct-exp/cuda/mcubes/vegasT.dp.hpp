@@ -96,7 +96,7 @@ namespace cuda_mcubes {
 #define RNMX (1.0 - EPS)
 
   __inline__ double
-  warpReduceSum(double val, sycl::nd_item<3> item_ct1)
+  warpReduceSum(double val, sycl::nd_item<1> item_ct1)
   {
     val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 16);
     val += dpct::shift_sub_group_left(item_ct1.get_sub_group(), val, 8);
@@ -107,13 +107,13 @@ namespace cuda_mcubes {
   }
 
   __inline__ double
-  blockReduceSum(double val, sycl::nd_item<3> item_ct1, double *shared)
+  blockReduceSum(double val, sycl::nd_item<1> item_ct1, double *shared)
   {
 
     /*static*/ // Shared mem for 32 partial sums
-    int lane = item_ct1.get_local_id(2) %
+    int lane = item_ct1.get_local_id(0) %
                item_ct1.get_sub_group().get_local_range().get(0);
-    int wid = item_ct1.get_local_id(2) /
+    int wid = item_ct1.get_local_id(0) /
               item_ct1.get_sub_group().get_local_range().get(0);
 
     val = warpReduceSum(val, item_ct1); // Each warp performs partial reduction
@@ -124,8 +124,8 @@ namespace cuda_mcubes {
     item_ct1.barrier(); // Wait for all partial reductions
 
     // read from shared memory only if that warp existed
-    val = (item_ct1.get_local_id(2) <
-           item_ct1.get_local_range(2) /
+    val = (item_ct1.get_local_id(0) <
+           item_ct1.get_local_range(0) /
              item_ct1.get_sub_group().get_local_range().get(0)) ?
             shared[lane] :
             0;
@@ -211,6 +211,17 @@ namespace cuda_mcubes {
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
+      //printf("random %e\n", ran00);
+      // if constexpr(DEBUG_MCUBES) {
+      //  if(randoms != nullptr){
+      //      size_t nums_per_cube = npg*ndim;
+      //      size_t nums_per_sample = ndim;
+      //      size_t index = cube_id*nums_per_cube +
+      //      nums_per_sample*(sampleID-1) + j-1;
+      //      //randoms[index] = ran00;
+      //  }
+      // }
+
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
@@ -294,6 +305,7 @@ namespace cuda_mcubes {
       fb += f;
       f2b += f2;
 
+      #pragma unroll ndim
       for (int j = 1; j <= ndim; j++) {
         // d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
         const int index = ia[j] * mxdim_p1 + j;
@@ -411,15 +423,15 @@ namespace cuda_mcubes {
                uint32_t totalNumThreads,
                int LastChunk,
                unsigned int seed_init,
-               sycl::nd_item<3> item_ct1,
+               sycl::nd_item<1> item_ct1,
                double *shared,
                double* randoms = nullptr,
                double* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range(2) +
-                 item_ct1.get_local_id(2);
-    uint32_t tx = item_ct1.get_local_id(2);
+    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range(0) +
+                 item_ct1.get_local_id(0);
+    uint32_t tx = item_ct1.get_local_id(0);
     double wgt;
     uint32_t kg[mxdim_p1];
     int ia[mxdim_p1];
@@ -429,8 +441,8 @@ namespace cuda_mcubes {
     if (m < totalNumThreads) {
 
       size_t cube_id_offset =
-        (item_ct1.get_group(2) * item_ct1.get_local_range(2) +
-         item_ct1.get_local_id(2)) *
+        (item_ct1.get_group(0) * item_ct1.get_local_range(0) +
+         item_ct1.get_local_id(0)) *
         chunkSize;
 
       if (m == totalNumThreads - 1)
@@ -465,8 +477,8 @@ namespace cuda_mcubes {
     }
 
     item_ct1.barrier();
-    fbg = blockReduceSum(fbg, item_ct1, shared);
-    f2bg = blockReduceSum(f2bg, item_ct1, shared);
+    fbg = reduce_over_group(item_ct1.get_group(), fbg, sycl::plus<>())/*blockReduceSum(fbg, item_ct1, shared)*/;
+    f2bg = reduce_over_group(item_ct1.get_group(), f2bg, sycl::plus<>())/*blockReduceSum(f2bg, item_ct1, shared)*/;
 
     if (tx == 0) {
       // result_dev[0] += fbg;
@@ -478,6 +490,9 @@ namespace cuda_mcubes {
                                 sycl::access::address_space::global_space>(
         result_dev[0]);
       v += fbg;
+      /*dpct::atomic_fetch_add<double,
+                             sycl::access::address_space::generic_space>(
+        &result_dev[0], fbg);*/
       auto v2 = sycl::atomic_ref<double,
                                  sycl::memory_order::relaxed,
                                  sycl::memory_scope::device,
@@ -512,7 +527,7 @@ namespace cuda_mcubes {
                 uint32_t totalNumThreads,
                 int LastChunk,
                 unsigned int seed_init,
-                sycl::nd_item<3> item_ct1,
+                sycl::nd_item<1> item_ct1,
                 double *shared)
   {
 
@@ -520,12 +535,12 @@ namespace cuda_mcubes {
     constexpr int ndmx_p1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
 
-    uint32_t m = item_ct1.get_group(2) * item_ct1.get_local_range(2) +
-                 item_ct1.get_local_id(2);
-    int tx = item_ct1.get_local_id(2);
+    uint32_t m = item_ct1.get_group(0) * item_ct1.get_local_range(0) +
+                 item_ct1.get_local_id(0);
+    int tx = item_ct1.get_local_id(0);
     size_t cube_id_offset =
-      (item_ct1.get_group(2) * item_ct1.get_local_range(2) +
-       item_ct1.get_local_id(2)) *
+      (item_ct1.get_group(0) * item_ct1.get_local_range(0) +
+       item_ct1.get_local_id(0)) *
       chunkSize;
 
     double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
@@ -848,10 +863,10 @@ namespace cuda_mcubes {
               shared_acc_ct1(sycl::range(32), cgh);
 
             cgh.parallel_for(
-              sycl::nd_range(sycl::range(/*1, 1, */params.nBlocks) *
-                               sycl::range(/*1, 1, */params.nThreads),
-                             sycl::range(/*1, 1, */params.nThreads)),
-              [=](sycl::nd_item<3> item_ct1)
+              sycl::nd_range(sycl::range(params.nBlocks) *
+                               sycl::range(params.nThreads),
+                             sycl::range(params.nThreads)),
+              [=](sycl::nd_item<1> item_ct1)
                 [[intel::reqd_sub_group_size(32)]] {
                    vegas_kernel<IntegT, ndim, DEBUG_MCUBES>(
                      d_integrand,
@@ -1004,10 +1019,10 @@ namespace cuda_mcubes {
               shared_acc_ct1(sycl::range(32), cgh);
 
             cgh.parallel_for(
-              sycl::nd_range(sycl::range(1, 1, params.nBlocks) *
-                               sycl::range(1, 1, params.nThreads),
-                             sycl::range(1, 1, params.nThreads)),
-              [=](sycl::nd_item<3> item_ct1)
+              sycl::nd_range(sycl::range(params.nBlocks) *
+                               sycl::range(params.nThreads),
+                             sycl::range(params.nThreads)),
+              [=](sycl::nd_item<1> item_ct1)
                 [[intel::reqd_sub_group_size(32)]] {
                    vegas_kernelF<IntegT, ndim, GeneratorType>(
                      d_integrand,

@@ -283,7 +283,7 @@ namespace quad {
               T* dParentsIntegral,
               T* dParentsError,
               T* newErrs,
-              int* activeRegions,
+              T* activeRegions,
               size_t currIterRegions,
               T epsrel,
               int heuristicID,
@@ -395,8 +395,8 @@ namespace quad {
       *Jacobian = 1.;
       *vol = 1.;
       T maxRange = 0;
-
-#pragma unroll NDIM
+    
+      #pragma unroll NDIM //unroll not needed when inline threshold absent
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;

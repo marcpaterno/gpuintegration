@@ -11,13 +11,13 @@ template <typename T, int NDIM>
 void
 alignRegions(T* dRegions,
              T* dRegionsLength,
-             int* activeRegions,
+             T* activeRegions,
              T* dRegionsIntegral,
              T* dRegionsError,
              T* dRegionsParentIntegral,
              T* dRegionsParentError,
              int* subDividingDimension,
-             int* scannedArray,
+             T* scannedArray,
              T* newActiveRegions,
              T* newActiveRegionsLength,
              int* newActiveRegionsBisectDim,
@@ -59,21 +59,21 @@ public:
 
   Sub_regions_filter(const size_t num_regions)
   {
-    scanned_array = quad::cuda_malloc<int>(num_regions);
+    scanned_array = quad::cuda_malloc<T>(num_regions);
   }
 
   size_t
-  get_num_active_regions(int* active_regions, const size_t num_regions)
+  get_num_active_regions(T* active_regions, const size_t num_regions)
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
-    exclusive_scan<int, use_custom>(active_regions, num_regions, scanned_array);
+    dpct::device_ext& dev_ct1 = dpct::get_current_device();
+    sycl::queue& q_ct1 = dev_ct1.default_queue();
+    exclusive_scan<T, use_custom>(active_regions, num_regions, scanned_array);
     int last_element;
     int num_active = 0;
 
-    q_ct1.memcpy(&last_element, active_regions + num_regions - 1, sizeof(int));
+    q_ct1.memcpy(&last_element, active_regions + num_regions - 1, sizeof(T));
 
-    q_ct1.memcpy(&num_active, scanned_array + num_regions - 1, sizeof(int))
+    q_ct1.memcpy(&num_active, scanned_array + num_regions - 1, sizeof(T))
       .wait();
 
     if (last_element == 1)
@@ -103,9 +103,9 @@ public:
     T* filtered_length = quad::cuda_malloc<T>(num_active_regions * ndim);
     int* filtered_sub_dividing_dim = quad::cuda_malloc<int>(num_active_regions);
 	
-	parent_ests->reallocate(num_active_regions);
+	  parent_ests->reallocate(num_active_regions);
 
-	auto dLeftCoord = sub_regions->dLeftCoord;
+	  auto dLeftCoord = sub_regions->dLeftCoord;
     auto dLength = sub_regions->dLength;
     auto active_regions = region_characteristics->active_regions;
     auto integral_estimates = region_ests->integral_estimates;
@@ -169,7 +169,7 @@ public:
     sycl::free(scanned_array, dpct::get_default_queue());
   }
 
-  int* scanned_array = nullptr;
+  T* scanned_array = nullptr;
 };
 
 #endif

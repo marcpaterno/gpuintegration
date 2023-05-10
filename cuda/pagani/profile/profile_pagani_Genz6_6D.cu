@@ -1,17 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
-
-class F_6_6D {
-public:
-  __device__ __host__ double
-  operator()(double u, double v, double w, double x, double y, double z)
-  {
-	if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
-      return 0.;
-    else
-      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v + 5. * u);
-  }
-};
+#include "common/cuda/integrands.cuh"
 
 int
 main(int argc, char** argv)

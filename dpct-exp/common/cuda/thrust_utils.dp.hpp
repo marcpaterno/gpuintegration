@@ -23,7 +23,7 @@ dot_product(T1* arr1, T2* arr2, const size_t size)
   //dpct::device_ext& dev_ct1 = dpct::get_current_device();
   //sycl::queue& q_ct1 = dev_ct1.default_queue();
   sycl::queue q_ct1;
-  /*if constexpr (use_custom == false) {
+  if constexpr (use_custom == false) {
 	 T1* res = sycl::malloc_shared<T1>(1, q_ct1);
 		auto est_ev =
 		  oneapi::mkl::blas::column_major::dot(q_ct1, size, arr1, 1, arr2, 1, res);
@@ -31,7 +31,7 @@ dot_product(T1* arr1, T2* arr2, const size_t size)
 		double result = res[0];
 		sycl::free(res, q_ct1);
 		return result;
-  }*/
+  }
 
   double res = custom_inner_product_atomics<T1, T2>(arr1, arr2, size);
   return res;

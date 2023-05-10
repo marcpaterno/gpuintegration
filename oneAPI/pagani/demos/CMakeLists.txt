@@ -22,3 +22,13 @@ add_executable(oneapi_new_interface_Genz6_6D new_interface_Genz6_6D.cpp)
 target_include_directories(oneapi_new_interface_Genz6_6D PRIVATE "${ONEMKL_DIR}/include")
 target_link_directories(oneapi_new_interface_Genz6_6D PUBLIC "${ONEMKL_DIR}/lib/")
 target_compile_options(oneapi_new_interface_Genz6_6D PRIVATE "-lonemkl")
+
+add_executable(header_inclusion_1 header_inclusion_1.cpp)
+target_include_directories(header_inclusion_1 PRIVATE "${ONEMKL_DIR}/include")
+target_link_directories(header_inclusion_1 PUBLIC "${ONEMKL_DIR}/lib/")
+target_compile_options(header_inclusion_1 PRIVATE "-lonemkl")
+
+add_executable(header_inclusion_2 header_inclusion_2.cpp)
+target_include_directories(header_inclusion_2 PRIVATE "${ONEMKL_DIR}/include")
+target_link_directories(header_inclusion_2 PUBLIC "${ONEMKL_DIR}/lib/")
+target_compile_options(header_inclusion_2 PRIVATE "-lonemkl")

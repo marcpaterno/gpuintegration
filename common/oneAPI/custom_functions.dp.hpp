@@ -15,7 +15,6 @@
 */
 
 template<typename T>
-
 void
 device_custom_reduce(T* arr, size_t size, T* out, sycl::nd_item<1> item_ct1,
                      T *shared){

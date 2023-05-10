@@ -4,8 +4,10 @@
 #include <CL/sycl.hpp>
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/async>
+
 #include "oneapi/mkl.hpp"
 #include "oneapi/mkl/stats.hpp"
+
 #include "common/oneAPI/custom_functions.dp.hpp"
 
 template <typename T1, typename T2, bool use_custom = false>
@@ -30,7 +32,6 @@ template <typename T, bool use_custom = false>
 T
 reduction(T* arr, size_t size)
 {
-
   if constexpr (use_custom == false) {
 
     T res = oneapi::dpl::experimental::reduce_async(
@@ -39,7 +40,6 @@ reduction(T* arr, size_t size)
     return res;
   }
   return custom_reduce_atomics(arr, size);
-  return 0;
 }
 
 template <typename T>

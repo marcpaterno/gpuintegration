@@ -213,7 +213,7 @@ namespace quad {
     // if I read shared memory in the case where we don't invoke the integrand,
     // cuda is slower than oneapi
 
-#pragma unroll NDIM
+    #pragma unroll NDIM //unroll not needed when threshold is not set
     for (int dim = 0; dim < NDIM; ++dim) {
       /*
       DPCT1026:60: The call to __ldg was removed because there is no
@@ -245,7 +245,7 @@ namespace quad {
         .store(gpu::apply(*d_integrand, x), pIndex);
     }
 
-#pragma unroll 5
+    #pragma unroll NDIM //unroll not needed when threshold is not set
     for (int rul = 0; rul < NRULES; ++rul) {
       /*
       DPCT1026:62: The call to __ldg was removed because there is no
@@ -320,7 +320,7 @@ namespace quad {
       T base = *f1 * 2 * (1 - ratio);
       T maxdiff = 0;
       int bisectdim = *maxdim;
-      // #pragma unroll 1
+      #pragma unroll NDIM //no unroll needed when inline threshold is not set
       for (int dim = 0; dim < NDIM; ++dim) {
         T* fp = f1 + 1;
         T* fm = fp + 1;
@@ -343,7 +343,7 @@ namespace quad {
     */
     item_ct1.barrier();
 
-#pragma unroll 1
+    #pragma unroll 1
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -384,9 +384,9 @@ namespace quad {
     performance if there is no access to global memory.
     */
     item_ct1.barrier();
-#pragma unroll 5
+    #pragma unroll 5
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum(sum[i], item_ct1, shared);
+      sum[i] = reduce_over_group(item_ct1.get_group(), sum[i], sycl::plus<>());//blockReduceSum(sum[i], item_ct1, shared);
       //__syncthreads();
     }
 
@@ -394,13 +394,13 @@ namespace quad {
 
       Result* r = &region->result; // ptr to shared Mem
 
-#pragma unroll 3
+      #pragma unroll 3
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
 
         //__ldg is missing from the loop below
         constexpr int NSETS = 9;
-#pragma unroll 9
+        #pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
           maxerr = sycl::max(
             maxerr,

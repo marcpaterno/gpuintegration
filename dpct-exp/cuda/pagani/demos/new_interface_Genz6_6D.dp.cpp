@@ -18,7 +18,6 @@ public:
 int
 main()
 {
-
   double epsrel = 1.0e-3;
   double const epsrel_min = 1.0240000000000002e-10;
   constexpr int ndim = 6;
@@ -33,7 +32,7 @@ main()
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
   }
-
+  
   /*epsrel = 1.0e-3;
   while (clean_time_and_call<GENZ_6_6D, ndim, true>("f6",
                                      integrand,
@@ -44,5 +43,6 @@ main()
    epsrel >= epsrel_min) {
                   epsrel /= 5.0;
   }*/
+
   return 0;
 }

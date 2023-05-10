@@ -251,46 +251,14 @@ public:
         quad::cuda_malloc<quad::Feval<ndim>>(num_regions * num_fevals);
     }
 
-    quad::set_device_array<int>(
+    quad::set_device_array<double>(
       region_characteristics->active_regions, num_regions, 1.);
 
     size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
-	/*T* tempd = quad::cuda_malloc<T>(num_regions);//sycl::malloc_device<T>(num_regions, q_ct1);
 
-	tempff(tempd);
-	tempff(tempd);
-	tempff(subregion_estimates->error_estimates);
-	tempff(subregion_estimates->error_estimates);
-	
-	T* t = subregion_estimates->error_estimates;
-	
-	q_ct1.submit([&](sycl::handler& cgh) {
-     cgh.parallel_for(
-        sycl::nd_range(sycl::range(num_blocks * block_size),
-                       sycl::range(block_size)),
-        [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-			
-			subregion_estimates->error_estimates[0]=1.; //this doesn't workgroup
-			//t[0] = 1.;
-        });
-    });
-	//q_ct1.wait();
-    q_ct1.wait_and_throw();
-	std::cout<<"past manual"<<std::endl;*/
-    //sycl::event start, stop;
-    //std::chrono::time_point<std::chrono::steady_clock> start_ct1;
-    //std::chrono::time_point<std::chrono::steady_clock> stop_ct1;
-    /*
-    DPCT1026:153: The call to cudaEventCreate was removed because this call is
-    redundant in DPC++.
-    */
-    /*
-    DPCT1026:154: The call to cudaEventCreate was removed because this call is
-    redundant in DPC++.
-    */
     auto integral_estimates = subregion_estimates->integral_estimates;
     auto error_estimates = subregion_estimates->error_estimates;
     auto sub_dividing_dim = region_characteristics->sub_dividing_dim;
@@ -343,15 +311,13 @@ public:
       auto integ_space_lows_ct10 = integ_space_lows;
       auto integ_space_highs_ct11 = integ_space_highs;
       auto generators_ct12 = generators;
-
+      
       cgh.parallel_for(
-        sycl::nd_range(sycl::range(num_blocks * block_size),
+        sycl::nd_range(sycl::range(num_blocks* block_size),
                        sycl::range(block_size)),
-        [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
-			//tempd[0] = 1.;
-			
+        [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {			
           INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>(
-                d_integrand,
+            d_integrand,
             dLeftCoord,
             dLength,
             num_regions,
@@ -455,11 +421,11 @@ compute_finished_estimates(const Region_estimates<T, ndim>& estimates,
   numint::integration_result finished;
   finished.estimate =
     iter.estimate -
-    dot_product<int, T, use_custom>(
+    dot_product<T, T, use_custom>(
       classifiers.active_regions, estimates.integral_estimates, estimates.size);
   ;
   finished.errorest =
-    iter.errorest - dot_product<int, T, use_custom>(classifiers.active_regions,
+    iter.errorest - dot_product<T, T, use_custom>(classifiers.active_regions,
                                                     estimates.error_estimates,
                                                     estimates.size);
   return finished;
@@ -482,117 +448,4 @@ accuracy_reached(T epsrel, T epsabs, numint::integration_result res)
     return true;
   return false;
 }
-
-template <typename T, typename IntegT, int ndim>
-numint::integration_result
-pagani_clone(const IntegT& integrand,
-             Sub_regions<T, ndim>& subregions,
-             T epsrel = 1.e-3,
-             T epsabs = 1.e-12,
-             bool relerr_classification = true)
-{
-  using Reg_estimates = Region_estimates<T, ndim>;
-  using Sub_regs = Sub_regions<T, ndim>;
-  using Regs_characteristics = Region_characteristics<ndim>;
-  using Res = numint::integration_result;
-  using Filter = Sub_regions_filter<T, ndim>;
-  using Splitter = Sub_region_splitter<T, ndim>;
-  Reg_estimates prev_iter_estimates;
-
-  Res cummulative;
-  Cubature_rules<T, ndim> cubature_rules;
-  Heuristic_classifier<T, ndim> hs_classify(epsrel, epsabs);
-  bool accuracy_termination = false;
-  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
-
-  for (size_t it = 0; it < 700 && !accuracy_termination; it++) {
-    size_t num_regions = subregions.size;
-    Regs_characteristics classifiers(num_regions);
-    Reg_estimates estimates(num_regions);
-
-    Res iter = cubature_rules.apply_cubature_integration_rules(
-      d_integrand, subregions, estimates, classifiers);
-    computute_two_level_errorest<ndim>(
-      estimates, prev_iter_estimates, classifiers, relerr_classification);
-    iter.errorest = reduction<T>(estimates.error_estimates, num_regions);
-
-    accuracy_termination =
-      accuracy_reached(epsrel,
-                       epsabs,
-                       std::abs(cummulative.estimate + iter.estimate),
-                       cummulative.errorest + iter.errorest);
-
-    // where are the conditions to hs_classify (gpu mem and convergence?)
-    if (!accuracy_termination) {
-
-      // 1. store the latest estimate so that we can check whether estimate
-      // convergence happens
-      hs_classify.store_estimate(cummulative.estimate + iter.estimate);
-
-      // 2.get the actual finished estimates, needs to happen before hs
-      // heuristic classification
-      Res finished;
-      finished.estimate =
-        iter.estimate - dot_product<int, T>(classifiers.active_regions,
-                                            estimates.integral_estimates,
-                                            num_regions);
-      finished.errorest =
-        iter.errorest - dot_product<int, T>(classifiers.active_regions,
-                                            estimates.error_estimates,
-                                            num_regions);
-
-      // 3. try classification
-      // THIS SEEMS WRONG WHY WE PASS ITER.ERROREST TWICE? LAST PARAM SHOULD BE
-      // TOTAL FINISHED ERROREST, SO CUMMULATIVE.ERROREST
-      Classification_res<T> hs_results =
-        hs_classify.classify(classifiers.active_regions,
-                             estimates.error_estimates,
-                             num_regions,
-                             iter.errorest,
-                             finished.errorest,
-                             iter.errorest);
-
-      // 4. check if classification actually happened or was successful
-      bool hs_classify_success =
-        hs_results.pass_mem && hs_results.pass_errorest_budget;
-      // printf("hs_results will leave %lu regions active\n",
-      // hs_results.num_active);
-
-      if (hs_classify_success) {
-        // 5. if classification happened and was successful, update finished
-        // estimates
-        classifiers.active_regions = hs_results.active_flags;
-        finished.estimate =
-          iter.estimate - dot_product<int, T>(classifiers.active_regions,
-                                              estimates.integral_estimates,
-                                              num_regions);
-
-        finished.errorest = hs_results.finished_errorest;
-      }
-
-      // 6. update cummulative estimates with finished contributions
-      cummulative.estimate += finished.estimate;
-      cummulative.errorest += finished.errorest;
-
-      // printf("num regions pre filtering:%lu\n", subregions->size);
-      // 7. Filter out finished regions
-      Filter region_errorest_filter(num_regions);
-      num_regions = region_errorest_filter.filter(
-        subregions, classifiers, estimates, prev_iter_estimates);
-      // printf("num regions after filtering:%lu\n", subregions->size);
-      quad::CudaCheckError();
-      // split regions
-      // printf("num regions pre split:%lu\n", subregions->size);
-      Splitter reg_splitter(num_regions);
-      reg_splitter.split(subregions, classifiers);
-      // printf("num regions after split:%lu\n", subregions->size);
-    } else {
-      cummulative.estimate += iter.estimate;
-      cummulative.errorest += iter.errorest;
-    }
-  }
-
-  return cummulative;
-}
-
 #endif

@@ -1,20 +1,6 @@
 #include "cuda/mcubes/demos/demo_utils.cuh"
 #include "cuda/mcubes/vegasT.cuh"
-
-class F_6_6D {
-public:
-  __host__ __device__ double
-  operator()(double u, double v, double w, double x, double y, double z)
-  {
-	return u + v + w + x + y + z;
-  
-    /*if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4)
-      return 0.;
-    else
-      return exp(10. * z + 9. * y + 8. * x + 7. * w + 6. * v +
-                 5. * u);*/
-  }
-};
+#include "common/cuda/integrands.cuh"
 
 int
 main(int argc, char** argv)

@@ -51,7 +51,7 @@ public:
   T errorest_budget_covered = 0.;
   T percent_mem_active = 0.;
   quad::Range<T> threshold_range; // change to threshold_range
-  int* active_flags = nullptr;
+  T* active_flags = nullptr;
   size_t num_active = 0;
   T finished_errorest = 0.;
 
@@ -65,7 +65,7 @@ void
 device_set_true_for_larger_than(const T* arr,
                                 const T val,
                                 const size_t size,
-                                int* output_flags,
+                                T* output_flags,
                                 sycl::nd_item<3> item_ct1)
 {
   size_t tid = item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
@@ -83,7 +83,7 @@ void
 set_true_for_larger_than(const T* arr,
                          const T val,
                          const size_t size,
-                         int* output_flags)
+                         T* output_flags)
 {
   size_t num_threads = 1024;
   size_t num_blocks = size / num_threads + (size % num_threads == 0 ? 0 : 1);
@@ -309,7 +309,7 @@ public:
     set_true_for_larger_than<T>(
       errorests, res.threshold, num_regions, res.active_flags);
     res.num_active = static_cast<size_t>(
-      reduction<int, use_custom>(res.active_flags, num_regions));
+      reduction<T, use_custom>(res.active_flags, num_regions));
     res.percent_mem_active = int_division(res.num_active, num_regions);
     // std::cout<<"res.num_active:"<< res.num_active << std::endl;
     // std::cout<<"res.percent_mem_active:"<<res.percent_mem_active<<std::endl;
@@ -322,7 +322,7 @@ public:
   void
   evaluate_error_budget(Classification_res<T>& res,
                         T* error_estimates,
-                        int* active_flags,
+                        T* active_flags,
                         const size_t num_regions,
                         const T target_error,
                         const T active_errorest,
@@ -332,7 +332,7 @@ public:
   {
 
     const T extra_f_errorest = active_errorest -
-                               dot_product<T, int, use_custom>(
+                               dot_product<T, T, use_custom>(
                                  error_estimates, active_flags, num_regions) -
                                iter_finished_errorest;
     const T error_budget = target_error - total_f_errorest;
@@ -343,7 +343,7 @@ public:
 
   void
   get_larger_threshold_results(Classification_res<T>& thres_search,
-                               const int* active_flags,
+                               const T* active_flags,
                                const T* errorests,
                                const size_t num_regions) const
   {
@@ -377,7 +377,7 @@ public:
   }
 
   Classification_res<T>
-  classify(int* active_flags, // remove this param, it's unused
+  classify(T* active_flags, // remove this param, it's unused
            T* errorests,
            const size_t num_regions,
            const T iter_errorest,
@@ -392,7 +392,7 @@ public:
     const T min_errorest = thres_search.threshold_range.low;
     const T max_errorest = thres_search.threshold_range.high;
     thres_search.threshold = iter_errorest / num_regions;
-    thres_search.active_flags = quad::cuda_malloc<int>(num_regions);
+    thres_search.active_flags = quad::cuda_malloc<T>(num_regions);
     const T target_error = abs(estimates_from_last_iters[2]) * epsrel;
 
     const size_t max_num_thresholds_attempts = 20;
