@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "cuda/pagani/demos/compute_genz_integrals.cuh"
 
   class GENZ_4_5D {
   public:
@@ -23,6 +24,8 @@ int main(){
     GENZ_4_5D integrand;
     //double true_value = 1.79132603674879e-06;
 	quad::Volume<double, ndim> vol;
+	
+	std::cout<<compute_gaussian<5>({25., 25., 25., 25., 25.}, {.5, .5, .5, .5, .5}) << std::endl;
 	
 	for(int i=0; i < 10; ++i)
 		call_cubature_rules<GENZ_4_5D, ndim>(integrand, vol);

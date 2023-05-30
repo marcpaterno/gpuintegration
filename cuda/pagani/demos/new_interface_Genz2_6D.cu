@@ -1,6 +1,7 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
-
+#include "cuda/pagani/demos/compute_genz_integrals.cuh"
+#include "common/cuda/integrands.cuh"
 class GENZ_2_6D {
 public:
   __device__ __host__ double
@@ -25,18 +26,18 @@ int main(){
     
     double epsrel = 1.0e-3;
     double const epsrel_min = 1.0240000000000002e-10;
-    constexpr int ndim = 6;
-    GENZ_2_6D integrand;
+    constexpr int ndim = 8;
+    F_2_8D integrand;
 	double true_value = 1.286889807581113e+13;
 	constexpr bool use_custom_false = false;
 	constexpr bool debug = false;
 	quad::Volume<double, ndim>  vol;
 	bool relerr_classification = true;
 	
-	for(int i=0; i < 10; ++i)
-		call_cubature_rules<GENZ_2_6D, ndim>(integrand, vol);
+	std::cout<<compute_product_peak<6>({50., 50., 50., 50., 50., 50.}, {.5, .5, .5, .5, .5, .5})<<std::endl;;
 	
-    while (clean_time_and_call<GENZ_2_6D, double, ndim, use_custom_false, debug>("f2",
+	
+    while (clean_time_and_call<F_2_8D, double, ndim, use_custom_false, debug>("f2",
                                            integrand,
                                            epsrel,
                                            true_value,
@@ -51,7 +52,7 @@ int main(){
 	
 	constexpr bool use_custom_true = true;
 	epsrel = 8.0e-6;
-	while (clean_time_and_call<GENZ_2_6D, double, ndim, use_custom_true>("f2",
+	while (clean_time_and_call<F_2_8D, double, ndim, use_custom_true>("f2",
                                            integrand,
                                            epsrel,
                                            true_value,

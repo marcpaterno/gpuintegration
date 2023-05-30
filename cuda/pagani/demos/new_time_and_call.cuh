@@ -113,11 +113,24 @@ call_cubature_rules(int num_repeats = 11)
   }
 }
 
+size_t 
+get_partitions_per_axis(int ndim){
+	size_t splits = 0;
+	 if (ndim < 5)
+      splits = 4;
+    else if (ndim <= 10)
+      splits = 2;
+    else
+      splits = 1;
+	return splits;
+}
+
 template <typename F,
           typename T,
           int ndim,
           bool use_custom = false,
-          int debug = 0>
+          int debug = 0,
+		  int runs_per_esprel = 10>
 bool
 clean_time_and_call(std::string id,
                     F integrand,
@@ -140,17 +153,10 @@ clean_time_and_call(std::string id,
     return to_print;
   };
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < runs_per_esprel; i++) {
 
     auto const t0 = std::chrono::high_resolution_clock::now();
-    size_t partitions_per_axis = 2;
-    if (ndim < 5)
-      partitions_per_axis = 4;
-    else if (ndim <= 10)
-      partitions_per_axis = 2;
-    else
-      partitions_per_axis = 1;
-
+    size_t partitions_per_axis = get_partitions_per_axis(ndim);
     Sub_regions<T, ndim> sub_regions(partitions_per_axis);
     constexpr bool predict_split = false;
     constexpr bool collect_iters = false;
@@ -169,6 +175,57 @@ clean_time_and_call(std::string id,
     if (i != 0)
       outfile << std::fixed << std::scientific << id << "," << ndim << ","
               << print_custom(use_custom) << "," << true_value << "," << epsrel
+              << "," << epsabs << "," << result.estimate << ","
+              << result.errorest << "," << result.nregions << ","
+              << result.status << "," << dt.count() << std::endl;
+  }
+  return good;
+}
+
+template <typename F,
+          int ndim,
+          bool use_custom = false,
+          int debug = 0,
+		  int runs_per_esprel = 10>
+bool
+clean_time_and_call(std::string id, double epsrel)
+{
+  
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  double constexpr epsabs = 1.0e-40;
+  bool good = false;
+  bool relerr_classification = true;
+  Workspace<double, ndim, use_custom> workspace;
+  F integrand;
+  integrand.set_true_value();
+  auto print_custom = [=](bool use_custom_flag) {
+    std::string to_print = use_custom_flag == true ? "custom" : "library";
+    return to_print;
+  };
+
+  for (int i = 0; i < runs_per_esprel; i++) {
+	quad::Volume<double, ndim> vol;
+    auto const t0 = std::chrono::high_resolution_clock::now();
+    size_t partitions_per_axis = get_partitions_per_axis(ndim);
+    Sub_regions<double, ndim> sub_regions(partitions_per_axis);
+    constexpr bool predict_split = false;
+    constexpr bool collect_iters = false;
+
+    numint::integration_result result =
+      workspace.template integrate<F, predict_split, collect_iters, debug>(
+        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    double const absolute_error = std::abs(result.estimate - integrand.true_value);
+	
+    if (result.status == 0) {
+      good = true;
+    }
+
+    std::cout.precision(17);
+    if (i != 0)
+      std::cout << std::fixed << std::scientific << id << "," << ndim << ","
+              << print_custom(use_custom) << "," << integrand.true_value << "," << epsrel
               << "," << epsabs << "," << result.estimate << ","
               << result.errorest << "," << result.nregions << ","
               << result.status << "," << dt.count() << std::endl;

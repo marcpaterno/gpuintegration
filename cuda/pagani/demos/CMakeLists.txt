@@ -1,5 +1,23 @@
 #find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(genz_integrals genz_integrals.cu)
+set_target_properties(genz_integrals PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(genz_integrals util)
+target_compile_options(genz_integrals PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(genz_integrals PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(addition_integrals addition_integrals.cu)
+set_target_properties(addition_integrals PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(addition_integrals util)
+target_compile_options(addition_integrals PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(addition_integrals PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(new_interface_Genz4_6D new_interface_Genz4_6D.cu)
 set_target_properties(new_interface_Genz4_6D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(new_interface_Genz4_6D util)

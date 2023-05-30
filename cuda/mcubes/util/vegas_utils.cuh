@@ -281,19 +281,14 @@ bool
 AdjustParams(double& ncall, int& totalIters)
 {
   if (ncall >= 8.e9 && totalIters >= 100) {
-    // printf("Adjusting will return false\n");
     return false;
   } else if (ncall >= 8.e9) {
-    //  printf("Adjusting will increase iters by 10 current value:%i\n",
-    //  totalIters);
     totalIters += 10;
     return true;
   } else if (ncall >= 1.e9) {
-    // printf("Adjusting will increase ncall by 1e9 current value:%e\n", ncall);
     ncall += 1.e9;
     return true;
   } else {
-    //  printf("Adjusting will multiply ncall by 10 current value:%e\n", ncall);
     ncall *= 10.;
     return true;
   }

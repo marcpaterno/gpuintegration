@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "cuda/pagani/demos/compute_genz_integrals.cuh"
 
 class GENZ_5_8D {
 public:
@@ -32,6 +33,7 @@ main()
   GENZ_5_8D integrand;
   double true_value = 2.425217625641885e-06;
   quad::Volume<double, ndim> vol;
+  std::cout<<"genz-compute answer: " << compute_c_zero<8>({10., 10., 10., 10., 10., 10., 10., 10.}, {.5, .5, .5, .5, .5, .5, .5, .5}) <<std::endl;
 
   while (clean_time_and_call<GENZ_5_8D, double, ndim, false>(
            "f5", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) &&

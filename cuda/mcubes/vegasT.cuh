@@ -812,7 +812,7 @@ namespace cuda_mcubes {
         std::chrono::duration<double, std::chrono::milliseconds::period>;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
+      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
         static_cast<unsigned int>(it);
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,

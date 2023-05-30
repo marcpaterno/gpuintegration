@@ -1,5 +1,7 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "cuda/pagani/demos/compute_genz_integrals.cuh"
+#include "common/cuda/integrands.cuh"
 
 class GENZ_6_6D {
 public:
@@ -19,13 +21,17 @@ main()
 
   double epsrel = 1.0e-3;
   double const epsrel_min = 1.0240000000000002e-10;
-  constexpr int ndim = 6;
+  constexpr int ndim = 5;
   GENZ_6_6D integrand;
   double true_value = 1.5477367885091207413e8;
   quad::Volume<double, ndim> vol;
-
-  while (clean_time_and_call<GENZ_6_6D, double, ndim, false>(
-           "f6", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
+  std::cout<<"genz-compute answer: " << compute_discontinuous<6>({5., 6., 7., 8., 9., 10.}, {.4, .5, .6, .7, .8, .9}) <<std::endl;
+  F_6_5D temp;
+  temp.set_true_value();
+  std::cout<<"genz-compute answer for 5D:"<< temp.true_value << std::endl;
+	
+  while (clean_time_and_call<F_6_5D, double, ndim, false>(
+           "f6", temp, epsrel, true_value, "gpucuhre", std::cout, vol) ==
            true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "cuda/pagani/demos/compute_genz_integrals.cuh"
 
 class GENZ_3_3D {
 public:
@@ -21,7 +22,9 @@ main()
   double true_value = 0.010846560846560846561;
   constexpr int debug = 1;
   quad::Volume<double, ndim> vol;
-
+  std::array<double, 3> temp = {3., 2.,1.};
+  
+  //first:
   while (clean_time_and_call<GENZ_3_3D, double, ndim, false, debug>(
            "f3", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
            true &&

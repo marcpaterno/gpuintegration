@@ -1,3 +1,8 @@
+add_executable(cuda_mcubes_genz_integrals genz_integrals.cu)
+target_compile_options(cuda_mcubes_genz_integrals PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_genz_integrals PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
+
 add_executable(mcubes_SinSum6D SinSum6D.cu)
 target_compile_options(mcubes_SinSum6D PRIVATE "-DCURAND")
 set_target_properties(mcubes_SinSum6D PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
