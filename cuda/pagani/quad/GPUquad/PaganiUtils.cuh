@@ -269,7 +269,6 @@ public:
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
-
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -286,7 +285,7 @@ public:
                                    generators,
                                    dfevals);
     cudaDeviceSynchronize();
-    print_verbose(generators, dfevals, subregion_estimates);
+    print_verbose<debug>(generators, dfevals, subregion_estimates);
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
