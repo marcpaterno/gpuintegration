@@ -194,9 +194,12 @@ common_header_mcubes_time_and_call(F integrand,
     if (success)
       std::cout << integ_id << "," << std::scientific << alg_id << ","
                 << difficulty << "," << epsrel << "," << epsabs << ","
-                << std::scientific << correct_answer << "," << std::scientific
-                << res.estimate << "," << std::scientific << res.errorest << ","
-                << dt.count() << "," << res.status << "\n";
+                << std::scientific << std::setprecision(15) 
+				<< correct_answer << ","  
+                << res.estimate << "," 
+				<< res.errorest << ","
+                << dt.count() << "," 
+				<< res.status << "\n";
 
     if (run == 0 && !success){
 		AdjustParams(params.ncall, params.t_iter);
@@ -206,6 +209,82 @@ common_header_mcubes_time_and_call(F integrand,
       run++;
   } while (success == false &&
            CanAdjustNcallOrIters(params.ncall, params.t_iter) == true);
+
+  return success;
+}
+
+template <typename F,
+          int ndim,
+          int num_runs = 10, 
+          typename GeneratorType = Curand_generator>
+bool
+time_and_call_no_adjust_params(std::string integ_id,
+								   double epsrel,
+                   VegasParams params,
+								   std::ostream& outfile)
+{
+	using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+  double constexpr epsabs = 1.0e-20;
+  bool constexpr MCUBES_DEBUG = false;
+  bool success = false;
+  F integrand;
+  integrand.set_true_value();
+  int run = 0;
+  quad::Volume<double, ndim> volume;
+  
+  do {
+  
+      auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      &volume,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    success = (res.status == 0);
+    std::cout.precision(17);
+	
+	
+    //if (success)
+      std::cout << integ_id << "," << std::scientific   
+				<< ndim << ","
+				<< std::setprecision(15) << integrand.true_value << ","
+				<< epsrel << "," 
+				<< epsabs << "," 
+				<< std::scientific << std::setprecision(15) << res.estimate << "," 
+				<< std::scientific << std::setprecision(15) << res.errorest << ","
+				<< params.ncall << "," 
+				<< params.t_iter << ","
+				<< params.num_adjust_iters << ","
+				<< res.iters << ","
+                << dt.count() << "," 
+				<< res.status << "\n";
+				
+      outfile << integ_id << "," << std::scientific  
+				<< ndim << ","
+				<< std::setprecision(15) << integrand.true_value << ","
+				<< epsrel << "," 
+				<< epsabs << "," 
+				<< std::scientific << res.estimate << "," 
+				<< std::scientific << res.errorest << ","
+				<< res.chi_sq << ","
+				<< params.ncall << "," 
+				<< params.t_iter << ","
+				<< params.num_adjust_iters << ","
+				<< res.iters << ","
+                << dt.count() << "," 
+				<< res.status << "\n";
+
+      run++;
+
+	
+  } while (run < num_runs);
 
   return success;
 }
@@ -248,8 +327,6 @@ common_header_mcubes_time_and_call(std::string integ_id,
     success = (res.status == 0);
     std::cout.precision(17);
 	
-	
-    //if (success)
       std::cout << integ_id << "," << std::scientific   
 				<< ndim << ","
 				<< std::setprecision(15) << integrand.true_value << ","
@@ -257,6 +334,7 @@ common_header_mcubes_time_and_call(std::string integ_id,
 				<< epsabs << "," 
 				<< std::scientific << std::setprecision(15) << res.estimate << "," 
 				<< std::scientific << std::setprecision(15) << res.errorest << ","
+				<< res.chi_sq << ","
 				<< params.ncall << "," 
 				<< params.t_iter << ","
 				<< params.num_adjust_iters << ","
@@ -264,9 +342,9 @@ common_header_mcubes_time_and_call(std::string integ_id,
                 << dt.count() << "," 
 				<< res.status << "\n";
 				
-      outfile << integ_id << "," << std::scientific   
+      outfile << integ_id << "," << std::scientific  
 				<< ndim << ","
-				<< integrand.true_value << ","
+				<< std::setprecision(15) << integrand.true_value << ","
 				<< epsrel << "," 
 				<< epsabs << "," 
 				<< std::scientific << res.estimate << "," 
