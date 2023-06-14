@@ -1,6 +1,7 @@
 #ifndef VEGAS_VEGAS_T_CUH
 #define VEGAS_VEGAS_T_CUH
 
+
 /*
 
 code works for gaussian and sin using switch statement. device pointerr/template
@@ -70,7 +71,13 @@ Last three arguments are: total iterations, iteration
     }                                                                          \
   }
 
+
 namespace cuda_mcubes {
+
+
+  using MilliSeconds =
+        std::chrono::duration<double, std::chrono::milliseconds::period>;
+
 
 #define NR_END 1
 #define IM1 2147483563
@@ -477,10 +484,10 @@ namespace cuda_mcubes {
     if (tx == 0) {
       // result_dev[0] += fbg;
       // result_dev[1] += f2bg;
-
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
     }
+
     // end of subcube if
   }
 
@@ -744,70 +751,43 @@ namespace cuda_mcubes {
     double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev, *result_dev;
     int* ia_dev;
 
-    cudaMalloc((void**)&result_dev, sizeof(double) * 2);
-    cudaCheckError();
-    cudaMalloc((void**)&d_dev, sizeof(double) * (ndmx_p1) * (mxdim_p1));
-    cudaCheckError();
-    cudaMalloc((void**)&dx_dev, sizeof(double) * (mxdim_p1));
-    cudaCheckError();
-    cudaMalloc((void**)&x_dev, sizeof(double) * (mxdim_p1));
-    cudaCheckError();
-    cudaMalloc((void**)&xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1));
-    cudaCheckError();
-    cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1));
-    cudaCheckError();
-    cudaMalloc((void**)&ia_dev, sizeof(int) * (mxdim_p1));
-    cudaCheckError();
+    cudaMalloc((void**)&result_dev, sizeof(double) * 2);cudaCheckError();
+    cudaMalloc((void**)&d_dev, sizeof(double) * (ndmx_p1) * (mxdim_p1));cudaCheckError();
+    cudaMalloc((void**)&dx_dev, sizeof(double) * (mxdim_p1));cudaCheckError();
+    cudaMalloc((void**)&x_dev, sizeof(double) * (mxdim_p1));cudaCheckError();
+    cudaMalloc((void**)&xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1));cudaCheckError();
+    cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1));cudaCheckError();
+    cudaMalloc((void**)&ia_dev, sizeof(int) * (mxdim_p1));cudaCheckError();
 
-    cudaMemcpy(dx_dev, dx, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
-    cudaCheckError();
-    cudaMemcpy(x_dev, x, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
-    cudaCheckError();
-    cudaMemcpy(regn_dev,
-               regn,
-               sizeof(double) * ((ndim * 2) + 1),
-               cudaMemcpyHostToDevice);
-    cudaCheckError();
-
+    cudaMemcpy(dx_dev, dx, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);cudaCheckError();
+    cudaMemcpy(x_dev, x, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);cudaCheckError();
+    cudaMemcpy(regn_dev, regn, sizeof(double) * ((ndim * 2) + 1), cudaMemcpyHostToDevice);cudaCheckError();
     cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
     int chunkSize = GetChunkSize(ncall);
-    // chunkSize = 4;
     uint32_t totalNumThreads =
-      (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
+      (uint32_t)((ncubes) / chunkSize);
 
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
     Kernel_Params params(ncall, chunkSize, ndim);
-    // uint32_t nBlocks =
-    //   ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
-    //   1; // compute blocks based on chunk_size, ncubes, and block_dim_x
-
-    // uint32_t nBlocks = ncubes % BLOCK_DIM_X == 0 ? (ncubes/BLOCK_DIM_X) :
-    // (ncubes/BLOCK_DIM_X) + 1; uint32_t nThreads = BLOCK_DIM_X;
-
     IterDataLogger<DEBUG_MCUBES> data_collector(
       totalNumThreads, chunkSize, extra, npg, ndim);
 
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
+
       ti = tsi = 0.0;
       for (j = 1; j <= ndim; j++) {
         for (i = 1; i <= nd; i++)
           d[i * mxdim_p1 + j] = 0.0;
       }
 
-      cudaMemcpy(xi_dev,
-                 xi,
-                 sizeof(double) * (mxdim_p1) * (ndmx_p1),
-                 cudaMemcpyHostToDevice);
+      cudaMemcpy(xi_dev,xi,sizeof(double) * (mxdim_p1) * (ndmx_p1),cudaMemcpyHostToDevice);
       cudaCheckError(); // bin bounds
       cudaMemset(
         d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1)); // bin contributions
       cudaMemset(result_dev, 0, 2 * sizeof(double));
-
-      using MilliSeconds =
-        std::chrono::duration<double, std::chrono::milliseconds::period>;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
@@ -918,7 +898,6 @@ namespace cuda_mcubes {
             &xi[j * ndmx_p1]); // first bin of each dimension is at a diff index
         }
       }
-
     } // end of iterations
 
     //  Start of iterations without adjustment
