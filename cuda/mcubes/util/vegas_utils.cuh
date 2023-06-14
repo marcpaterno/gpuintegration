@@ -252,7 +252,8 @@ GetChunkSize(const double ncall)
 {
   double small = 1.e7;
   double large = 8.e9;
-
+  if(ncall < 1e6)
+    return 1;
   if (ncall <= small)
     return 32;
   else if (ncall <= large)
