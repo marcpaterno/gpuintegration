@@ -283,7 +283,7 @@ namespace cuda_mcubes {
         randoms);
 
       gpu::cudaArray<double, ndim> xx;
-#pragma unroll ndim // unroll needed
+      #pragma unroll ndim // unroll needed
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
@@ -292,7 +292,6 @@ namespace cuda_mcubes {
       /*const double*/ tmp += gpu::apply(*d_integrand, xx);
 
       const double f = wgt * tmp;
-
       // if constexpr(DEBUG_MCUBES){
       // if constexpr(DEBUG_MCUBES){
       //     if(funcevals != nullptr){
@@ -511,9 +510,9 @@ namespace cuda_mcubes {
                 unsigned int seed_init)
   {
 
-    constexpr int ndmx = 500;    // Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx_p1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
-    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
     uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
     int tx = threadIdx.x;
@@ -659,9 +658,9 @@ namespace cuda_mcubes {
     // all of the ofstreams below will be removed, replaced by DataLogger
     auto t0 = std::chrono::high_resolution_clock::now();
 
-    constexpr int ndmx = 500;    // Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx_p1 = 501; // Internal_Vegas_Params::get_NDMX_p1();
-    constexpr int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
+    constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
+    constexpr int ndmx_p1 =  Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
     // IntegT* d_integrand = quad::cuda_copy_to_device(integrand);
     IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
@@ -780,7 +779,6 @@ namespace cuda_mcubes {
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
-
     Kernel_Params params(ncall, chunkSize, ndim);
     // uint32_t nBlocks =
     //   ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
