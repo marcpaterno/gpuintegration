@@ -37,7 +37,6 @@ call_cubature_rules(F integrand,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   // cudaDeviceReset();
 
-  std::cout << "num-repeats:" << num_repeats << std::endl;
   for (int i = 0; i < num_repeats; ++i) {
     for (int splits_per_dim = ndim >= 8 ? 5 : 8; splits_per_dim < 15;
          splits_per_dim++) {
@@ -188,7 +187,7 @@ template <typename F,
           int debug = 0,
 		  int runs_per_esprel = 10>
 bool
-clean_time_and_call(std::string id, double epsrel)
+clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
 {
   
   using MilliSeconds =
