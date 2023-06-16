@@ -94,7 +94,7 @@ public:
         << "iter, dim, bin, bin_length, left, right, contribution\n";
     }
 
-    if (iter <= 2) {
+    if (iter <= 20) {
       for (int dim = 1; dim <= ndim; dim++)
         for (int bin = 1; bin <= ndmx; bin++) {
 
