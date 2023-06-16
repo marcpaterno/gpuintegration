@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstring>
+#include <vector>
 
 // user must make sure to call cudaMalloc and cudaMemcpy regarding d_highs and
 // d_lows
@@ -34,6 +35,20 @@ namespace quad {
       std::memcpy(lows, l, NDIM * sizeof(T));
       std::memcpy(highs, h, NDIM * sizeof(T));
     }
+	
+	__host__
+    Volume(T l, T h)
+    {
+	  std::array<T, NDIM> h_lows;	
+	  std::array<T, NDIM> h_highs;
+	  
+	  std::fill(h_lows.begin(), h_lows.end(), l);
+	  std::fill(h_highs.begin(), h_highs.end(), h);
+		
+      std::memcpy(lows, h_lows.data(), NDIM * sizeof(T));
+      std::memcpy(highs, h_highs.data(), NDIM * sizeof(T));
+    }
+	
   };
 }
 
