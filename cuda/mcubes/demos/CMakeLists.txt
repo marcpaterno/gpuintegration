@@ -1,3 +1,7 @@
+add_executable(cuda_mcubes_oscillatory_integrands oscillatory_integrands.cu)
+target_compile_options(cuda_mcubes_oscillatory_integrands PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_oscillatory_integrands PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
 add_executable(cuda_mcubes_genz_integrals genz_integrals.cu)
 target_compile_options(cuda_mcubes_genz_integrals PRIVATE "-DCURAND")
 set_target_properties(cuda_mcubes_genz_integrals PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})

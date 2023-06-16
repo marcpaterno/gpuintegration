@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cuda/pagani/demos/new_time_and_call.cuh"
+#include "common/cuda/integrands.cuh"
 
 class GENZ_4_6D {
 public:
@@ -18,36 +19,23 @@ int
 main()
 {
 
-  //double epsrel = 1.0e-3;
-  //double const epsrel_min = 1.0240000000000002e-10;
+  double epsrel = 1.0e-3;
+  double const epsrel_min = 1.0240000000000002e-10;
   constexpr int ndim = 6;
-  GENZ_4_6D integrand;
-  //double true_value = 1.79132603674879e-06;
+  F_4_6D integrand;
+  integrand.set_true_value();
   quad::Volume<double, ndim> vol;
 
-  // for(int i=0; i < 10; ++i)
-  call_cubature_rules<GENZ_4_6D, ndim>(integrand, vol);
+  while (clean_time_and_call<F_4_6D, double, ndim, false>("f4",
+                                                          integrand,
+                                                          epsrel,
+                                                          integrand.true_value,
+                                                          "gpucuhre",
+                                                          std::cout,
+                                                          vol) == true &&
+         epsrel >= epsrel_min) {
+    epsrel /= 5.0;
+  }
 
-  /*while (clean_time_and_call<GENZ_4_5D, double, ndim, false>("f4",
-                                         integrand,
-                                         epsrel,
-                                         true_value,
-                                         "gpucuhre",
-                                         std::cout,
-                                                                                 vol) == true &&
-       epsrel >= epsrel_min) {
-                      epsrel /= 5.0;
-      }*/
-
-  /*epsrel = 1.0e-3;
-  while (clean_time_and_call<GENZ_4_5D, double, ndim, true>("f4",
-                                     integrand,
-                                     epsrel,
-                                     true_value,
-                                     "gpucuhre",
-                                     std::cout) == true &&
-   epsrel >= epsrel_min) {
-                  epsrel /= 5.0;
-  }*/
   return 0;
 }

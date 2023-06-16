@@ -1,5 +1,14 @@
 #find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(oscillatory_integrands oscillatory_integrands.cu)
+set_target_properties(oscillatory_integrands PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(oscillatory_integrands util)
+target_compile_options(oscillatory_integrands PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(oscillatory_integrands PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(genz_integrals genz_integrals.cu)
 set_target_properties(genz_integrals PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(genz_integrals util)

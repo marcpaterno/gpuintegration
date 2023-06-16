@@ -1,8 +1,30 @@
 #ifndef COMPUTE_GENZ_INTEGRALS_CUH
 #define COMPUTE_GENZ_INTEGRALS_CUH
 #include <math.h> /* atan */
-//double constexpr PI = 3.14159265358979323844;
+// double constexpr PI = 3.14159265358979323844;
 
+template <size_t ndim>
+double
+compute_cos_non_sep_product_at_bounds(double low, double high)
+{
+  return -pow(2, ndim) * cos(ndim * (low + high) / 2) *
+         pow(sin((low - high) / 2), ndim);
+}
+
+template <size_t ndim>
+double
+compute_cos_semi_sep_product_at_bounds(double low, double high)
+{
+  return pow(2, ndim) * pow(cos(low + high), ndim / 2) *
+         pow(sin((low - high) / 2), ndim);
+}
+
+template <size_t ndim>
+double
+compute_cos_fully_sep_product_at_bounds(double low, double high)
+{
+  return /*pow(-1, ndim)**/ pow(sin(high) - sin(low), ndim);
+}
 double
 r8_abs(double x)
 
@@ -149,47 +171,38 @@ genz_phi(double z)
   return p;
 }
 
-
-void tuple_next ( int m1, int m2, int n, int *rank, int x[] )
+void
+tuple_next(int m1, int m2, int n, int* rank, int x[])
 {
   int i;
   int j;
 
-  if ( m2 < m1 )
-  {
+  if (m2 < m1) {
     *rank = 0;
     return;
   }
 
-  if ( *rank <= 0 )
-  {
-    for ( i = 0; i < n; i++ )
-    {
+  if (*rank <= 0) {
+    for (i = 0; i < n; i++) {
       x[i] = m1;
     }
     *rank = 1;
-  }
-  else
-  {
+  } else {
     *rank = *rank + 1;
     i = n - 1;
 
-    for ( ; ; )
-    {
+    for (;;) {
 
-      if ( x[i] < m2 )
-      {
+      if (x[i] < m2) {
         x[i] = x[i] + 1;
         break;
       }
 
       x[i] = m1;
 
-      if ( i == 0 )
-      {
+      if (i == 0) {
         *rank = 0;
-        for ( j = 0; j < n; j++ )
-        {
+        for (j = 0; j < n; j++) {
           x[j] = m1;
         }
         break;
@@ -200,14 +213,14 @@ void tuple_next ( int m1, int m2, int n, int *rank, int x[] )
   return;
 }
 
-int i4vec_sum ( int n, int a[] )
+int
+i4vec_sum(int n, int a[])
 {
   int i;
   int sum;
 
   sum = 0;
-  for ( i = 0; i < n; i++ )
-  {
+  for (i = 0; i < n; i++) {
     sum = sum + a[i];
   }
 
@@ -219,7 +232,7 @@ double
 compute_product_peak(std::array<double, ndim> alphas,
                      std::array<double, ndim> betas)
 {
-  //f2 functions
+  // f2 functions
   double value = 1.0;
 
   for (size_t j = 0; j < ndim; j++) {
@@ -235,7 +248,7 @@ double
 compute_gaussian(std::array<double, ndim> alphas,
                  std::array<double, ndim> betas)
 {
-  //f4
+  // f4
   double value = 1.0;
   const double pi = 3.14159265358979323844;
   double ab = sqrt(2.0);
@@ -251,7 +264,7 @@ template <size_t ndim>
 double
 compute_c_zero(std::array<double, ndim> alphas, std::array<double, ndim> betas)
 {
-  //f5
+  // f5
   double value = 1.0;
   for (size_t j = 0; j < ndim; j++) {
     double ab = alphas[j] * betas[j];
@@ -260,60 +273,54 @@ compute_c_zero(std::array<double, ndim> alphas, std::array<double, ndim> betas)
   return value;
 }
 
-//not working
+// not working
 template <size_t ndim>
 double
-compute_corner_peak(std::array<double, ndim> alphas){
-	double value = 0.0;
+compute_corner_peak(std::array<double, ndim> alphas)
+{
+  double value = 0.0;
 
-    double sgndm = 1.0;
-    for (int j = 1; j <= ndim; j++ )
-    {
-      sgndm = - sgndm / ( double ) ( j );
+  double sgndm = 1.0;
+  for (int j = 1; j <= ndim; j++) {
+    sgndm = -sgndm / (double)(j);
+  }
+
+  int rank = 0;
+  int* ic = new int[ndim];
+
+  for (;;) {
+    tuple_next(0, 1, ndim, &rank, ic);
+
+    if (rank == 0) {
+      break;
     }
 
-    int rank = 0;
-    int* ic = new int[ndim];
+    double total = 1.0;
 
-    for ( ; ; )
-    {
-      tuple_next ( 0, 1, ndim, &rank, ic );
-
-      if ( rank == 0 )
-      {
-        break;
+    for (int j = 0; j < ndim; j++) {
+      if (ic[j] != 1) {
+        total = total + alphas[j];
       }
-
-      double total = 1.0;
-
-      for (int j = 0; j < ndim; j++ )
-      {
-        if ( ic[j] != 1 )
-        {
-          total = total + alphas[j];
-        }
-      }
-
-      int isum = i4vec_sum ( ndim, ic );
-
-      double s = 1 + 2 * ( ( isum / 2 ) * 2 - isum );
-      value = value + ( double ) s / total;
-
     }
 
-    delete [] ic;
+    int isum = i4vec_sum(ndim, ic);
 
-    value = value * sgndm;
-	return value;
+    double s = 1 + 2 * ((isum / 2) * 2 - isum);
+    value = value + (double)s / total;
+  }
+
+  delete[] ic;
+
+  value = value * sgndm;
+  return value;
 }
-
 
 template <size_t ndim>
 double
 compute_discontinuous(std::array<double, ndim> alphas,
                       std::array<double, ndim> betas)
 {
-  //f6
+  // f6
   double value = 1.0;
   for (size_t j = 0; j < ndim; j++) {
     value = value * (exp(alphas[j] * betas[j]) - 1.0) / alphas[j];
