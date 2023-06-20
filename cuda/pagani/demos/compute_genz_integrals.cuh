@@ -7,7 +7,7 @@ template <size_t ndim>
 double
 compute_cos_non_sep_product_at_bounds(double low, double high)
 {
-  return -pow(2, ndim) * cos(ndim * (low + high) / 2) *
+  return pow(-2, ndim) * cos(ndim * (low + high) / 2) *
          pow(sin((low - high) / 2), ndim);
 }
 
