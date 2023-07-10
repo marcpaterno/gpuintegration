@@ -63,16 +63,15 @@ oscillatory_mcubes_time_and_call(std::string integ_id,
 int
 main()
 {
-  std::ofstream outfile("cuda_mcubes_oscillatory.csv");
-  int titer = 200;
-  int itmax = 100; // don't forget to adjust when comparing
-  int skip = 0;    // that may need to be set to itmax
-  constexpr int num_runs = 2;
-  std::vector<std::pair<double, double>> volumes = {
-    {0., 1.3 * PI} /*, {0., 2.1 * PI}, {0., 3.1 * PI}, {0., 4.1 * PI}*/};
+  std::ofstream outfile("cuda_mcubes_oscillatory_temp.csv");
+  int titer = 300;
+  int itmax = 0; // don't forget to adjust when comparing
+  int skip = 0;  // that may need to be set to itmax
+  constexpr int num_runs = 1;
+  std::vector<std::pair<double, double>> volumes = {{0, 1.1*PI}/*, {0, 2.1* PI}, {0, 1.1* PI}, {0., 2.1 * PI}, {0., 3.1 * PI}, {0., 4.1 * PI}*/};
   std::vector<double> epsrels = {1.e-3 /*, 1.e-4, 1.e-5, 1.e-6*/};
   std::vector<double> required_ncall = {
-    /*1.e5, 1.e6,*/ 1.e7 /*, 1.e8, 1.e9, 2.e9, 3.e9, 5.e9*/};
+    /*1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9, 3.e9,*/ 5.e9};
   VegasParams params(required_ncall[0], titer, itmax, skip);
 
   outfile
@@ -82,13 +81,23 @@ main()
 
   for (auto volume : volumes) {
 
+    /*for(double ncall : required_ncall){
+            params.ncall = ncall;
+            for(double epsrel : epsrels){
+                    constexpr int ndim = 1;
+                    quad::Volume<double, ndim> vol(volume.first, volume.second);
+                    oscillatory_mcubes_time_and_call<Cos_fully_sep_product_1D,
+    ndim, num_runs>("fully_sep_osc",  epsrel, params, outfile, vol);
+            }
+    }*/
+
     for (double ncall : required_ncall) {
       params.ncall = ncall;
       for (double epsrel : epsrels) {
         constexpr int ndim = 10;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_10D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_10D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_10D,
                                          ndim,
                                          num_runs>(
@@ -101,8 +110,8 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 9;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_9D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_9D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_9D,
                                          ndim,
                                          num_runs>(
@@ -115,12 +124,10 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 8;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_8D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
-        oscillatory_mcubes_time_and_call<Cos_semi_sep_product_8D,
-                                         ndim,
-                                         num_runs>(
-          "semi_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_8D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Cos_semi_sep_product_8D, ndim,
+        // num_runs>("semi_sep_osc",  epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_8D,
                                          ndim,
                                          num_runs>(
@@ -133,8 +140,8 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 7;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_7D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_7D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_7D,
                                          ndim,
                                          num_runs>(
@@ -147,12 +154,10 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 6;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_6D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
-        oscillatory_mcubes_time_and_call<Cos_semi_sep_product_6D,
-                                         ndim,
-                                         num_runs>(
-          "semi_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_6D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Cos_semi_sep_product_6D, ndim,
+        // num_runs>("semi_sep_osc",  epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_6D,
                                          ndim,
                                          num_runs>(
@@ -165,8 +170,10 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 5;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Oscillatory_5D, ndim, num_runs>(
-          "non_sep_osc", epsrel, params, outfile, vol);
+        // time_and_call_no_adjust_params<F_1_5D, ndim, num_runs>("F_1_5D",
+        // epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_5D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_5D,
                                          ndim,
                                          num_runs>(
@@ -179,10 +186,10 @@ main()
       for (double epsrel : epsrels) {
         constexpr int ndim = 4;
         quad::Volume<double, ndim> vol(volume.first, volume.second);
-        oscillatory_mcubes_time_and_call<Cos_semi_sep_product_4D,
-                                         ndim,
-                                         num_runs>(
-          "semi_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Oscillatory_4D, ndim,
+        // num_runs>("non_sep_osc", epsrel, params, outfile, vol);
+        // oscillatory_mcubes_time_and_call<Cos_semi_sep_product_4D, ndim,
+        // num_runs>("semi_sep_osc", epsrel, params, outfile, vol);
         oscillatory_mcubes_time_and_call<Cos_fully_sep_product_4D,
                                          ndim,
                                          num_runs>(

@@ -47,7 +47,7 @@ osc_time_and_call(std::string id,
     }
 
     std::cout.precision(17);
-    if (i != 0) {
+    /*if (i != 0)*/ {
       std::cout << id << "," << ndim << "," << vol.lows[0] << ","
                 << vol.highs[0] << "," << print_custom(use_custom) << ","
                 << std::fixed << std::scientific << integrand.true_value << ","
@@ -55,12 +55,12 @@ osc_time_and_call(std::string id,
                 << result.errorest << "," << result.nregions << ","
                 << result.status << "," << dt.count() << std::endl;
 
-      outfile << id << "," << ndim << "," << vol.lows[0] << "," << vol.highs[0]
-              << "," << print_custom(use_custom) << "," << std::fixed
-              << std::scientific << integrand.true_value << "," << epsrel << ","
-              << epsabs << "," << result.estimate << "," << result.errorest
-              << "," << result.nregions << "," << result.status << ","
-              << dt.count() << std::endl;
+      outfile << id << "," << ndim << "," << std::scientific << vol.lows[0]
+              << "," << vol.highs[0] << "," << print_custom(use_custom) << ","
+              << integrand.true_value << "," << epsrel << "," << epsabs << ","
+              << result.estimate << "," << result.errorest << ","
+              << result.nregions << "," << result.iters << "," << result.status
+              << "," << dt.count() << std::endl;
     }
   }
   return good;
@@ -75,16 +75,15 @@ osc_time_and_call(std::string id,
 int
 main()
 {
-
   constexpr bool use_custom = false;
   constexpr int debug = 0;
-  constexpr int num_runs = 2;
-  std::vector<double> epsrels = {1.e-3, 1.e-4, 1.e-5, 1.e-6};
+  constexpr int num_runs = 1;
+  std::vector<double> epsrels = {1.e-3 /*, 1.e-4, 1.e-5, 1.e-6*/};
   std::vector<std::pair<double, double>> volumes = {
-    {0., 1.1 * PI}, {0., 2.1 * PI}, {0., 3.1 * PI}, {0., 4.1 * PI}};
+    {PI, 1.1 * PI} /*, {0., 2.1 * PI}, {0., 3.1 * PI}, {0., 4.1 * PI}*/};
   std::ofstream outfile("cuda_pagani_oscillatory.csv");
   outfile << "id, ndim, low, high, use_custom, true_value, epsrel, epsabs, "
-             "estimate, errorest, nregions, status, time"
+             "estimate, errorest, nregions, completed_iters, status, time"
           << std::endl;
   for (auto volume : volumes) {
 
@@ -93,26 +92,26 @@ main()
       quad::Volume<double, ndim> vol(volume.first, volume.second);
       osc_time_and_call<Oscillatory_10D, ndim, use_custom, debug, num_runs>(
         "non_sep_osc", epsrel, outfile, vol);
-      osc_time_and_call<Cos_fully_sep_product_10D,
+      /*osc_time_and_call<Cos_fully_sep_product_10D,
                         ndim,
                         use_custom,
                         debug,
-                        num_runs>("fully_sep_osc", epsrel, outfile, vol);
+                        num_runs>("fully_sep_osc", epsrel, outfile, vol);*/
     }
 
     for (double epsrel : epsrels) {
       constexpr int ndim = 9;
       quad::Volume<double, ndim> vol(volume.first, volume.second);
-      osc_time_and_call<Oscillatory_9D, ndim, use_custom, debug, num_runs>(
+      /*osc_time_and_call<Oscillatory_9D, ndim, use_custom, debug, num_runs>(
         "non_sep_osc", epsrel, outfile, vol);
       osc_time_and_call<Cos_fully_sep_product_9D,
                         ndim,
                         use_custom,
                         debug,
-                        num_runs>("fully_sep_osc", epsrel, outfile, vol);
+                        num_runs>("fully_sep_osc", epsrel, outfile, vol);*/
     }
 
-    for (double epsrel : epsrels) {
+    /*for (double epsrel : epsrels) {
       constexpr int ndim = 8;
       quad::Volume<double, ndim> vol(volume.first, volume.second);
       osc_time_and_call<Oscillatory_8D, ndim, use_custom, debug, num_runs>(
@@ -183,7 +182,7 @@ main()
                         use_custom,
                         debug,
                         num_runs>("fully_sep_osc", epsrel, outfile, vol);
-    }
+    }*/
   }
 
   outfile.close();
