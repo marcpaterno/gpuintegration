@@ -103,8 +103,6 @@ namespace quad {
       return *this;
     }
 
-    Interp3D(Interp3D&&) = delete;
-    Interp3D& operator=(Interp3D&&) = delete;
 
     ~Interp3D()
     {
