@@ -128,9 +128,55 @@ public:
   }
 
   void
-  Print_region_evals(T* ests, T* errs, const size_t num_regions)
+  Print_func_evals(quad::Func_Evals<ndim> fevals,
+                   double* ests,
+                   double* errs,
+                   const size_t num_regions)
+  {
+    if (num_regions >= 1024)
+      return;
+
+    auto print_reg = [=](const Bounds* sub_region) {
+      for (size_t dim = 0; dim < ndim; ++dim) {
+        rfevals.outfile << std::scientific << sub_region[dim].lower << ","
+                        << sub_region[dim].upper << ",";
+      }
+    };
+
+    auto print_global_bounds = [=](const GlobalBounds* sub_region) {
+      for (size_t dim = 0; dim < ndim; ++dim) {
+        rfevals.outfile << std::scientific << sub_region[dim].unScaledLower
+                        << "," << sub_region[dim].unScaledUpper << ",";
+      }
+    };
+
+    auto print_feval_point = [=](double* x) {
+      for (size_t dim = 0; dim < ndim; ++dim) {
+        rfevals.outfile << std::scientific << x[dim] << ",";
+      }
+    };
+
+    for (size_t reg = 0; reg < num_regions; ++reg) {
+      for (int feval = 0; feval < fevals.num_fevals; ++feval) {
+        size_t index = reg * fevals.num_fevals + feval;
+        rfevals.outfile << reg << "," << fevals[index].feval_index << ",";
+
+        print_reg(fevals[index].region_bounds);
+        print_global_bounds(fevals[index].global_bounds);
+        print_feval_point(fevals[index].point);
+
+        rfevals.outfile << std::scientific << fevals[index].feval << ",";
+        rfevals.outfile << std::scientific << ests[reg] << "," << errs[reg];
+        rfevals.outfile << std::endl;
+      }
+    }
+  }
+
+  void
+  Print_region_evals(int iter, T* ests, T* errs, const size_t num_regions)
   {
     for (size_t reg = 0; reg < num_regions; ++reg) {
+      rregions.outfile << iter << ",";
       rregions.outfile << reg << ",";
       rregions.outfile << std::scientific << ests[reg] << "," << errs[reg];
       rregions.outfile << std::endl;
@@ -155,7 +201,8 @@ public:
   }
 
   void
-  print_verbose(T* d_generators,
+  print_verbose(int iter,
+                T* d_generators,
                 quad::Func_Evals<ndim>& dfevals,
                 const Reg_estimates& estimates)
   {
@@ -173,7 +220,7 @@ public:
       quad::cuda_memcpy_to_host<double>(
         errs, estimates.error_estimates, num_regions);
 
-      Print_region_evals(ests, errs, num_regions);
+      Print_region_evals(iter, ests, errs, num_regions);
 
       if constexpr (debug >= 2) {
         constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
@@ -285,7 +332,7 @@ public:
                                    generators,
                                    dfevals);
     cudaDeviceSynchronize();
-    print_verbose<debug>(generators, dfevals, subregion_estimates);
+    print_verbose<debug>(it, generators, dfevals, subregion_estimates);
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(

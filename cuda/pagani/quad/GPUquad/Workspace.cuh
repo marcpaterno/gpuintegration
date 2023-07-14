@@ -205,7 +205,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
                                                     relerr_classification);
     iter.errorest =
       reduction<T, use_custom>(estimates.error_estimates, subregions.size);
-
+    cummulative.iters++;
     if constexpr (debug > 0)
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
@@ -263,7 +263,6 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     quad::CudaCheckError();
     Splitter splitter(subregions.size);
     splitter.split(subregions, characteristics);
-    cummulative.iters++;
   }
   cummulative.nregions += subregions.size;
   cudaFree(d_integrand);
