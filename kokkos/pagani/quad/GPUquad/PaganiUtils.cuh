@@ -248,7 +248,6 @@ public:
       dfevals);
 
     print_verbose<debug>(generators.data(), dfevals, subregion_estimates);
-    std::cout << "about to do reduction" << std::endl;
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);
