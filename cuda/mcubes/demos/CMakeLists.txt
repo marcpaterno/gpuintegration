@@ -1,3 +1,23 @@
+add_executable(cuda_mcubes_c_zero_funcs c_zero_funcs.cu)
+target_compile_options(cuda_mcubes_c_zero_funcs PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_c_zero_funcs PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
+add_executable(cuda_mcubes_gaussians gaussians.cu)
+target_compile_options(cuda_mcubes_gaussians PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_gaussians PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
+add_executable(cuda_mcubes_discontinuous discontinuous.cu)
+target_compile_options(cuda_mcubes_discontinuous PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_discontinuous PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH}) 
+
+add_executable(cuda_mcubes_product_peaks product_peaks.cu)
+target_compile_options(cuda_mcubes_product_peaks PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_product_peaks PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
+add_executable(cuda_mcubes_g_func g_function.cu)
+target_compile_options(cuda_mcubes_g_func PRIVATE "-DCURAND")
+set_target_properties(cuda_mcubes_g_func PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})
+
 add_executable(cuda_mcubes_oscillatory_integrands oscillatory_integrands.cu)
 target_compile_options(cuda_mcubes_oscillatory_integrands PRIVATE "-DCURAND")
 set_target_properties(cuda_mcubes_oscillatory_integrands PROPERTIES POSITION_INDEPENDENT_CODE On CUDA_ARCHITECTURES ${TARGET_ARCH})

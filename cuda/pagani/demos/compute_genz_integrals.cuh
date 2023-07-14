@@ -23,8 +23,19 @@ template <size_t ndim>
 double
 compute_cos_fully_sep_product_at_bounds(double low, double high)
 {
-  return /*pow(-1, ndim)**/ pow(sin(high) - sin(low), ndim);
+  return pow(sin(high) - sin(low), ndim);
 }
+
+/*namespace shifted{
+        template <size_t ndim>
+        double
+        compute_cos_fully_sep_product_at_bounds(double low, double high)
+        {
+          return pow(-1, ndim) * (pow(low - high, ndim) +  pow(sin(low)
+-sin(high), ndim));
+        }
+}*/
+
 double
 r8_abs(double x)
 

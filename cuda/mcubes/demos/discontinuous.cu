@@ -11,7 +11,8 @@ discontinuous_mcubes_time_and_call(std::string integ_id,
                                    std::ostream& outfile,
                                    quad::Volume<double, ndim>& vol)
 {
-  std::vector<double> sharpness_params = {8. /*, 9., 10., 11., 12.*/};
+  std::vector<double> sharpness_params = {
+    /*,8. 9., 10., 11., 12.*/ 20., 25., 50.};
   for (auto sharpness : sharpness_params) {
     using MilliSeconds =
       std::chrono::duration<double, std::chrono::milliseconds::period>;
@@ -70,10 +71,10 @@ main()
   int titer = 300;
   int itmax = 20; // don't forget to adjust when comparing
   int skip = 5;   // that may need to be set to itmax
-  constexpr int num_runs = 10;
+  constexpr int num_runs = 1;
   std::vector<std::pair<double, double>> volumes = {{0, 1}};
-  std::vector<double> epsrels = {1.e-3,
-                                 1.e-4 /*, 1.e-5, 1.e-6, 1.e-7, 1.e-8, 1.e-9*/};
+  std::vector<double> epsrels = {
+    1.e-3, 1.e-4, 1.e-5 /*, 1.e-6, 1.e-7, 1.e-8, 1.e-9*/};
   std::vector<double> required_ncall = {
     /*1.e5, 1.e6, 1.e7, 1.e8, 1.e9, 2.e9, 3.e9,*/ 5.e9};
   VegasParams params(required_ncall[0], titer, itmax, skip);
@@ -94,35 +95,35 @@ main()
       }
     }
 
-    for (double ncall : required_ncall) {
-      params.ncall = ncall;
-      for (double epsrel : epsrels) {
-        constexpr int ndim = 7;
-        quad::Volume<double, ndim> vol(volume.first, volume.second);
-        discontinuous_mcubes_time_and_call<F_6_7D_alt, ndim, num_runs>(
-          "F_6_alt", epsrel, params, outfile, vol);
-      }
+    /*for(double ncall : required_ncall){
+            params.ncall = ncall;
+            for(double epsrel : epsrels){
+                    constexpr int ndim = 7;
+                    quad::Volume<double, ndim> vol(volume.first, volume.second);
+                    discontinuous_mcubes_time_and_call<F_6_7D_alt, ndim,
+    num_runs>("F_6_alt",  epsrel, params, outfile, vol);
+            }
     }
 
-    for (double ncall : required_ncall) {
-      params.ncall = ncall;
-      for (double epsrel : epsrels) {
-        constexpr int ndim = 6;
-        quad::Volume<double, ndim> vol(volume.first, volume.second);
-        discontinuous_mcubes_time_and_call<F_6_6D_alt, ndim, num_runs>(
-          "F_6_alt", epsrel, params, outfile, vol);
-      }
+    for(double ncall : required_ncall){
+            params.ncall = ncall;
+            for(double epsrel : epsrels){
+                    constexpr int ndim = 6;
+                    quad::Volume<double, ndim> vol(volume.first, volume.second);
+                    discontinuous_mcubes_time_and_call<F_6_6D_alt, ndim,
+    num_runs>("F_6_alt",  epsrel, params, outfile, vol);
+            }
     }
 
-    for (double ncall : required_ncall) {
-      params.ncall = ncall;
-      for (double epsrel : epsrels) {
-        constexpr int ndim = 5;
-        quad::Volume<double, ndim> vol(volume.first, volume.second);
-        discontinuous_mcubes_time_and_call<F_6_5D_alt, ndim, num_runs>(
-          "F_6_alt", epsrel, params, outfile, vol);
-      }
-    }
+    for(double ncall : required_ncall){
+            params.ncall = ncall;
+            for(double epsrel : epsrels){
+                    constexpr int ndim = 5;
+                    quad::Volume<double, ndim> vol(volume.first, volume.second);
+                    discontinuous_mcubes_time_and_call<F_6_5D_alt, ndim,
+    num_runs>("F_6_alt",  epsrel, params, outfile, vol);
+            }
+    }*/
   }
 
   outfile.close();

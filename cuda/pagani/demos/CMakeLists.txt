@@ -1,5 +1,50 @@
 #find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
+add_executable(cuda_pagani_gaussians gaussians.cu)
+set_target_properties(cuda_pagani_gaussians PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_gaussians util)
+target_compile_options(cuda_pagani_gaussians PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(cuda_pagani_gaussians PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(cuda_pagani_discontinuous discontinuous.cu)
+set_target_properties(cuda_pagani_discontinuous PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_discontinuous util)
+target_compile_options(cuda_pagani_discontinuous PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(cuda_pagani_discontinuous PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(cuda_pagani_product_peaks product_peaks.cu)
+set_target_properties(cuda_pagani_product_peaks PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_product_peaks util)
+target_compile_options(cuda_pagani_product_peaks PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(cuda_pagani_product_peaks PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(cuda_pagani_c_zero_funcs c_zero_funcs.cu)
+set_target_properties(cuda_pagani_c_zero_funcs PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_c_zero_funcs util)
+target_compile_options(cuda_pagani_c_zero_funcs PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(cuda_pagani_c_zero_funcs PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
+add_executable(cuda_pagani_g_func g_function.cu)
+set_target_properties(cuda_pagani_g_func PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_link_libraries(cuda_pagani_g_func util)
+target_compile_options(cuda_pagani_g_func PRIVATE "--expt-relaxed-constexpr")
+target_include_directories(cuda_pagani_g_func PRIVATE
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/externals
+)
+
 add_executable(oscillatory_integrands oscillatory_integrands.cu)
 set_target_properties(oscillatory_integrands PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
 target_link_libraries(oscillatory_integrands util)

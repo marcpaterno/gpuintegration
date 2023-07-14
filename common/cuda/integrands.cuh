@@ -9,6 +9,771 @@
 // mathematica to get the exact solution to the integrand with the particular
 // set of coefficients and parameters
 
+class F_5_8D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p,
+             double q)
+  {
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
+    double t1 = -sharpness * fabs(x - beta) - sharpness * fabs(y - beta) -
+                sharpness * fabs(z - beta) - sharpness * fabs(k - beta) -
+                sharpness * fabs(m - beta) - sharpness * fabs(n - beta) -
+                sharpness * fabs(p - beta) - sharpness * fabs(q - beta);
+    return exp(t1);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_c_zero<8>({sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness},
+                                   {.5, .5, .5, .5, .5, .5, .5, .5});
+  }
+
+  double sharpness = 0;
+  double true_value = 0;
+};
+
+class F_5_7D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p)
+  {
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
+    double t1 = -sharpness * fabs(x - beta) - sharpness * fabs(y - beta) -
+                sharpness * fabs(z - beta) - sharpness * fabs(k - beta) -
+                sharpness * fabs(m - beta) - sharpness * fabs(n - beta) -
+                sharpness * fabs(p - beta);
+    return exp(t1);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_c_zero<7>({sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness,
+                                    sharpness},
+                                   {.5, .5, .5, .5, .5, .5, .5});
+  }
+
+  double sharpness = 0;
+  double true_value = 0;
+};
+
+class F_5_6D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double m, double n)
+  {
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
+    double t1 = -sharpness * fabs(x - beta) - sharpness * fabs(y - beta) -
+                sharpness * fabs(z - beta) - sharpness * fabs(k - beta) -
+                sharpness * fabs(m - beta) - sharpness * fabs(n - beta);
+    return exp(t1);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_c_zero<6>(
+      {sharpness, sharpness, sharpness, sharpness, sharpness, sharpness},
+      {.5, .5, .5, .5, .5, .5});
+  }
+
+  double sharpness = 0;
+  double true_value = 0;
+};
+
+class F_5_5D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double m)
+  {
+    // return x / y / z / k / m / n / p / q;
+
+    double beta = .5;
+    double t1 = -sharpness * fabs(x - beta) - sharpness * fabs(y - beta) -
+                sharpness * fabs(z - beta) - sharpness * fabs(k - beta) -
+                sharpness * fabs(m - beta);
+    return exp(t1);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value =
+      compute_c_zero<5>({sharpness, sharpness, sharpness, sharpness, sharpness},
+                        {.5, .5, .5, .5, .5});
+  }
+
+  double sharpness = 0;
+  double true_value = 0;
+};
+
+class F_4_8D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    // return x / y / z / w / v / u / t / s;
+    return exp(-1.0 * (pow(sharpness, 2.) * pow(x - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(y - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(z - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(w - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(v - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(u - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(t - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(s - peak_loc, 2.)));
+  }
+
+  double sharpness = 0;
+  double peak_loc = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_gaussian<8>({sharpness,
+                                      sharpness,
+                                      sharpness,
+                                      sharpness,
+                                      sharpness,
+                                      sharpness,
+                                      sharpness,
+                                      sharpness},
+                                     {peak_loc,
+                                      peak_loc,
+                                      peak_loc,
+                                      peak_loc,
+                                      peak_loc,
+                                      peak_loc,
+                                      peak_loc,
+                                      peak_loc});
+  }
+
+  double true_value;
+};
+
+class F_4_7D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
+  {
+    // return x / y / z / w / v / u / t / s;
+    return exp(-1.0 * (pow(sharpness, 2.) * pow(x - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(y - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(z - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(w - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(v - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(u - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(t - peak_loc, 2.)));
+  }
+
+  double sharpness = 0;
+  double peak_loc = 0;
+  void
+  set_true_value()
+  {
+    true_value = compute_gaussian<7>(
+      {sharpness,
+       sharpness,
+       sharpness,
+       sharpness,
+       sharpness,
+       sharpness,
+       sharpness},
+      {peak_loc, peak_loc, peak_loc, peak_loc, peak_loc, peak_loc, peak_loc});
+  }
+
+  double true_value;
+};
+
+class F_4_6D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double u)
+  {
+    // return x / y / z / w / v / u / t / s;
+    return exp(-1.0 * (pow(sharpness, 2.) * pow(x - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(y - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(z - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(w - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(v - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(u - peak_loc, 2.)));
+  }
+
+  double sharpness = 0;
+  double peak_loc = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_gaussian<6>(
+      {sharpness, sharpness, sharpness, sharpness, sharpness, sharpness},
+      {peak_loc, peak_loc, peak_loc, peak_loc, peak_loc, peak_loc});
+  }
+
+  double true_value;
+};
+
+class F_4_5D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v)
+  {
+    // return x / y / z / w / v / u / t / s;
+    return exp(-1.0 * (pow(sharpness, 2.) * pow(x - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(y - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(z - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(w - peak_loc, 2.) +
+                       pow(sharpness, 2.) * pow(v - peak_loc, 2.)));
+  }
+
+  double sharpness = 0;
+  double peak_loc = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_gaussian<5>(
+      {sharpness, sharpness, sharpness, sharpness, sharpness},
+      {peak_loc, peak_loc, peak_loc, peak_loc, peak_loc});
+  }
+
+  double true_value;
+};
+
+class F_6_8D_alt {
+public:
+  __device__ __host__ double
+  operator()(double t,
+             double p,
+             double u,
+             double v,
+             double w,
+             double x,
+             double y,
+             double z)
+  {
+    if (z > disc_bound || y > disc_bound || x > disc_bound || w > disc_bound ||
+        v > disc_bound || u > disc_bound || p > disc_bound || t > disc_bound)
+      return 0.;
+    else
+      return exp(sharpness * z + sharpness * y + sharpness * x + sharpness * w +
+                 sharpness * v + sharpness * u + sharpness * p + sharpness * t);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_discontinuous<8>({sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness},
+                                          {disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound});
+  }
+
+  double sharpness = 0;
+  double disc_bound = 0;
+  double true_value;
+};
+
+class F_6_7D_alt {
+public:
+  __device__ __host__ double
+  operator()(double t,
+             double p,
+             double u,
+             double v,
+             double w,
+             double x,
+             double y)
+  {
+    if (y > disc_bound || x > disc_bound || w > disc_bound || v > disc_bound ||
+        u > disc_bound || p > disc_bound || t > disc_bound)
+      return 0.;
+    else
+      return exp(sharpness * y + sharpness * x + sharpness * w + sharpness * v +
+                 sharpness * u + sharpness * p + sharpness * t);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_discontinuous<7>({sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness,
+                                           sharpness},
+                                          {disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound,
+                                           disc_bound});
+  }
+
+  double sharpness = 0;
+  double disc_bound = 0;
+  double true_value;
+};
+
+class F_6_6D_alt {
+public:
+  __device__ __host__ double
+  operator()(double t, double p, double u, double v, double w, double x)
+  {
+    if (x > disc_bound || w > disc_bound || v > disc_bound || u > disc_bound ||
+        p > disc_bound || t > disc_bound)
+      return 0.;
+    else
+      return exp(sharpness * x + sharpness * w + sharpness * v + sharpness * u +
+                 sharpness * p + sharpness * t);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_discontinuous<6>(
+      {sharpness, sharpness, sharpness, sharpness, sharpness, sharpness},
+      {disc_bound, disc_bound, disc_bound, disc_bound, disc_bound, disc_bound});
+  }
+
+  double sharpness = 0;
+  double disc_bound = 0;
+  double true_value;
+};
+
+class F_6_5D_alt {
+public:
+  __device__ __host__ double
+  operator()(double t, double p, double u, double v, double w)
+  {
+    if (w > disc_bound || v > disc_bound || u > disc_bound || p > disc_bound ||
+        t > disc_bound)
+      return 0.;
+    else
+      return exp(sharpness * w + sharpness * v + sharpness * u + sharpness * p +
+                 sharpness * t);
+  }
+
+  void
+  set_true_value()
+  {
+    true_value = compute_discontinuous<5>(
+      {sharpness, sharpness, sharpness, sharpness, sharpness},
+      {disc_bound, disc_bound, disc_bound, disc_bound, disc_bound});
+  }
+
+  double sharpness = 0;
+  double disc_bound = 0;
+  double true_value;
+};
+
+class F_2_8D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t,
+             double s)
+  {
+    const double b = .5;
+    const double term_1 = 1. / ((1. / pow(alpha, 2.)) + pow(x - b, 2.));
+    const double term_2 = 1. / ((1. / pow(alpha, 2.)) + pow(y - b, 2.));
+    const double term_3 = 1. / ((1. / pow(alpha, 2.)) + pow(z - b, 2.));
+    const double term_4 = 1. / ((1. / pow(alpha, 2.)) + pow(w - b, 2.));
+    const double term_5 = 1. / ((1. / pow(alpha, 2.)) + pow(v - b, 2.));
+    const double term_6 = 1. / ((1. / pow(alpha, 2.)) + pow(u - b, 2.));
+    const double term_7 = 1. / ((1. / pow(alpha, 2.)) + pow(t - b, 2.));
+    const double term_8 = 1. / ((1. / pow(alpha, 2.)) + pow(s - b, 2.));
+
+    double val =
+      term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7 * term_8;
+    return val;
+  }
+
+  double alpha = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_product_peak<8>(
+      {alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha},
+      {.5, .5, .5, .5, .5, .5, .5, .5});
+  }
+
+  double true_value;
+};
+
+class F_2_7D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double w,
+             double v,
+             double u,
+             double t)
+  {
+    const double b = .5;
+    const double term_1 = 1. / ((1. / pow(alpha, 2.)) + pow(x - b, 2.));
+    const double term_2 = 1. / ((1. / pow(alpha, 2.)) + pow(y - b, 2.));
+    const double term_3 = 1. / ((1. / pow(alpha, 2.)) + pow(z - b, 2.));
+    const double term_4 = 1. / ((1. / pow(alpha, 2.)) + pow(w - b, 2.));
+    const double term_5 = 1. / ((1. / pow(alpha, 2.)) + pow(v - b, 2.));
+    const double term_6 = 1. / ((1. / pow(alpha, 2.)) + pow(u - b, 2.));
+    const double term_7 = 1. / ((1. / pow(alpha, 2.)) + pow(t - b, 2.));
+
+    double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6 * term_7;
+    return val;
+  }
+
+  double alpha = 0;
+
+  void
+  set_true_value()
+  {
+    true_value =
+      compute_product_peak<7>({alpha, alpha, alpha, alpha, alpha, alpha, alpha},
+                              {.5, .5, .5, .5, .5, .5, .5});
+  }
+
+  double true_value;
+};
+
+class F_2_6D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v, double u)
+  {
+    const double b = .5;
+    const double term_1 = 1. / ((1. / pow(alpha, 2.)) + pow(x - b, 2.));
+    const double term_2 = 1. / ((1. / pow(alpha, 2.)) + pow(y - b, 2.));
+    const double term_3 = 1. / ((1. / pow(alpha, 2.)) + pow(z - b, 2.));
+    const double term_4 = 1. / ((1. / pow(alpha, 2.)) + pow(w - b, 2.));
+    const double term_5 = 1. / ((1. / pow(alpha, 2.)) + pow(v - b, 2.));
+    const double term_6 = 1. / ((1. / pow(alpha, 2.)) + pow(u - b, 2.));
+
+    double val = term_1 * term_2 * term_3 * term_4 * term_5 * term_6;
+    return val;
+  }
+
+  double alpha = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_product_peak<6>(
+      {alpha, alpha, alpha, alpha, alpha, alpha}, {.5, .5, .5, .5, .5, .5});
+  }
+
+  double true_value;
+};
+
+class F_2_5D_alt {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double w, double v)
+  {
+    const double b = .5;
+    const double term_1 = 1. / ((1. / pow(alpha, 2.)) + pow(x - b, 2.));
+    const double term_2 = 1. / ((1. / pow(alpha, 2.)) + pow(y - b, 2.));
+    const double term_3 = 1. / ((1. / pow(alpha, 2.)) + pow(z - b, 2.));
+    const double term_4 = 1. / ((1. / pow(alpha, 2.)) + pow(w - b, 2.));
+    const double term_5 = 1. / ((1. / pow(alpha, 2.)) + pow(v - b, 2.));
+
+    double val = term_1 * term_2 * term_3 * term_4 * term_5;
+    return val;
+  }
+
+  double alpha = 0;
+
+  void
+  set_true_value()
+  {
+    true_value = compute_product_peak<5>({alpha, alpha, alpha, alpha, alpha},
+                                         {.5, .5, .5, .5, .5});
+  }
+
+  double true_value;
+};
+
+class G_func_10D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p,
+             double q,
+             double r,
+             double t)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+    double term6 = (std::abs(4 * n - 2) + (6 - 2) / 2) / (1 + (6 - 2) / 2);
+    double term7 = (std::abs(4 * p - 2) + (7 - 2) / 2) / (1 + (7 - 2) / 2);
+    double term8 = (std::abs(4 * q - 2) + (8 - 2) / 2) / (1 + (8 - 2) / 2);
+    double term9 = (std::abs(4 * r - 2) + (9 - 2) / 2) / (1 + (9 - 2) / 2);
+    double term10 = (std::abs(4 * t - 2) + (10 - 2) / 2) / (1 + (10 - 2) / 2);
+
+    return term1 * term2 * term3 * term4 * term5 * term6 * term7 * term8 *
+           term9 * term10;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class G_func_9D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p,
+             double q,
+             double r)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+    double term6 = (std::abs(4 * n - 2) + (6 - 2) / 2) / (1 + (6 - 2) / 2);
+    double term7 = (std::abs(4 * p - 2) + (7 - 2) / 2) / (1 + (7 - 2) / 2);
+    double term8 = (std::abs(4 * q - 2) + (8 - 2) / 2) / (1 + (8 - 2) / 2);
+    double term9 = (std::abs(4 * r - 2) + (9 - 2) / 2) / (1 + (9 - 2) / 2);
+    return term1 * term2 * term3 * term4 * term5 * term6 * term7 * term8 *
+           term9;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class G_func_8D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p,
+             double q)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+    double term6 = (std::abs(4 * n - 2) + (6 - 2) / 2) / (1 + (6 - 2) / 2);
+    double term7 = (std::abs(4 * p - 2) + (7 - 2) / 2) / (1 + (7 - 2) / 2);
+    double term8 = (std::abs(4 * q - 2) + (8 - 2) / 2) / (1 + (8 - 2) / 2);
+    return term1 * term2 * term3 * term4 * term5 * term6 * term7 * term8;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class G_func_7D {
+public:
+  __device__ __host__ double
+  operator()(double x,
+             double y,
+             double z,
+             double k,
+             double m,
+             double n,
+             double p)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+    double term6 = (std::abs(4 * n - 2) + (6 - 2) / 2) / (1 + (6 - 2) / 2);
+    double term7 = (std::abs(4 * p - 2) + (7 - 2) / 2) / (1 + (7 - 2) / 2);
+    return term1 * term2 * term3 * term4 * term5 * term6 * term7;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class G_func_6D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double m, double n)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+    double term6 = (std::abs(4 * n - 2) + (6 - 2) / 2) / (1 + (6 - 2) / 2);
+    return term1 * term2 * term3 * term4 * term5 * term6;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class G_func_5D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y, double z, double k, double m)
+  {
+    double term1 = (std::abs(4 * x - 2) + (1 - 2) / 2) / (1 + (1 - 2) / 2);
+    double term2 = (std::abs(4 * y - 2) + (2 - 2) / 2) / (1 + (2 - 2) / 2);
+    double term3 = (std::abs(4 * z - 2) + (3 - 2) / 2) / (1 + (3 - 2) / 2);
+    double term4 = (std::abs(4 * k - 2) + (4 - 2) / 2) / (1 + (4 - 2) / 2);
+    double term5 = (std::abs(4 * m - 2) + (5 - 2) / 2) / (1 + (5 - 2) / 2);
+
+    return term1 * term2 * term3 * term4 * term5;
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = 1.;
+  }
+
+  double true_value = 0;
+};
+
+class Cos_fully_sep_product_1D {
+public:
+  __device__ __host__ double
+  operator()(double x)
+  {
+    return cos(x);
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = compute_cos_fully_sep_product_at_bounds<1>(low, high);
+  }
+
+  double true_value = 0;
+};
+
+class Cos_fully_sep_product_2D {
+public:
+  __device__ __host__ double
+  operator()(double x, double y)
+  {
+    return cos(x) * cos(y);
+  }
+
+  void
+  set_true_value(double low, double high)
+  {
+    true_value = compute_cos_fully_sep_product_at_bounds<2>(low, high);
+  }
+
+  double true_value = 0;
+};
+
 class Cos_fully_sep_product_4D {
 public:
   __device__ __host__ double
@@ -703,7 +1468,6 @@ public:
              double y,
              double z)
   {
-    // return u / v / w / x / y / z / p / t;
     if (z > .9 || y > .8 || x > .7 || w > .6 || v > .5 || u > .4 || p > .3 ||
         t > .2)
       return 0.;

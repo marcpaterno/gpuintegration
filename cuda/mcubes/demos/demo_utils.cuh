@@ -194,17 +194,13 @@ common_header_mcubes_time_and_call(F integrand,
     if (success)
       std::cout << integ_id << "," << std::scientific << alg_id << ","
                 << difficulty << "," << epsrel << "," << epsabs << ","
-                << std::scientific << std::setprecision(15) 
-				<< correct_answer << ","  
-                << res.estimate << "," 
-				<< res.errorest << ","
-                << dt.count() << "," 
-				<< res.status << "\n";
+                << std::scientific << std::setprecision(15) << correct_answer
+                << "," << res.estimate << "," << res.errorest << ","
+                << dt.count() << "," << res.status << "\n";
 
-    if (run == 0 && !success){
-		AdjustParams(params.ncall, params.t_iter);
-
-	}
+    if (run == 0 && !success) {
+      AdjustParams(params.ncall, params.t_iter);
+    }
     if (success)
       run++;
   } while (success == false &&
@@ -215,15 +211,15 @@ common_header_mcubes_time_and_call(F integrand,
 
 template <typename F,
           int ndim,
-          int num_runs = 10, 
+          int num_runs = 10,
           typename GeneratorType = Curand_generator>
 bool
 time_and_call_no_adjust_params(std::string integ_id,
-								   double epsrel,
-                   VegasParams params,
-								   std::ostream& outfile)
+                               double epsrel,
+                               VegasParams params,
+                               std::ostream& outfile)
 {
-	using MilliSeconds =
+  using MilliSeconds =
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   // We make epsabs so small that epsrel is always the stopping condition.
   double constexpr epsabs = 1.0e-20;
@@ -233,86 +229,9 @@ time_and_call_no_adjust_params(std::string integ_id,
   integrand.set_true_value();
   int run = 0;
   quad::Volume<double, ndim> volume;
-  
+
   do {
-  
-      auto t0 = std::chrono::high_resolution_clock::now();
-    auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>(
-      integrand,
-      epsrel,
-      epsabs,
-      params.ncall,
-      &volume,
-      params.t_iter,
-      params.num_adjust_iters,
-      params.num_skip_iters);
-    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
-    success = (res.status == 0);
-    std::cout.precision(17);
-	
-	
-    //if (success)
-      std::cout << integ_id << "," << std::scientific   
-				<< ndim << ","
-				<< std::setprecision(15) << integrand.true_value << ","
-				<< epsrel << "," 
-				<< epsabs << "," 
-				<< std::scientific << std::setprecision(15) << res.estimate << "," 
-				<< std::scientific << std::setprecision(15) << res.errorest << ","
-				<< params.ncall << "," 
-				<< params.t_iter << ","
-				<< params.num_adjust_iters << ","
-				<< res.iters << ","
-                << dt.count() << "," 
-				<< res.status << "\n";
-				
-      outfile << integ_id << "," << std::scientific  
-				<< ndim << ","
-				<< std::setprecision(15) << integrand.true_value << ","
-				<< epsrel << "," 
-				<< epsabs << "," 
-				<< std::scientific << res.estimate << "," 
-				<< std::scientific << res.errorest << ","
-				<< res.chi_sq << ","
-				<< params.ncall << "," 
-				<< params.t_iter << ","
-				<< params.num_adjust_iters << ","
-				<< res.iters << ","
-                << dt.count() << "," 
-				<< res.status << "\n";
 
-      run++;
-
-	
-  } while (run < num_runs);
-
-  return success;
-}
-
-template <typename F,
-          int ndim,
-          typename GeneratorType = Curand_generator>
-bool
-common_header_mcubes_time_and_call(std::string integ_id,
-								   double epsrel,
-                                   VegasParams params,
-								   std::ostream& outfile)
-{
-	using MilliSeconds =
-    std::chrono::duration<double, std::chrono::milliseconds::period>;
-  // We make epsabs so small that epsrel is always the stopping condition.
-  double constexpr epsabs = 1.0e-20;
-  bool constexpr MCUBES_DEBUG = false;
-  bool success = false;
-  F integrand;
-  integrand.set_true_value();
-  int run = 0;
-  quad::Volume<double, ndim> volume;
-  
-  do {
-  
-	for(int i = 0; i < 10; ++i){
-  
     auto t0 = std::chrono::high_resolution_clock::now();
     auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>(
       integrand,
@@ -326,46 +245,148 @@ common_header_mcubes_time_and_call(std::string integ_id,
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(17);
-	
-      std::cout << integ_id << "," << std::scientific   
-				<< ndim << ","
-				<< std::setprecision(15) << integrand.true_value << ","
-				<< epsrel << "," 
-				<< epsabs << "," 
-				<< std::scientific << std::setprecision(15) << res.estimate << "," 
-				<< std::scientific << std::setprecision(15) << res.errorest << ","
-				<< res.chi_sq << ","
-				<< params.ncall << "," 
-				<< params.t_iter << ","
-				<< params.num_adjust_iters << ","
-				<< res.iters << ","
-                << dt.count() << "," 
-				<< res.status << "\n";
-				
-      outfile << integ_id << "," << std::scientific  
-				<< ndim << ","
-				<< std::setprecision(15) << integrand.true_value << ","
-				<< epsrel << "," 
-				<< epsabs << "," 
-				<< std::scientific << res.estimate << "," 
-				<< std::scientific << res.errorest << ","
-				<< res.chi_sq << ","
-				<< params.ncall << "," 
-				<< params.t_iter << ","
-				<< params.num_adjust_iters << ","
-				<< res.iters << ","
-                << dt.count() << "," 
-				<< res.status << "\n";
-    if (run == 0 && !success){
-	  AdjustParams(params.ncall, params.t_iter);
-	}
-    if (success)
-      run++;
-	else
-		break;
-	}
-  } while (success == false &&
-           CanAdjustNcallOrIters(params.ncall, params.t_iter) == true && run < 10);
+
+    // if (success)
+    std::cout << integ_id << "," << std::scientific << ndim << ","
+              << std::setprecision(15) << integrand.true_value << "," << epsrel
+              << "," << epsabs << "," << std::scientific
+              << std::setprecision(15) << res.estimate << "," << std::scientific
+              << std::setprecision(15) << res.errorest << "," << params.ncall
+              << "," << params.t_iter << "," << params.num_adjust_iters << ","
+              << res.iters << "," << dt.count() << "," << res.status << "\n";
+
+    outfile << integ_id << "," << std::scientific << ndim << ","
+            << std::setprecision(15) << integrand.true_value << "," << epsrel
+            << "," << epsabs << "," << std::scientific << res.estimate << ","
+            << std::scientific << res.errorest << "," << res.chi_sq << ","
+            << params.ncall << "," << params.t_iter << ","
+            << params.num_adjust_iters << "," << res.iters << "," << dt.count()
+            << "," << res.status << "\n";
+
+    run++;
+
+  } while (run < num_runs);
+
+  return success;
+}
+
+template <typename F,
+          int ndim,
+          int num_runs = 10,
+          typename GeneratorType = Curand_generator>
+bool
+time_and_call_no_adjust_params(std::string integ_id,
+                               double epsrel,
+                               VegasParams params,
+                               std::ostream& outfile,
+                               quad::Volume<double, ndim>& vol)
+{
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+  double constexpr epsabs = 1.0e-20;
+  bool constexpr MCUBES_DEBUG = false;
+  bool success = false;
+  F integrand;
+  integrand.set_true_value();
+  int run = 0;
+  // quad::Volume<double, ndim> volume;
+
+  do {
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      &vol,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    success = (res.status == 0);
+    std::cout.precision(17);
+
+    std::cout << integ_id << "," << std::scientific << ndim << ","
+              << vol.lows[0] << "," << vol.highs[0] << ","
+              << std::setprecision(15) << integrand.true_value << "," << epsrel
+              << "," << epsabs << "," << std::scientific << res.estimate << ","
+              << std::scientific << res.errorest << "," << res.chi_sq << ","
+              << params.ncall << "," << params.t_iter << ","
+              << params.num_adjust_iters << "," << res.iters << ","
+              << dt.count() << "," << res.status << "\n";
+
+    outfile << integ_id << "," << std::scientific << ndim << "," << vol.lows[0]
+            << "," << vol.highs[0] << "," << std::setprecision(15)
+            << integrand.true_value << "," << epsrel << "," << epsabs << ","
+            << std::scientific << res.estimate << "," << std::scientific
+            << res.errorest << "," << res.chi_sq << "," << params.ncall << ","
+            << params.t_iter << "," << params.num_adjust_iters << ","
+            << res.iters << "," << dt.count() << "," << res.status << "\n";
+
+    run++;
+
+  } while (run < num_runs);
+
+  return success;
+}
+
+template <typename F, int ndim, typename GeneratorType = Curand_generator>
+bool
+common_header_mcubes_time_and_call(std::string integ_id,
+                                   double epsrel,
+                                   VegasParams params,
+                                   std::ostream& outfile)
+{
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+  // We make epsabs so small that epsrel is always the stopping condition.
+  double constexpr epsabs = 1.0e-20;
+  bool constexpr MCUBES_DEBUG = false;
+  bool success = false;
+  F integrand;
+  integrand.set_true_value();
+  int run = 0;
+  quad::Volume<double, ndim> volume;
+
+  for (int i = 0; i < 10; ++i) {
+
+    auto t0 = std::chrono::high_resolution_clock::now();
+    auto res = cuda_mcubes::integrate<F, ndim, MCUBES_DEBUG, GeneratorType>(
+      integrand,
+      epsrel,
+      epsabs,
+      params.ncall,
+      &volume,
+      params.t_iter,
+      params.num_adjust_iters,
+      params.num_skip_iters);
+    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+    success = (res.status == 0);
+
+    std::cout.precision(17);
+
+    std::cout << integ_id << "," << std::scientific << ndim << ","
+              << std::setprecision(15) << integrand.true_value << "," << epsrel
+              << "," << epsabs << "," << std::scientific
+              << std::setprecision(15) << res.estimate << "," << std::scientific
+              << std::setprecision(15) << res.errorest << "," << res.chi_sq
+              << "," << params.ncall << "," << params.t_iter << ","
+              << params.num_adjust_iters << "," << res.iters << ","
+              << dt.count() << "," << res.status << "\n";
+
+    outfile << integ_id << "," << std::scientific << ndim << ","
+            << std::setprecision(15) << integrand.true_value << "," << epsrel
+            << "," << epsabs << "," << std::scientific << res.estimate << ","
+            << std::scientific << res.errorest << "," << res.chi_sq << ","
+            << params.ncall << "," << params.t_iter << ","
+            << params.num_adjust_iters << "," << res.iters << "," << dt.count()
+            << "," << res.status << "\n";
+
+    if (success == false)
+      break;
+  }
 
   return success;
 }
