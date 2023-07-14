@@ -1,7 +1,6 @@
 #ifndef VEGAS_VEGAS_T_CUH
 #define VEGAS_VEGAS_T_CUH
 
-
 /*
 
 code works for gaussian and sin using switch statement. device pointerr/template
@@ -71,13 +70,10 @@ Last three arguments are: total iterations, iteration
     }                                                                          \
   }
 
-
 namespace cuda_mcubes {
 
-
   using MilliSeconds =
-        std::chrono::duration<double, std::chrono::milliseconds::period>;
-
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
 
 #define NR_END 1
 #define IM1 2147483563
@@ -142,7 +138,8 @@ namespace cuda_mcubes {
   {
     // called like :    get_indx(m * chunkSize, &kg[1], ndim, ng);
     uint32_t dp[Internal_Vegas_Params::get_MXDIM()];
-    uint32_t j, t0, t1;
+    uint32_t t0, t1;
+    int j;
     uint32_t m = ms;
     dp[0] = 1;
     dp[1] = NINTV;
@@ -200,6 +197,7 @@ namespace cuda_mcubes {
                        int npg,
                        int sampleID,
                        uint32_t cube_id,
+                       int iter,
                        double* randoms = nullptr)
   {
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
@@ -209,16 +207,6 @@ namespace cuda_mcubes {
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
-
-      // if constexpr(DEBUG_MCUBES) {
-      //  if(randoms != nullptr){
-      //      size_t nums_per_cube = npg*ndim;
-      //      size_t nums_per_sample = ndim;
-      //      size_t index = cube_id*nums_per_cube +
-      //      nums_per_sample*(sampleID-1) + j-1;
-      //      //randoms[index] = ran00;
-      //  }
-      // }
 
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
@@ -232,6 +220,7 @@ namespace cuda_mcubes {
         xo = binA - binB;              // bin
                                        // length
         rc = binB + (xn - ia[j]) * xo; // scaling ran00 to bin bounds
+
       } else {
         xo = (xi[j * ndmx1 + ia[j]]);
         rc = (xn - ia[j]) * xo;
@@ -265,13 +254,12 @@ namespace cuda_mcubes {
                       double& fb,
                       double& f2b,
                       uint32_t cube_id,
+                      int iter,
                       double* randoms = nullptr,
                       double* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-
     for (int k = 1; k <= npg; k++) {
-
       double wgt = xjac;
       Setup_Integrand_Eval<ndim, DEBUG_MCUBES, GeneratorType>(
         rand_num_generator,
@@ -287,10 +275,10 @@ namespace cuda_mcubes {
         npg,
         k,
         cube_id,
+        iter,
         randoms);
-
       gpu::cudaArray<double, ndim> xx;
-      #pragma unroll ndim // unroll needed
+#pragma unroll ndim // unroll needed
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
       }
@@ -299,7 +287,6 @@ namespace cuda_mcubes {
       /*const double*/ tmp += gpu::apply(*d_integrand, xx);
 
       const double f = wgt * tmp;
-      // if constexpr(DEBUG_MCUBES){
       // if constexpr(DEBUG_MCUBES){
       //     if(funcevals != nullptr){
       //         size_t nums_evals_per_cube = npg;
@@ -314,7 +301,6 @@ namespace cuda_mcubes {
 
       for (int j = 1; j <= ndim; j++) {
         const int index = ia[j] * mxdim_p1 + j;
-        // d[ia[j] * mxdim_p1 + j] += f2; //costed less to do_eval
         atomicAdd(&d[index], f2);
       }
     }
@@ -345,6 +331,7 @@ namespace cuda_mcubes {
                  double& fbg,
                  double& f2bg,
                  size_t cube_id_offset,
+                 int iter,
                  double* randoms = nullptr,
                  double* funcevals = nullptr)
   {
@@ -381,6 +368,7 @@ namespace cuda_mcubes {
         fb,
         f2b,
         cube_id,
+        iter,
         randoms,
         funcevals);
 
@@ -472,6 +460,7 @@ namespace cuda_mcubes {
         fbg,
         f2bg,
         cube_id_offset,
+        iter,
         randoms,
         funcevals);
     }
@@ -666,7 +655,7 @@ namespace cuda_mcubes {
     auto t0 = std::chrono::high_resolution_clock::now();
 
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
-    constexpr int ndmx_p1 =  Internal_Vegas_Params::get_NDMX_p1();
+    constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
     // IntegT* d_integrand = quad::cuda_copy_to_device(integrand);
@@ -678,7 +667,8 @@ namespace cuda_mcubes {
       regn[j + ndim] = vol->highs[j - 1];
     }
 
-    int i, it, j, nd, ndo, ng, npg;
+    size_t ng;
+    int i, it, j, nd, ndo, /*ng,*/ npg;
     double calls, dv2g, dxg, rc, ti, tsi, wgt, xjac, xn, xnd, xo;
     double k, ncubes;
     double schi, si, swgt;
@@ -709,7 +699,10 @@ namespace cuda_mcubes {
     si = swgt = schi = 0.0;
     nd = ndmx;
     ng = 1;
-    ng = (int)pow(ncall / 2.0 + 0.25, 1.0 / ndim); // why do we add .25?
+    ng = (size_t)pow(ncall / 2.0 + 0.25,
+                     1.0 / ndim); // why do we add .25?
+                                  // std::cout<<"couted ng:"<<pow(ncall / 2.0 +
+                                  // 0.25, 1.0 / ndim)<<std::endl;
     for (k = 1, i = 1; i < ndim; i++) {
       k *= ng;
     }
@@ -751,22 +744,34 @@ namespace cuda_mcubes {
     double *d_dev, *dx_dev, *x_dev, *xi_dev, *regn_dev, *result_dev;
     int* ia_dev;
 
-    cudaMalloc((void**)&result_dev, sizeof(double) * 2);cudaCheckError();
-    cudaMalloc((void**)&d_dev, sizeof(double) * (ndmx_p1) * (mxdim_p1));cudaCheckError();
-    cudaMalloc((void**)&dx_dev, sizeof(double) * (mxdim_p1));cudaCheckError();
-    cudaMalloc((void**)&x_dev, sizeof(double) * (mxdim_p1));cudaCheckError();
-    cudaMalloc((void**)&xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1));cudaCheckError();
-    cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1));cudaCheckError();
-    cudaMalloc((void**)&ia_dev, sizeof(int) * (mxdim_p1));cudaCheckError();
+    cudaMalloc((void**)&result_dev, sizeof(double) * 2);
+    cudaCheckError();
+    cudaMalloc((void**)&d_dev, sizeof(double) * (ndmx_p1) * (mxdim_p1));
+    cudaCheckError();
+    cudaMalloc((void**)&dx_dev, sizeof(double) * (mxdim_p1));
+    cudaCheckError();
+    cudaMalloc((void**)&x_dev, sizeof(double) * (mxdim_p1));
+    cudaCheckError();
+    cudaMalloc((void**)&xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1));
+    cudaCheckError();
+    cudaMalloc((void**)&regn_dev, sizeof(double) * ((ndim * 2) + 1));
+    cudaCheckError();
+    cudaMalloc((void**)&ia_dev, sizeof(int) * (mxdim_p1));
+    cudaCheckError();
 
-    cudaMemcpy(dx_dev, dx, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);cudaCheckError();
-    cudaMemcpy(x_dev, x, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);cudaCheckError();
-    cudaMemcpy(regn_dev, regn, sizeof(double) * ((ndim * 2) + 1), cudaMemcpyHostToDevice);cudaCheckError();
+    cudaMemcpy(dx_dev, dx, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
+    cudaCheckError();
+    cudaMemcpy(x_dev, x, sizeof(double) * (mxdim_p1), cudaMemcpyHostToDevice);
+    cudaCheckError();
+    cudaMemcpy(regn_dev,
+               regn,
+               sizeof(double) * ((ndim * 2) + 1),
+               cudaMemcpyHostToDevice);
+    cudaCheckError();
     cudaMemset(ia_dev, 0, sizeof(int) * (mxdim_p1));
 
     int chunkSize = GetChunkSize(ncall);
-    uint32_t totalNumThreads =
-      (uint32_t)((ncubes) / chunkSize);
+    uint32_t totalNumThreads = (uint32_t)((ncubes) / chunkSize);
 
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
@@ -783,7 +788,10 @@ namespace cuda_mcubes {
           d[i * mxdim_p1 + j] = 0.0;
       }
 
-      cudaMemcpy(xi_dev,xi,sizeof(double) * (mxdim_p1) * (ndmx_p1),cudaMemcpyHostToDevice);
+      cudaMemcpy(xi_dev,
+                 xi,
+                 sizeof(double) * (mxdim_p1) * (ndmx_p1),
+                 cudaMemcpyHostToDevice);
       cudaCheckError(); // bin bounds
       cudaMemset(
         d_dev, 0, sizeof(double) * (ndmx_p1) * (mxdim_p1)); // bin contributions
@@ -791,7 +799,8 @@ namespace cuda_mcubes {
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
-        static_cast<unsigned int>(it);
+                          static_cast<unsigned int>(it);
+
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,
                                               ng,
@@ -815,6 +824,7 @@ namespace cuda_mcubes {
                                               seed + it,
                                               data_collector.randoms,
                                               data_collector.funcevals);
+
       cudaDeviceSynchronize();
       cudaMemcpy(xi,
                  xi_dev,
@@ -882,12 +892,9 @@ namespace cuda_mcubes {
           rc = 0.0;
           for (i = 1; i <= nd; i++) {
             // if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;
-            // if(d[i*mxdim_p1+j]<TINY) printf("d[%i]:%.15e\n", i*mxdim_p1+j,
-            // d[i*mxdim_p1+j]); printf("d[%i]:%.15e\n", i*mxdim_p1+j,
-            // d[i*mxdim_p1+j]);
             r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                          (log(dt[j]) - log(d[i * mxdim_p1 + j])),
-                       1.5 /*Internal_Vegas_Params::get_ALPH()*/);
+                       Internal_Vegas_Params::get_ALPH());
             rc += r[i]; // rc is it the total number of sub-increments
           }
           rebin(
@@ -941,7 +948,6 @@ namespace cuda_mcubes {
       cudaDeviceSynchronize();
       cudaMemcpy(
         result, result_dev, sizeof(double) * 2, cudaMemcpyDeviceToHost);
-
       ti = result[0];
       tsi = result[1];
       tsi *= dv2g;
