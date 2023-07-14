@@ -94,21 +94,19 @@ public:
         << "iter, dim, bin, bin_length, left, right, contribution\n";
     }
 
-    if (iter <= 20) {
-      for (int dim = 1; dim <= ndim; dim++)
-        for (int bin = 1; bin <= ndmx; bin++) {
+    for (int dim = 1; dim <= ndim; dim++)
+      for (int bin = 1; bin <= ndmx; bin++) {
 
-          double bin_length = xi[dim * ndmx1 + bin] - xi[dim * ndmx1 + bin - 1];
-          double left = xi[dim * ndmx1 + bin - 1];
-          if (bin == 1)
-            left = 0.;
-          double right = xi[dim * ndmx1 + bin];
-          double contribution = d[bin * mxdim_p1 + dim];
-          myfile_bin_bounds << iter << "," << dim << "," << bin << ","
-                            << bin_length << "," << left << "," << right << ","
-                            << contribution << "\n";
-        }
-    }
+        double bin_length = xi[dim * ndmx1 + bin] - xi[dim * ndmx1 + bin - 1];
+        double left = xi[dim * ndmx1 + bin - 1];
+        if (bin == 1)
+          left = 0.;
+        double right = xi[dim * ndmx1 + bin];
+        double contribution = d[bin * mxdim_p1 + dim];
+        myfile_bin_bounds << iter << "," << dim << "," << bin << ","
+                          << bin_length << "," << left << "," << right << ","
+                          << contribution << "\n";
+      }
   }
 
   void
