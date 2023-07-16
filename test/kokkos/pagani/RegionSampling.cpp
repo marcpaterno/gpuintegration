@@ -45,6 +45,7 @@ TEST_CASE("Constant Positive Value Function")
   Cubature_rules<double, ndim, use_custom> rules;
   rules.set_device_volume(vol.lows, vol.highs);
   double integral_val = 15.37;
+  int iter = 0;
 
   for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
     Sub_regions<double, ndim> sub_regions(splits_per_dim);
@@ -54,6 +55,7 @@ TEST_CASE("Constant Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<PTest>(
       d_integrand,
+      iter,
       sub_regions,
       estimates,
       characteristics,
@@ -84,6 +86,7 @@ TEST_CASE("Negative Positive Value Function")
   Cubature_rules<double, ndim, use_custom> rules;
   rules.set_device_volume(vol.lows, vol.highs);
   double integral_val = -15.37;
+  int iter = 0;
 
   for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
     Sub_regions<double, ndim> sub_regions(splits_per_dim);
@@ -93,6 +96,7 @@ TEST_CASE("Negative Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<NTest>(
       d_integrand,
+      iter,
       sub_regions,
       estimates,
       characteristics,
@@ -126,7 +130,8 @@ TEST_CASE("Zero Positive Value Function")
   Cubature_rules<double, ndim, use_custom> rules;
   rules.set_device_volume(vol.lows, vol.highs);
   double integral_val = 0.;
-
+  int iter = 0;
+  
   for (int splits_per_dim = 5; splits_per_dim < 15; splits_per_dim++) {
     Sub_regions<double, ndim> sub_regions(splits_per_dim);
     size_t nregions = sub_regions.size;
@@ -135,6 +140,7 @@ TEST_CASE("Zero Positive Value Function")
 
     auto result = rules.template apply_cubature_integration_rules<ZTest>(
       d_integrand,
+      iter,
       sub_regions,
       estimates,
       characteristics,

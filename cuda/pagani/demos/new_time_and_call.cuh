@@ -162,8 +162,9 @@ clean_time_and_call(std::string id,
     constexpr bool collect_iters = false;
 
     numint::integration_result result =
-      workspace.template integrate<F, predict_split, collect_iters>(
-        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
+
+      workspace.template integrate<F, predict_split, collect_iters, debug>(
+        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     T const absolute_error = std::abs(result.estimate - true_value);
 
@@ -172,7 +173,7 @@ clean_time_and_call(std::string id,
     }
 
     outfile.precision(17);
-    if (i != 0)
+    //if (i != 0)
       outfile << std::fixed << std::scientific << id << "," << ndim << ","
               << print_custom(use_custom) << "," << true_value << "," << epsrel
               << "," << epsabs << "," << result.estimate << ","
@@ -215,7 +216,7 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
 
     numint::integration_result result =
       workspace.template integrate<F, predict_split, collect_iters, debug>(
-        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
+        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     double const absolute_error =
       std::abs(result.estimate - integrand.true_value);

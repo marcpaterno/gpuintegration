@@ -58,7 +58,8 @@ public:
                                        T epsrel,
                                        T epsabs,
                                        quad::Volume<T, ndim> const& vol,
-                                       bool relerr_classification = true);
+                                       bool relerr_classification = true,
+                                       const std::string& optional = "default");
 
   template <typename IntegT,
             bool predict_split = false,
@@ -150,15 +151,19 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
                                           quad::Volume<T, ndim> const& vol,
-                                          bool relerr_classification)
+                                          bool relerr_classification,
+                                          const std::string& optional)
 {
+  using CustomTimer = std::chrono::high_resolution_clock::time_point;
   using MilliSeconds =
     std::chrono::duration<T, std::chrono::milliseconds::period>;
 
+  CustomTimer timer;
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
   numint::integration_result cummulative;
-  Recorder<debug> iter_recorder("cuda_iters.csv");
+  Recorder<debug> iter_recorder;
+  Recorder<debug> time_breakdown;
 
   Classifier classifier(epsrel, epsabs);
   cummulative.status = 1;
@@ -166,15 +171,21 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
   if constexpr (debug > 0) {
-
+    time_breakdown.outfile.open("kokkos_pagani_time_breakdown.csv");
+    time_breakdown.outfile << "id, ndim, epsrel, it, name, time" << std::endl;
+    iter_recorder.outfile.open("kokkos_pagani_iters.csv");
     iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
   }
+
   for (size_t it = 0; it < 700 && subregions.size > 0; it++) {
     size_t num_regions = subregions.size;
     Regs_characteristics characteristics(subregions.size);
     Estimates estimates(subregions.size);
 
-    auto const t0 = std::chrono::high_resolution_clock::now();
+    if constexpr (debug > 0) {
+      timer = std::chrono::high_resolution_clock::now();
+    }    
+    
     numint::integration_result iter =
       rules.template apply_cubature_integration_rules<IntegT, debug>(
         d_integrand,
@@ -183,7 +194,11 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
         estimates,
         characteristics,
         compute_relerr_error_reduction);
-    MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile << optional << "," << ndim << "," << epsrel << "," << it << ","  << "apply_cubature_rules," << dt.count() << std::endl;
+    }
 
     if constexpr (predict_split) {
       relerr_classification =
@@ -191,27 +206,42 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
           false :
           true;
     }
+
+    if constexpr (debug > 0) {
+      timer = std::chrono::high_resolution_clock::now();
+    }    
+    
     two_level_errorest_and_relerr_classify<T, ndim>(estimates,
                                                     prev_iter_estimates,
                                                     characteristics,
                                                     epsrel,
                                                     relerr_classification);
+
+
+
     iter.errorest =
       reduction<T, use_custom>(estimates.error_estimates, subregions.size);
 
-    if constexpr (debug > 0)
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "two_level_errorest," << dt.count() << std::endl;
+      
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
                             << "," << subregions.size << std::endl;
-    std::cout << it << "," << cummulative.estimate + iter.estimate << ","
-              << cummulative.errorest + iter.errorest << "," << subregions.size
-              << std::endl;
+
+      std::cout << it << "," << cummulative.estimate + iter.estimate
+                            << "," << cummulative.errorest + iter.errorest
+                            << "," << subregions.size << std::endl;
+    }
 
     if constexpr (predict_split) {
       if (cummulative.nregions == 0 && it == 15) {
         subregions.take_snapshot();
       }
     }
+
+    cummulative.iters++;
 
     if (accuracy_reached(epsrel,
                          epsabs,
@@ -225,12 +255,31 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       return cummulative;
     }
 
+    
+    if constexpr (debug > 0) {
+      timer = std::chrono::high_resolution_clock::now();
+    }
+
     classifier.store_estimate(cummulative.estimate + iter.estimate);
     numint::integration_result finished =
       compute_finished_estimates<T, ndim, use_custom>(
         estimates, characteristics, iter);
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "compute_finished_estimates," << dt.count() << std::endl;
+      timer = std::chrono::high_resolution_clock::now();
+    }    
+
     fix_error_budget_overflow(
       characteristics, cummulative, iter, finished, epsrel);
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "fix_error_budget_overflow," << dt.count() << std::endl;
+      timer = std::chrono::high_resolution_clock::now();
+    }
+
     if (heuristic_classify(classifier,
                            characteristics,
                            estimates,
@@ -241,24 +290,56 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
       cummulative.errorest += iter.errorest;
       cummulative.nregions += subregions.size;
       Kokkos::kokkos_free(d_integrand);
+      if constexpr (debug > 0) {
+        MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+        time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "heuristic_classify," << dt.count() << std::endl;
+      }
       return cummulative;
+    }
+
+    if constexpr (debug > 0) {
+        MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+        time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "heuristic_classify," << dt.count() << std::endl;
     }
 
     cummulative.estimate += finished.estimate;
     cummulative.errorest += finished.errorest;
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "heuristic_classify," << dt.count() << std::endl;
+      timer = std::chrono::high_resolution_clock::now();
+    }
+
     Filter filter_obj(subregions.size);
     size_t num_active_regions = filter_obj.filter(
       subregions, characteristics, estimates, prev_iter_estimates);
+    
     cummulative.nregions += num_regions - num_active_regions;
     subregions.size = num_active_regions;
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "region_filtering," << dt.count() << std::endl;
+      timer = std::chrono::high_resolution_clock::now();
+    }
+
     Splitter splitter(subregions.size);
     splitter.split(subregions, characteristics);
     cummulative.iters++;
+
+    if constexpr (debug > 0) {
+      MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
+      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "region_splitting," << dt.count() << std::endl;
+    }
+
   }
   cummulative.nregions += subregions.size;
   Kokkos::kokkos_free(d_integrand);
   return cummulative;
 }
+
+
 
 template <typename T, size_t ndim, bool use_custom>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
@@ -285,7 +366,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     partitions_per_axis = 1;
 
   Sub_regions<T, ndim> subregions(partitions_per_axis);
-
+  
   Classifier classifier(epsrel, epsabs);
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
@@ -306,6 +387,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
     numint::integration_result iter =
       rules.template apply_cubature_integration_rules<IntegT, debug>(
         d_integrand,
+        it,
         subregions,
         estimates,
         characteristics,

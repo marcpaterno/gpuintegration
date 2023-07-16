@@ -5,7 +5,8 @@
 #include <chrono>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Workspace.dp.hpp"
-#include "common/oneAPI/cuhreResult.dp.hpp"
+#include "common/oneAPI/integrands.hpp"
+#include "common/integration_result.hh"
 #include "common/oneAPI/Volume.dp.hpp"
 #include <iostream>
 #include <iomanip>
@@ -52,7 +53,7 @@ call_cubature_rules(int num_repeats = 11)
 
       int iteration = 0;
       bool compute_relerr_error_reduction = false;
-      cuhreResult<double> iter =
+      numint::integration_result iter =
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
           &sub_regions,
@@ -98,7 +99,7 @@ call_cubature_rules(F integrand,
       rules.set_device_volume(vol.lows, vol.highs);
 
       bool compute_relerr_error_reduction = false;
-      cuhreResult<double> iter =
+      numint::integration_result iter =
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
           &sub_regions,
@@ -164,13 +165,13 @@ clean_time_and_call(std::string id,
     constexpr bool collect_iters = false;
     constexpr bool collect_sub_regions = false;
     constexpr bool predict_split = false;
-    cuhreResult<double> result =
+    numint::integration_result result =
       workspace.template integrate<F,
                                    predict_split,
                                    collect_iters,
                                    collect_sub_regions,
                                    debug>(
-        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
+        integrand, sub_regions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
     if (result.status == 0) {
@@ -247,7 +248,7 @@ execute_integrand(std::array<double, ndim> point, size_t num_invocations)
     // double time = (e.template
     // get_profiling_info<sycl::info::event_profiling::command_end>()  -
     //	     e.template
-    //get_profiling_info<sycl::info::event_profiling::command_start>());
+    // get_profiling_info<sycl::info::event_profiling::command_start>());
     // std::cout<<"time:"<<time/1.e6 << std::endl;
   }
   // std::cout<<"time---------\n";
@@ -324,7 +325,7 @@ execute_integrand_at_points(size_t num_invocations)
     // double time = (e.template
     // get_profiling_info<sycl::info::event_profiling::command_end>()  -
     //	     e.template
-    //get_profiling_info<sycl::info::event_profiling::command_start>());
+    // get_profiling_info<sycl::info::event_profiling::command_start>());
     // std::cout<<"time:"<<time/1.e6 << std::endl;
   }
   std::cout << "time---------\n";

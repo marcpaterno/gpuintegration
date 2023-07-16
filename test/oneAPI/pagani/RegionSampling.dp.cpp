@@ -6,6 +6,7 @@
 #include <iostream>
 #include "oneAPI/pagani/quad/GPUquad/PaganiUtils.dp.hpp"
 #include "common/oneAPI/cudaMemoryUtil.h"
+#include "common/integration_result.hh"
 
 class PTest {
 public:

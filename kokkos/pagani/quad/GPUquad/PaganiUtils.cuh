@@ -135,7 +135,7 @@ public:
 
   template <int debug = 0>
   void
-  print_verbose(T* d_generators,
+  print_verbose(ViewVectorDouble d_generators,
                 quad::Func_Evals<ndim>& dfevals,
                 const Reg_estimates& estimates)
   {
@@ -151,7 +151,7 @@ public:
 
       Kokkos::deep_copy(ests, estimates.integral_estimates);
       Kokkos::deep_copy(errs, estimates.error_estimates);
-      Print_region_evals(ests, errs, num_regions);
+      Print_region_evals(ests.data(), errs.data(), num_regions);
 
       if constexpr (debug >= 2) {
         auto hfevals = Kokkos::create_mirror_view(dfevals.fevals_list);
@@ -213,6 +213,7 @@ public:
   numint::integration_result
   apply_cubature_integration_rules(
     IntegT* d_integrand,
+    size_t it, 
     const Sub_regs& subregions,
     const Reg_estimates& subregion_estimates,
     const Regs_characteristics& region_characteristics,
@@ -247,7 +248,7 @@ public:
       generators.data(),
       dfevals);
 
-    print_verbose<debug>(generators.data(), dfevals, subregion_estimates);
+    print_verbose<debug>(generators, dfevals, subregion_estimates);
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);

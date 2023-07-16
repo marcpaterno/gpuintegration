@@ -78,7 +78,7 @@ TEST_CASE("Positive Value Function")
   Workspace<ndim> pagani;
   quad::Volume<double, ndim> vol;
   constexpr bool debug = false;
-  cuhreResult res =
+  numint::integration_result res =
     pagani.integrate<PTest, debug>(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
@@ -98,7 +98,7 @@ TEST_CASE("Negative Value Function")
   Workspace<ndim> pagani;
   quad::Volume<double, ndim> vol;
   constexpr bool debug = false;
-  cuhreResult res =
+  numint::integration_result res =
     pagani.integrate<NTest, debug>(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;
@@ -119,7 +119,7 @@ TEST_CASE("Zero Value Function2")
 
   Workspace<ndim> pagani;
   constexpr bool debug = false;
-  cuhreResult res =
+  numint::integration_result res =
     pagani.integrate<ZTest, debug>(integrand, epsrel, epsabs, vol);
 
   double integral = res.estimate;

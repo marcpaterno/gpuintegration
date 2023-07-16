@@ -86,11 +86,11 @@ cu_time_and_call(char const* id,
   double constexpr epsabs = 1.0e-20;
 
   Workspace<double, ndim> alg;
-
+  bool relerr_classif = true;
   auto const t0 = std::chrono::high_resolution_clock::now();
   // nvtxRangePushA("init_host_data");
   numint::integration_result const result =
-    alg.integrate(integrand, epsrel, epsabs, *vol);
+    alg.integrate(integrand, epsrel, epsabs, *vol, relerr_classif);
   // nvtxRangePop();
   MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
   double const absolute_error = std::abs(result.estimate - true_value);

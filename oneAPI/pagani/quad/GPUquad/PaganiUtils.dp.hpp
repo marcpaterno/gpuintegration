@@ -19,7 +19,7 @@
 #include "oneAPI/pagani/quad/quad.h"
 #include "oneAPI/pagani/quad/GPUquad/Sub_region_splitter.dp.hpp"
 #include "oneAPI/pagani/quad/GPUquad/Func_Eval.hpp"
-
+#include "common/integration_result.hh"
 #include <stdlib.h>
 #include <fstream>
 #include <string>
@@ -41,7 +41,7 @@ public:
 
   Cubature_rules()
   {
-    rfevals.outfile.open("oneapi_fevals.csv");
+    rfevals.outfile.open("oneapi_pagani_fevals.csv");
     rgenerators.outfile.open("generators.csv");
     rregions.outfile.open("regions.csv");
 
@@ -265,13 +265,12 @@ public:
   template <typename IntegT,
             bool pre_allocated_integrand = false,
             int debug = 0>
-  cuhreResult<double>
-  apply_cubature_integration_rules(
-    IntegT* d_integrand,
-    Sub_regs* subregions,
-    Reg_estimates* subregion_estimates,
-    Regs_characteristics* region_characteristics,
-    bool compute_error = false)
+  numint::integration_result
+  apply_cubature_integration_rules(IntegT* d_integrand,
+                                   Sub_regs* subregions,
+                                   Reg_estimates* subregion_estimates,
+                                   Regs_characteristics* region_characteristics,
+                                   bool compute_error = false)
   {
     size_t num_regions = subregions->size;
 
@@ -300,13 +299,13 @@ public:
     auto q = sycl::queue(sycl::gpu_selector(),
                          sycl::property::queue::enable_profiling{});
 
-    /*sycl::event e = */q.submit([&](sycl::handler& cgh) {
+    /*sycl::event e = */ q.submit([&](sycl::handler& cgh) {
       sycl::accessor<double,
                      1,
                      sycl::access_mode::read_write,
                      sycl::access::target::local>
-        shared_acc_ct1(
-          sycl::range(8), cgh); // shared,    sdata,     jacobian, vol, ranges
+        shared_acc_ct1(sycl::range(8),
+                       cgh); // shared,    sdata,     jacobian, vol, ranges
       // shared[0], shared[8], shared[8+blockDim], shared[8+blockDim +1] ,
       // shared[8 blockDIm + 2]
 
@@ -393,9 +392,9 @@ public:
     /*std::cout << "INTEGRATE_GPU_PHASE1-time:" << num_blocks << ","
               << time / 1.e6 << std::endl;*/
 
-//    total_time += time;
+    //    total_time += time;
     print_verbose<debug>(generators, dfevals, subregion_estimates);
-    cuhreResult<double> res;
+    numint::integration_result res;
     res.estimate = reduction<double, use_custom>(
       subregion_estimates->integral_estimates, num_regions);
     res.errorest = compute_error ?
@@ -413,12 +412,12 @@ public:
 };
 
 template <size_t ndim, bool use_custom = false>
-cuhreResult<double>
+numint::integration_result
 compute_finished_estimates(const Region_estimates<ndim>& estimates,
                            const Region_characteristics<ndim>& classifiers,
-                           const cuhreResult<double>& iter)
+                           const numint::integration_result& iter)
 {
-  cuhreResult<double> finished;
+  numint::integration_result finished;
   finished.estimate =
     iter.estimate -
     dot_product<double, double, use_custom>(
@@ -439,7 +438,7 @@ accuracy_reached(double epsrel, double epsabs, double estimate, double errorest)
 }
 
 bool
-accuracy_reached(double epsrel, double epsabs, cuhreResult<double> res)
+accuracy_reached(double epsrel, double epsabs, numint::integration_result res)
 {
   if (res.errorest / res.estimate <= epsrel || res.errorest <= epsabs)
     return true;
@@ -447,7 +446,7 @@ accuracy_reached(double epsrel, double epsabs, cuhreResult<double> res)
 }
 
 template <typename IntegT, int ndim>
-cuhreResult<double>
+numint::integration_result
 pagani_clone(const IntegT& integrand,
              Sub_regions<ndim>& subregions,
              double epsrel = 1.e-3,
@@ -456,7 +455,7 @@ pagani_clone(const IntegT& integrand,
 {
   using Reg_estimates = Region_estimates<ndim>;
   using Regs_characteristics = Region_characteristics<ndim>;
-  using Res = cuhreResult<double>;
+  using Res = numint::integration_result;
   using Filter = Sub_regions_filter<ndim>;
   using Splitter = Sub_region_splitter<ndim>;
   Reg_estimates prev_iter_estimates;

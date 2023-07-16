@@ -16,6 +16,19 @@ using std::cout;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
+size_t
+get_partitions_per_axis(int ndim)
+{
+  size_t splits = 0;
+  if (ndim < 5)
+    splits = 4;
+  else if (ndim <= 10)
+    splits = 2;
+  else
+    splits = 1;
+  return splits;
+}
+
 template <typename F, int ndim, bool use_custom = false>
 void
 call_cubature_rules(int num_repeats = 11)
@@ -108,6 +121,8 @@ call_cubature_rules(F integrand,
   }
 }
 
+
+
 /*
     we are not keeping track of nFinished regions
     id, ndim, true_val, epsrel, epsabs, estimate, errorest, nregions,
@@ -118,7 +133,7 @@ template <typename F, int ndim, bool use_custom = false, int debug = 0>
 bool
 time_and_call(std::string id, F integrand, double epsrel, double true_value)
 {
-
+  
   auto print_custom = [=](bool use_custom_flag) {
     std::string to_print = use_custom_flag == true ? "custom" : "library";
     return to_print;
@@ -131,8 +146,11 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
   bool good = false;
   Workspace<double, ndim, use_custom> workspace;
   const quad::Volume<double, ndim> vol;
+  size_t partitions_per_axis = get_partitions_per_axis(ndim);
 
   for (int i = 0; i < 2; i++) {
+  Sub_regions<double, ndim> subregions(partitions_per_axis);
+
     auto const t0 = std::chrono::high_resolution_clock::now();
 
     constexpr bool collect_iters = false;
@@ -140,7 +158,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
     bool relerr_classification = true;
     numint::integration_result result =
       workspace.template integrate<F, predict_split, collect_iters, debug>(
-        integrand, epsrel, epsabs, vol, relerr_classification);
+        integrand, subregions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
 
     if (result.status == 0) {
@@ -148,7 +166,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
     }
 
     std::cout.precision(17);
-    if (i != 0.)
+    //if (i != 0.)
       std::cout << std::fixed << std::scientific << "pagani"
                 << "," << id << "," << ndim << "," << print_custom(use_custom)
                 << "," << true_value << "," << epsrel << "," << epsabs << ","

@@ -1,3 +1,8 @@
+add_executable(oneapi_pagani_genz_integrals genz_integrals.cpp)
+target_include_directories(oneapi_pagani_genz_integrals PRIVATE "${ONEMKL_DIR}/include")
+target_link_directories(oneapi_pagani_genz_integrals PUBLIC "${ONEMKL_DIR}/lib/")
+target_compile_options(oneapi_pagani_genz_integrals PRIVATE "-lonemkl")
+
 add_executable(oneapi_new_interface_Genz2_6D new_interface_Genz2_6D.cpp)
 target_include_directories(oneapi_new_interface_Genz2_6D PRIVATE "${ONEMKL_DIR}/include")
 target_link_directories(oneapi_new_interface_Genz2_6D PUBLIC "${ONEMKL_DIR}/lib/")

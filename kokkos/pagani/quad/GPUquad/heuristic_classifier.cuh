@@ -345,7 +345,7 @@ public:
       return false;
     }
   }
-
+  
   Classification_res<T>
   classify(ViewVectorInt active_flags, // remove this param, it's unused
            ViewVectorDouble errorests,
