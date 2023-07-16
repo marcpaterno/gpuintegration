@@ -1,7 +1,11 @@
 #find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH )
 
-add_executable(kokkos_pagani_Genz1_8D Genz1_8D.cpp)
+add_executable(kokkos_pagani_genz_integrals genz_integrals.cpp)
+target_compile_options(kokkos_pagani_genz_integrals PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_pagani_genz_integrals PUBLIC Kokkos::kokkoskernels)
+target_include_directories(kokkos_pagani_genz_integrals PRIVATE ${CMAKE_SOURCE_DIR})
 
+add_executable(kokkos_pagani_Genz1_8D Genz1_8D.cpp)
 target_compile_options(kokkos_pagani_Genz1_8D PRIVATE "--expt-relaxed-constexpr")
 target_link_libraries(kokkos_pagani_Genz1_8D PUBLIC Kokkos::kokkoskernels ${NVTX_LIBRARY})
 target_include_directories(kokkos_pagani_Genz1_8D PRIVATE ${CMAKE_SOURCE_DIR})

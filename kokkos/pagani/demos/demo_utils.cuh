@@ -57,6 +57,7 @@ call_cubature_rules(int num_repeats = 11)
       numint::integration_result iter =
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
+          i,
           sub_regions,
           estimates,
           characteristics,
@@ -103,6 +104,7 @@ call_cubature_rules(F integrand,
       numint::integration_result iter =
         rules.template apply_cubature_integration_rules<F>(
           d_integrand,
+          i,
           sub_regions,
           estimates,
           characteristics,
@@ -121,19 +123,21 @@ call_cubature_rules(F integrand,
   }
 }
 
-
-
 /*
     we are not keeping track of nFinished regions
     id, ndim, true_val, epsrel, epsabs, estimate, errorest, nregions,
    nFinishedRegions, status, time
 */
 
-template <typename F, int ndim, bool use_custom = false, int debug = 0>
+template <typename F,
+          int ndim,
+          bool use_custom = false,
+          int debug = 0,
+          int num_runs = 10>
 bool
 time_and_call(std::string id, F integrand, double epsrel, double true_value)
 {
-  
+
   auto print_custom = [=](bool use_custom_flag) {
     std::string to_print = use_custom_flag == true ? "custom" : "library";
     return to_print;
@@ -148,9 +152,8 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
   const quad::Volume<double, ndim> vol;
   size_t partitions_per_axis = get_partitions_per_axis(ndim);
 
-  for (int i = 0; i < 2; i++) {
-  Sub_regions<double, ndim> subregions(partitions_per_axis);
-
+  for (int i = 0; i < num_runs; i++) {
+    Sub_regions<double, ndim> subregions(partitions_per_axis);
     auto const t0 = std::chrono::high_resolution_clock::now();
 
     constexpr bool collect_iters = false;
@@ -166,13 +169,14 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
     }
 
     std::cout.precision(17);
-    //if (i != 0.)
+    if (i != 0.)
       std::cout << std::fixed << std::scientific << "pagani"
                 << "," << id << "," << ndim << "," << print_custom(use_custom)
                 << "," << true_value << "," << epsrel << "," << epsabs << ","
                 << result.estimate << "," << result.errorest << ","
                 << result.nregions << "," << result.nFinishedRegions << ","
-                << result.status << "," << dt.count() << std::endl;
+                << result.iters << "," << result.status << "," << dt.count()
+                << std::endl;
   }
   return good;
 }

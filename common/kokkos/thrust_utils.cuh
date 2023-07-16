@@ -32,10 +32,10 @@ template <typename T, bool use_custom = false>
 T
 reduction(Kokkos::View<T*, Kokkos::CudaSpace> arr, size_t size)
 {
-  if constexpr (use_custom == false) {
+  /*if constexpr (use_custom == false) {
     std::cerr << "no library use for reduction in kokkos" << std::endl;
     exit(1);
-  }
+  }*/
   return custom_reduce(arr, size);
 }
 
@@ -44,12 +44,12 @@ T
 exclusive_scan(Kokkos::View<T*, Kokkos::CudaSpace> input,
                Kokkos::View<T*, Kokkos::CudaSpace> output)
 {
-  if constexpr (use_custom == false) {
+  /*if constexpr (use_custom == false) {
     std::cerr << "no library use for exclusive_scan in kokkos" << std::endl;
     exit(1);
     return -1;
-  } else {
-
+  }  */
+  {
     int update = 0.;
     Kokkos::parallel_scan(
       input.extent(0),
@@ -69,11 +69,11 @@ quad::Range<T>
 device_array_min_max(Kokkos::View<T*, Kokkos::CudaSpace> arr)
 {
   quad::Range<T> range;
-  if (use_custom == false) {
+  /*if (use_custom == false) {
     std::cerr << "no library use for min_max in kokkos" << std::endl;
     exit(1);
     return range;
-  }
+  }*/
 
   auto res = min_max<T>(arr);
   range.low = res.first;
