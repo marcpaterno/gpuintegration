@@ -196,17 +196,11 @@ common_header_pagani_time_and_call(std::string alg_id,
   std::string hID;
 
   outfile.precision(17);
-  outfile << std::fixed << std::scientific << integ_id << "," 
-		 << std::scientific
-          << alg_id << "," 
-		  << difficulty << "," 
-		  << epsrel << "," 
-		  << epsabs
-          << "," << std::scientific << true_value 
-		  << "," << std::scientific << result.estimate << "," 
-		  << std::scientific << result.errorest << ","
-          << dt.count() << "," 
-		  << result.status << std::endl;
+  outfile << std::fixed << std::scientific << integ_id << "," << std::scientific
+          << alg_id << "," << difficulty << "," << epsrel << "," << epsabs
+          << "," << std::scientific << true_value << "," << std::scientific
+          << result.estimate << "," << std::scientific << result.errorest << ","
+          << dt.count() << "," << result.status << std::endl;
 
   return good;
 }

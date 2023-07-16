@@ -173,13 +173,13 @@ clean_time_and_call(std::string id,
     }
 
     outfile.precision(17);
-    //if (i != 0)
-      outfile << std::fixed << std::scientific << id << "," << ndim << ","
-              << print_custom(use_custom) << "," << true_value << "," << epsrel
-              << "," << epsabs << "," << result.estimate << ","
-              << result.errorest << "," << result.nregions << ","
-              << result.iters << "," << result.status << "," << dt.count()
-              << std::endl;
+    // if (i != 0)
+    outfile << std::fixed << std::scientific << id << "," << ndim << ","
+            << print_custom(use_custom) << "," << true_value << "," << epsrel
+            << "," << epsabs << "," << result.estimate << "," << result.errorest
+            << "," << result.nregions << "," << result.nFinishedRegions << ","
+            << result.iters << "," << result.status << "," << dt.count()
+            << std::endl;
   }
   return good;
 }
@@ -231,15 +231,16 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
                 << print_custom(use_custom) << "," << integrand.true_value
                 << "," << epsrel << "," << epsabs << "," << result.estimate
                 << "," << result.errorest << "," << result.nregions << ","
-                << result.iters << "," << result.status << "," << dt.count()
-                << std::endl;
+                << result.nFinishedRegions << "," << result.iters << ","
+                << result.status << "," << dt.count() << std::endl;
     }
 
     outfile << std::fixed << std::scientific << id << "," << ndim << ","
             << print_custom(use_custom) << "," << integrand.true_value << ","
             << epsrel << "," << epsabs << "," << result.estimate << ","
-            << result.errorest << "," << result.nregions << "," << result.iters
-            << "," << result.status << "," << dt.count() << std::endl;
+            << result.errorest << "," << result.nregions << ","
+            << result.nFinishedRegions << "," << result.iters << ","
+            << result.status << "," << dt.count() << std::endl;
   }
   return good;
 }

@@ -7,8 +7,8 @@ main()
 {
 
   std::vector<double> epsrels = {
-    /*1.e-3, 1.e-4, 1.e-5, 1.e-6,*/ 1.e-7, 1.e-8, 1.e-9};
-  std::ofstream outfile("pagani_genz_integrals_high_prec.csv");
+    1.e-3, 1.e-4, 1.e-5, 1.e-6, 1.e-7, 1.e-8, 1.e-9};
+  std::ofstream outfile("pagani_genz_integrals.csv");
   constexpr bool use_custom = false;
   constexpr int debug = 0;
   constexpr int num_runs = 10;

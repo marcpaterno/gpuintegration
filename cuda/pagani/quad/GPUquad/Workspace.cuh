@@ -163,7 +163,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
   using CustomTimer = std::chrono::high_resolution_clock::time_point;
   using MilliSeconds =
     std::chrono::duration<T, std::chrono::milliseconds::period>;
-  
+
   CustomTimer timer;
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
@@ -182,7 +182,6 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
     time_breakdown.outfile.open("cuda_pagani_time_breakdown.csv");
     time_breakdown.outfile << "id, ndim, epsrel, it, name, time" << std::endl;
-
   }
 
   for (size_t it = 0; it < 700 && subregions.size > 0; it++) {
@@ -201,10 +200,12 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
         estimates,
         characteristics,
         compute_relerr_error_reduction);
-    
+
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile << optional << "," << ndim << "," << epsrel << "," << it << ","  << "apply_cubature_rules," << dt.count() << std::endl;
+      time_breakdown.outfile
+        << optional << "," << ndim << "," << epsrel << "," << it << ","
+        << "apply_cubature_rules," << dt.count() << std::endl;
     }
 
     if constexpr (predict_split) {
@@ -227,19 +228,20 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "two_level_errorest," << dt.count() << std::endl;
+      time_breakdown.outfile
+        << optional << "," << ndim << "," << epsrel << "," << it << ","
+        << "two_level_errorest," << dt.count() << std::endl;
       iter_recorder.outfile << it << "," << cummulative.estimate + iter.estimate
                             << "," << cummulative.errorest + iter.errorest
                             << "," << subregions.size << std::endl;
     }
-
 
     if constexpr (predict_split) {
       if (cummulative.nregions == 0 && it == 15) {
         subregions.take_snapshot();
       }
     }
-    
+
     cummulative.iters++;
 
     if (accuracy_reached(epsrel,
@@ -254,7 +256,6 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
       return cummulative;
     }
 
-
     quad::CudaCheckError();
 
     if constexpr (debug > 0) {
@@ -268,7 +269,9 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "compute_finished_estimates," << dt.count() << std::endl;
+      time_breakdown.outfile
+        << optional << "," << ndim << "," << epsrel << "," << it << ","
+        << "compute_finished_estimates," << dt.count() << std::endl;
       timer = std::chrono::high_resolution_clock::now();
     }
 
@@ -277,7 +280,9 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "fix_error_budget_overflow," << dt.count() << std::endl;
+      time_breakdown.outfile
+        << optional << "," << ndim << "," << epsrel << "," << it << ","
+        << "fix_error_budget_overflow," << dt.count() << std::endl;
       timer = std::chrono::high_resolution_clock::now();
     }
 
@@ -294,7 +299,9 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
       if constexpr (debug > 0) {
         MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-        time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "heuristic_classify," << dt.count() << std::endl;
+        time_breakdown.outfile
+          << optional << "," << ndim << "," << epsrel << "," << it << ","
+          << "heuristic_classify," << dt.count() << std::endl;
       }
 
       return cummulative;
@@ -306,21 +313,25 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "heuristic_classify," << dt.count() << std::endl;
+      time_breakdown.outfile
+        << optional << "," << ndim << "," << epsrel << "," << it << ","
+        << "heuristic_classify," << dt.count() << std::endl;
       timer = std::chrono::high_resolution_clock::now();
     }
 
     Filter filter_obj(subregions.size);
     size_t num_active_regions = filter_obj.filter(
       subregions, characteristics, estimates, prev_iter_estimates);
-    
+
     cummulative.nregions += num_regions - num_active_regions;
     subregions.size = num_active_regions;
     quad::CudaCheckError();
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "region_filtering," << dt.count() << std::endl;
+      time_breakdown.outfile << optional << "," << ndim << "," << epsrel << ","
+                             << it << ","
+                             << "region_filtering," << dt.count() << std::endl;
       timer = std::chrono::high_resolution_clock::now();
     }
 
@@ -329,9 +340,10 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
-      time_breakdown.outfile  << optional << "," << ndim << "," <<  epsrel << "," << it << "," << "region_splitting," << dt.count() << std::endl;
+      time_breakdown.outfile << optional << "," << ndim << "," << epsrel << ","
+                             << it << ","
+                             << "region_splitting," << dt.count() << std::endl;
     }
-
   }
   cummulative.nregions += subregions.size;
   cudaFree(d_integrand);
