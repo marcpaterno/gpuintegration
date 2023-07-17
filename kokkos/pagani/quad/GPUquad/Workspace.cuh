@@ -339,7 +339,6 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     Splitter splitter(subregions.size);
     splitter.split(subregions, characteristics);
-    cummulative.iters++;
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
