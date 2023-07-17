@@ -207,8 +207,8 @@ public:
                 const Reg_estimates& estimates)
   {
 
-    if constexpr (debug >= 1) {
-      print_generators(d_generators);
+    if constexpr (debug >= 2) {
+      
 
       const size_t num_regions = estimates.size;
 
@@ -222,7 +222,8 @@ public:
 
       Print_region_evals(iter, ests, errs, num_regions);
 
-      if constexpr (debug >= 2) {
+      if constexpr (debug > 2) {
+        print_generators(d_generators);
         constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
         quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
         hfevals->fevals_list = new quad::Feval<ndim>[num_regions * num_fevals];
@@ -238,7 +239,7 @@ public:
       delete[] errs;
     }
   }
-
+  
   template <typename IntegT>
   numint::integration_result
   apply_cubature_integration_rules(const IntegT& integrand,
