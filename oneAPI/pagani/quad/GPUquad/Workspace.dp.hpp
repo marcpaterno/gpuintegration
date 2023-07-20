@@ -237,6 +237,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                                                  relerr_classification);
     iter.errorest =
       reduction<double, use_custom>(estimates.error_estimates, subregions.size);
+
     if (predict_split) {
       if (cummulative.nregions == 0 && it == 15) {
         subregions.take_snapshot();
@@ -255,7 +256,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
                 << cummulative.errorest + iter.errorest << ","
                 << subregions.size << std::endl;
     }
-
     cummulative.iters++;
 
     if (accuracy_reached(epsrel,
@@ -357,6 +357,7 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
 
   d_integrand->~IntegT();
   cummulative.nregions += subregions.size;
+  d_integrand->~IntegT();
   sycl::free(d_integrand, q_ct1);
   return cummulative;
 }
