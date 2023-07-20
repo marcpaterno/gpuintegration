@@ -179,13 +179,23 @@ clean_time_and_call(std::string id,
     }
 
     outfile.precision(17);
-    if (i != 0)
+
+  std::cout  << std::fixed << std::scientific << "pagani"
+              << "," << id << "," << ndim << "," << print_custom(use_custom)
+              << "," << true_value << "," << epsrel << "," << epsabs << ","
+              << result.estimate << "," << result.errorest << ","
+              << result.nregions << "," << result.nFinishedRegions << ","
+              << result.status << "," << dt.count() << std::endl;
+
+    if (i != 0){
       outfile << std::fixed << std::scientific << "pagani"
               << "," << id << "," << ndim << "," << print_custom(use_custom)
               << "," << true_value << "," << epsrel << "," << epsabs << ","
               << result.estimate << "," << result.errorest << ","
               << result.nregions << "," << result.nFinishedRegions << ","
               << result.status << "," << dt.count() << std::endl;
+    }
+      
   }
   return good;
 }
