@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-std::vector<double>
+inline std::vector<double>
 str_to_doubles(std::string const& txt)
 {
   std::istringstream in(txt);

@@ -39,7 +39,7 @@ public:
  * https://www.gnu.org/software/libc/manual/html_node/Backtraces.html
  * and modified slightly.
  */
-void
+inline void
 print_trace()
 {
   int const MAX_FRAMES = 100;
@@ -63,6 +63,7 @@ namespace quad {
 #define QUAD_STDERR
 #endif
 
+  inline
   //__host__ __device__
   cudaError_t
   Debug(cudaError_t error, const char* filename, int line, bool silent = false)
@@ -101,6 +102,7 @@ namespace quad {
     exit(1);                                                                   \
   }
 
+  inline
   void
   Println(std::ostream& out, std::string s)
   {

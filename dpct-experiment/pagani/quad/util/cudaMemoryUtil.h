@@ -18,7 +18,7 @@ namespace quad {
     return host_arr;
   }
 
-  size_t
+  inline size_t
   GetAmountFreeMem()
   try {
     size_t free_physmem, total_physmem;
