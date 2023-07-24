@@ -218,6 +218,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     if constexpr (debug > 0) {
       timer = std::chrono::high_resolution_clock::now();
     }
+    
     two_level_errorest_and_relerr_classify<T, ndim>(estimates,
                                                     prev_iter_estimates,
                                                     characteristics,
@@ -246,7 +247,6 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     }
 
     cummulative.iters++;
-
     if (accuracy_reached(epsrel,
                          epsabs,
                          std::abs(cummulative.estimate + iter.estimate),
@@ -255,6 +255,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
       cummulative.errorest += iter.errorest;
       cummulative.status = 0;
       cummulative.nregions += subregions.size;
+      d_integrand->~IntegT();
       cudaFree(d_integrand);
       return cummulative;
     }
@@ -298,6 +299,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
       cummulative.estimate += iter.estimate;
       cummulative.errorest += iter.errorest;
       cummulative.nregions += subregions.size;
+      d_integrand->~IntegT();
       cudaFree(d_integrand);
 
       if constexpr (debug > 0) {
@@ -349,6 +351,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     }
   }
   cummulative.nregions += subregions.size;
+  d_integrand->~IntegT();
   cudaFree(d_integrand);
   return cummulative;
 }
