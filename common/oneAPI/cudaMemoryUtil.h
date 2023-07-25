@@ -7,7 +7,7 @@
 
 namespace quad {
 	
-  void ShowDevice(sycl::queue &q) {
+  inline void ShowDevice(sycl::queue &q) {
       using namespace sycl;
       // Output platform and device information.
       auto device = q.get_device();
@@ -190,7 +190,7 @@ array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
     return host_arr;
   }
 
-  size_t
+  inline size_t
   GetAmountFreeMem()
   {    
     return 16e9; 

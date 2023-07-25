@@ -20,7 +20,7 @@ output_iter_data()
     return;
 }
 
-template <typename T, size_t ndim, bool use_custom = false>
+template <typename T, size_t ndim, int debug = 0, bool use_custom = false>
 class Workspace {
   using Estimates = Region_estimates<T, ndim>;
   using Sub_regs = Sub_regions<T, ndim>;
@@ -43,15 +43,14 @@ private:
                           const numint::integration_result& iter,
                           const numint::integration_result& cummulative);
 
-  Cubature_rules<T, ndim> rules;
+  Cubature_rules<T, ndim, debug> rules;
 
 public:
   Workspace() = default;
   Workspace(T* lows, T* highs) : Cubature_rules<T, ndim>(lows, highs) {}
   template <typename IntegT,
             bool predict_split = false,
-            bool collect_iters = false,
-            int debug = 0>
+            bool collect_iters = false>
   numint::integration_result integrate(const IntegT& integrand,
                                        Sub_regions<T, ndim>& subregions,
                                        T epsrel,
@@ -61,8 +60,7 @@ public:
 
   template <typename IntegT,
             bool predict_split = false,
-            bool collect_iters = false,
-            int debug = 0>
+            bool collect_iters = false>
   numint::integration_result integrate(const IntegT& integrand,
                                        T epsrel,
                                        T epsabs,
@@ -70,9 +68,9 @@ public:
                                        bool relerr_classification = true);
 };
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, int debug, bool use_custom>
 bool
-Workspace<T, ndim, use_custom>::heuristic_classify(
+Workspace<T, ndim, debug, use_custom>::heuristic_classify(
   Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
@@ -122,9 +120,9 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
   return must_terminate;
 }
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, int debug, bool use_custom>
 void
-Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
+Workspace<T, ndim, debug, use_custom>::fix_error_budget_overflow(
   Region_characteristics<ndim>& characteristics,
   const numint::integration_result& cummulative_finished,
   const numint::integration_result& iter,
@@ -149,10 +147,10 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
   }
 }
 
-template <typename T, size_t ndim, bool use_custom>
-template <typename IntegT, bool predict_split, bool collect_iters, int debug>
+template <typename T, size_t ndim, int debug, bool use_custom>
+template <typename IntegT, bool predict_split, bool collect_iters>
 numint::integration_result
-Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
                                           T epsabs,
@@ -185,7 +183,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     auto const t0 = std::chrono::high_resolution_clock::now();
     numint::integration_result iter =
-      rules.template apply_cubature_integration_rules<IntegT, debug>(
+      rules.template apply_cubature_integration_rules<IntegT>(
         d_integrand,
         it,
         subregions,
@@ -272,10 +270,10 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   return cummulative;
 }
 
-template <typename T, size_t ndim, bool use_custom>
-template <typename IntegT, bool predict_split, bool collect_iters, int debug>
+template <typename T, size_t ndim, int debug, bool use_custom>
+template <typename IntegT, bool predict_split, bool collect_iters>
 numint::integration_result
-Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
                                           quad::Volume<T, ndim> const& vol,
@@ -317,7 +315,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
 
     auto const t0 = std::chrono::high_resolution_clock::now();
     numint::integration_result iter =
-      rules.template apply_cubature_integration_rules<IntegT, debug>(
+      rules.template apply_cubature_integration_rules<IntegT>(
         d_integrand,
         it,
         subregions,

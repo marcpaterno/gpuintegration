@@ -60,7 +60,7 @@ public:
 
 namespace quad {
 
-  size_t
+  inline size_t
   GetAmountFreeMem()
   {
     size_t free_physmem, total_physmem;
@@ -163,7 +163,7 @@ namespace quad {
     return buffer;
   }
 
-  size_t
+  inline size_t
   get_free_mem()
   {
     size_t free_physmem, total_physmem;

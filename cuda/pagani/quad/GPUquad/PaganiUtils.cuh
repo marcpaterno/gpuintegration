@@ -28,7 +28,7 @@
 
 __constant__ size_t dFEvalPerRegion;
 
-template <typename T, size_t ndim, bool use_custom = false>
+template <typename T, size_t ndim, int debug = 0, bool use_custom = false>
 class Cubature_rules {
 public:
   // integrator requires constMem structure and generators array (those two can
@@ -51,9 +51,12 @@ public:
 
   Cubature_rules()
   {
-    rfevals.outfile.open("cuda_fevals.csv");
-    rgenerators.outfile.open("cuda_generators.csv");
-    rregions.outfile.open("cuda_regions.csv");
+	  
+	if constexpr(debug > 0){
+		rfevals.outfile.open("cuda_fevals.csv");
+		rgenerators.outfile.open("cuda_generators.csv");
+		rregions.outfile.open("cuda_regions.csv");
+	}
 
     auto print_header = [=]() {
       rfevals.outfile << "reg, fid,";
@@ -153,7 +156,6 @@ public:
     delete[] h_generators;
   }
 
-  template <int debug = 0>
   void
   print_verbose(T* d_generators,
                 quad::Func_Evals<ndim>& dfevals,
@@ -163,7 +165,7 @@ public:
     if constexpr (debug >= 1) {
       print_generators(d_generators);
 
-      constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+      
       const size_t num_regions = estimates.size;
 
       double* ests = new double[num_regions];
@@ -177,6 +179,7 @@ public:
       Print_region_evals(ests, errs, num_regions);
 
       if constexpr (debug >= 2) {
+		constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
         quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
         hfevals->fevals_list = new quad::Feval<ndim>[num_regions * num_fevals];
         quad::cuda_memcpy_to_host<quad::Feval<ndim>>(
@@ -242,7 +245,7 @@ public:
     return res;
   }
 
-  template <typename IntegT, int debug = 0>
+  template <typename IntegT>
   numint::integration_result
   apply_cubature_integration_rules(
     IntegT* d_integrand,
@@ -299,7 +302,7 @@ public:
     // kernel_time << std::endl;
     cudaProfilerStop();
 
-    print_verbose<debug>(generators, dfevals, subregion_estimates);
+    print_verbose(generators, dfevals, subregion_estimates);
 
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
@@ -443,6 +446,9 @@ pagani_clone(const IntegT& integrand,
       // 4. check if classification actually happened or was successful
       bool hs_classify_success =
         hs_results.pass_mem && hs_results.pass_errorest_budget;
+      // printf("hs_results will leave %lu regions active\n",
+      // hs_results.num_active);
+
       if (hs_classify_success) {
         // 5. if classification happened and was successful, update finished
         // estimates
@@ -459,14 +465,18 @@ pagani_clone(const IntegT& integrand,
       cummulative.estimate += finished.estimate;
       cummulative.errorest += finished.errorest;
 
+      // printf("num regions pre filtering:%lu\n", subregions->size);
       // 7. Filter out finished regions
       Filter region_errorest_filter(num_regions);
       num_regions = region_errorest_filter.filter(
         subregions, classifiers, estimates, prev_iter_estimates);
+      // printf("num regions after filtering:%lu\n", subregions->size);
       quad::CudaCheckError();
       // split regions
+      // printf("num regions pre split:%lu\n", subregions->size);
       Splitter reg_splitter(num_regions);
       reg_splitter.split(subregions, classifiers);
+      // printf("num regions after split:%lu\n", subregions->size);
     } else {
       cummulative.estimate += iter.estimate;
       cummulative.errorest += iter.errorest;

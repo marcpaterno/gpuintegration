@@ -68,7 +68,7 @@ TEST_CASE("No memory Leak")
 {
 
   double* results = quad::cuda_malloc<double>(1000);
-  size_t pre_interp_alloc_mem = quad::GetAmountFreeMem();
+  size_t pre_interp_alloc_mem = quad::get_free_mem();
 
   constexpr size_t s = 1000000;
   std::vector<double> xs_1D(s);
@@ -86,14 +86,14 @@ TEST_CASE("No memory Leak")
   using IntegT = Test_object<s, nx, ny>;
   IntegT host_obj(xs_1D.data(), ys_1D.data(), xs_2D, ys_2D, zs_2D);
 
-  size_t mem_after_one_host_object = quad::GetAmountFreeMem();
+  size_t mem_after_one_host_object = quad::get_free_mem();
   size_t approx_obj_size = pre_interp_alloc_mem - mem_after_one_host_object;
   size_t init_object_capacity = mem_after_one_host_object / approx_obj_size;
 
   for (int i = 0; i < 1000; ++i) {
 
     IntegT* device_obj = quad::cuda_copy_to_device(host_obj);
-    size_t mem_after_dev_object = quad::GetAmountFreeMem();
+    size_t mem_after_dev_object = quad::get_free_mem();
     ;
 
     Evaluate_test_obj<IntegT><<<1, 1>>>(device_obj, results);

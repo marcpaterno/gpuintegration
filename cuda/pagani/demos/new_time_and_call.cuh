@@ -65,9 +65,6 @@ call_cubature_rules(F integrand,
           compute_relerr_error_reduction);
 
       // sub_regions.print_bounds();
-      std::cout << "estimates:" << std::scientific << std::setprecision(15)
-                << std::scientific << iter.estimate << "," << num_regions
-                << std::endl;
       cudaFree(d_integrand);
     }
   }
@@ -159,7 +156,7 @@ clean_time_and_call(std::string id,
     constexpr bool collect_iters = false;
 
     numint::integration_result result =
-      workspace.template integrate<F, predict_split, collect_iters, debug>(
+      workspace.template integrate<F, predict_split, collect_iters>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     T const absolute_error = std::abs(result.estimate - true_value);

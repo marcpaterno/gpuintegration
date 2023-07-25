@@ -51,8 +51,6 @@ namespace quad {
     Interp1D();
     Interp1D(const Interp1D& source);
     Interp1D& operator=(Interp1D const& rhs);
-    Interp1D(Interp1D&&) = delete;
-    Interp1D& operator=(Interp1D&&) = delete;
     ~Interp1D();
 
     template <size_t M>

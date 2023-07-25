@@ -20,7 +20,7 @@ struct IntegrandAcrossIters {
   double lastIterError = 0.;
   double secondToLastIterError = 0.;
 
-  void
+  inline void
   UpdateValues(double newIntegral, double newError)
   {
     secondToLastIterIntegral = lastIterIntegral;

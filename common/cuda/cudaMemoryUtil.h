@@ -6,14 +6,6 @@
 
 namespace quad {
 
-  size_t
-  GetAmountFreeMem()
-  {
-    size_t free_physmem, total_physmem;
-    QuadDebugExit(cudaMemGetInfo(&free_physmem, &total_physmem));
-    return free_physmem;
-  }
-
   class Managed {
   public:
     void*
@@ -279,7 +271,7 @@ namespace quad {
     return buffer;
   }
 
-  size_t
+  inline size_t
   get_free_mem()
   {
     size_t free_physmem, total_physmem;

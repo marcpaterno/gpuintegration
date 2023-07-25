@@ -93,10 +93,7 @@ namespace quad {
       swap(tmp);
       return *this;
     }
-
     
-    Interp2D(Interp2D&&) = delete;
-    Interp2D& operator=(Interp2D&&) = delete;
 
     ~Interp2D()
     {

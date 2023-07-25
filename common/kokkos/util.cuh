@@ -13,6 +13,7 @@ doubleToString(double val, int prec_level)
   return out.str();
 }
 
+inline
 size_t
 GetAmountFreeMem()
 {
@@ -25,6 +26,7 @@ GetAmountFreeMem()
   return 0;
 }
 
+inline
 size_t
 GetTotalMem()
 {
@@ -37,6 +39,7 @@ GetTotalMem()
   return 0;
 }
 
+inline
 size_t
 GetGPUMemNeededForNextIteration_CallBeforeSplit(size_t numRegions, int NDIM)
 {
@@ -78,6 +81,7 @@ GetGPUMemNeededForNextIteration_CallBeforeSplit(size_t numRegions, int NDIM)
   return Ints_Size + Doubles_Size;
 }
 
+inline
 size_t
 GetGPUMemNeededForNextIteration(size_t numRegions, int NDIM)
 {
@@ -119,6 +123,7 @@ GetGPUMemNeededForNextIteration(size_t numRegions, int NDIM)
   return Ints_Size + Doubles_Size;
 }
 
+inline
 bool
 sigDigitsSame(double x, double y, double z, int requiredDigits)
 {
@@ -153,6 +158,7 @@ sigDigitsSame(double x, double y, double z, int requiredDigits)
   return verdict;
 }
 
+inline
 double
 ComputeMax(ViewVectorDouble list)
 {
@@ -167,6 +173,7 @@ ComputeMax(ViewVectorDouble list)
   return max;
 }
 
+inline
 double
 ComputeMin(ViewVectorDouble list)
 {
@@ -181,6 +188,7 @@ ComputeMin(ViewVectorDouble list)
   return min;
 }
 
+inline
 double
 exclusive_prefix_scan(ViewVectorInt input, ViewVectorInt output)
 {
@@ -196,6 +204,7 @@ exclusive_prefix_scan(ViewVectorInt input, ViewVectorInt output)
   return update;
 }
 
+inline
 void
 ExpandcuArray(ViewVectorDouble& array, int currentSize, int newSize)
 {
