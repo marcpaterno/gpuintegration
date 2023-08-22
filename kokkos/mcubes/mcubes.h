@@ -376,7 +376,6 @@ namespace kokkos_mcubes {
 
     for (int j = 1; j <= ndim; j++) {
       const double ran00 = (*rand_num_generator)();
-      // printf("random:%f\n", ran00);
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);

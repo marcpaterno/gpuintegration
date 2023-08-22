@@ -109,7 +109,7 @@ Workspace<T, ndim, debug, use_custom>::heuristic_classify(
   if (hs_classify_success) {
     cudaFree(characteristics.active_regions);
     characteristics.active_regions = hs_results.active_flags;
-    finished.estimate = iter.estimate - dot_product<int, T, use_custom>(
+    finished.estimate = iter.estimate - dot_product<T, T, use_custom>(
                                           characteristics.active_regions,
                                           estimates.integral_estimates,
                                           characteristics.size);
@@ -140,7 +140,7 @@ Workspace<T, ndim, debug, use_custom>::fix_error_budget_overflow(
     size_t num_threads = 256;
     size_t num_blocks = characteristics.size / num_threads +
                         (characteristics.size % num_threads == 0 ? 0 : 1);
-    quad::set_array_to_value<int><<<num_blocks, num_threads>>>(
+    quad::set_array_to_value<T><<<num_blocks, num_threads>>>(
       characteristics.active_regions, characteristics.size, 1);
     cudaDeviceSynchronize();
 

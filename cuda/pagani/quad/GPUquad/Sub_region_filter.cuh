@@ -9,13 +9,13 @@ template <typename T, int NDIM>
 __global__ void
 alignRegions(T* dRegions,
              T* dRegionsLength,
-             int* activeRegions,
+             T* activeRegions,
              T* dRegionsIntegral,
              T* dRegionsError,
              T* dRegionsParentIntegral,
              T* dRegionsParentError,
              int* subDividingDimension,
-             int* scannedArray,
+             T* scannedArray,
              T* newActiveRegions,
              T* newActiveRegionsLength,
              int* newActiveRegionsBisectDim,
@@ -55,27 +55,27 @@ public:
 
   Sub_regions_filter(const size_t num_regions)
   {
-    scanned_array = quad::cuda_malloc<int>(num_regions);
+    scanned_array = quad::cuda_malloc<T>(num_regions);
   }
 
   size_t
-  get_num_active_regions(int* active_regions, const size_t num_regions)
+  get_num_active_regions(T* active_regions, const size_t num_regions)
   {
-    exclusive_scan<int, use_custom>(active_regions, num_regions, scanned_array);
-    int last_element;
-    int num_active = 0;
+    exclusive_scan<T, use_custom>(active_regions, num_regions, scanned_array);
+    T last_element;
+    T num_active = 0;
 
     cudaMemcpy(&last_element,
                active_regions + num_regions - 1,
-               sizeof(int),
+               sizeof(T),
                cudaMemcpyDeviceToHost);
 
     cudaMemcpy(&num_active,
                scanned_array + num_regions - 1,
-               sizeof(int),
+               sizeof(T),
                cudaMemcpyDeviceToHost);
 
-    if (last_element == 1)
+    if (last_element == 1.)
       num_active++;
 
     return static_cast<size_t>(num_active);
@@ -147,7 +147,7 @@ public:
 
   ~Sub_regions_filter() { cudaFree(scanned_array); }
 
-  int* scanned_array = nullptr;
+  T* scanned_array = nullptr;
 };
 
 #endif

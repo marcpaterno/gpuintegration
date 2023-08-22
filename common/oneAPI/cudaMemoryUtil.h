@@ -111,7 +111,7 @@ namespace quad {
   void
   set_array_to_value(T* array, size_t size, T val, sycl::nd_item<1> item_ct1)
   {
-    size_t tid = item_ct1.get_global_id(0);
+    size_t tid =  item_ct1.get_group(0) * item_ct1.get_local_range().get(0) + item_ct1.get_local_id(0);
     if (tid < size) {
       array[tid] = val;
     }
@@ -169,8 +169,7 @@ namespace quad {
                        sycl::range(num_threads)),
         [=](sycl::nd_item<1> item_ct1) {
           set_array_to_value<T>(arr, size, val, item_ct1);
-        })
-      .wait();
+        }).wait();
   }
 
   template <typename T, typename C = T>

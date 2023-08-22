@@ -46,14 +46,14 @@ TEST_CASE("get_num_active_regions: 100-region-list")
   Region_characteristics<ndim> regions(num_regions);
   Sub_regions_filter<double, ndim> filter(num_regions);
 
-  int* host_active_regions = quad::host_alloc<int>(num_regions);
+  double* host_active_regions = quad::host_alloc<double>(num_regions);
 
   SECTION("All active regions")
   {
     for (size_t i = 0; i < num_regions; ++i)
       host_active_regions[i] = 1;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -66,7 +66,7 @@ TEST_CASE("get_num_active_regions: 100-region-list")
       host_active_regions[i] = 0;
     host_active_regions[regions.size - 1] = 1;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -79,7 +79,7 @@ TEST_CASE("get_num_active_regions: 100-region-list")
       host_active_regions[i] = 0;
     host_active_regions[0] = 1;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -91,7 +91,7 @@ TEST_CASE("get_num_active_regions: 100-region-list")
     for (size_t i = 0; i < num_regions; ++i)
       host_active_regions[i] = 0;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -104,7 +104,7 @@ TEST_CASE("get_num_active_regions: 100-region-list")
       host_active_regions[i] = 1;
     host_active_regions[0] = 0;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -117,7 +117,7 @@ TEST_CASE("get_num_active_regions: 100-region-list")
       host_active_regions[i] = 1;
     host_active_regions[regions.size - 1] = 0;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -134,7 +134,7 @@ TEST_CASE("get_num_active_regions: one-region-list")
   Region_characteristics<ndim> regions(num_regions);
   Sub_regions_filter<double, ndim> filter(num_regions);
 
-  int* host_active_regions = quad::host_alloc<int>(num_regions);
+  double* host_active_regions = quad::host_alloc<double>(num_regions);
 
   SECTION("one active region")
   {
@@ -142,7 +142,7 @@ TEST_CASE("get_num_active_regions: one-region-list")
       host_active_regions[i] = 1;
     host_active_regions[0] = 1;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -154,7 +154,7 @@ TEST_CASE("get_num_active_regions: one-region-list")
     for (size_t i = 0; i < num_regions; ++i)
       host_active_regions[i] = 0;
 
-    quad::cuda_memcpy_to_device<int>(
+    quad::cuda_memcpy_to_device<double>(
       regions.active_regions, host_active_regions, num_regions);
     size_t num_active =
       filter.get_num_active_regions(regions.active_regions, regions.size);
@@ -181,7 +181,7 @@ TEST_CASE("filter: all regions are active")
   double* original_LeftCoord = quad::host_alloc<double>(n * ndim);
   double* original_Length = quad::host_alloc<double>(n * ndim);
   int* sub_dividing_dim = quad::host_alloc<int>(n);
-  int* host_active_regions = quad::host_alloc<int>(n);
+  double* host_active_regions = quad::host_alloc<double>(n);
 
   // set region variabels to fit test scenario
   for (size_t i = 0; i < n; ++i) {
@@ -211,7 +211,7 @@ TEST_CASE("filter: all regions are active")
     parents.error_estimates, parent_error_mirror, n / 2);
   quad::cuda_memcpy_to_device<int>(
     classifications.sub_dividing_dim, sub_dividing_dim, n);
-  quad::cuda_memcpy_to_device<int>(
+  quad::cuda_memcpy_to_device<double>(
     classifications.active_regions, host_active_regions, n);
 
   size_t num_active =
@@ -297,7 +297,7 @@ TEST_CASE("filter: region 15 is inactive")
   double* original_LeftCoord = quad::host_alloc<double>(n * ndim);
   double* original_Length = quad::host_alloc<double>(n * ndim);
   int* sub_dividing_dim = quad::host_alloc<int>(n);
-  int* host_active_regions = quad::host_alloc<int>(n);
+  double* host_active_regions = quad::host_alloc<double>(n);
 
   for (size_t i = 0; i < n; ++i) {
     integrals_mirror[i] = 1000.;
@@ -332,7 +332,7 @@ TEST_CASE("filter: region 15 is inactive")
     parents.error_estimates, parent_error_mirror, n / 2);
   quad::cuda_memcpy_to_device<int>(
     classifications.sub_dividing_dim, sub_dividing_dim, n);
-  quad::cuda_memcpy_to_device<int>(
+  quad::cuda_memcpy_to_device<double>(
     classifications.active_regions, host_active_regions, n);
 
   size_t num_active =
@@ -402,7 +402,7 @@ TEST_CASE("filter: first and last regions are inactive")
   double* original_LeftCoord = quad::host_alloc<double>(n * ndim);
   double* original_Length = quad::host_alloc<double>(n * ndim);
   int* sub_dividing_dim = quad::host_alloc<int>(n);
-  int* host_active_regions = quad::host_alloc<int>(n);
+  double* host_active_regions = quad::host_alloc<double>(n);
 
   for (int i = 0; i < n; ++i) {
     integrals_mirror[i] = 1000.;
@@ -443,7 +443,7 @@ TEST_CASE("filter: first and last regions are inactive")
     parents.error_estimates, parent_error_mirror, n / 2);
   quad::cuda_memcpy_to_device<int>(
     classifications.sub_dividing_dim, sub_dividing_dim, n);
-  quad::cuda_memcpy_to_device<int>(
+  quad::cuda_memcpy_to_device<double>(
     classifications.active_regions, host_active_regions, n);
 
   size_t num_active =

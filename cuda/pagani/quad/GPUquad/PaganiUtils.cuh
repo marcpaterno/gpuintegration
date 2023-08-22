@@ -129,8 +129,8 @@ public:
 
   void
   Print_func_evals(quad::Func_Evals<ndim> fevals,
-                   double* ests,
-                   double* errs,
+                   T* ests,
+                   T* errs,
                    const size_t num_regions)
   {
     if (num_regions >= 1024)
@@ -150,7 +150,7 @@ public:
       }
     };
 
-    auto print_feval_point = [=](double* x) {
+    auto print_feval_point = [=](T* x) {
       for (size_t dim = 0; dim < ndim; ++dim) {
         rfevals.outfile << std::scientific << x[dim] << ",";
       }
@@ -212,12 +212,12 @@ public:
 
       const size_t num_regions = estimates.size;
 
-      double* ests = new double[num_regions];
-      double* errs = new double[num_regions];
+      T* ests = new T[num_regions];
+      T* errs = new T[num_regions];
 
-      quad::cuda_memcpy_to_host<double>(
+      quad::cuda_memcpy_to_host<T>(
         ests, estimates.integral_estimates, num_regions);
-      quad::cuda_memcpy_to_host<double>(
+      quad::cuda_memcpy_to_host<T>(
         errs, estimates.error_estimates, num_regions);
 
       Print_region_evals(iter, ests, errs, num_regions);
@@ -253,14 +253,14 @@ public:
     Region_characteristics<ndim> region_characteristics(num_regions);
     Region_estimates<T, ndim> subregion_estimates(num_regions);
 
-    quad::set_device_array<int>(
+    quad::set_device_array<T>(
       region_characteristics.active_regions, num_regions, 1);
 
     size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
-
+    cudaFuncSetCacheConfig(quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>, cudaFuncCachePreferEqual);
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -303,20 +303,25 @@ public:
 
     size_t num_regions = subregions.size;
     quad::Func_Evals<ndim> dfevals;
-
     if constexpr (debug >= 2) {
       constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
       dfevals.fevals_list =
         quad::cuda_malloc<quad::Feval<ndim>>(num_regions * num_fevals);
     }
 
-    quad::set_device_array<int>(
+    quad::set_device_array<T>(
       region_characteristics.active_regions, num_regions, 1.);
-
+    //quad::set_device_array<T>(
+    //  subregion_estimates.integral_estimates, num_regions, 1.);
+    //quad::set_device_array<int>(
+    //  region_characteristics.sub_dividing_dim, num_regions, 1.);
+    
+   
     size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
+    //cudaFuncSetCacheConfig(quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>, cudaFuncCachePreferL1);
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -333,15 +338,18 @@ public:
                                    generators,
                                    dfevals);
     cudaDeviceSynchronize();
-    print_verbose<debug>(it, generators, dfevals, subregion_estimates);
 
+    print_verbose<debug>(it, generators, dfevals, subregion_estimates);
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);
+    //res.estimate = 1. + res.estimate/1.e20;
     res.errorest = compute_error ?
                      reduction<T, use_custom>(
                        subregion_estimates.error_estimates, num_regions) :
                      std::numeric_limits<T>::infinity();
+    //quad::set_device_array<T>(
+    //  subregion_estimates.error_estimates, num_regions, 1.);
     return res;
   }
 
@@ -377,11 +385,11 @@ compute_finished_estimates(const Region_estimates<T, ndim>& estimates,
   numint::integration_result finished;
   finished.estimate =
     iter.estimate -
-    dot_product<int, T, use_custom>(
+    dot_product<T, T, use_custom>(
       classifiers.active_regions, estimates.integral_estimates, estimates.size);
-  ;
+
   finished.errorest =
-    iter.errorest - dot_product<int, T, use_custom>(classifiers.active_regions,
+    iter.errorest - dot_product<T, T, use_custom>(classifiers.active_regions,
                                                     estimates.error_estimates,
                                                     estimates.size);
   return finished;
@@ -455,11 +463,11 @@ pagani_clone(const IntegT& integrand,
       // heuristic classification
       Res finished;
       finished.estimate =
-        iter.estimate - dot_product<int, T>(classifiers.active_regions,
+        iter.estimate - dot_product<T, T>(classifiers.active_regions,
                                             estimates.integral_estimates,
                                             num_regions);
       finished.errorest =
-        iter.errorest - dot_product<int, T>(classifiers.active_regions,
+        iter.errorest - dot_product<T, T>(classifiers.active_regions,
                                             estimates.error_estimates,
                                             num_regions);
 
@@ -485,7 +493,7 @@ pagani_clone(const IntegT& integrand,
         // estimates
         classifiers.active_regions = hs_results.active_flags;
         finished.estimate =
-          iter.estimate - dot_product<int, T>(classifiers.active_regions,
+          iter.estimate - dot_product<T, T>(classifiers.active_regions,
                                               estimates.integral_estimates,
                                               num_regions);
 

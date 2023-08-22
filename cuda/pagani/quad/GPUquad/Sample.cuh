@@ -68,13 +68,12 @@ namespace quad {
 
     val = warpReduceSum(val);
     if (lane == 0) {
-      shared[wid] = val;
+      shared[wid] = val; //store by thread 0 of each warp
     }
-    __syncthreads(); // Wait for all partial reductions //I think it's safe to
-                     // remove
+    __syncthreads(); // Wait for all partial reductions 
 
     // read from shared memory only if that warp existed
-    val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0;
+    val = (threadIdx.x < (blockDim.x >> 5)) ? shared[lane] : 0; //thread 0 and 1 read from shared memory
     __syncthreads();
 
     if (wid == 0)
@@ -120,9 +119,10 @@ namespace quad {
 
     // if I read shared memory in the case where we don't invoke the integrand,
     // cuda is slower than oneapi
-
-#pragma unroll NDIM
-    for (int dim = 0; dim < NDIM; ++dim) {
+    
+    #pragma unroll
+    for (int dim = 0; dim < NDIM; ++dim) 
+    {
       const T generator = __ldg(
         &generators[pagani::CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
       x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
@@ -131,7 +131,6 @@ namespace quad {
     }
 
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
-
     sdata[threadIdx.x] = fun; // target for reduction
     const int gIndex = __ldg(&constMem.gpuGenPermGIndex[pIndex]);
 
@@ -143,7 +142,7 @@ namespace quad {
         .store(gpu::apply(*d_integrand, x), pIndex);
     }
 
-#pragma unroll 5
+    #pragma unroll 5
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * __ldg(&constMem.cRuleWt[gIndex * NRULES + rul]);
     }
@@ -219,7 +218,7 @@ namespace quad {
     }
     __syncthreads();
 
-#pragma unroll 1
+    #pragma unroll 1
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx.x;
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -253,9 +252,9 @@ namespace quad {
     }
 
     __syncthreads();
-#pragma unroll 5
+    #pragma unroll 5
     for (int i = 0; i < NRULES; ++i) {
-      sum[i] = blockReduceSum(sum[i]);
+        sum[i] = blockReduceSum(sum[i]);
       //__syncthreads();
     }
 
@@ -263,13 +262,13 @@ namespace quad {
 
       Result* r = &region->result; // ptr to shared Mem
 
-#pragma unroll 3
+      #pragma unroll 3
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
 
         //__ldg is missing from the loop below
         constexpr int NSETS = 9;
-#pragma unroll 9
+        #pragma unroll 9
         for (int s = 0; s < NSETS; ++s) {
           maxerr =
             max(maxerr,

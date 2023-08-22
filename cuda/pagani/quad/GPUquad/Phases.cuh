@@ -223,7 +223,7 @@ namespace quad {
               T* dParentsIntegral,
               T* dParentsError,
               T* newErrs,
-              int* activeRegions,
+              T* activeRegions,
               size_t currIterRegions,
               T epsrel,
               int heuristicID)
@@ -326,7 +326,7 @@ namespace quad {
       vol = 1.;
       T maxRange = 0;
 
-#pragma unroll NDIM
+      #pragma unroll NDIM
       for (int dim = 0; dim < NDIM; ++dim) {
         T lower = dRegions[dim * numRegions + index];
         sRegionPool[0].bounds[dim].lower = lower;
@@ -348,7 +348,7 @@ namespace quad {
       }
     }
 
-    __syncthreads();
+    __syncthreads(); //postone to ComputePermutation
     SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
                                                         constMem,
                                                         sRegionPool,
