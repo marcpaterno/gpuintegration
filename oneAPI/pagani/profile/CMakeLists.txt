@@ -70,7 +70,7 @@ target_compile_options(oneapi_execute_math_functions_on_device PRIVATE "-lonemkl
 add_executable(oneapi_profile_integrands profile_integrands.cpp)
 target_include_directories(oneapi_profile_integrands PRIVATE "${ONEMKL_DIR}/include")
 target_link_directories(oneapi_profile_integrands PUBLIC "${ONEMKL_DIR}/lib/")
-target_compile_options(oneapi_profile_integrands PRIVATE "-lonemkl")
+target_compile_options(oneapi_profile_integrands PRIVATE "-lonemkl" "-g" "-Xcuda-ptxas -v")
 
 add_executable(oneapi_profile_mcubes_integrands profile_mcubes_integrands.cpp)
 target_include_directories(oneapi_profile_mcubes_integrands PRIVATE "${ONEMKL_DIR}/include")
