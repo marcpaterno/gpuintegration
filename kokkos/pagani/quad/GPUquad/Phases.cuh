@@ -248,92 +248,19 @@ namespace quad {
                    quad::Func_Evals<NDIM> fevals,
                    const member_type team_member)
   {
-
-    /*const size_t index = blockIdx.x;
-    // may not be worth pre-computing
-    __shared__ T Jacobian;
-    __shared__ int maxDim;
-    __shared__ T vol;
-
-    __shared__ T ranges[NDIM];
-
-    if (threadIdx.x == 0) {
-
-      Jacobian = 1.;
-      vol = 1.;
-      T maxRange = 0;
-
-#pragma unroll NDIM
-      for (int dim = 0; dim < NDIM; ++dim) {
-        T lower = dRegions[dim * numRegions + index];
-        sRegionPool[0].bounds[dim].lower = lower;
-        sRegionPool[0].bounds[dim].upper =
-          lower + dRegionsLength[dim * numRegions + index];
-        vol *=
-          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
-
-        sBound[dim].unScaledLower = lows[dim];
-        sBound[dim].unScaledUpper = highs[dim];
-        ranges[dim] = sBound[dim].unScaledUpper - sBound[dim].unScaledLower;
-
-        T range = sRegionPool[0].bounds[dim].upper - lower;
-        Jacobian = Jacobian * ranges[dim];
-        if (range > maxRange) {
-          maxDim = dim;
-          maxRange = range;
-        }
-      }
-    }*/
-
     typedef Kokkos::View<Region<NDIM>*,
                          Kokkos::DefaultExecutionSpace::scratch_memory_space,
                          Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       ScratchViewRegion;
 
-    ScratchViewDouble vol(team_member.team_scratch(0), 1);
-    ScratchViewDouble Jacobian(team_member.team_scratch(0), 1);
-    ScratchViewDouble ranges(team_member.team_scratch(0), NDIM);
-    ScratchViewInt maxDim(team_member.team_scratch(0), 1);
-    ScratchViewGlobalBounds sBound(team_member.team_scratch(0), NDIM);
-    // int threadIdx = team_member.team_rank();
-
-    if (team_member.team_rank() == 0) {
-
-      int blockIdx = team_member.league_rank();
-      Jacobian(0) = 1;
-      vol(0) = 1;
-      double maxRange = 0;
-      for (int dim = 0; dim < NDIM; ++dim) {
-        double lower = dRegions[dim * numRegions + blockIdx];
-        sRegionPool[0].bounds[dim].lower = lower;
-        sRegionPool[0].bounds[dim].upper =
-          lower + dRegionsLength[dim * numRegions + blockIdx];
-        vol(0) *=
-          sRegionPool[0].bounds[dim].upper - sRegionPool[0].bounds[dim].lower;
-
-        sBound(dim).unScaledLower = lows[dim];
-        sBound(dim).unScaledUpper = highs[dim];
-        ranges(dim) = sBound(dim).unScaledUpper - sBound(dim).unScaledLower;
-
-        double range = sRegionPool[0].bounds[dim].upper - lower;
-        Jacobian(0) = Jacobian(0) * ranges(dim);
-
-        if (range > maxRange) {
-          maxDim(0) = dim;
-          maxRange = range;
-        }
-      }
-    }
-
-    team_member.team_barrier();
     SampleRegionBlock<IntegT, T, NDIM, blockDim, debug>(d_integrand,
                                                         constMem,
                                                         sRegionPool,
-                                                        sBound.data(),
-                                                        vol.data(),
-                                                        maxDim.data(),
-                                                        ranges.data(),
-                                                        Jacobian.data(),
+                                                        dRegions,
+                                                        dRegionsLength,
+                                                        numRegions,
+                                                        lows,
+                                                        highs,
                                                         generators,
                                                         fevals,
                                                         team_member);
@@ -359,40 +286,23 @@ namespace quad {
   {
 
     uint32_t nBlocks = numRegions;
-    uint32_t nThreads = BLOCK_SIZE;
+    uint32_t nThreads = blockDim;
     typedef Kokkos::View<Region<NDIM>*,
                          Kokkos::DefaultExecutionSpace::scratch_memory_space,
                          Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       ScratchViewRegion;
 
-    Kokkos::TeamPolicy<Kokkos::LaunchBounds<64, 18>> mainKernelPolicy(nBlocks,
+    Kokkos::TeamPolicy<> mainKernelPolicy(nBlocks,
                                                                       nThreads);
-    // auto mainPolicy = Kokkos::Experimental::require(mainKernelPolicy,
-    // Kokkos::Experimental::WorkItemProperty::HintHeavyWeight);
-
-    // if(iteration <= 5)
-    //     mainPolicy = Kokkos::Experimental::require(mainKernelPolicy,
-    //     Kokkos::Experimental::WorkItemProperty::HintLightWeight);
-
+   
     int shMemBytes =
-      ScratchViewInt::shmem_size(
-        1) + // for maxDim
-             // ScratchViewDouble::shmem_size(1) +    // for vol
-             // ScratchViewDouble::shmem_size(1) +    // for Jacobian
-      ScratchViewDouble::shmem_size(NDIM) + // for ranges
-      ScratchViewRegion::shmem_size(
-        1) + // how come shmem_size doesn't return size_t? the
-             // tutorial exercise was returning an int too
-      ScratchViewGlobalBounds::shmem_size(NDIM) + // for sBound
-      ScratchViewDouble::shmem_size(BLOCK_SIZE);  // for sdata
+      ScratchViewRegion::shmem_size(1) +
+      ScratchViewDouble::shmem_size(nThreads);  // for sdata
 
     Kokkos::parallel_for(
       "INTEGRATE_GPU_PHASE1",
       mainKernelPolicy.set_scratch_size(0, Kokkos::PerTeam(shMemBytes)),
       KOKKOS_LAMBDA(const member_type team_member) {
-        // Kokkos::parallel_for( "INTEGRATE_GPU_PHASE1", team_policy(nBlocks,
-        // nThreads).set_scratch_size(0, Kokkos::PerTeam(shMemBytes)),
-        // KOKKOS_LAMBDA (const member_type team_member) {
 
         ScratchViewRegion sRegionPool(team_member.team_scratch(0), 1);
         INIT_REGION_POOL<IntegT, T, NDIM, blockDim, debug>(d_integrand,

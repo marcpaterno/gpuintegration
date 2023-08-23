@@ -21,11 +21,11 @@ namespace quad {
   KOKKOS_INLINE_FUNCTION T
   warpReduceSum(T val)
   {
-    /*val += __shfl_down_sync(0xffffffff, val, 16, 32);
+    val += __shfl_down_sync(0xffffffff, val, 16, 32);
     val += __shfl_down_sync(0xffffffff, val, 8, 32);
     val += __shfl_down_sync(0xffffffff, val, 4, 32);
     val += __shfl_down_sync(0xffffffff, val, 2, 32);
-    val += __shfl_down_sync(0xffffffff, val, 1, 32);*/
+    val += __shfl_down_sync(0xffffffff, val, 1, 32);
     return val;
   }
 
@@ -46,12 +46,14 @@ namespace quad {
   KOKKOS_INLINE_FUNCTION void
   computePermutation(IntegT* d_integrand,
                      int pIndex,
-                     Bounds b[],
-                     GlobalBounds* sBound,
+                     T* rlows,
+                     T* rhighs,
+                     int numRegions,
+                     T* global_lows,
                      T* sum,
                      const Structures<T>& constMem,
-                     T* range,
-                     T* jacobian,
+                     T* ranges,
+                     T jacobian,
                      T* generators,
                      T* sdata,
                      quad::Func_Evals<NDIM> fevals,
@@ -59,30 +61,27 @@ namespace quad {
   {
     const int threadIdx = team_member.team_rank();
     gpu::cudaArray<T, NDIM> x;
-
-    // if I read shared memory in the case where we don't invoke the integrand,
-    // cuda is slower than oneapi
+    int blockIdx = team_member.league_rank();
 
     for (int dim = 0; dim < NDIM; ++dim) {
       const T generator =
         (generators[pagani::CuhreFuncEvalsPerRegion<NDIM>() * dim + pIndex]);
-      x[dim] = sBound[dim].unScaledLower + ((.5 + generator) * b[dim].lower +
-                                            (.5 - generator) * b[dim].upper) *
-                                             range[dim];
+      x[dim] = global_lows[dim] + ((.5 + generator) * rlows[dim]+ (.5 - generator) * rhighs[dim]) * ranges[dim];
+                                      
     }
 
-    const T fun = gpu::apply(*d_integrand, x) * (jacobian[0]);
-    sdata[threadIdx] = fun; // target for reduction
+    const T fun = gpu::apply(*d_integrand, x) * (jacobian);
+    sdata[threadIdx] = fun;
     const int gIndex = (constMem.gpuGenPermGIndex[pIndex]);
 
-    if constexpr (debug >= 2) {
+    /*if constexpr (debug >= 2) {
       const int blockIdx = team_member.league_rank();
       // assert(fevals != nullptr);
       fevals[blockIdx * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(
         x, sBound, b);
       fevals[blockIdx * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(
         gpu::apply(*d_integrand, x), pIndex);
-    }
+    }*/
 
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * (constMem.cRuleWt[gIndex * NRULES + rul]);
@@ -95,18 +94,44 @@ namespace quad {
   SampleRegionBlock(IntegT* d_integrand,
                     const Structures<T>& constMem,
                     Region<NDIM>* sRegionPool,
-                    GlobalBounds* sBound,
-                    T* vol,
-                    int* maxdim,
-                    T* range,
-                    T* jacobian,
+                    T* dRegions,
+                    T* dRegionsLength,
+                    int numRegions,
+                    T* global_lows,
+                    T* global_highs,
                     T* generators,
                     quad::Func_Evals<NDIM> fevals,
                     const member_type team_member)
   {
+
+
+    int blockIdx = team_member.league_rank();
+    double jacobian = 1.;
+    double vol = 1;
+    double maxRange = 0;
+    double rlows[NDIM];
+    double rhighs[NDIM];
+    double ranges[NDIM];
+    int  maxDim;
+
+    for (int dim = 0; dim < NDIM; ++dim) {
+        const double lower = dRegions[dim * numRegions + blockIdx];
+        rlows[dim] = lower;
+        rhighs[dim] = lower + dRegionsLength[dim * numRegions + blockIdx];
+        vol *= rhighs[dim] - rlows[dim];
+
+        ranges[dim] = global_highs[dim] - global_lows[dim];
+        jacobian = ranges[dim];
+
+        if (ranges[dim]  > maxRange) {
+          maxDim = dim;
+          maxRange = ranges[dim];
+      }
+    }
+    
     const int threadIdx = team_member.team_rank();
     Region<NDIM>* const region = (Region<NDIM>*)&sRegionPool[0];
-    ScratchViewDouble sdata(team_member.team_scratch(0), BLOCK_SIZE);
+    ScratchViewDouble sdata(team_member.team_scratch(0), blockdim);
     int perm = 0;
     constexpr int offset = 2 * NDIM;
 
@@ -121,11 +146,13 @@ namespace quad {
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
-                                                 region->bounds,
-                                                 sBound,
+                                                 rlows,
+                                                 rhighs,
+                                                 numRegions,
+                                                 global_lows,
                                                  sum,
                                                  constMem,
-                                                 range,
+                                                 ranges,
                                                  jacobian,
                                                  generators,
                                                  sdata.data(),
@@ -138,27 +165,25 @@ namespace quad {
     if (threadIdx == 0) {
       const T ratio =
         Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
-      T* f = &sdata[0];
       Result* r = &region->result;
-      T* f1 = f;
-      T base = *f1 * 2 * (1 - ratio);
+      T base = sdata[0] * 2 * (1 - ratio);
       T maxdiff = 0;
-      int bisectdim = *maxdim;
-      // #pragma unroll 1
+      int bisectdim = maxDim;
+
       for (int dim = 0; dim < NDIM; ++dim) {
-        T* fp = f1 + 1;
-        T* fm = fp + 1;
-        T fourthdiff =
-          fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
+        int f1_idx = 2 * dim;
+        int fp_idx = f1_idx + 1; 
+        int fm_idx = fp_idx + 1;  
+        T fourthdiff = fabs(base + ratio * (sdata[fp_idx] + sdata[fm_idx]) 
+                             - (sdata[fp_idx + offset] + sdata[fm_idx + offset]));
 
-        f1 = fm;
         if (fourthdiff > maxdiff) {
-          maxdiff = fourthdiff;
-          bisectdim = dim;
+            maxdiff = fourthdiff;
+            bisectdim = dim;
         }
-      }
+    }
 
-      r->bisectdim = bisectdim;
+    r->bisectdim = bisectdim;
     }
     team_member.team_barrier();
 
@@ -166,29 +191,33 @@ namespace quad {
       int pIndex = perm * blockdim + threadIdx;
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
-                                                 region->bounds,
-                                                 sBound,
+                                                 rlows,
+                                                 rhighs,
+                                                 numRegions,
+                                                 global_lows,
                                                  sum,
                                                  constMem,
-                                                 range,
+                                                 ranges,
                                                  jacobian,
                                                  generators,
                                                  sdata.data(),
                                                  fevals,
                                                  team_member);
     }
-    //__syncthreads();
+
     // Balance permutations
     pIndex = perm * blockdim + threadIdx;
     if (pIndex < FEVAL) {
       int pIndex = perm * blockdim + threadIdx;
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
-                                                 region->bounds,
-                                                 sBound,
+                                                 rlows,
+                                                 rhighs,
+                                                 numRegions,
+                                                 global_lows,
                                                  sum,
                                                  constMem,
-                                                 range,
+                                                 ranges,
                                                  jacobian,
                                                  generators,
                                                  sdata.data(),
@@ -199,7 +228,6 @@ namespace quad {
     team_member.team_barrier();
     for (int i = 0; i < NRULES; ++i) {
       sum[i] = blockReduceSum(sum[i], team_member);
-      //__syncthreads();
     }
 
     if (threadIdx == 0) {
@@ -209,7 +237,6 @@ namespace quad {
       for (int rul = 1; rul < NRULES - 1; ++rul) {
         T maxerr = 0.;
 
-        //__ldg is missing from the loop below
         constexpr int NSETS = 9;
         for (int s = 0; s < NSETS; ++s) {
           maxerr = max(maxerr,
@@ -220,10 +247,9 @@ namespace quad {
         sum[rul] = maxerr;
       }
 
-      r->avg = vol[0] * sum[0];
+      r->avg = vol* sum[0];
       const T errcoeff[3] = {5., 1., 5.};
-      // branching twice for each thread 0
-      r->err = vol[0] * ((errcoeff[0] * sum[1] <= sum[2] &&
+      r->err = vol * ((errcoeff[0] * sum[1] <= sum[2] &&
                           errcoeff[0] * sum[2] <= sum[3]) ?
                            errcoeff[1] * sum[1] :
                            errcoeff[2] * max(max(sum[1], sum[2]), sum[3]));
