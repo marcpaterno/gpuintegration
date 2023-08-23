@@ -5,7 +5,7 @@ add_subdirectory(sum_of_args_integrands)
 
 
 add_executable(kokkos_profile_integrands profile_integrands.cpp)
-target_compile_options(kokkos_profile_integrands PRIVATE "--expt-relaxed-constexpr" )
+target_compile_options(kokkos_profile_integrands PRIVATE "--expt-relaxed-constexpr" "-Xptxas;-v" "-lineinfo")
 target_link_libraries(kokkos_profile_integrands PUBLIC Kokkos::kokkoskernels ${NVTX_LIBRARY})
 target_include_directories(kokkos_profile_integrands PRIVATE
   ${CMAKE_SOURCE_DIR}
