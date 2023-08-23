@@ -344,19 +344,20 @@ namespace kokkos_mcubes {
       return 1;
   }
 
-  KOKKOS_INLINE_FUNCTION int
-  GetChunkSize(const double ncall)
-  {
-    double small = 1.e7;
-    double large = 8.e9;
-
-    if (ncall <= small)
-      return 32;
-    else if (ncall <= large)
-      return 2048;
-    else
-      return 4096;
-  }
+__inline__ int
+GetChunkSize(const double ncall)
+{
+  double small = 1.e7;
+  double large = 8.e9;
+  if(ncall < 1e6)
+    return 4;
+  if (ncall <= small)
+    return 32;
+  else if (ncall <= large)
+    return 2048;
+  else
+    return 4096;
+}
 
   template <int ndim, typename GeneratorType = kokkos_mcubes::Custom_generator>
   KOKKOS_INLINE_FUNCTION void
@@ -432,7 +433,6 @@ namespace kokkos_mcubes {
       }
 
       const double tmp = gpu::apply(integrand(0), xx);
-      // printf("feval:%f wgt:%f\n", tmp, wgt);
       const double f = wgt * tmp;
 
       double f2 = f * f;
