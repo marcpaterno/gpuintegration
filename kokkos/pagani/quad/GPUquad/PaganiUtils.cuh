@@ -232,7 +232,7 @@ public:
     quad::set_device_array<int>(
       region_characteristics.active_regions.data(), num_regions, 1.);
 
-    constexpr size_t block_size = 64;
+    constexpr size_t block_size = BLOCK_SIZE;
     T epsrel = 1.e-3, epsabs = 1.e-12;
 
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>(
