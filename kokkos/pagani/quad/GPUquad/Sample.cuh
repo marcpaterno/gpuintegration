@@ -48,7 +48,6 @@ namespace quad {
                      int pIndex,
                      T* rlows,
                      T* rhighs,
-                     int numRegions,
                      T* global_lows,
                      T* sum,
                      const Structures<T>& constMem,
@@ -74,14 +73,14 @@ namespace quad {
     sdata[threadIdx] = fun;
     const int gIndex = (constMem.gpuGenPermGIndex[pIndex]);
 
-    /*if constexpr (debug >= 2) {
+    if constexpr (debug >= 2) {
       const int blockIdx = team_member.league_rank();
       // assert(fevals != nullptr);
       fevals[blockIdx * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(
-        x, sBound, b);
+        x, global_lows, ranges, rlows, rhighs);
       fevals[blockIdx * pagani::CuhreFuncEvalsPerRegion<NDIM>() + pIndex].store(
         gpu::apply(*d_integrand, x), pIndex);
-    }*/
+    }
 
     for (int rul = 0; rul < NRULES; ++rul) {
       sum[rul] += fun * (constMem.cRuleWt[gIndex * NRULES + rul]);
@@ -107,7 +106,7 @@ namespace quad {
 
     int blockIdx = team_member.league_rank();
     double jacobian = 1.;
-    double vol = 1;
+    double vol = 1.;
     double maxRange = 0;
     double rlows[NDIM];
     double rhighs[NDIM];
@@ -119,13 +118,14 @@ namespace quad {
         rlows[dim] = lower;
         rhighs[dim] = lower + dRegionsLength[dim * numRegions + blockIdx];
         vol *= rhighs[dim] - rlows[dim];
-
+        
         ranges[dim] = global_highs[dim] - global_lows[dim];
-        jacobian = ranges[dim];
+        jacobian *= ranges[dim];
+        double range = rhighs[dim] - lower;
 
-        if (ranges[dim]  > maxRange) {
+        if (range  > maxRange) {
           maxDim = dim;
-          maxRange = ranges[dim];
+          maxRange = range;
       }
     }
     
@@ -148,7 +148,6 @@ namespace quad {
                                                  pIndex,
                                                  rlows,
                                                  rhighs,
-                                                 numRegions,
                                                  global_lows,
                                                  sum,
                                                  constMem,
@@ -165,35 +164,35 @@ namespace quad {
     if (threadIdx == 0) {
       const T ratio =
         Sq(__ldg(&constMem.gpuG[2 * NDIM]) / __ldg(&constMem.gpuG[1 * NDIM]));
+      T* f = &sdata[0];
       Result* r = &region->result;
-      T base = sdata[0] * 2 * (1 - ratio);
+      T* f1 = f;
+      T base = *f1 * 2 * (1 - ratio);
       T maxdiff = 0;
       int bisectdim = maxDim;
-
+      // #pragma unroll 1
       for (int dim = 0; dim < NDIM; ++dim) {
-        int f1_idx = 2 * dim;
-        int fp_idx = f1_idx + 1; 
-        int fm_idx = fp_idx + 1;  
-        T fourthdiff = fabs(base + ratio * (sdata[fp_idx] + sdata[fm_idx]) 
-                             - (sdata[fp_idx + offset] + sdata[fm_idx + offset]));
+        T* fp = f1 + 1;
+        T* fm = fp + 1;
+        T fourthdiff =
+          fabs(base + ratio * (fp[0] + fm[0]) - (fp[offset] + fm[offset]));
 
+        f1 = fm;
         if (fourthdiff > maxdiff) {
-            maxdiff = fourthdiff;
-            bisectdim = dim;
+          maxdiff = fourthdiff;
+          bisectdim = dim;
         }
-    }
+      }
 
-    r->bisectdim = bisectdim;
+      r->bisectdim = bisectdim;
     }
     team_member.team_barrier();
-
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
       int pIndex = perm * blockdim + threadIdx;
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
                                                  rlows,
                                                  rhighs,
-                                                 numRegions,
                                                  global_lows,
                                                  sum,
                                                  constMem,
@@ -213,7 +212,6 @@ namespace quad {
                                                  pIndex,
                                                  rlows,
                                                  rhighs,
-                                                 numRegions,
                                                  global_lows,
                                                  sum,
                                                  constMem,
