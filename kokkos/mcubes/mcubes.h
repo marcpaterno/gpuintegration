@@ -543,12 +543,10 @@ GetChunkSize(const double ncall)
   {
     Kokkos::parallel_for(
       "kokkos_vegas_kernel",
-      team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(2048)),
+      team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(2 * nThreads * sizeof(double))),
       KOKKOS_LAMBDA(const member_type team_member) {
         int chunkSize = _chunkSize;
-        /*ScratchViewDouble sh_buff(team_member.team_scratch(0),
-                                                              2 * nBlocks *
-           sizeof(double));*/
+        //ScratchViewDouble sh_buff(team_member.team_scratch(0), 2 * nThreads);
         constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
         uint32_t tx = team_member.team_rank(); // local id
         uint32_t m = team_member.league_rank() * team_member.team_size() +
@@ -594,19 +592,19 @@ GetChunkSize(const double ncall)
                                                       cube_id_offset);
         }
 
-        // sh_buff(tx) = fbg;
-        // sh_buff(tx + Internal_Vegas_Params::get_NDMX()) = f2bg;
+         //sh_buff(tx) = fbg;
+         //sh_buff(tx + team_member.team_size()) = f2bg;
         // printf("pre-reductin vals:%f +- %f\n", fbg, f2bg);
         team_member.team_barrier();
 
         fbg = blockReduceSum(fbg, team_member);
         f2bg = blockReduceSum(f2bg, team_member);
         if (tx == 0) {
-          // double fbgs = 0.0;
-          // double f2bgs = 0.0;
-          /*for (int ii = 0; ii < Internal_Vegas_Params::get_NDMX() && (m + ii)
-          < totalNumThreads; ++ii) { fbgs += sh_buff(ii); f2bgs += sh_buff(ii +
-          Internal_Vegas_Params::get_NDMX());
+           //double fbgs = 0.0;
+           //double f2bgs = 0.0;
+          /*for (int ii = 0; ii < (m + ii) < totalNumThreads && ii < team_member.team_size(); ++ii) { 
+            fbgs += sh_buff(ii); 
+            f2bgs += sh_buff(ii + team_member.team_size());
           }*/
           // printf("block %i storing %f +- %f\n", team_member.league_rank(),
           // fbg, f2bg);
@@ -644,15 +642,14 @@ GetChunkSize(const double ncall)
 
     Kokkos::parallel_for(
       "vegas_kernelF",
-      team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(2048)),
+      team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(2 * nThreads * sizeof(double))),
       KOKKOS_LAMBDA(const member_type team_member) {
         int chunkSize = _chunkSize;
-        ScratchViewDouble sh_buff(team_member.team_scratch(0), 256);
+       // ScratchViewDouble sh_buff(team_member.team_scratch(0), 2 * nThreads);
 
         uint32_t tx = team_member.team_rank();
         uint32_t m =
-          team_member.league_rank() * Internal_Vegas_Params::get_NDMX() +
-          tx; // global thread id
+          team_member.league_rank() * team_member.team_size() + tx; // global thread id
 
         double fb, f2b, wgt, xn, xo, rc, f, f2, ran00;
         uint32_t kg[mxdim_p1];
@@ -663,10 +660,7 @@ GetChunkSize(const double ncall)
 
         if (m < totalNumThreads) {
 
-          size_t cube_id_offset =
-            (team_member.league_rank() * Internal_Vegas_Params::get_NDMX() +
-             tx) *
-            chunkSize;
+          size_t cube_id_offset = (team_member.league_rank() * team_member.team_size() +  tx) * chunkSize;
 
           if (m == totalNumThreads - 1)
             chunkSize = LastChunk;
@@ -681,8 +675,9 @@ GetChunkSize(const double ncall)
             if constexpr (kokkos_mcubes::TypeChecker<
                             GeneratorType,
                             Custom_generator>::is_custom_generator()) {
-              rand_num_generator.SetSeed(cube_id_offset + t);
+              rand_num_generator.SetSeed(cube_id_offset);
             }
+
             for (k = 1; k <= npg; k++) {
               wgt = xjac;
 
@@ -690,8 +685,7 @@ GetChunkSize(const double ncall)
 
                 ran00 = rand_num_generator();
                 xn = (kg[j] - ran00) * dxg + 1.0;
-                iaj = IMAX(IMIN((int)(xn), ndmx),
-                           1); // this is the bin, different on each dim
+                iaj = IMAX(IMIN((int)(xn), ndmx),1); 
 
                 if (iaj > 1) {
                   xo = xi[j * ndmx_p1 + iaj] - xi[j * ndmx_p1 + iaj - 1];
@@ -728,9 +722,7 @@ GetChunkSize(const double ncall)
             f2bg += f2b;
 
             for (int k = ndim; k >= 1; k--) {
-
               kg[k] %= ng;
-
               if (++kg[k] != 1)
                 break;
             }
@@ -738,23 +730,16 @@ GetChunkSize(const double ncall)
 
         } // end of subcube if
 
-        sh_buff(tx) = fbg;
-        sh_buff(tx + Internal_Vegas_Params::get_NDMX()) = f2bg;
-
+        //sh_buff(tx) = fbg;
+        //sh_buff(tx + team_member.team_size()) = f2bg;
         team_member.team_barrier();
+        fbg = blockReduceSum(fbg, team_member);
+        f2bg = blockReduceSum(f2bg, team_member);
+        
 
         if (tx == 0) {
-          double fbgs = 0.0;
-          double f2bgs = 0.0;
-          for (int ii = 0; ii < Internal_Vegas_Params::get_NDMX() &&
-                           m + ii < totalNumThreads;
-               ++ii) {
-            fbgs += sh_buff(ii);
-            f2bgs += sh_buff(ii + Internal_Vegas_Params::get_NDMX());
-          }
-
-          Kokkos::atomic_add(&result_dev(0), fbgs);
-          Kokkos::atomic_add(&result_dev(1), f2bgs);
+          Kokkos::atomic_add(&result_dev(0), fbg);
+          Kokkos::atomic_add(&result_dev(1), f2bg);
         }
       });
   }
@@ -801,7 +786,6 @@ GetChunkSize(const double ncall)
         quad::Volume<double, ndim> const* vol)
   {
 
-    std::cout << "in vegas" << std::endl;
     auto t0 = std::chrono::high_resolution_clock::now();
 
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
@@ -911,8 +895,8 @@ GetChunkSize(const double ncall)
       Kokkos::deep_copy(d_result, 0.0);
       // std::cout<<"npg:"<<npg<<", dxg:"<<dxg<<", ng:"<< ng << std::endl;
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
-                          static_cast<unsigned int>(it);
+      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +
+                          */static_cast<unsigned int>(it);
       // seed = 0;
       vegas_kernel_kokkos<IntegT, ndim, GeneratorType>(d_integrand,
                                                        params.nBlocks,
@@ -953,8 +937,8 @@ GetChunkSize(const double ncall)
         if (*chi2a < 0.0)
           *chi2a = 0.0;
         *sd = sqrt(1.0 / swgt);
-        // printf("%i %.15f +- %.15f iteration: %.15f +- %.15f chi:%.15f\n",
-        //     it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
+        //printf("%i %e +- %e iteration: %e +- %e chi:%.15f\n",
+        //    it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
         tsi = sqrt(tsi);
         *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
       }
@@ -1007,9 +991,9 @@ GetChunkSize(const double ncall)
       ti = tsi = 0.0;
       Kokkos::deep_copy(d_result, 0.0);
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
-      unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
+      unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
                           static_cast<unsigned int>(it);
-      seed = 0;
+      
       vegas_kernel_kokkosF<IntegT, ndim, GeneratorType>(d_integrand,
                                                         params.nBlocks,
                                                         params.nThreads,
@@ -1032,8 +1016,6 @@ GetChunkSize(const double ncall)
       ti = result(0);
       tsi = result(1);
       tsi *= dv2g;
-      // printf("iter = %d  integ = %e   std = %e\n", it, ti, sqrt(tsi));
-
       wgt = 1.0 / tsi;
       si += wgt * ti;
       schi += wgt * ti * ti;
@@ -1045,15 +1027,10 @@ GetChunkSize(const double ncall)
         *chi2a = 0.0;
 
       *sd = sqrt(1.0 / swgt);
-      // printf("%i, %.15f,  %.15f, %.15f, %.15f, %.15f\n", it, *tgral, *sd, ti,
-      // sqrt(tsi), *chi2a);
-
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      // printf("it %d\n", it);
-      // printf("z cummulative:%5d   %14.7g+/-%9.4g  %9.2g\n", it, *tgral, *sd,
-      // *chi2a); printf("%3d   %e  %e\n", it, ti, tsi);
-
+      //printf("%i %e +- %e iteration: %e +- %e chi:%.15f\n",
+      //       it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
     } // end of iterations
 
     free(dt);
