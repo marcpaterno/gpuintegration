@@ -54,6 +54,7 @@ interpolate_at_knots()
     CHECK(ys[i] == results[i]);
   }
   cudaFree(results);
+  cudaFree(input);
 }
 
 void
