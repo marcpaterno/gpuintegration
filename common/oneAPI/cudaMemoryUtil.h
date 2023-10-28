@@ -196,24 +196,6 @@ array_values_larger_than_val(T* dev_arr, size_t dev_arr_size, C val){
     return 16e9; 
   }
 
-  class Managed {
-  public:
-    void*
-    operator new(size_t len)
-    {
-      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      void* ptr;
-      ptr = (void*)sycl::malloc_shared(len, q_ct1);
-      return ptr;
-    }
-
-    void
-    operator delete(void* ptr)
-    {
-      auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-      sycl::free(ptr, q_ct1);
-    }
-  };
 
   template <typename T>
   class MemoryUtil {};
