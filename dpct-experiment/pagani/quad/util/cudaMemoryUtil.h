@@ -42,25 +42,6 @@ namespace quad {
     std::exit(1);
   }
 
-  class Managed {
-  public:
-    void*
-    operator new(size_t len)
-    {
-      void* ptr;
-      ptr = (void*)sycl::malloc_shared(len, dpct::get_default_queue());
-      dpct::get_current_device().queues_wait_and_throw();
-      return ptr;
-    }
-
-    void
-    operator delete(void* ptr)
-    {
-      dpct::get_current_device().queues_wait_and_throw();
-      sycl::free(ptr, dpct::get_default_queue());
-    }
-  };
-
   template <typename T>
   class MemoryUtil {};
 

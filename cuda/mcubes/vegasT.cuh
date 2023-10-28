@@ -852,7 +852,6 @@ namespace cuda_mcubes {
       // std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time <<
       // std::endl; std::cout<<"\textra cubes:"<< extra << "," << "time:" <<
       // kernel_time << std::endl;
-      params.set_alternate(chunkSize);
       cudaProfilerStop();
       cudaMemcpy(xi,
                  xi_dev,
