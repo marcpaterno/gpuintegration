@@ -181,9 +181,6 @@ namespace quad {
       std::getline(is, buffer);
       std::vector<double> zs = str_to_doubles(buffer);
 
-      // why is this done?
-      cudaMallocManaged((void**)&(*&interp), sizeof(Interp2D));
-
       interp._cols = xs.size();
       interp._rows = ys.size();
 
