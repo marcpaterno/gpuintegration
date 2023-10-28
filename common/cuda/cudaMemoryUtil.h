@@ -6,25 +6,6 @@
 
 namespace quad {
 
-  class Managed {
-  public:
-    void*
-    operator new(size_t len)
-    {
-      void* ptr;
-      cudaMallocManaged(&ptr, len);
-      cudaDeviceSynchronize();
-      return ptr;
-    }
-
-    void
-    operator delete(void* ptr)
-    {
-      cudaDeviceSynchronize();
-      cudaFree(ptr);
-    }
-  };
-
   template <typename T>
   class MemoryUtil {};
 
@@ -162,6 +143,7 @@ namespace quad {
     T* temp = nullptr;
     auto rc = cudaMallocManaged(&temp, sizeof(T) * size);
     if (rc != cudaSuccess) {
+      if (temp) cudaFree(temp);
       temp = nullptr;
 
       size_t free_physmem, total_physmem;
@@ -183,6 +165,7 @@ namespace quad {
     T* temp = nullptr;
     auto rc = cudaMallocManaged(&temp, sizeof(T));
     if (rc != cudaSuccess) {
+      if (temp) cudaFree(temp);
       size_t free_physmem, total_physmem;
       cudaMemGetInfo(&free_physmem, &total_physmem);
       printf("cuda_malloc_managed() allocating size %lu free mem:%lu\n",
