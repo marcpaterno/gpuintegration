@@ -74,6 +74,7 @@ add_test(test_volume test_volume)
 
 add_executable(Interpolation1D Interpolation1D.cu)
 set_target_properties(Interpolation1D PROPERTIES POSITION_INDEPENDENT_CODE on CUDA_ARCHITECTURES ${TARGET_ARCH})
+target_compile_options(Interpolation1D PRIVATE "-g" "-lineinfo")
 target_include_directories(Interpolation1D PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/externals
@@ -115,3 +116,4 @@ target_include_directories(Reduction PRIVATE
   ${CMAKE_SOURCE_DIR}/externals
 )
 add_test(Reduction Reduction)
+
