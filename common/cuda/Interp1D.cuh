@@ -124,8 +124,11 @@ quad::Interp1D::operator=(Interp1D const& rhs)
 
 inline quad::Interp1D::~Interp1D()
 {
-  cudaFree(_zs);
-  cudaFree(_xs);
+  if (_zs) cudaFree(_zs);
+  if (_xs) cudaFree(_xs);
+  // zero out the pointers to try to help the leak sanitizer
+  _zs = nullptr;
+  _xs = nullptr;
 }
 
 template <size_t M>
