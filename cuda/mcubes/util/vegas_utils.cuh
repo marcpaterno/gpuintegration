@@ -220,16 +220,6 @@ struct Kernel_Params {
                 totalNumThreads / BLOCK_DIM_X + 1;
     nThreads = BLOCK_DIM_X;
   }
-
-  void
-  set_alternate(int chunkSize)
-  {
-
-    uint32_t threads = (uint32_t)(ncubes / chunkSize);
-    uint32_t warps = threads % 32 == 0 ? threads / 32 : threads / 32 + 1;
-    uint32_t extra_threads = threads % 32;
-    uint32_t _nBlocks = warps % 4 == 0 ? warps / 4 : warps / 4 + 1;
-  }
 };
 
 __inline__ bool
