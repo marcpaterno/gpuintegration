@@ -248,7 +248,7 @@ struct Sub_regions {
   T* dLength = nullptr;
 
   T* snapshot_dLeftCoord = nullptr;
-  T* snapshot_dLength;
+  T* snapshot_dLength  = nullptr;
   Region_characteristics<ndim>* characteristics;
   Region_estimates<T, ndim>* region_estimates;
 
