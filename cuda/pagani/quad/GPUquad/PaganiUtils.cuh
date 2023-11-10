@@ -51,12 +51,12 @@ public:
 
   Cubature_rules()
   {
-	  
-	if constexpr(debug > 0){
-		rfevals.outfile.open("cuda_fevals.csv");
-		rgenerators.outfile.open("cuda_generators.csv");
-		rregions.outfile.open("cuda_regions.csv");
-	}
+
+    if constexpr (debug > 0) {
+      rfevals.outfile.open("cuda_fevals.csv");
+      rgenerators.outfile.open("cuda_generators.csv");
+      rregions.outfile.open("cuda_regions.csv");
+    }
 
     auto print_header = [=]() {
       rfevals.outfile << "reg, fid,";
@@ -77,7 +77,6 @@ public:
       rfevals.outfile << std::scientific << "feval, estimate, errorest"
                       << std::endl;
     };
-
     print_header();
     constexpr size_t fEvalPerRegion = pagani::CuhreFuncEvalsPerRegion<ndim>();
     quad::Rule<T> rule;
@@ -99,7 +98,6 @@ public:
   void
   set_device_volume(T const* lows = nullptr, T const* highs = nullptr)
   {
-
     if (lows == nullptr && highs == nullptr) {
       std::array<T, ndim> _lows = {0.};
       std::array<T, ndim> _highs;
@@ -165,7 +163,6 @@ public:
     if constexpr (debug >= 1) {
       print_generators(d_generators);
 
-      
       const size_t num_regions = estimates.size;
 
       double* ests = new double[num_regions];
@@ -179,7 +176,7 @@ public:
       Print_region_evals(ests, errs, num_regions);
 
       if constexpr (debug >= 2) {
-		constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
+        constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
         quad::Func_Evals<ndim>* hfevals = new quad::Func_Evals<ndim>;
         hfevals->fevals_list = new quad::Feval<ndim>[num_regions * num_fevals];
         quad::cuda_memcpy_to_host<quad::Feval<ndim>>(
@@ -255,6 +252,7 @@ public:
     const Regs_characteristics& region_characteristics,
     bool compute_error = false)
   {
+
     size_t num_regions = subregions.size;
     quad::Func_Evals<ndim> dfevals;
 
@@ -272,12 +270,6 @@ public:
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    cudaProfilerStart();
-    cudaEventRecord(start);
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -294,14 +286,6 @@ public:
                                    generators,
                                    dfevals);
     cudaDeviceSynchronize();
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float kernel_time = 0;
-    cudaEventElapsedTime(&kernel_time, start, stop);
-    // std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," <<
-    // kernel_time << std::endl;
-    cudaProfilerStop();
-
     print_verbose(generators, dfevals, subregion_estimates);
 
     numint::integration_result res;

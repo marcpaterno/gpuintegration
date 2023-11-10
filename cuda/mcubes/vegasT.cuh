@@ -814,13 +814,6 @@ namespace cuda_mcubes {
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
         static_cast<unsigned int>(it);
-
-      cudaEvent_t start, stop;
-      cudaEventCreate(&start);
-      cudaEventCreate(&stop);
-
-      cudaProfilerStart();
-      cudaEventRecord(start);
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,
                                               ng,
@@ -845,14 +838,6 @@ namespace cuda_mcubes {
                                               data_collector.randoms,
                                               data_collector.funcevals);
       cudaDeviceSynchronize();
-      cudaEventRecord(stop);
-      cudaEventSynchronize(stop);
-      float kernel_time = 0;
-      cudaEventElapsedTime(&kernel_time, start, stop);
-      // std::cout<< "vegas_kernel:" << params.nBlocks << "," << kernel_time <<
-      // std::endl; std::cout<<"\textra cubes:"<< extra << "," << "time:" <<
-      // kernel_time << std::endl;
-      cudaProfilerStop();
       cudaMemcpy(xi,
                  xi_dev,
                  sizeof(double) * (mxdim_p1) * (ndmx_p1),
