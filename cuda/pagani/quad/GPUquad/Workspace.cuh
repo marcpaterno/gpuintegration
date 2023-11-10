@@ -47,7 +47,7 @@ private:
 
 public:
   Workspace() = default;
-  Workspace(T* lows, T* highs) : Cubature_rules<T, ndim>(lows, highs) {}
+  //Workspace(T* lows, T* highs) : Cubature_rules<T, ndim>(lows, highs) {} //probably undeeded
   template <typename IntegT,
             bool predict_split = false,
             bool collect_iters = false>
@@ -279,14 +279,14 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
                                           quad::Volume<T, ndim> const& vol,
                                           bool relerr_classification)
 {
+  
   using MilliSeconds =
     std::chrono::duration<T, std::chrono::milliseconds::period>;
-
+  
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
   numint::integration_result cummulative;
   Recorder<debug> iter_recorder("cuda_iters.csv");
-
   size_t partitions_per_axis = 2;
   if (ndim < 5)
     partitions_per_axis = 4;
@@ -300,9 +300,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
   Classifier classifier(epsrel, epsabs);
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
-
-  IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
-
+  IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
   if constexpr (debug > 0) {
 
     iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
@@ -360,6 +358,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
       cummulative.errorest += iter.errorest;
       cummulative.status = 0;
       cummulative.nregions += subregions.size;
+      d_integrand->~IntegT();
       cudaFree(d_integrand);
       return cummulative;
     }
@@ -380,6 +379,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
       cummulative.estimate += iter.estimate;
       cummulative.errorest += iter.errorest;
       cummulative.nregions += subregions.size;
+      d_integrand->~IntegT();
       cudaFree(d_integrand);
       return cummulative;
     }
@@ -398,6 +398,7 @@ Workspace<T, ndim, debug, use_custom>::integrate(const IntegT& integrand,
     cummulative.iters++;
   }
   cummulative.nregions += subregions.size;
+  d_integrand->~IntegT();
   cudaFree(d_integrand);
   return cummulative;
 }
