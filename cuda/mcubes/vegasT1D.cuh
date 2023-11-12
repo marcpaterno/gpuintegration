@@ -512,7 +512,7 @@ namespace mcubes1D {
       ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) + 1;
     uint32_t nThreads = BLOCK_DIM_X;
 
-    IterDataLogger<DEBUG_MCUBES> data_collector(
+    IterDataLogger<DEBUG_MCUBES, ndim> data_collector(
       totalNumThreads, chunkSize, extra, npg, ndim);
     IntegT* d_integrand = cuda_copy_to_managed(integrand);
 

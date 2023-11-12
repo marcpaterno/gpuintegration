@@ -47,45 +47,14 @@ Last three arguments are: total iterations, iteration
 
 namespace kokkos_mcubes {
 
-  using MilliSeconds =
-    std::chrono::duration<double, std::chrono::milliseconds::period>;
+template<int ndim>
+struct FuncEval{
+  double res = 0;
+  double point[ndim] = {0.};
+};
 
-  typedef Kokkos::TeamPolicy<> team_policy;
-  typedef Kokkos::TeamPolicy<>::member_type member_type;
 
-  typedef Kokkos::TeamPolicy<> team_policy;
-  typedef Kokkos::TeamPolicy<>::member_type member_type;
-
-  // int scratch_size = ScratchViewType::shmem_size(256);
-
-  template <typename T, typename U>
-  KOKKOS_INLINE_FUNCTION std::common_type_t<T, U>
-  IMAX(T a, U b)
-  {
-    return (a > b) ? a : b;
-  }
-
-  template <typename T, typename U>
-  KOKKOS_INLINE_FUNCTION std::common_type_t<T, U>
-  IMIN(T a, U b)
-  {
-    return (a < b) ? a : b;
-  }
-
-  template <typename T>
-  KOKKOS_INLINE_FUNCTION T
-  blockReduceSum(T val, const member_type team_member)
-  {
-    double sum = 0.;
-    team_member.team_barrier();
-    Kokkos::parallel_reduce(
-      Kokkos::TeamThreadRange(team_member, team_member.team_size()),
-      [=](int& i, T& lsum) { lsum += val; },
-      sum);
-    return sum;
-  }
-
-  class Internal_Vegas_Params {
+class Internal_Vegas_Params {
     static constexpr int ndmx = 500;
     static constexpr int mxdim = 20;
     static constexpr double alph = 1.5;
@@ -127,7 +96,215 @@ namespace kokkos_mcubes {
     {
       return mxdim + 1;
     }
-  };
+};
+
+std::ofstream
+GetOutFileVar(std::string filename)
+{
+  std::ofstream myfile;
+  myfile.open(filename.c_str());
+  return myfile;
+}
+
+template <bool DEBUG_MCUBES, int NDIM>
+class IterDataLogger {
+  std::ofstream myfile_bin_bounds;
+  std::ofstream myfile_randoms;
+  std::ofstream myfile_funcevals;
+  std::ofstream interval_myfile;
+  std::ofstream iterations_myfile;
+
+public:
+  Kokkos::View<FuncEval<NDIM>*, Kokkos::CudaUVMSpace> funcevals;
+  Kokkos::View<double*, Kokkos::CudaUVMSpace> randoms;
+
+  IterDataLogger(uint32_t totalNumThreads,
+                 int chunkSize,
+                 int extra,
+                 int npg,
+                 int ndim)
+  {
+    if constexpr (DEBUG_MCUBES) {
+      Kokkos::resize(randoms, (totalNumThreads * chunkSize + extra) * npg * ndim);
+      Kokkos::resize(funcevals, (totalNumThreads * chunkSize + extra) * npg);
+      Kokkos::resize(randoms, (totalNumThreads * chunkSize + extra) * npg );
+
+      myfile_bin_bounds.open("kokkos_pmcubes_bin_bounds.csv");
+      myfile_bin_bounds.precision(15);
+
+      myfile_randoms.open("kokkos_pmcubes_random_nums.csv");
+      myfile_randoms << "it, cube, chunk, sample, dim, ran00\n";
+      myfile_randoms.precision(15);
+
+      myfile_funcevals.precision(15);
+      myfile_funcevals.open("kokkos_pmcubes_funcevals.csv");
+      myfile_funcevals << "it, cube, sample, funceval,";
+      for(int dim = 0; dim < NDIM; ++dim)
+        myfile_funcevals << "dim" + std::to_string(dim) << ",";
+      myfile_funcevals <<  std::endl;
+
+      interval_myfile.open("kokkos_pmcubes_intevals.csv");
+      interval_myfile.precision(15);
+
+      iterations_myfile.open("kokkos_pmcubes_iters.csv");
+      iterations_myfile
+        << "iter, estimate, errorest, chi_sq, iter_estimate, iter_errorest\n";
+      iterations_myfile.precision(15);
+    }
+  }
+
+  ~IterDataLogger()
+  {
+    if constexpr (DEBUG_MCUBES) {
+      myfile_bin_bounds.close();
+      myfile_randoms.close();
+      myfile_funcevals.close();
+      interval_myfile.close();
+      iterations_myfile.close();
+    }
+  }
+
+  void
+  PrintIterResults(int iteration,
+                   double estimate,
+                   double errorest,
+                   double chi_sq,
+                   double iter_estimate,
+                   double iter_errorest)
+  {
+    iterations_myfile << iteration << "," << estimate << "," << errorest << ","
+                      << chi_sq << "," << iter_estimate << "," << iter_errorest
+                      << "\n";
+  }
+
+  void
+  PrintBins(int iter, double* xi, double* d, int ndim)
+  {
+    int ndmx1 =  Internal_Vegas_Params::get_NDMX_p1();
+    int ndmx =  Internal_Vegas_Params::get_NDMX();
+    int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+
+    if (iter == 1) {
+      myfile_bin_bounds
+        << "iter, dim, bin, bin_length, left, right, contribution\n";
+    }
+
+    for (int dim = 1; dim <= ndim; dim++)
+      for (int bin = 1; bin <= ndmx; bin++) {
+
+        double bin_length = xi[dim * ndmx1 + bin] - xi[dim * ndmx1 + bin - 1];
+        double left = xi[dim * ndmx1 + bin - 1];
+        if (bin == 1)
+          left = 0.;
+        double right = xi[dim * ndmx1 + bin];
+        double contribution = d[bin * mxdim_p1 + dim];
+        myfile_bin_bounds << iter << "," << dim << "," << bin << ","
+                          << bin_length << "," << left << "," << right << ","
+                          << contribution << "\n";
+      }
+  }
+
+  void
+  PrintRandomNums(int it, int ncubes, int npg, int ndim)
+  {
+
+    size_t nums_per_cube = npg * ndim;
+    size_t nums_per_sample = ndim;
+
+
+    for (int cube = 0; cube < ncubes; cube++)
+      for (int sample = 1; sample <= npg; sample++)
+        for (int dim = 1; dim <= ndim; dim++) {
+
+            size_t index =
+              cube * nums_per_cube + nums_per_sample * (sample - 1) + dim - 1;
+
+            myfile_randoms << it << "," << cube << "," << cube
+                           << "," // same as chunk for single threaded
+                           << sample << "," << dim << "," << randoms[index]
+                           << "\n";
+           }
+
+  }
+
+  void
+  PrintFuncEvals(int it, int ncubes, int npg, int ndim)
+  {
+    for (int cube = 0; cube < ncubes; cube++)
+      for (int sample = 0; sample < npg; sample++) {
+        int index = npg * cube + sample;
+        myfile_funcevals << it << "," 
+                        << cube << "," 
+                        << sample << ","
+                        << funcevals[index].res << ",";
+        for(int dim = 0; dim < NDIM; ++dim){
+            myfile_funcevals << funcevals[index].point[dim] << ",";
+        }
+        myfile_funcevals << std::endl;
+      }
+  }
+
+  void
+  PrintIntervals(int ndim,
+                 int ng,
+                 uint32_t totalNumThreads,
+                 int chunkSize,
+                 int it)
+  {
+    /*constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
+
+    if(it == 1)
+        interval_myfile<<"m, kg[1], kg[2], kg[3], it\n";
+
+    for(uint32_t m = 0; m < totalNumThreads; m++){
+        uint32_t kg[mxdim_p1];
+        get_indx(m , &kg[1], ndim, ng);
+
+        interval_myfile<<m<<",";
+            for(int ii = 1; ii<= ndim; ii++)
+                interval_myfile<<kg[ii]<<",";
+            interval_myfile<<it<<"\n";
+    }*/
+  }
+};
+
+  using MilliSeconds =
+    std::chrono::duration<double, std::chrono::milliseconds::period>;
+
+  typedef Kokkos::TeamPolicy<> team_policy;
+  typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+  typedef Kokkos::TeamPolicy<> team_policy;
+  typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+  // int scratch_size = ScratchViewType::shmem_size(256);
+
+  template <typename T, typename U>
+  KOKKOS_INLINE_FUNCTION std::common_type_t<T, U>
+  IMAX(T a, U b)
+  {
+    return (a > b) ? a : b;
+  }
+
+  template <typename T, typename U>
+  KOKKOS_INLINE_FUNCTION std::common_type_t<T, U>
+  IMIN(T a, U b)
+  {
+    return (a < b) ? a : b;
+  }
+
+  template <typename T>
+  KOKKOS_INLINE_FUNCTION T
+  blockReduceSum(T val, const member_type team_member)
+  {
+    double sum = 0.;
+    team_member.team_barrier();
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(team_member, team_member.team_size()),
+      [=](int& i, T& lsum) { lsum += val; },
+      sum);
+    return sum;
+  }
 
   __inline__ double
   ComputeNcubes(double ncall, int ndim)
@@ -148,46 +325,47 @@ namespace kokkos_mcubes {
     return npg;
   }
 
-  struct Kernel_Params {
-    double ncubes = 0.;
-    int npg = 0;
-    uint32_t nBlocks = 0;
-    uint32_t nThreads = 0;
-    uint32_t totalNumThreads = 0;
-    uint32_t totalCubes = 0;
-    int extra = 0;
-    int LastChunk = 0; // how many chunks for the last thread
+ struct Kernel_Params {
+  double ncubes = 0.;
+  int npg = 0;
+  uint32_t nBlocks = 0;
+  uint32_t nThreads = 0;
+  uint32_t totalNumThreads = 0;
+  uint32_t totalCubes = 0;
+  int extra = 0;
+  int LastChunk = 0; // how many chunks for the last thread
 
-    Kernel_Params(double ncall, int chunkSize, int ndim)
-    {
-      ncubes = ComputeNcubes(ncall, ndim);
-      npg = Compute_samples_per_cube(ncall, ncubes);
+  Kernel_Params(double ncall, int chunkSize, int ndim)
+  {
+    ncubes = ComputeNcubes(ncall, ndim);
+    npg = Compute_samples_per_cube(ncall, ncubes);
 
-      totalNumThreads = (uint32_t)((ncubes) / chunkSize);
-      totalCubes = totalNumThreads * chunkSize;
-      extra = totalCubes - ncubes;
-      LastChunk = chunkSize - extra;
-      nBlocks = totalNumThreads % BLOCK_DIM_X == 0 ?
-                  totalNumThreads / BLOCK_DIM_X :
-                  totalNumThreads / BLOCK_DIM_X + 1;
-      nThreads = BLOCK_DIM_X;
-    }
-  };
+    totalNumThreads = (uint32_t)((ncubes) / chunkSize);
+    totalCubes = totalNumThreads * chunkSize;
+    extra = totalCubes - ncubes;
+    LastChunk = chunkSize - extra;
+    nBlocks = totalNumThreads % BLOCK_DIM_X == 0 ?
+                totalNumThreads / BLOCK_DIM_X :
+                totalNumThreads / BLOCK_DIM_X + 1;
+    nThreads = BLOCK_DIM_X;
+  }
+};
 
   KOKKOS_INLINE_FUNCTION void
-  get_indx(int ms, uint32_t* da, int ND, int NINTV)
+  get_indx(uint32_t ms, uint32_t* da, int ND, int NINTV)
   {
-
-    int dp[Internal_Vegas_Params::get_MXDIM()];
-    int j, t0, t1;
-    int m = ms;
+    // called like :    get_indx(m * chunkSize, &kg[1], ndim, ng);
+    uint32_t dp[Internal_Vegas_Params::get_MXDIM()];
+    uint32_t t0, t1;
+    int j;
+    uint32_t m = ms;
     dp[0] = 1;
     dp[1] = NINTV;
 
     for (j = 0; j < ND - 2; j++) {
       dp[j + 2] = dp[j + 1] * NINTV;
     }
-    //
+
     for (j = 0; j < ND; j++) {
       t0 = dp[ND - j - 1];
       t1 = m / t0;
@@ -217,8 +395,6 @@ namespace kokkos_mcubes {
     {
       temp = a * custom_seed + c;
       custom_seed = temp & (p - 1);
-      // printf("random %f a:%lu c:%lu temp:%lu p:%lu\n", (double)custom_seed /
-      // (double)p, a, c, temp, p);
       return (double)custom_seed / (double)p;
     }
 
@@ -230,35 +406,38 @@ namespace kokkos_mcubes {
   };
 
   class Curand_generator {
-#if defined(__CUDA_ARCH__)
-    curandState localState;
-#endif
+    #if defined(__CUDA_ARCH__)
+      curandState localState;
+    #endif
   public:
     KOKKOS_INLINE_FUNCTION
     Curand_generator(int blockId, int threadId)
     {
-
-#if defined(__CUDA_ARCH__)
-      curand_init(0, blockId, threadId, &localState);
-#endif
+      #if defined(__CUDA_ARCH__)
+        curand_init(0, blockId, threadId, &localState);
+      #else
+        //suppress warning of unused variable
+        (void)blockId;
+        (void)threadId;
+      #endif
     }
 
     KOKKOS_INLINE_FUNCTION
     Curand_generator(unsigned int seed, int blockId, int threadId)
     {
-#if defined(__CUDA_ARCH__)
-      curand_init(seed, blockId, threadId, &localState);
-#endif
+      #if defined(__CUDA_ARCH__)
+        curand_init(seed, blockId, threadId, &localState);
+      #endif
     }
 
     KOKKOS_INLINE_FUNCTION double
     operator()()
     {
-#if defined(__CUDA_ARCH__)
-      return curand_uniform_double(&localState);
-#else
-      return -1.;
-#endif
+      #if defined(__CUDA_ARCH__)
+            return curand_uniform_double(&localState);
+      #else
+            return -1.;
+      #endif
     }
   };
 
@@ -382,10 +561,11 @@ GetChunkSize(const double ncall)
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
 
       if (ia[j] > 1) {
-        xo =
-          (xi[j * ndmx1 + ia[j]]) - (xi[j * ndmx1 + ia[j] - 1]); // bin length
-        rc = (xi[j * ndmx1 + ia[j] - 1]) +
-             (xn - ia[j]) * xo; // scaling ran00 to bin bounds
+        const double binA = (xi[j * ndmx1 + ia[j]]);
+        const double binB = (xi[j * ndmx1 + ia[j] - 1]);
+        xo = binA - binB;              // bin
+                                       // length
+        rc = binB + (xn - ia[j]) * xo; // scaling ran00 to bin bounds
       } else {
         xo = (xi[j * ndmx1 + ia[j]]);
         rc = (xn - ia[j]) * xo;
@@ -399,7 +579,8 @@ GetChunkSize(const double ncall)
 
   template <typename IntegT,
             int ndim,
-            typename GeneratorType = kokkos_mcubes::Custom_generator>
+            typename GeneratorType = kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = false>
   KOKKOS_INLINE_FUNCTION void
   Process_npg_samples(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                       int npg,
@@ -417,12 +598,11 @@ GetChunkSize(const double ncall)
                       ViewVectorDouble d,
                       double& fb,
                       double& f2b,
-                      uint32_t cube_id)
+                      uint32_t cube_id,
+                      FuncEval<ndim>* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
-
     for (int k = 1; k <= npg; k++) {
-
       double wgt = xjac;
       Setup_Integrand_Eval<ndim, GeneratorType>(
         rand_num_generator, xnd, dxg, xi, regn, dx, kg, ia, x, wgt);
@@ -430,28 +610,41 @@ GetChunkSize(const double ncall)
       gpu::cudaArray<double, ndim> xx;
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
+        if constexpr(DEBUG_MCUBES){
+          size_t nums_evals_per_cube = npg;
+          size_t index = cube_id * nums_evals_per_cube + (k-1);
+          funcevals[index].point[i] =  xx[i];
+        }      
       }
 
       const double tmp = gpu::apply(integrand(0), xx);
       const double f = wgt * tmp;
 
+      if constexpr(DEBUG_MCUBES){
+           if(funcevals != nullptr){
+               size_t nums_evals_per_cube = npg;
+               size_t index = cube_id * nums_evals_per_cube + (k-1);
+               funcevals[index].res = f;
+         }
+      }
       double f2 = f * f;
       fb += f;
       f2b += f2;
 
       for (int j = 1; j <= ndim; j++) {
-        Kokkos::atomic_add(&d(ia[j] * (mxdim_p1) + j), fabs(f2));
+        const int index = ia[j] * mxdim_p1 + j;
+        Kokkos::atomic_add(&d(index), f2);
       }
     }
   }
 
   template <typename IntegT,
             int ndim,
-            typename GeneratorType = kokkos_mcubes::Custom_generator>
+            typename GeneratorType = kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = false>
   KOKKOS_INLINE_FUNCTION void
   Process_chunks(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                  int chunkSize,
-                 int lastChunk,
                  int ng,
                  int npg,
                  Random_num_generator<GeneratorType>* rand_num_generator,
@@ -468,7 +661,8 @@ GetChunkSize(const double ncall)
                  ViewVectorDouble d,
                  double& fbg,
                  double& f2bg,
-                 size_t cube_id_offset)
+                 size_t cube_id_offset,
+                 FuncEval<ndim>* funcevals = nullptr)
   {
 
     for (int t = 0; t < chunkSize; t++) {
@@ -482,7 +676,7 @@ GetChunkSize(const double ncall)
         rand_num_generator->SetSeed(cube_id);
       }
 
-      Process_npg_samples<IntegT, ndim, GeneratorType>(integrand,
+      Process_npg_samples<IntegT, ndim, GeneratorType, DEBUG_MCUBES>(integrand,
                                                        npg,
                                                        xnd,
                                                        xjac,
@@ -498,7 +692,8 @@ GetChunkSize(const double ncall)
                                                        d,
                                                        fb,
                                                        f2b,
-                                                       cube_id);
+                                                       cube_id,
+                                                       funcevals);
 
       f2b = sqrt(f2b * npg);
       f2b = (f2b - fb) * (f2b + fb);
@@ -521,7 +716,8 @@ GetChunkSize(const double ncall)
 
   template <typename IntegT,
             int ndim,
-            typename GeneratorType = kokkos_mcubes::Custom_generator>
+            typename GeneratorType = kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = false>
   void
   vegas_kernel_kokkos(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                       uint32_t nBlocks,
@@ -539,11 +735,13 @@ GetChunkSize(const double ncall)
                       int _chunkSize,
                       uint32_t totalNumThreads,
                       int LastChunk,
-                      unsigned int seed_init)
+                      unsigned int seed_init,
+                      int iter,
+                      FuncEval<ndim>* funcevals = nullptr)
   {
     Kokkos::parallel_for(
       "kokkos_vegas_kernel",
-      team_policy(nBlocks, nThreads).set_scratch_size(0, Kokkos::PerTeam(2 * nThreads * sizeof(double))),
+      team_policy(nBlocks, nThreads)/*.set_scratch_size(0, Kokkos::PerTeam(2 * nThreads * sizeof(double)))*/,
       KOKKOS_LAMBDA(const member_type team_member) {
         int chunkSize = _chunkSize;
         //ScratchViewDouble sh_buff(team_member.team_scratch(0), 2 * nThreads);
@@ -570,9 +768,8 @@ GetChunkSize(const double ncall)
             seed_init, team_member.league_rank(), team_member.team_rank());
           get_indx(cube_id_offset, &kg[1], ndim, ng);
 
-          Process_chunks<IntegT, ndim, GeneratorType>(integrand,
+          Process_chunks<IntegT, ndim, GeneratorType, DEBUG_MCUBES>(integrand,
                                                       chunkSize,
-                                                      LastChunk,
                                                       ng,
                                                       npg,
                                                       &rand_num_generator,
@@ -589,25 +786,16 @@ GetChunkSize(const double ncall)
                                                       d,
                                                       fbg,
                                                       f2bg,
-                                                      cube_id_offset);
+                                                      cube_id_offset,
+                                                      funcevals);
         }
 
-         //sh_buff(tx) = fbg;
-         //sh_buff(tx + team_member.team_size()) = f2bg;
-        // printf("pre-reductin vals:%f +- %f\n", fbg, f2bg);
         team_member.team_barrier();
 
         fbg = blockReduceSum(fbg, team_member);
         f2bg = blockReduceSum(f2bg, team_member);
+        
         if (tx == 0) {
-           //double fbgs = 0.0;
-           //double f2bgs = 0.0;
-          /*for (int ii = 0; ii < (m + ii) < totalNumThreads && ii < team_member.team_size(); ++ii) { 
-            fbgs += sh_buff(ii); 
-            f2bgs += sh_buff(ii + team_member.team_size());
-          }*/
-          // printf("block %i storing %f +- %f\n", team_member.league_rank(),
-          // fbg, f2bg);
           Kokkos::atomic_add(&result_dev(0), fbg);
           Kokkos::atomic_add(&result_dev(1), f2bg);
         }
@@ -616,7 +804,8 @@ GetChunkSize(const double ncall)
 
   template <typename IntegT,
             int ndim,
-            typename GeneratorType = kokkos_mcubes::Custom_generator>
+            typename GeneratorType = kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = false>
   void
   vegas_kernel_kokkosF(Kokkos::View<IntegT*, Kokkos::CudaUVMSpace> integrand,
                        uint32_t nBlocks,
@@ -633,7 +822,8 @@ GetChunkSize(const double ncall)
                        int _chunkSize,
                        uint32_t totalNumThreads,
                        int LastChunk,
-                       unsigned int seed_init)
+                       unsigned int seed_init,
+                       FuncEval<ndim>* funcevals)
   {
 
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
@@ -703,10 +893,24 @@ GetChunkSize(const double ncall)
               gpu::cudaArray<double, ndim> xx;
               for (int i = 0; i < ndim; i++) {
                 xx[i] = x[i + 1];
+                /*
+                // results An extended __host__ __device__ lambda cannot first-capture variable in constexpr-if context
+                if constexpr(DEBUG_MCUBES){
+                  size_t nums_evals_per_cube = npg;
+                  size_t index = (cube_id_offset + t) * nums_evals_per_cube + (k-1);
+                  funcevals[index].point[i] =  xx[i];
+                }*/
               }
 
               tmp = gpu::apply((integrand(0)), xx);
               f = wgt * tmp;
+              /*
+              // results An extended __host__ __device__ lambda cannot first-capture variable in constexpr-if context
+              if constexpr(DEBUG_MCUBES){
+                  size_t nums_evals_per_cube = npg;
+                  size_t index = (cube_id_offset + t) * nums_evals_per_cube + (k-1);
+                  funcevals[index].res =  f;
+              }*/
               f2 = f * f;
 
               fb += f;
@@ -769,7 +973,8 @@ GetChunkSize(const double ncall)
 
   template <typename IntegT,
             int ndim,
-            typename GeneratorType = typename kokkos_mcubes::Custom_generator>
+            typename GeneratorType = typename kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = true>
   void
   vegas(IntegT integrand,
         double epsrel,
@@ -877,11 +1082,14 @@ GetChunkSize(const double ncall)
     int chunkSize = GetChunkSize(ncall);
 
     uint32_t totalNumThreads =
-      (uint32_t)((ncubes /*+ chunkSize - 1*/) / chunkSize);
+      (uint32_t)((ncubes) / chunkSize);
     uint32_t totalCubes = totalNumThreads * chunkSize; // even-split cubes
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
     Kernel_Params params(ncall, chunkSize, ndim);
+    
+    IterDataLogger<DEBUG_MCUBES, ndim> data_collector(
+      totalNumThreads, chunkSize, extra, npg, ndim);
 
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
 
@@ -893,12 +1101,12 @@ GetChunkSize(const double ncall)
 
       deep_copy(d_xi, xi);
       Kokkos::deep_copy(d_result, 0.0);
-      // std::cout<<"npg:"<<npg<<", dxg:"<<dxg<<", ng:"<< ng << std::endl;
+      Kokkos::deep_copy(d_d, 0.0);  //cudaMemset
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +
                           */static_cast<unsigned int>(it);
       // seed = 0;
-      vegas_kernel_kokkos<IntegT, ndim, GeneratorType>(d_integrand,
+      vegas_kernel_kokkos<IntegT, ndim, GeneratorType, DEBUG_MCUBES>(d_integrand,
                                                        params.nBlocks,
                                                        params.nThreads,
                                                        ng,
@@ -914,7 +1122,9 @@ GetChunkSize(const double ncall)
                                                        chunkSize,
                                                        totalNumThreads,
                                                        LastChunk,
-                                                       seed + it);
+                                                       seed + it,
+                                                       it,
+                                                       data_collector.funcevals.data());
       Kokkos::fence();
 
       deep_copy(xi, d_xi);
@@ -924,8 +1134,6 @@ GetChunkSize(const double ncall)
       ti = result(0);
       tsi = result(1);
       tsi *= dv2g;
-      // printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it,
-      // ti, sqrt(tsi), tsi, dv2g);
 
       if (it > skip) {
         wgt = 1.0 / tsi;
@@ -937,12 +1145,19 @@ GetChunkSize(const double ncall)
         if (*chi2a < 0.0)
           *chi2a = 0.0;
         *sd = sqrt(1.0 / swgt);
-        //printf("%i %e +- %e iteration: %e +- %e chi:%.15f\n",
-        //    it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
         tsi = sqrt(tsi);
         *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
       }
 
+      if constexpr (DEBUG_MCUBES == true) {
+        if(it <= 3)
+        data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        data_collector.PrintBins(it, xi.data(), d.data(), ndim);
+        // data_collector.PrintRandomNums(it, ncubes, npg, ndim);
+        // data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
+        data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
+      }
+      
       for (j = 1; j <= ndim; j++) {
         xo = d[1 * mxdim_p1 + j]; // bin 1 of dim j
         xn = d[2 * mxdim_p1 + j]; // bin 2 of dim j
@@ -965,10 +1180,6 @@ GetChunkSize(const double ncall)
         if (dt[j] > 0.0) { // enter if there is any contribution only
           rc = 0.0;
           for (i = 1; i <= nd; i++) {
-            // if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;
-            // if(d[i*mxdim_p1+j]<TINY) printf("d[%i]:%.15e\n", i*mxdim_p1+j,
-            // d[i*mxdim_p1+j]); printf("d[%i]:%.15e\n", i*mxdim_p1+j,
-            // d[i*mxdim_p1+j]);
             r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                          (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
@@ -1009,7 +1220,8 @@ GetChunkSize(const double ncall)
                                                         chunkSize,
                                                         totalNumThreads,
                                                         LastChunk,
-                                                        seed + it);
+                                                        seed + it,
+                                                        data_collector.funcevals.data());
       Kokkos::fence();
       Kokkos::deep_copy(result, d_result);
 
@@ -1029,8 +1241,6 @@ GetChunkSize(const double ncall)
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      //printf("%i %e +- %e iteration: %e +- %e chi:%.15f\n",
-      //       it, *tgral, *sd, ti, sqrt(tsi), *chi2a);
     } // end of iterations
 
     free(dt);
@@ -1041,7 +1251,8 @@ GetChunkSize(const double ncall)
 
   template <typename IntegT,
             int NDIM,
-            typename GeneratorType = typename kokkos_mcubes::Custom_generator>
+            typename GeneratorType = typename kokkos_mcubes::Custom_generator,
+            bool DEBUG_MCUBES = false>
   numint::integration_result
   integrate(IntegT ig,
             double epsrel,
@@ -1055,7 +1266,7 @@ GetChunkSize(const double ncall)
 
     numint::integration_result result;
     result.status = 1;
-    vegas<IntegT, NDIM, GeneratorType>(ig,
+    vegas<IntegT, NDIM, GeneratorType, DEBUG_MCUBES>(ig,
                                        epsrel,
                                        epsabs,
                                        ncall,

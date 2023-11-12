@@ -203,16 +203,13 @@ namespace cuda_mcubes {
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     constexpr int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
 
-#pragma unroll ndim // unroll needed
+    #pragma unroll ndim // unroll needed
     for (int j = 1; j <= ndim; j++) {
 
       const double ran00 = (*rand_num_generator)();
-
       const double xn = (kg[j] - ran00) * dxg + 1.0;
       double rc = 0., xo = 0.;
       ia[j] = IMAX(IMIN((int)(xn), ndmx), 1);
-
-      // TODO redundant memory access below xi[j * ndmx1 + ia[j] - 1]
 
       if (ia[j] > 1) {
         const double binA = (xi[j * ndmx1 + ia[j]]);
@@ -256,7 +253,7 @@ namespace cuda_mcubes {
                       uint32_t cube_id,
                       int iter,
                       double* randoms = nullptr,
-                      double* funcevals = nullptr)
+                      FuncEval<ndim>* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     for (int k = 1; k <= npg; k++) {
@@ -277,23 +274,28 @@ namespace cuda_mcubes {
         cube_id,
         iter,
         randoms);
+
       gpu::cudaArray<double, ndim> xx;
-#pragma unroll ndim // unroll needed
+      #pragma unroll ndim 
       for (int i = 0; i < ndim; i++) {
         xx[i] = x[i + 1];
+        if constexpr(DEBUG_MCUBES){
+          size_t nums_evals_per_cube = npg;
+          size_t index = cube_id * nums_evals_per_cube + (k-1);
+          funcevals[index].point[i] =  xx[i];
+        }
       }
 
-      double tmp = 0.;
-      /*const double*/ tmp += gpu::apply(*d_integrand, xx);
-
+      const double tmp = gpu::apply(*d_integrand, xx);
       const double f = wgt * tmp;
-      // if constexpr(DEBUG_MCUBES){
-      //     if(funcevals != nullptr){
-      //         size_t nums_evals_per_cube = npg;
-      //         size_t index = cube_id*nums_evals_per_cube + (k-1);
-      //         //funcevals[index] = f;
-      //     }
-      // }
+
+      if constexpr(DEBUG_MCUBES){
+           if(funcevals != nullptr){
+               size_t nums_evals_per_cube = npg;
+               size_t index = cube_id * nums_evals_per_cube + (k-1);
+               funcevals[index].res = f;
+         }
+      }
 
       double f2 = f * f;
       fb += f;
@@ -333,7 +335,7 @@ namespace cuda_mcubes {
                  size_t cube_id_offset,
                  int iter,
                  double* randoms = nullptr,
-                 double* funcevals = nullptr)
+                 FuncEval<ndim>* funcevals = nullptr)
   {
 
     for (int t = 0; t < chunkSize; t++) {
@@ -417,7 +419,7 @@ namespace cuda_mcubes {
                int LastChunk,
                unsigned int seed_init,
                double* randoms = nullptr,
-               double* funcevals = nullptr)
+               FuncEval<ndim>* funcevals = nullptr)
   {
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
     uint32_t m = blockIdx.x * blockDim.x + threadIdx.x;
@@ -475,6 +477,8 @@ namespace cuda_mcubes {
       // result_dev[1] += f2bg;
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
+      //printf(" %i, %e, %e\n", blockIdx.x, fbg, f2bg);
+
     }
 
     // end of subcube if
@@ -603,6 +607,7 @@ namespace cuda_mcubes {
       // result_dev[1] += f2bg;
       atomicAdd(&result_dev[0], fbg);
       atomicAdd(&result_dev[1], f2bg);
+
     }
 
     // end of subcube if
@@ -650,15 +655,12 @@ namespace cuda_mcubes {
         int skip,
         quad::Volume<double, ndim> const* vol)
   {
-    // Mcubes_state mcubes_state(ncall, ndim);
-    // all of the ofstreams below will be removed, replaced by DataLogger
     auto t0 = std::chrono::high_resolution_clock::now();
 
     constexpr int ndmx = Internal_Vegas_Params::get_NDMX();
     constexpr int ndmx_p1 = Internal_Vegas_Params::get_NDMX_p1();
     constexpr int mxdim_p1 = Internal_Vegas_Params::get_MXDIM_p1();
 
-    // IntegT* d_integrand = quad::cuda_copy_to_device(integrand);
     IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
     double regn[2 * mxdim_p1];
 
@@ -724,7 +726,6 @@ namespace cuda_mcubes {
     for (dv2g = 1, i = 1; i <= ndim; i++)
       dv2g *= dxg;
     dv2g = (calls * dv2g * calls * dv2g) / npg / npg / (npg - 1.0);
-
     xnd = nd;
     dxg *= xnd;
     xjac = 1.0 / calls;
@@ -777,7 +778,7 @@ namespace cuda_mcubes {
     int extra = ncubes - totalCubes;                   // left-over cubes
     int LastChunk = extra + chunkSize; // last chunk of last thread
     Kernel_Params params(ncall, chunkSize, ndim);
-    IterDataLogger<DEBUG_MCUBES> data_collector(
+    IterDataLogger<DEBUG_MCUBES, ndim> data_collector(
       totalNumThreads, chunkSize, extra, npg, ndim);
 
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
@@ -800,7 +801,6 @@ namespace cuda_mcubes {
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = static_cast<unsigned int>(time_diff.count()) +
                           static_cast<unsigned int>(it);
-
       vegas_kernel<IntegT, ndim, DEBUG_MCUBES, GeneratorType>
         <<<params.nBlocks, params.nThreads>>>(d_integrand,
                                               ng,
@@ -857,19 +857,20 @@ namespace cuda_mcubes {
         *sd = sqrt(1.0 / swgt);
         tsi = sqrt(tsi);
         *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-        // printf("%i %.15f +- %.15f iteration: %.15f +- %.15f chi:%.15f\n", it,
-        // *tgral, *sd, ti, sqrt(tsi), *chi2a);
       }
 
       if constexpr (DEBUG_MCUBES == true) {
+        if(it <= 3)
+          data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
         data_collector.PrintBins(it, xi, d, ndim);
         // data_collector.PrintRandomNums(it, ncubes, npg, ndim);
         // data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
         data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
       }
+      
 
       // replace above with datalogger.print();
-      for (j = 1; j <= ndim; j++) {
+       for (j = 1; j <= ndim; j++) {
         xo = d[1 * mxdim_p1 + j]; // bin 1 of dim j
         xn = d[2 * mxdim_p1 + j]; // bin 2 of dim j
         d[1 * mxdim_p1 + j] = (xo + xn) / 2.0;
@@ -887,11 +888,12 @@ namespace cuda_mcubes {
         dt[j] += d[nd * mxdim_p1 + j];
       }
 
+
+
       for (j = 1; j <= ndim; j++) {
         if (dt[j] > 0.0) { // enter if there is any contribution only
           rc = 0.0;
           for (i = 1; i <= nd; i++) {
-            // if(d[i*mxdim_p1+j]<TINY) d[i*mxdim_p1+j]=TINY;
             r[i] = pow((1.0 - d[i * mxdim_p1 + j] / dt[j]) /
                          (log(dt[j]) - log(d[i * mxdim_p1 + j])),
                        Internal_Vegas_Params::get_ALPH());
@@ -902,7 +904,8 @@ namespace cuda_mcubes {
             nd,
             r,
             xin,
-            &xi[j * ndmx_p1]); // first bin of each dimension is at a diff index
+            &xi[j * ndmx_p1] 
+              ); // first bin of each dimension is at a diff index
         }
       }
     } // end of iterations
@@ -951,8 +954,6 @@ namespace cuda_mcubes {
       ti = result[0];
       tsi = result[1];
       tsi *= dv2g;
-      // printf("iter %d  integ = %.15e   std = %.15e var:%.15e dv2g:%f\n", it,
-      // ti, sqrt(tsi), tsi, dv2g);
 
       wgt = 1.0 / tsi;
       si += wgt * ti;
@@ -966,16 +967,13 @@ namespace cuda_mcubes {
       *sd = sqrt(1.0 / swgt);
       tsi = sqrt(tsi);
       *status = GetStatus(*tgral, *sd, it, epsrel, epsabs);
-      // printf("%i, %.15f,  %.15f, %.15f, %.15f, %.15f\n", it, *tgral, *sd, ti,
-      // sqrt(tsi), *chi2a);
+
       if constexpr (DEBUG_MCUBES) {
         data_collector.PrintBins(it, xi, d, ndim);
         // data_collector.PrintRandomNums(it, ncubes, npg, ndim);
         // data_collector.PrintFuncEvals(it, ncubes, npg, ndim);
         data_collector.PrintIterResults(it, *tgral, *sd, *chi2a, ti, tsi);
       }
-      // printf("cummulative ti:%5d, integral: %.15e, sd:%.4e,chi_sq:%9.2g\n",
-      // it, *tgral, *sd, *chi2a);
     } // end of iterations
 
     free(d);

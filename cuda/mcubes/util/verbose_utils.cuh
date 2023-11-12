@@ -4,6 +4,12 @@
 #include "common/cuda/cudaMemoryUtil.h"
 #include "cuda/mcubes/util/vegas_utils.cuh"
 
+template<int ndim>
+struct FuncEval{
+  double res = 0;
+  double point[ndim] = {0.};
+};
+
 // this isn't needed anymore
 std::ofstream
 GetOutFileVar(std::string filename)
@@ -13,7 +19,7 @@ GetOutFileVar(std::string filename)
   return myfile;
 }
 
-template <bool DEBUG_MCUBES>
+template <bool DEBUG_MCUBES, int NDIM>
 class IterDataLogger {
   std::ofstream myfile_bin_bounds;
   std::ofstream myfile_randoms;
@@ -22,9 +28,8 @@ class IterDataLogger {
   std::ofstream iterations_myfile;
 
 public:
+  FuncEval<NDIM>* funcevals = nullptr;
   double* randoms = nullptr;
-  double* funcevals = nullptr;
-
   IterDataLogger(uint32_t totalNumThreads,
                  int chunkSize,
                  int extra,
@@ -32,21 +37,24 @@ public:
                  int ndim)
   {
     if constexpr (DEBUG_MCUBES) {
-      randoms = quad::cuda_malloc_managed<double>(
-        (totalNumThreads * chunkSize + extra) * npg * ndim);
-      funcevals = quad::cuda_malloc_managed<double>(
+      funcevals = quad::cuda_malloc_managed<FuncEval<NDIM>>(
         (totalNumThreads * chunkSize + extra) * npg);
 
       myfile_bin_bounds.open("pmcubes_bin_bounds.csv");
-      myfile_bin_bounds << "it, cube, chunk, sample, dim, ran00\n";
+      myfile_bin_bounds
+        << "iter, dim, bin, bin_length, left, right, contribution\n";
       myfile_bin_bounds.precision(15);
 
       myfile_randoms.open("pmcubes_random_nums.csv");
       myfile_randoms << "it, cube, chunk, sample, dim, ran00\n";
       myfile_randoms.precision(15);
 
+      myfile_funcevals.precision(15);
       myfile_funcevals.open("pmcubes_funcevals.csv");
-      myfile_funcevals << "it, cube, chunk, sample, funceval\n";
+      myfile_funcevals << "it, cube, sample, funceval,";
+      for(int dim = 0; dim < NDIM; ++dim)
+        myfile_funcevals << "dim" + std::to_string(dim) << ",";
+      myfile_funcevals <<  std::endl;
 
       interval_myfile.open("pmcubes_intevals.csv");
       interval_myfile.precision(15);
@@ -85,15 +93,10 @@ public:
   void
   PrintBins(int iter, double* xi, double* d, int ndim)
   {
-    int ndmx1 = 501;   // Internal_Vegas_Params::get_NDMX_p1();
-    int ndmx = 500;    // Internal_Vegas_Params::get_NDMX();
-    int mxdim_p1 = 21; // Internal_Vegas_Params::get_MXDIM_p1();
-
-    if (iter == 1) {
-      myfile_bin_bounds
-        << "iter, dim, bin, bin_length, left, right, contribution\n";
-    }
-
+    int ndmx1 = Internal_Vegas_Params::get_NDMX_p1();
+    int ndmx =  Internal_Vegas_Params::get_NDMX();
+    int mxdim_p1 =  Internal_Vegas_Params::get_MXDIM_p1();
+    
     for (int dim = 1; dim <= ndim; dim++)
       for (int bin = 1; bin <= ndmx; bin++) {
 
@@ -116,48 +119,41 @@ public:
     size_t nums_per_cube = npg * ndim;
     size_t nums_per_sample = ndim;
 
-    if (it > 2)
-      return;
-    else {
-
-      for (int cube = 0; cube < ncubes; cube++)
-        for (int sample = 1; sample <= npg; sample++)
+    for (int cube = 0; cube < ncubes; cube++)
+      for (int sample = 1; sample <= npg; sample++){
+        size_t index = cube * nums_per_cube * npg + sample ;
+        myfile_randoms << it << "," 
+                       << cube << "," 
+                       << funcevals[index] << ",";
           for (int dim = 1; dim <= ndim; dim++) {
 
-            size_t index =
-              cube * nums_per_cube + nums_per_sample * (sample - 1) + dim - 1;
 
-            myfile_randoms << it << "," << cube << "," << cube
-                           << "," // same as chunk for single threaded
-                           << sample << "," << dim << "," << randoms[index]
-                           << "\n";
-          }
-    }
+            myfile_randoms  
+              << randoms[cube * nums_per_cube * sample ] << "," // same as chunk for single threaded
+                          << randoms[index]
+                                    << "\n";
+            }
+        }
+          
+    
   }
 
   void
   PrintFuncEvals(int it, int ncubes, int npg, int ndim)
   {
-
-    size_t nums_per_cube = npg * ndim;
-    size_t nums_per_sample = ndim;
-
-    if (it > 2)
-      return;
-    else {
-
-      std::cout << "expecting total random numbers:" << ncubes * npg * ndim
-                << "\n";
-      for (int cube = 0; cube < ncubes; cube++)
-        for (int sample = 1; sample <= npg; sample++) {
-
-          size_t nums_evals_per_chunk = npg;
-          size_t index = cube * nums_evals_per_chunk + (sample - 1);
-          myfile_funcevals << it << "," << cube << "," << cube
-                           << "," // same as chunk for single threaded
-                           << sample << "," << funcevals[index] << "\n";
+    size_t num_fevals = ncubes * npg;
+    for (int cube = 0; cube < ncubes; cube++)
+      for (int sample = 0; sample < npg; sample++) {
+        int index = npg * cube + sample;
+        myfile_funcevals << it << "," 
+                        << cube << "," 
+                        << sample << ","
+                        << funcevals[index].res << ",";
+        for(int dim = 0; dim < NDIM; ++dim){
+            myfile_funcevals << funcevals[index].point[dim] << ",";
         }
-    }
+        myfile_funcevals << std::endl;
+      }
   }
 
   void
