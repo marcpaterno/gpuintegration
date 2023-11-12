@@ -72,7 +72,8 @@ PrintHeader()
 
 template <typename F,
           int ndim,
-          typename GeneratorType = kokkos_mcubes::Curand_generator>
+          bool DEBUG_MCUBES = false,
+          typename GeneratorType = kokkos_mcubes::Custom_generator>
 bool
 mcubes_time_and_call(F integrand,
                      double epsrel,
