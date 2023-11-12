@@ -29,7 +29,6 @@ main()
            true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
-    break;
   }
 
   /*epsrel = 1.0e-3;

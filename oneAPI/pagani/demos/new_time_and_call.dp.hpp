@@ -178,7 +178,7 @@ clean_time_and_call(std::string id,
     }
 
     outfile.precision(17);
-    if (i != 0.)
+    if (i != 0)
       outfile << std::fixed << std::scientific << "pagani"
               << "," << id << "," << ndim << "," << print_custom(use_custom)
               << "," << true_value << "," << epsrel << "," << epsabs << ","

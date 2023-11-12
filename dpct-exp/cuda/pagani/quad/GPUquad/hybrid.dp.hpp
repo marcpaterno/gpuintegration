@@ -21,7 +21,15 @@ two_level_errorest_and_relerr_classify(
 {
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
-
+  auto current_iter_raw_integ_estimates =
+    current_iter_raw_estimates->integral_estimates;
+  auto current_iter_raw_err_estimates =
+    current_iter_raw_estimates->error_estimates;
+  auto prev_iter_two_level_int_estimates =
+    prev_iter_two_level_estimates->integral_estimates;
+  auto prev_iter_two_level_err_estimates =
+    prev_iter_two_level_estimates->error_estimates;
+  auto active_regions = reg_classifiers->active_regions;
   size_t num_regions = current_iter_raw_estimates->size;
   size_t block_size = 64;
   size_t numBlocks =
@@ -41,16 +49,17 @@ two_level_errorest_and_relerr_classify(
     sycl::nd_range(sycl::range(1, 1, numBlocks) * sycl::range(1, 1, block_size),
                    sycl::range(1, 1, block_size)),
     [=](sycl::nd_item<3> item_ct1) {
-      quad::RefineError<T>(current_iter_raw_estimates->integral_estimates,
-                     current_iter_raw_estimates->error_estimates,
-                     prev_iter_two_level_estimates->integral_estimates,
-                     prev_iter_two_level_estimates->error_estimates,
-                     new_two_level_errorestimates,
-                     reg_classifiers->active_regions,
-                     num_regions,
-                     epsrel,
-                     forbid_relerr_classification,
-                     item_ct1);
+      quad::RefineError<T>(
+                    current_iter_raw_integ_estimates,
+                    current_iter_raw_err_estimates,
+                    prev_iter_two_level_int_estimates,
+                    prev_iter_two_level_err_estimates,
+                    new_two_level_errorestimates,
+                    active_regions,
+                    num_regions,
+                    epsrel,
+                    forbid_relerr_classification,
+                    item_ct1);
     });
 
   dev_ct1.queues_wait_and_throw();

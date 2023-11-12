@@ -187,7 +187,6 @@ public:
   bool
   sigDigitsSame() const
   {
-    // std::cout<<"required_digits:"<<required_digits<<std::endl;
     T third = abs(estimates_from_last_iters[0]);
     T second = abs(estimates_from_last_iters[1]);
     T first = abs(estimates_from_last_iters[2]);
@@ -368,13 +367,6 @@ public:
   {
     T ratio = static_cast<T>(device_mem_required_for_full_split(num_regions)) /
               static_cast<T>(free_device_mem(num_regions, ndim));
-
-    printf("Ratio:%f estimate_convergence:%i mem_neededed:%lu estimated "
-           "free_mem:%lu\n",
-           ratio,
-           estimate_converged(),
-           device_mem_required_for_full_split(num_regions),
-           free_device_mem(num_regions, ndim));
     if (ratio > 1.) {
       return true;
     } else if (ratio > .1 && estimate_converged()) {

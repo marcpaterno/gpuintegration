@@ -21,19 +21,25 @@ public:
   void
   reallocate(size_t num_regions)
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+	/*dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	sycl::queue& q_ct1 = dev_ct1.default_queue();
     sycl::free(integral_estimates, q_ct1);
     sycl::free(error_estimates, q_ct1);
     integral_estimates = quad::cuda_malloc<T>(num_regions);
     error_estimates = quad::cuda_malloc<T>(num_regions);
+    size = num_regions;*/
+	auto q_ct1 = sycl::queue(sycl::gpu_selector());
+    sycl::free(integral_estimates, q_ct1);
+    sycl::free(error_estimates, q_ct1);
+    integral_estimates = quad::cuda_malloc<double>(num_regions);
+    error_estimates = quad::cuda_malloc<double>(num_regions);
     size = num_regions;
   }
 
   ~Region_estimates()
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+	dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	sycl::queue& q_ct1 = dev_ct1.default_queue();
     sycl::free(integral_estimates, q_ct1);
     sycl::free(error_estimates, q_ct1);
   }

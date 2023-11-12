@@ -22,16 +22,16 @@ main()
   double epsrel = 1.0e-3;
   double const epsrel_min = 1.0240000000000002e-10;
   constexpr int ndim = 6;
+  constexpr bool use_custom = false;
   GENZ_6_6D integrand;
   double true_value = 1.5477367885091207413e8;
   quad::Volume<double, ndim> vol;
 
-  while (clean_time_and_call<GENZ_6_6D, double, ndim, false>(
+  while (clean_time_and_call<GENZ_6_6D, double, ndim, use_custom>(
            "f6", integrand, epsrel, true_value, "gpucuhre", std::cout, vol) ==
            true &&
          epsrel >= epsrel_min) {
     epsrel /= 5.0;
-    break;
   }
 
   /*epsrel = 1.0e-3;

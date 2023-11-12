@@ -36,11 +36,12 @@ main()
   GENZ_6_6D integrand;
   
   constexpr int ndim = 6;
+  constexpr bool use_custom = false;
   bool relerr_classification = true;
   
   quad::Volume<double, ndim>  vol;
   
-  while (clean_time_and_call<GENZ_6_6D, ndim, false>("f6",
+  while (clean_time_and_call<GENZ_6_6D, ndim, use_custom>("f6",
                                                    integrand,
                                                    epsrel,
                                                    true_value,
@@ -51,7 +52,7 @@ main()
     epsrel /= 5.0;
   }
     
-     epsrel = 1.e-3;
+  /*    epsrel = 1.e-3;
     while (clean_time_and_call<GENZ_6_6D, ndim, true>("f6",
                                                    integrand,
                                                    epsrel,
@@ -61,5 +62,5 @@ main()
                                                    relerr_classification) == true &&
          epsrel > epsrel_min) {
     epsrel /= 5.0;
-  }
+  }*/
 }

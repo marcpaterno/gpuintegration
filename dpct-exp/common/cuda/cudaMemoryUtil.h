@@ -376,50 +376,20 @@ namespace quad {
     return buffer;
   }
 
-  template <class T>
-  T*
-  cuda_malloc(size_t size)
-   try {
+template <class T>
+T*
+cuda_malloc(size_t size){
     T* temp;
-    /*
-    DPCT1003:38: Migrated API does not return error code. (*, 0) is inserted.
-    You may need to rewrite this code.
-    */
-    auto rc = (temp = (T*)sycl::malloc_device(sizeof(T) * size,
-                                              dpct::get_default_queue()),
-               0);
-    /*
-    DPCT1000:37: Error handling if-stmt was detected but could not be rewritten.
-    */
-    if (rc != 0) {
-      /*
-      DPCT1001:36: The statement could not be removed.
-      */
-      throw std::bad_alloc();
-    }
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+    temp = sycl::malloc_device<T>(size, q_ct1);
     return temp;
-  }
-  catch (sycl::exception const& exc) {
-    std::cerr << exc.what() << "Exception caught at file:" << __FILE__
-              << ", line:" << __LINE__ << std::endl;
-    std::exit(1);
-  }
-
+}
+  
   template <typename T>
   void
   cuda_memcpy_to_device(T* dest, T* src, size_t size)
    try {
-    /*
-    DPCT1003:39: Migrated API does not return error code. (*, 0) is inserted.
-    You may need to rewrite this code.
-    */
-    auto rc =
-      (dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait(), 0);
-    if (rc != 0) {
-      printf("error in cuda_mempcy_to_device with host src\n");
-      throw std::bad_alloc();
-      abort();
-    }
+    dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
   }
   catch (sycl::exception const& exc) {
     std::cerr << exc.what() << "Exception caught at file:" << __FILE__
@@ -431,17 +401,7 @@ namespace quad {
   void
   cuda_memcpy_to_device(T* dest, const T* src, size_t size)
    try {
-    /*
-    DPCT1003:40: Migrated API does not return error code. (*, 0) is inserted.
-    You may need to rewrite this code.
-    */
-    auto rc =
-      (dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait(), 0);
-    if (rc != 0) {
-      printf("error in cuda_mempcy_to_device with host src\n");
-      throw std::bad_alloc();
-      abort();
-    }
+      dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
   }
   catch (sycl::exception const& exc) {
     std::cerr << exc.what() << "Exception caught at file:" << __FILE__
@@ -452,18 +412,13 @@ namespace quad {
   template <typename T>
   void
   cuda_memcpy_device_to_device(T* dest, T* src, size_t size)
-  {
-    /*
-    DPCT1003:41: Migrated API does not return error code. (*, 0) is inserted.
-    You may need to rewrite this code.
-    */
-    auto rc =
-      (dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait(), 0);
-    if (rc != 0) {
-      printf("error in cuda_memcpy_device_to_device\n");
-      throw std::bad_alloc();
-      abort();
-    }
+   try {
+      dpct::get_default_queue().memcpy(dest, src, sizeof(T) * size).wait();
+  }
+  catch (sycl::exception const& exc) {
+    std::cerr << exc.what() << "Exception caught at file:" << __FILE__
+              << ", line:" << __LINE__ << std::endl;
+    std::exit(1);
   }
 
   template <class T>

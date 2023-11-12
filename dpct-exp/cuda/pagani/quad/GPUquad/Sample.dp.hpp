@@ -24,6 +24,38 @@ namespace quad {
 
   template <typename T>
   T
+  warpReduceSum(T val, sycl::nd_item<1> item_ct1)
+  {
+    /*
+    DPCT1023:51: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 16);
+    /*
+    DPCT1023:52: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 8);
+    /*
+    DPCT1023:53: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 4);
+    /*
+    DPCT1023:54: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 2);
+    /*
+    DPCT1023:55: The DPC++ sub-group does not support mask options for
+    sycl::shift_group_left.
+    */
+    val += sycl::shift_group_left(item_ct1.get_sub_group(), val, 1);
+    return val;
+  }
+
+  template <typename T>
+  T
   warpReduceSum(T val, sycl::nd_item<3> item_ct1)
   {
     /*
@@ -55,6 +87,44 @@ namespace quad {
   }
 
   template <typename T>
+  T
+  blockReduceSum(T val, sycl::nd_item<1> item_ct1, T *shared)
+  {
+         // why was this set to 8?
+    const int lane = item_ct1.get_local_id(0) % 32; // 32 is for warp size
+    const int wid = item_ct1.get_local_id(0) >> 5 /* threadIdx.x / 32  */;
+
+    val = warpReduceSum(val, item_ct1);
+    if (lane == 0) {
+      shared[wid] = val;
+    }
+    /*
+    DPCT1065:56: Consider replacing sycl::nd_item::barrier() with
+    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
+    performance if there is no access to global memory.
+    */
+    item_ct1.barrier(); // Wait for all partial reductions //I think it's safe
+                        // to remove
+
+    // read from shared memory only if that warp existed
+    val =
+      (item_ct1.get_local_id(0) < (item_ct1.get_local_range().get(0) >> 5)) ?
+        shared[lane] :
+        0;
+    /*
+    DPCT1065:57: Consider replacing sycl::nd_item::barrier() with
+    sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better
+    performance if there is no access to global memory.
+    */
+    item_ct1.barrier();
+
+    if (wid == 0)
+      val = warpReduceSum(val, item_ct1); // Final reduce within first warp
+
+    return val;
+  }
+  
+    template <typename T>
   T
   blockReduceSum(T val, sycl::nd_item<3> item_ct1, T *shared)
   {
@@ -135,7 +205,7 @@ namespace quad {
                      T* generators,
                      T* sdata,
                      quad::Func_Evals<NDIM>& fevals,
-                     sycl::nd_item<3> item_ct1)
+                     sycl::nd_item<1> item_ct1)
   {
 
     gpu::cudaArray<T, NDIM> x;
@@ -158,7 +228,7 @@ namespace quad {
 
     const T fun = gpu::apply(*d_integrand, x) * (*jacobian);
 
-    sdata[item_ct1.get_local_id(2)] = fun; // target for reduction
+    sdata[item_ct1.get_local_id(0)] = fun; // target for reduction
     /*
     DPCT1026:61: The call to __ldg was removed because there is no
     correspoinding API in DPC++.
@@ -167,10 +237,10 @@ namespace quad {
 
     if constexpr (debug >= 2) {
       // assert(fevals != nullptr);
-      fevals[item_ct1.get_group(2) * pagani::CuhreFuncEvalsPerRegion<NDIM>() +
+      fevals[item_ct1.get_group(0) * pagani::CuhreFuncEvalsPerRegion<NDIM>() +
              pIndex]
         .store(x, sBound, b);
-      fevals[item_ct1.get_group(2) * pagani::CuhreFuncEvalsPerRegion<NDIM>() +
+      fevals[item_ct1.get_group(0) * pagani::CuhreFuncEvalsPerRegion<NDIM>() +
              pIndex]
         .store(gpu::apply(*d_integrand, x), pIndex);
     }
@@ -198,7 +268,7 @@ namespace quad {
                     T* jacobian,
                     T* generators,
                     quad::Func_Evals<NDIM>& fevals,
-                    sycl::nd_item<3> item_ct1,
+                    sycl::nd_item<1> item_ct1,
                     T *shared,
                     T *sdata)
   {
@@ -213,7 +283,7 @@ namespace quad {
     // Compute first set of permutation outside for loop to extract the Function
     // values for the permutation used to compute
     // fourth dimension
-    int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+    int pIndex = perm * blockdim + item_ct1.get_local_id(0);
     constexpr int FEVAL = pagani::CuhreFuncEvalsPerRegion<NDIM>();
     if (pIndex < FEVAL) {
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
@@ -237,7 +307,7 @@ namespace quad {
     */
     item_ct1.barrier();
 
-    if (item_ct1.get_local_id(2) == 0) {
+    if (item_ct1.get_local_id(0) == 0) {
       const T ratio =
         /*
         DPCT1026:66: The call to __ldg was removed because there is no
@@ -275,7 +345,7 @@ namespace quad {
 
 #pragma unroll 1
     for (perm = 1; perm < FEVAL / blockdim; ++perm) {
-      int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+      int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
                                                  region->bounds,
@@ -291,9 +361,9 @@ namespace quad {
     }
     //__syncthreads();
     // Balance permutations
-    pIndex = perm * blockdim + item_ct1.get_local_id(2);
+    pIndex = perm * blockdim + item_ct1.get_local_id(0);
     if (pIndex < FEVAL) {
-      int pIndex = perm * blockdim + item_ct1.get_local_id(2);
+      int pIndex = perm * blockdim + item_ct1.get_local_id(0);
       computePermutation<IntegT, T, NDIM, debug>(d_integrand,
                                                  pIndex,
                                                  region->bounds,
@@ -320,7 +390,7 @@ namespace quad {
       //__syncthreads();
     }
 
-    if (item_ct1.get_local_id(2) == 0) {
+    if (item_ct1.get_local_id(0) == 0) {
 
       Result* r = &region->result; // ptr to shared Mem
 

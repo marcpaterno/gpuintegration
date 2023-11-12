@@ -379,7 +379,7 @@ namespace quad {
                    T* highs,
                    T* generators,
                    quad::Func_Evals<NDIM>& fevals,
-                   sycl::nd_item<3> item_ct1,
+                   sycl::nd_item<1> item_ct1,
                    T/*Fix the type mannually*/ *shared,
                    T *sdata,
                    T *Jacobian,
@@ -387,10 +387,10 @@ namespace quad {
                    T *vol,
                    T *ranges)
   {
-    const size_t index = item_ct1.get_group(2);
+    const size_t index = item_ct1.get_group(0);
     // may not be worth pre-computing
 
-    if (item_ct1.get_local_id(2) == 0) {
+    if (item_ct1.get_local_id(0) == 0) {
 
       *Jacobian = 1.;
       *vol = 1.;
@@ -463,8 +463,8 @@ namespace quad {
     T* highs,
     T* generators,
     quad::Func_Evals<NDIM> fevals,
-    sycl::nd_item<3> item_ct1,
-    T/*Fix the type mannually*/ *shared,
+    sycl::nd_item<1> item_ct1,
+    T *shared,
     T *sdata,
     T *Jacobian,
     int *maxDim,
@@ -492,12 +492,13 @@ namespace quad {
                                                        maxDim,
                                                        vol,
                                                        ranges);
-
-    if (item_ct1.get_local_id(2) == 0) {
-      subDividingDimension[item_ct1.get_group(2)] =
+    //if (item_ct1.get_local_id(0) == 0) 
+	{
+      subDividingDimension[item_ct1.get_group(0)] =
         sRegionPool[0].result.bisectdim;
-      dRegionsIntegral[item_ct1.get_group(2)] = sRegionPool[0].result.avg;
-      dRegionsError[item_ct1.get_group(2)] = sRegionPool[0].result.err;
+      dRegionsIntegral[item_ct1.get_group(0)] = sRegionPool[0].result.avg;
+      dRegionsError[item_ct1.get_group(0)] = sRegionPool[0].result.err;
+	  
     }
   }
 

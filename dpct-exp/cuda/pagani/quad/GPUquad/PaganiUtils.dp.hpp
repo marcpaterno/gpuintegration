@@ -7,7 +7,6 @@
 #include "dpct-exp/common/cuda/cudaApply.dp.hpp"
 #include "dpct-exp/common/cuda/cudaArray.dp.hpp"
 #include "dpct-exp/common/cuda/cudaUtil.h"
-// #include "cuda/pagani/quad/GPUquad/Kernel.cuh"
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Phases.dp.hpp"
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Sample.dp.hpp"
 #include "dpct-exp/common/integration_result.hh"
@@ -20,7 +19,6 @@
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Sub_region_filter.dp.hpp"
 #include "dpct-exp/cuda/pagani/quad/quad.h"
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Sub_region_splitter.dp.hpp"
-// #include "cuda/pagani/quad/GPUquad/heuristic_classifier.cuh"
 #include "dpct-exp/common/cuda/custom_functions.dp.hpp"
 #include "dpct-exp/cuda/pagani/quad/GPUquad/Func_Eval.dp.hpp"
 #include <stdlib.h>
@@ -29,6 +27,24 @@
 #include <chrono>
 
 dpct::constant_memory<size_t, 0> dFEvalPerRegion;
+
+void tempff(double* temp){
+	size_t size = 64;
+    auto q_ct1 =  sycl::queue(sycl::gpu_selector());
+
+	q_ct1.submit([&](sycl::handler& cgh) {
+      cgh.parallel_for(
+        sycl::nd_range(sycl::range(1, 1, 64) *
+                         sycl::range(1, 1, 64),
+                       sycl::range(1, 1, 64)),
+        [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+			
+			temp[0]=1.;
+        });
+    });
+    q_ct1.wait_and_throw();
+	std::cout<<"end of tempff"<<std::endl;
+}
 
 template <typename T, size_t ndim, bool use_custom = false>
 class Cubature_rules {
@@ -130,8 +146,8 @@ public:
 
   ~Cubature_rules()
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+	dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	sycl::queue& q_ct1 = dev_ct1.default_queue();
     sycl::free(generators, q_ct1);
     sycl::free(integ_space_lows, q_ct1);
     sycl::free(integ_space_highs, q_ct1);
@@ -222,11 +238,13 @@ public:
     Regs_characteristics* region_characteristics,
     bool compute_error = false)
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+
+	//dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	//sycl::queue& q_ct1 = dev_ct1.default_queue();
+	auto q_ct1 = sycl::queue(sycl::gpu_selector());
     size_t num_regions = subregions->size;
     quad::Func_Evals<ndim> dfevals;
-
+	
     if constexpr (debug >= 2) {
       constexpr size_t num_fevals = pagani::CuhreFuncEvalsPerRegion<ndim>();
       dfevals.fevals_list =
@@ -240,10 +258,31 @@ public:
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
+	/*T* tempd = quad::cuda_malloc<T>(num_regions);//sycl::malloc_device<T>(num_regions, q_ct1);
 
-    sycl::event start, stop;
-    std::chrono::time_point<std::chrono::steady_clock> start_ct1;
-    std::chrono::time_point<std::chrono::steady_clock> stop_ct1;
+	tempff(tempd);
+	tempff(tempd);
+	tempff(subregion_estimates->error_estimates);
+	tempff(subregion_estimates->error_estimates);
+	
+	T* t = subregion_estimates->error_estimates;
+	
+	q_ct1.submit([&](sycl::handler& cgh) {
+     cgh.parallel_for(
+        sycl::nd_range(sycl::range(num_blocks * block_size),
+                       sycl::range(block_size)),
+        [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+			
+			subregion_estimates->error_estimates[0]=1.; //this doesn't workgroup
+			//t[0] = 1.;
+        });
+    });
+	//q_ct1.wait();
+    q_ct1.wait_and_throw();
+	std::cout<<"past manual"<<std::endl;*/
+    //sycl::event start, stop;
+    //std::chrono::time_point<std::chrono::steady_clock> start_ct1;
+    //std::chrono::time_point<std::chrono::steady_clock> stop_ct1;
     /*
     DPCT1026:153: The call to cudaEventCreate was removed because this call is
     redundant in DPC++.
@@ -252,14 +291,13 @@ public:
     DPCT1026:154: The call to cudaEventCreate was removed because this call is
     redundant in DPC++.
     */
-
-    /*
-    DPCT1012:156: Detected kernel execution time measurement pattern and
-    generated an initial code for time measurements in SYCL. You can change the
-    way time is measured depending on your goals.
-    */
-    start_ct1 = std::chrono::steady_clock::now();
-    stop = q_ct1.submit([&](sycl::handler& cgh) {
+    auto integral_estimates = subregion_estimates->integral_estimates;
+    auto error_estimates = subregion_estimates->error_estimates;
+    auto sub_dividing_dim = region_characteristics->sub_dividing_dim;
+    auto dLeftCoord = subregions->dLeftCoord;
+    auto dLength = subregions->dLength;
+	
+	q_ct1.submit([&](sycl::handler& cgh) {
       sycl::accessor<T /*Fix the type mannually*/,
                      1,
                      sycl::access_mode::read_write,
@@ -307,18 +345,19 @@ public:
       auto generators_ct12 = generators;
 
       cgh.parallel_for(
-        sycl::nd_range(sycl::range(1, 1, num_blocks) *
-                         sycl::range(1, 1, block_size),
-                       sycl::range(1, 1, block_size)),
-        [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+        sycl::nd_range(sycl::range(num_blocks * block_size),
+                       sycl::range(block_size)),
+        [=](sycl::nd_item<1> item_ct1) [[intel::reqd_sub_group_size(32)]] {
+			//tempd[0] = 1.;
+			
           INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>(
-            d_integrand,
-            subregions->dLeftCoord,
-            subregions->dLength,
+                d_integrand,
+            dLeftCoord,
+            dLength,
             num_regions,
-            subregion_estimates->integral_estimates,
-            subregion_estimates->error_estimates,
-            region_characteristics->sub_dividing_dim,
+            integral_estimates,
+            error_estimates,
+            sub_dividing_dim,
             epsrel,
             epsabs,
             constMem_ct9,
@@ -337,17 +376,18 @@ public:
             sBound_acc_ct1.get_pointer());
         });
     });
-    dev_ct1.queues_wait_and_throw();
+	q_ct1.wait();
+    //q_ct1.wait_and_throw();
     /*
     DPCT1012:157: Detected kernel execution time measurement pattern and
     generated an initial code for time measurements in SYCL. You can change the
     way time is measured depending on your goals.
     */
-    stop.wait();
-    stop_ct1 = std::chrono::steady_clock::now();
-    float kernel_time = 0;
-    kernel_time =
-      std::chrono::duration<float, std::milli>(stop_ct1 - start_ct1).count();
+    //stop.wait();
+    //stop_ct1 = std::chrono::steady_clock::now();
+    //float kernel_time = 0;
+    //kernel_time =
+    //  std::chrono::duration<float, std::milli>(stop_ct1 - start_ct1).count();
     // std::cout<< "INTEGRATE_GPU_PHASE1-time:" << num_blocks << "," <<
     // kernel_time << std::endl;
     /*

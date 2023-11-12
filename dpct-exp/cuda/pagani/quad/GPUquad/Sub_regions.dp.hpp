@@ -66,8 +66,8 @@ struct Sub_regions {
 
   ~Sub_regions()
   {
-  dpct::device_ext& dev_ct1 = dpct::get_current_device();
-  sycl::queue& q_ct1 = dev_ct1.default_queue();
+	dpct::device_ext& dev_ct1 = dpct::get_current_device();
+	sycl::queue& q_ct1 = dev_ct1.default_queue();
     delete[] LeftCoord;
     delete[] Length;
     sycl::free(dLeftCoord, q_ct1);
@@ -118,8 +118,6 @@ struct Sub_regions {
   void
   device_init(size_t const numRegions)
   {
-    // cudaFree(dLeftCoord);
-    // cudaFree(dLength);
     size = numRegions;
     dLeftCoord = quad::cuda_malloc<T>(numRegions * ndim);
     dLength = quad::cuda_malloc<T>(numRegions * ndim);

@@ -20,12 +20,10 @@ struct Sub_regions {
 
   Sub_regions(const Sub_regions<ndim>& other)
   {
-    printf("copy constructor\n");
     device_init(size);
     quad::cuda_memcpy_device_to_device<double>(
       dLeftCoord, other.dLeftCoord, size);
     quad::cuda_memcpy_device_to_device<double>(dLength, other.dLength, size);
-    printf("copied both\n");
   }
 
   Sub_regions(size_t partitions_per_axis)
@@ -35,13 +33,11 @@ struct Sub_regions {
 
   ~Sub_regions()
   {
-    printf("destructor being called\n");
     auto q_ct1 = sycl::queue(sycl::gpu_selector());
     // delete[] LeftCoord;
     // delete[] Length;
     sycl::free(dLeftCoord, q_ct1);
     sycl::free(dLength, q_ct1);
-    printf("end of destructor\n");
   }
 
   void

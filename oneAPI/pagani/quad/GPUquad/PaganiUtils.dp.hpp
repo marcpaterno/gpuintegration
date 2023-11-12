@@ -300,7 +300,7 @@ public:
     auto q = sycl::queue(sycl::gpu_selector(),
                          sycl::property::queue::enable_profiling{});
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    /*sycl::event e = */q.submit([&](sycl::handler& cgh) {
       sycl::accessor<double,
                      1,
                      sycl::access_mode::read_write,
@@ -384,16 +384,16 @@ public:
     });
 
     q.wait();
-    double time = (e.template get_profiling_info<
+    /*double time = (e.template get_profiling_info<
                      sycl::info::event_profiling::command_end>() -
                    e.template get_profiling_info<
-                     sycl::info::event_profiling::command_start>());
+                     sycl::info::event_profiling::command_start>());*/
     // std::cout<< "time:" << std::scientific << time/1.e6 << "," << ndim <<
     // ","<< num_regions << std::endl;
-    std::cout << "INTEGRATE_GPU_PHASE1-time:" << num_blocks << ","
-              << time / 1.e6 << std::endl;
+    /*std::cout << "INTEGRATE_GPU_PHASE1-time:" << num_blocks << ","
+              << time / 1.e6 << std::endl;*/
 
-    total_time += time;
+//    total_time += time;
     print_verbose<debug>(generators, dfevals, subregion_estimates);
     cuhreResult<double> res;
     res.estimate = reduction<double, use_custom>(

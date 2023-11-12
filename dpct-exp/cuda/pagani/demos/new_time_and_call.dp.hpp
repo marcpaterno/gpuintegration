@@ -145,7 +145,7 @@ clean_time_and_call(std::string id,
     return to_print;
   };
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 2; i++) {
 
     auto const t0 = std::chrono::high_resolution_clock::now();
     size_t partitions_per_axis = 2;

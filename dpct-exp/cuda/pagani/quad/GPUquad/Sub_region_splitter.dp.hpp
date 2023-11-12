@@ -59,7 +59,8 @@ public:
   void
   split(Sub_regions<T, ndim>* sub_regions,
         const Region_characteristics<ndim>* classifiers)
-  {
+  { 
+
   dpct::device_ext& dev_ct1 = dpct::get_current_device();
   sycl::queue& q_ct1 = dev_ct1.default_queue();
     if (num_regions == 0)
@@ -75,11 +76,16 @@ public:
     T* children_length =
       quad::cuda_malloc<T>(num_regions * ndim * children_per_region);
 
+    auto dLeftCoord = sub_regions->dLeftCoord;
+    auto dLength = sub_regions->dLength;
+    auto sub_dividing_dim = classifiers->sub_dividing_dim;
+
     /*
     DPCT1049:151: The workgroup size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
     Adjust the workgroup size if needed.
     */
+
     q_ct1.submit([&](sycl::handler& cgh) {
       auto num_regions_ct5 = num_regions;
 
@@ -90,9 +96,9 @@ public:
                          divideIntervalsGPU<T, ndim>(
                            children_left_coord,
                            children_length,
-                           sub_regions->dLeftCoord,
-                           sub_regions->dLength,
-                           classifiers->sub_dividing_dim,
+                           dLeftCoord,
+                           dLength,
+                           sub_dividing_dim,
                            num_regions_ct5,
                            children_per_region,
                            item_ct1);
