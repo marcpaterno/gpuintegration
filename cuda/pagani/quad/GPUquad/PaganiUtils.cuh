@@ -260,7 +260,6 @@ public:
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
-    cudaFuncSetCacheConfig(quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>, cudaFuncCachePreferEqual);
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -268,7 +267,6 @@ public:
                                    num_regions,
                                    subregion_estimates.integral_estimates,
                                    subregion_estimates.error_estimates,
-                                   // region_characteristics.active_regions,
                                    region_characteristics.sub_dividing_dim,
                                    epsrel,
                                    epsabs,
@@ -311,17 +309,11 @@ public:
 
     quad::set_device_array<T>(
       region_characteristics.active_regions, num_regions, 1.);
-    //quad::set_device_array<T>(
-    //  subregion_estimates.integral_estimates, num_regions, 1.);
-    //quad::set_device_array<int>(
-    //  region_characteristics.sub_dividing_dim, num_regions, 1.);
-    
    
     size_t num_blocks = num_regions;
     constexpr size_t block_size = 64;
 
     T epsrel = 1.e-3, epsabs = 1.e-12;
-    //cudaFuncSetCacheConfig(quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>, cudaFuncCachePreferL1);
     quad::INTEGRATE_GPU_PHASE1<IntegT, T, ndim, block_size, debug>
       <<<num_blocks, block_size>>>(d_integrand,
                                    subregions.dLeftCoord,
@@ -343,13 +335,10 @@ public:
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);
-    //res.estimate = 1. + res.estimate/1.e20;
     res.errorest = compute_error ?
                      reduction<T, use_custom>(
                        subregion_estimates.error_estimates, num_regions) :
                      std::numeric_limits<T>::infinity();
-    //quad::set_device_array<T>(
-    //  subregion_estimates.error_estimates, num_regions, 1.);
     return res;
   }
 
