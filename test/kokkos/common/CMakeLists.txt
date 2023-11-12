@@ -28,3 +28,10 @@ target_compile_options(kokkos_pagani_exclusive_parallel_scan PRIVATE "--expt-rel
 target_link_libraries(kokkos_pagani_exclusive_parallel_scan Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
 target_include_directories(kokkos_pagani_exclusive_parallel_scan PRIVATE ${CMAKE_SOURCE_DIR})
 add_test(kokkos_pagani_exclusive_parallel_scan kokkos_pagani_exclusive_parallel_scan)
+
+
+add_executable(kokkos_finished_estimates finished_estimates.cpp)
+target_compile_options(kokkos_finished_estimates PRIVATE "--expt-relaxed-constexpr")
+target_link_libraries(kokkos_finished_estimates Kokkos::kokkos Kokkos::kokkoskernels kokkos_catch_main)
+target_include_directories(kokkos_finished_estimates PRIVATE ${CMAKE_SOURCE_DIR})
+add_test(kokkos_finished_estimates kokkos_pagani_exclusive_parallel_scan)
