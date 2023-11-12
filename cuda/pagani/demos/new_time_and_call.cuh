@@ -188,7 +188,8 @@ template <typename F,
           int ndim,
           bool use_custom = false,
           int debug = 0,
-          int runs_per_esprel = 10>
+          int runs_per_esprel = 10,
+          bool collect_mult_runs = false>
 bool
 clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
 {
@@ -198,7 +199,7 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
   double constexpr epsabs = 1.0e-40;
   bool good = false;
   bool relerr_classification = true;
-  Workspace<double, ndim, use_custom> workspace;
+  Workspace<double, ndim, use_custom, collect_mult_runs> workspace;
   F integrand;
   integrand.set_true_value();
   auto print_custom = [=](bool use_custom_flag) {
@@ -227,15 +228,15 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
 
     std::cout.precision(17);
     if (i != 0) {
-      std::cout << std::fixed << std::scientific << id << "," << ndim << ","
+      std::cout << std::fixed << std::scientific << std::setprecision(15) << id << "," << ndim << ","
                 << print_custom(use_custom) << "," << integrand.true_value
                 << "," << epsrel << "," << epsabs << "," << result.estimate
                 << "," << result.errorest << "," << result.nregions << ","
                 << result.nFinishedRegions << "," << result.iters << ","
                 << result.status << "," << dt.count() << std::endl;
     }
-
-    outfile << std::fixed << std::scientific << id << "," << ndim << ","
+    if (i != 0) 
+      outfile << std::fixed << std::scientific << std::setprecision(15) << id << "," << ndim << ","
             << print_custom(use_custom) << "," << integrand.true_value << ","
             << epsrel << "," << epsabs << "," << result.estimate << ","
             << result.errorest << "," << result.nregions << ","

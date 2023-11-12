@@ -133,7 +133,8 @@ template <typename F,
           int ndim,
           bool use_custom = false,
           int debug = 0,
-          int num_runs = 10>
+          int num_runs = 10,
+          bool collect_mult_runs = false>
 bool
 time_and_call(std::string id, F integrand, double epsrel, double true_value)
 {
@@ -148,7 +149,7 @@ time_and_call(std::string id, F integrand, double epsrel, double true_value)
 
   double constexpr epsabs = 1.0e-40;
   bool good = false;
-  Workspace<double, ndim, use_custom> workspace;
+  Workspace<double, ndim, use_custom, collect_mult_runs> workspace;
   const quad::Volume<double, ndim> vol;
   size_t partitions_per_axis = get_partitions_per_axis(ndim);
 

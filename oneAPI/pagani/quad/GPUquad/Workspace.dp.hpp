@@ -24,7 +24,7 @@ output_iter_data()
     return;
 }
 
-template <size_t ndim, bool use_custom = false>
+template <size_t ndim, bool use_custom = false, bool collect_mult_runs = false>
 class Workspace {
   using Estimates = Region_estimates<ndim>;
   using Sub_regs = Sub_regions<ndim>;
@@ -74,9 +74,9 @@ public:
                                        const std::string& optional = "default");
 };
 
-template <size_t ndim, bool use_custom>
+template <size_t ndim, bool use_custom, bool collect_mult_runs>
 bool
-Workspace<ndim, use_custom>::heuristic_classify(
+Workspace<ndim, use_custom, collect_mult_runs>::heuristic_classify(
   Classifier& classifier_a,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
@@ -122,9 +122,9 @@ Workspace<ndim, use_custom>::heuristic_classify(
   return must_terminate;
 }
 
-template <size_t ndim, bool use_custom>
+template <size_t ndim, bool use_custom, bool collect_mult_runs>
 void
-Workspace<ndim, use_custom>::fix_error_budget_overflow(
+Workspace<ndim, use_custom, collect_mult_runs>::fix_error_budget_overflow(
   Region_characteristics<ndim>* characteristics,
   const numint::integration_result& cummulative_finished,
   const numint::integration_result& iter,
@@ -156,14 +156,14 @@ Workspace<ndim, use_custom>::fix_error_budget_overflow(
   }
 }
 
-template <size_t ndim, bool use_custom>
+template <size_t ndim, bool use_custom, bool collect_mult_runs>
 template <typename IntegT,
           bool predict_split,
           bool collect_iters,
           bool collect_sub_regions,
           int debug>
 numint::integration_result
-Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                        Sub_regions<ndim>& subregions,
                                        double epsrel,
                                        double epsabs,
@@ -177,8 +177,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
   CustomTimer timer;
   auto q_ct1 = sycl::queue(sycl::gpu_selector());
   Res cummulative;
-  Recorder<debug> iter_recorder;
-  Recorder<debug> time_breakdown;
+  Recorder<debug, collect_mult_runs> iter_recorder("oneapi_pagani_iters.csv");
+  Recorder<debug, collect_mult_runs> time_breakdown("oneapi_pagani_time_breakdown.csv");
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
 
@@ -186,13 +186,6 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
   IntegT* d_integrand = quad::cuda_copy_to_managed(integrand);
-
-  if constexpr (debug > 0) {
-    time_breakdown.outfile.open("oneapi_pagani_time_breakdown.csv");
-    time_breakdown.outfile << "id, ndim, epsrel, it, name, time" << std::endl;
-    iter_recorder.outfile.open("oneapi_pagani_iters.csv");
-    iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
-  }
 
   for (size_t it = 0; it < 700 && subregions.size > 0; it++) {
     size_t num_regions = subregions.size;
@@ -210,7 +203,8 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
       &subregions,
       &estimates,
       &characteristics,
-      compute_relerr_error_reduction);
+      compute_relerr_error_reduction,
+      optional);
 
     if constexpr (debug > 0) {
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - timer;
@@ -362,10 +356,10 @@ Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
   return cummulative;
 }
 
-template <size_t ndim, bool use_custom>
+template <size_t ndim, bool use_custom, bool collect_mult_runs>
 template <typename IntegT, bool debug>
 numint::integration_result
-Workspace<ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                        double epsrel,
                                        double epsabs,
                                        quad::Volume<double, ndim>& vol,

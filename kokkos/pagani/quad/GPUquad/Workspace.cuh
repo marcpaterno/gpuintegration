@@ -21,7 +21,7 @@ output_iter_data()
     return;
 }
 
-template <typename T, size_t ndim, bool use_custom = false>
+template <typename T, size_t ndim, bool use_custom = false, bool collect_mult_runs = false>
 class Workspace {
   using Estimates = Region_estimates<T, ndim>;
   using Sub_regs = Sub_regions<T, ndim>;
@@ -72,9 +72,9 @@ public:
                                        bool relerr_classification = true);
 };
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
 bool
-Workspace<T, ndim, use_custom>::heuristic_classify(
+Workspace<T, ndim, use_custom, collect_mult_runs>::heuristic_classify(
   Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
@@ -117,9 +117,9 @@ Workspace<T, ndim, use_custom>::heuristic_classify(
   return must_terminate;
 }
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
 void
-Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
+Workspace<T, ndim, use_custom, collect_mult_runs>::fix_error_budget_overflow(
   Region_characteristics<ndim>& characteristics,
   const numint::integration_result& cummulative_finished,
   const numint::integration_result& iter,
@@ -143,10 +143,10 @@ Workspace<T, ndim, use_custom>::fix_error_budget_overflow(
   }
 }
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
 numint::integration_result
-Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<T, ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
                                           T epsabs,
@@ -162,21 +162,14 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
   numint::integration_result cummulative;
-  Recorder<debug> iter_recorder;
-  Recorder<debug> time_breakdown;
+  Recorder<debug, collect_mult_runs> iter_recorder("kokkos_pagani_iters.csv");
+  Recorder<debug, collect_mult_runs> time_breakdown("kokkos_pagani_time_breakdown.csv");
 
   Classifier classifier(epsrel, epsabs);
   cummulative.status = 1;
   bool compute_relerr_error_reduction = false;
   IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
-
-  if constexpr (debug > 0) {
-    time_breakdown.outfile.open("kokkos_pagani_time_breakdown.csv");
-    time_breakdown.outfile << "id, ndim, epsrel, it, name, time" << std::endl;
-    iter_recorder.outfile.open("kokkos_pagani_iters.csv");
-    iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
-  }
-
+  
   for (size_t it = 0; it < 700 && subregions.size > 0; it++) {
     size_t num_regions = subregions.size;
     Regs_characteristics characteristics(subregions.size);
@@ -352,10 +345,10 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   return cummulative;
 }
 
-template <typename T, size_t ndim, bool use_custom>
+template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
 template <typename IntegT, bool predict_split, bool collect_iters, int debug>
 numint::integration_result
-Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
+Workspace<T, ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
                                           quad::Volume<T, ndim> const& vol,
@@ -366,7 +359,7 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   rules.set_device_volume(vol.lows, vol.highs);
   Estimates prev_iter_estimates;
   numint::integration_result cummulative;
-  Recorder<debug> iter_recorder("cuda_iters.csv");
+  Recorder<debug, collect_mult_runs> iter_recorder("cuda_iters.csv");
 
   size_t partitions_per_axis = 2;
   if (ndim < 5)
@@ -385,7 +378,6 @@ Workspace<T, ndim, use_custom>::integrate(const IntegT& integrand,
   IntegT* d_integrand = quad::make_gpu_integrand<IntegT>(integrand);
 
   if constexpr (debug > 0) {
-
     iter_recorder.outfile << "it, estimate, errorest, nregions" << std::endl;
   }
 

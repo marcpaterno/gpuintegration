@@ -14,7 +14,7 @@
 #include <string>
 #include <fstream>
 
-template <int debug = 0>
+template <int debug = 0, bool collect_mult_runs = false>
 class Recorder {
 public:
   std::ofstream outfile;
@@ -23,8 +23,10 @@ public:
 
   Recorder(std::string filename)
   {
-    if constexpr (debug > 0)
+    if constexpr (debug > 0 && collect_mult_runs == false)
       outfile.open(filename.c_str());
+    else if constexpr(debug > 0 && collect_mult_runs == true)
+      outfile.open(filename.c_str(), std::ios_base::app);
   }
 
   ~Recorder()
