@@ -29,7 +29,7 @@ host_print_dev_array(T* dev, size_t size, std::string label)
 
 template <typename F, int ndim>
 void
-call_cubature_rules(int num_repeats = 11)
+call_cubature_rules(int num_repeats = 11, std::string optional = "default")
 {
   F integrand;
   quad::Volume<double, ndim> vol;
@@ -59,15 +59,16 @@ call_cubature_rules(int num_repeats = 11)
           &sub_regions,
           &estimates,
           &characteristics,
-          compute_relerr_error_reduction);
+          compute_relerr_error_reduction,
+          optional);
       double estimate =
         custom_reduce<double>(estimates.integral_estimates, num_regions);
       // double errorest = reduction<double>(estimates.error_estimates,
       // num_regions);
 
-      std::cout << "estimates:" << std::scientific << std::setprecision(15)
+      /*std::cout << "estimates:" << std::scientific << std::setprecision(15)
                 << std::scientific << estimate << "," << num_regions
-                << std::endl;
+                << std::endl;*/
     }
   }
 
@@ -112,9 +113,9 @@ call_cubature_rules(F integrand,
       // double errorest = reduction<double>(estimates.error_estimates,
       // num_regions);
 
-      std::cout << "estimates:" << std::scientific << std::setprecision(15)
+      /*std::cout << "estimates:" << std::scientific << std::setprecision(15)
                 << std::scientific << estimate << "," << num_regions
-                << std::endl;
+                << std::endl;*/
       auto q_ct1 = sycl::queue(sycl::gpu_selector());
       sycl::free(d_integrand, q_ct1);
     }

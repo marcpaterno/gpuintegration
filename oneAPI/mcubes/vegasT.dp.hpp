@@ -707,7 +707,8 @@ namespace cuda_mcubes {
         int titer,
         int itmax,
         int skip,
-        quad::Volume<double, ndim> const* vol)
+        quad::Volume<double, ndim> const* vol, 
+        std::string optional = "default")
   {
     double total_time = 0.;
     sycl::queue q_ct1(sycl::gpu_selector(),
@@ -841,7 +842,6 @@ namespace cuda_mcubes {
       ((uint32_t)(((ncubes + BLOCK_DIM_X - 1) / BLOCK_DIM_X)) / chunkSize) +
       1; // compute blocks based on chunk_size, ncubes, and block_dim_x
     uint32_t nThreads = BLOCK_DIM_X;*/
-    std::cout << "\textra cubes:" << extra << std::endl;
     for (it = 1; it <= itmax && (*status) == 1; (*iters)++, it++) {
       ti = tsi = 0.0;
       for (j = 1; j <= ndim; j++) {
@@ -857,7 +857,6 @@ namespace cuda_mcubes {
 
       using MilliSeconds =
         std::chrono::duration<double, std::chrono::milliseconds::period>;
-      std::cout << "\tfevals:" << ncubes * 2 << std::endl;
 
       MilliSeconds time_diff = std::chrono::high_resolution_clock::now() - t0;
       unsigned int seed = /*static_cast<unsigned int>(time_diff.count()) +*/
@@ -905,12 +904,12 @@ namespace cuda_mcubes {
                        sycl::info::event_profiling::command_end>() -
                      e.template get_profiling_info<
                        sycl::info::event_profiling::command_start>());
-      // std::cout<< "time:" << std::scientific << 1 << "," << time/1.e6 << ","
+       std::cout<< optional << "," << ndim << "," << ncall << "," << std::scientific << time/1.e6 << std::endl;
       // << ndim << ","<< ncall << std::endl;
-      std::cout << "vegas_kernel:" << params.nBlocks << "," << time / 1.e6
-                << std::endl;
+      //std::cout << "vegas_kernel:" << params.nBlocks << "," << time / 1.e6
+      //          << std::endl;
 
-      total_time += time;
+      //total_time += time;
 
       q_ct1.memcpy(xi, xi_dev, sizeof(double) * (mxdim_p1) * (ndmx_p1)).wait();
       cudaCheckError();
@@ -922,7 +921,6 @@ namespace cuda_mcubes {
 
       ti = result[0];
       tsi = result[1];
-      std::cout<<"ti"<<ti<<std::endl;
 
       tsi *= dv2g;
       // printf("-------------------------------------------\n");
@@ -1073,7 +1071,7 @@ namespace cuda_mcubes {
       // it, *tgral, *sd, *chi2a);
     } // end of iterations
 
-    std::cout << "total_time:" << total_time / 1e6 << std::endl;
+    //std::cout << "total_time:" << total_time / 1e6 << std::endl;
 
     free(d);
     free(dt);
@@ -1104,7 +1102,8 @@ namespace cuda_mcubes {
             quad::Volume<double, NDIM> const* volume,
             int totalIters = 15,
             int adjustIters = 15,
-            int skipIters = 5)
+            int skipIters = 5,
+            std::string optional = "default")
   {
     cuhreResult<double> result;
     result.status = 1;
@@ -1120,7 +1119,8 @@ namespace cuda_mcubes {
                         totalIters,
                         adjustIters,
                         skipIters,
-                        volume);
+                        volume,
+                        optional);
     return result;
   }
 
@@ -1133,7 +1133,8 @@ namespace cuda_mcubes {
                    quad::Volume<double, NDIM> const* volume,
                    int totalIters = 15,
                    int adjustIters = 15,
-                   int skipIters = 5)
+                   int skipIters = 5,
+                   std::string optional = "default")
   {
 
     cuhreResult<double> result;
@@ -1152,7 +1153,8 @@ namespace cuda_mcubes {
                           totalIters,
                           adjustIters,
                           skipIters,
-                          volume);
+                          volume,
+                          optional);
     } while (result.status == 1 && AdjustParams(ncall, totalIters) == true);
 
     return result;

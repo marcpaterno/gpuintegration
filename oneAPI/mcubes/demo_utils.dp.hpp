@@ -159,7 +159,8 @@ signle_invocation_time_and_call(F integrand,
                                 char const* integralName,
                                 VegasParams& params,
                                 quad::Volume<double, ndim>* volume,
-                                int num_repeats = 100)
+                                int num_repeats = 100,
+                                std::string optional = "default")
 {
   bool success = false;
   for (int i = 0; i < num_repeats; ++i) {
@@ -177,12 +178,13 @@ signle_invocation_time_and_call(F integrand,
                                                volume,
                                                params.t_iter,
                                                params.num_adjust_iters,
-                                               params.num_skip_iters);
+                                               params.num_skip_iters,
+                                               optional);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     success = (res.status == 0);
     std::cout.precision(15);
 
-    std::cout << "estimates:" << std::scientific << std::setprecision(15)
+    /*std::cout << "estimates:" << std::scientific << std::setprecision(15)
               << std::scientific << res.estimate << "," << params.ncall
               << std::endl;
     if (success)
@@ -192,14 +194,14 @@ signle_invocation_time_and_call(F integrand,
                 << "," << params.t_iter << "," << params.num_adjust_iters << ","
                 << params.num_skip_iters << "," << res.iters << ","
                 << params.ncall << "," << res.neval << "," << dt.count() << ","
-                << res.status << "\n";
+                << res.status << "\n";*/
   }
   return success;
 }
 
 template <typename F, int ndim>
 void
-call_mcubes_kernel(int num_repeats)
+call_mcubes_kernel(int num_repeats, std::string optional = "default")
 {
   std::array<double, 4> required_ncall = {1.e8, 1.e9, 2.e9, 3.e9};
   double ncall = 1.0e8;
@@ -216,7 +218,7 @@ call_mcubes_kernel(int num_repeats)
     params.ncall = num_samples;
 
     signle_invocation_time_and_call<F, ndim>(
-      integrand, epsrel, true_value, "f", params, &volume, num_repeats);
+      integrand, epsrel, true_value, "f", params, &volume, num_repeats, optional);
     run++;
     if (run > required_ncall.size())
       break;
