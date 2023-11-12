@@ -8,4 +8,4 @@ add_executable(oneapi_mcubes_Genz5_8D Genz5_8D.dp.cpp)
 
 add_executable(oneapi_mcubes_Genz6_6D Genz6_6D.dp.cpp)
 
-
+add_executable(oneapi_mcubes_genz_integrals genz_integrals.cpp)
