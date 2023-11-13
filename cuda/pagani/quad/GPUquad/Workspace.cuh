@@ -20,7 +20,7 @@ output_iter_data()
     return;
 }
 
-template <typename T, size_t ndim, bool use_custom = false, bool collect_mult_runs = false>
+template <typename T, size_t ndim, int debug = 0, bool use_custom = false, bool collect_mult_runs = false>
 class Workspace {
   using Estimates = Region_estimates<T, ndim>;
   using Sub_regs = Sub_regions<T, ndim>;
@@ -71,9 +71,9 @@ public:
 };
 
 
-template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
+template <typename T, size_t ndim, int debug, bool use_custom, bool collect_mult_runs>
 bool
-Workspace<T, ndim, use_custom, collect_mult_runs>::heuristic_classify(
+Workspace<T, ndim, debug, use_custom, collect_mult_runs>::heuristic_classify(
   Classifier& classifier,
   Region_characteristics<ndim>& characteristics,
   const Estimates& estimates,
@@ -118,9 +118,9 @@ Workspace<T, ndim, use_custom, collect_mult_runs>::heuristic_classify(
 }
 
 
-template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
+template <typename T, size_t ndim, int debug, bool use_custom, bool collect_mult_runs>
 void
-Workspace<T, ndim, use_custom, collect_mult_runs>::fix_error_budget_overflow(
+Workspace<T, ndim, debug, use_custom, collect_mult_runs>::fix_error_budget_overflow(
   Region_characteristics<ndim>& characteristics,
   const numint::integration_result& cummulative_finished,
   const numint::integration_result& iter,
@@ -145,10 +145,10 @@ Workspace<T, ndim, use_custom, collect_mult_runs>::fix_error_budget_overflow(
   }
 }
 
-template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
-template <typename IntegT, bool predict_split, bool collect_iters, int debug>
+template <typename T, size_t ndim, int debug, bool use_custom, bool collect_mult_runs>
+template <typename IntegT, bool predict_split, bool collect_iters>
 numint::integration_result
-Workspace<T, ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
+Workspace<T, ndim, debug, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                           Sub_regions<T, ndim>& subregions,
                                           T epsrel,
                                           T epsabs,
@@ -358,10 +358,10 @@ Workspace<T, ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integ
 }
 
 
-template <typename T, size_t ndim, bool use_custom, bool collect_mult_runs>
-template <typename IntegT, bool predict_split, bool collect_iters, int debug>
+template <typename T, size_t ndim, int debug, bool use_custom, bool collect_mult_runs>
+template <typename IntegT, bool predict_split, bool collect_iters>
 numint::integration_result
-Workspace<T, ndim, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
+Workspace<T, ndim, debug, use_custom, collect_mult_runs>::integrate(const IntegT& integrand,
                                           T epsrel,
                                           T epsabs,
                                           quad::Volume<T, ndim> const& vol,

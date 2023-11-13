@@ -19,7 +19,7 @@ czero_time_and_call(std::string id,
       std::chrono::duration<double, std::chrono::milliseconds::period>;
     double constexpr epsabs = 1.0e-40;
     bool relerr_classification = true;
-    Workspace<double, ndim, use_custom> workspace;
+    Workspace<double, ndim, debug, use_custom> workspace;
     F integrand;
     integrand.sharpness = sharpness;
     integrand.set_true_value();
@@ -36,7 +36,7 @@ czero_time_and_call(std::string id,
       constexpr bool collect_iters = false;
 
       numint::integration_result result =
-        workspace.template integrate<F, predict_split, collect_iters, debug>(
+        workspace.template integrate<F, predict_split, collect_iters>(
           integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
       MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
       double const absolute_error =

@@ -146,7 +146,7 @@ clean_time_and_call(std::string id,
     std::chrono::duration<double, std::chrono::milliseconds::period>;
   T constexpr epsabs = 1.0e-40;
   bool good = false;
-  Workspace<T, ndim, use_custom> workspace;
+  Workspace<T, ndim, debug, use_custom> workspace;
 
   auto print_custom = [=](bool use_custom_flag) {
     std::string to_print = use_custom_flag == true ? "custom" : "library";
@@ -163,7 +163,7 @@ clean_time_and_call(std::string id,
 
     numint::integration_result result =
 
-      workspace.template integrate<F, predict_split, collect_iters, debug>(
+      workspace.template integrate<F, predict_split, collect_iters>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     T const absolute_error = std::abs(result.estimate - true_value);
@@ -199,7 +199,7 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
   double constexpr epsabs = 1.0e-40;
   bool good = false;
   bool relerr_classification = true;
-  Workspace<double, ndim, use_custom, collect_mult_runs> workspace;
+  Workspace<double, ndim, debug, use_custom, collect_mult_runs> workspace;
   F integrand;
   integrand.set_true_value();
   auto print_custom = [=](bool use_custom_flag) {
@@ -216,7 +216,7 @@ clean_time_and_call(std::string id, double epsrel, std::ostream& outfile)
     constexpr bool collect_iters = false;
 
     numint::integration_result result =
-      workspace.template integrate<F, predict_split, collect_iters, debug>(
+      workspace.template integrate<F, predict_split, collect_iters>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification, id);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     double const absolute_error =

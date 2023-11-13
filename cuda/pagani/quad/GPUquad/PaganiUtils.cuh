@@ -331,7 +331,7 @@ public:
                                    dfevals);
     cudaDeviceSynchronize();
 
-    print_verbose<debug>(it, generators, dfevals, subregion_estimates);
+    print_verbose(it, generators, dfevals, subregion_estimates);
     numint::integration_result res;
     res.estimate = reduction<T, use_custom>(
       subregion_estimates.integral_estimates, num_regions);

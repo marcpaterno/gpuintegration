@@ -13,7 +13,9 @@
         require blocks to be equal to size
 */
 
+
 template <typename T>
+inline
 void
 device_custom_reduce(T* arr,
                      size_t size,
@@ -39,7 +41,9 @@ device_custom_reduce(T* arr,
   }
 }
 
+
 template <typename T>
+inline
 T
 custom_reduce(T* arr, size_t size)
 {
@@ -91,7 +95,9 @@ custom_reduce(T* arr, size_t size)
   return res;
 }
 
+
 template <typename T>
+inline
 void
 device_custom_reduce_atomics(T* arr,
                              size_t size,
@@ -118,45 +124,27 @@ device_custom_reduce_atomics(T* arr,
 }
 
 template <typename T>
-T
-custom_reduce_atomics(T* arr, size_t size)
+__inline__ T
+warpReduceMax(T val, sycl::nd_item<3> item_ct1)
 {
-  auto q_ct1 = sycl::queue(sycl::gpu_selector());
-  T res = 0.;
-  size_t num_threads = 512;
-  size_t max_num_blocks = 1024;
-  size_t num_blocks =
-    std::min((size + num_threads - 1) / num_threads, max_num_blocks);
-  T* out = quad::cuda_malloc<T>(1);
-  quad::cuda_memcpy_to_device<T>(out, &res, 1);
+  const unsigned int FULL_MASK = 0xffffffff;
 
-  quad::cuda_memcpy_to_device<T>(out, &res, 1);
+  for (int mask = item_ct1.get_sub_group().get_local_range().get(0) / 2;
+       mask > 0;
+       mask /= 2) {
 
-<<<<<<< HEAD
+    val = sycl::max(
+      sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
+  }
 
-
-template<typename T>
-__inline__ T warpReduceMax(T val, sycl::nd_item<3> item_ct1)
-{
-    const unsigned int FULL_MASK = 0xffffffff;
-
-    for (int mask = item_ct1.get_sub_group().get_local_range().get(0) / 2;
-         mask > 0;
-         mask /= 2)
-    {
-        
-        val = sycl::max(
-          sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
-    }
-      
-    return val;
+  return val;
 }
+
+
 
 template<typename T>
 __inline__ T warpReduceMin(T val, sycl::nd_item<3> item_ct1)
 {
-    const unsigned int FULL_MASK = 0xffffffff;
-
     for (int mask = item_ct1.get_sub_group().get_local_range().get(0) / 2;
          mask > 0;
          mask /= 2)
@@ -171,42 +159,43 @@ __inline__ T warpReduceMin(T val, sycl::nd_item<3> item_ct1)
 
 template <typename T>
 void
-blockReduceMinMax(T& min, T& max, sycl::nd_item<3> item_ct1, T *shared_max,
-                  T *shared_min)
+blockReduceMinMax(T& min,
+                  T& max,
+                  sycl::nd_item<3> item_ct1,
+                  T* shared_max,
+                  T* shared_min)
 {
 
-    int lane = item_ct1.get_local_id(2) % 32; // 32 is for warp size
-    int wid = item_ct1.get_local_id(2) >> 5 /* threadIdx.x / 32  */;
+  int lane = item_ct1.get_local_id(2) % 32; // 32 is for warp size
+  int wid = item_ct1.get_local_id(2) >> 5 /* threadIdx.x / 32  */;
 
+  min = warpReduceMin(min, item_ct1);
+  max = warpReduceMax(max, item_ct1);
+
+  if (lane == 0) {
+    shared_min[wid] = min;
+    shared_max[wid] = max;
+    // printf("all warps blockReduceMinMax [%i](%i) min:%f\n", blockIdx.x,
+    // threadIdx.x, min);
+  }
+
+  item_ct1.barrier(); // Wait for all partial reductions
+
+  // read from shared memory only if that warp existed
+  min = (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
+          shared_min[lane] :
+          DBL_MAX;
+  max = (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
+          shared_max[lane] :
+          0.;
+
+  if (wid == 0) {
     min = warpReduceMin(min, item_ct1);
-        max = warpReduceMax(max, item_ct1);
-
-    if (lane == 0) {
-      shared_min[wid] = min;
-	  shared_max[wid] = max;
-	  //printf("all warps blockReduceMinMax [%i](%i) min:%f\n", blockIdx.x, threadIdx.x, min);
-    }
-    
-    item_ct1.barrier(); // Wait for all partial reductions
-
-    // read from shared memory only if that warp existed
-    min =
-      (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
-        shared_min[lane] :
-        std::numeric_limits<T>::max();
-        max = (item_ct1.get_local_id(2) <
-               (item_ct1.get_local_range().get(2) >> 5)) ?
-                shared_max[lane] :
-                0.;
-
-    if (wid == 0){
-                min = warpReduceMin(min, item_ct1);
-                max = warpReduceMax(max, item_ct1);
-        }
+    max = warpReduceMax(max, item_ct1);
+  }
 }
 
 template<typename T>
-
 void 
 blocks_min_max(const T* __restrict__ input, const int size, T* min, T* max,
                sycl::nd_item<3> item_ct1,
@@ -253,7 +242,7 @@ void block0_min_max(T* mins, T* maxs, const int size, T* min, T* max,
     T localMax = tid < size ? maxs[tid] : 0;
     T localMin = tid < size ? mins[tid] : std::numeric_limits<T>::max();
 
-    blockReduceMinMax(localMin, localMax, item_ct1, shared_max, shared_min);
+    blockReduceMinMax<T>(localMin, localMax, item_ct1, shared_max, shared_min);
 
     if (item_ct1.get_local_id(2) == 0) {
         max[item_ct1.get_group(2)] = localMax;
@@ -262,40 +251,23 @@ void block0_min_max(T* mins, T* maxs, const int size, T* min, T* max,
     }
 }
 
+
 template <typename T>
-std::pair<T, T>
-min_max(T* input, const int size) {
-  auto q_ct1 =  sycl::queue(sycl::gpu_selector());
-  size_t num_threads = 256;
-  auto device = q_ct1.get_device();
-	size_t max_num_blocks = device.get_info<cl::sycl::info::device::max_work_group_size>();
-        size_t num_blocks =
-          std::min((size + num_threads - 1) / num_threads, max_num_blocks);
+T
+custom_reduce_atomics(T* arr, size_t size)
+{
+  auto q_ct1 = sycl::queue(sycl::gpu_selector());
+  T res = 0.;
+  size_t num_threads = 512;
+  size_t max_num_blocks = 1024;
+  size_t num_blocks =
+    std::min((size + num_threads - 1) / num_threads, max_num_blocks);
+  T* out = quad::cuda_malloc<T>(1);
+  quad::cuda_memcpy_to_device<T>(out, &res, 1);
 
-        T* block_mins = quad::cuda_malloc<T>(num_blocks);
-	T* block_maxs = quad::cuda_malloc<T>(num_blocks);
-	T* d_min = quad::cuda_malloc<T>(1);
-	T* d_max = quad::cuda_malloc<T>(1);
-
-        
-        q_ct1.submit([&](sycl::handler& cgh) {
-                sycl::accessor<T,
-                               1,
-                               sycl::access_mode::read_write,
-                               sycl::access::target::local>
-                  shared_max_acc_ct1(sycl::range(32), cgh);
-                sycl::accessor<T,
-                               1,
-                               sycl::access_mode::read_write,
-                               sycl::access::target::local>
-                  shared_min_acc_ct1(sycl::range(32), cgh);
-
-                cgh.parallel_for(
-                  sycl::nd_range(sycl::range(1, 1, num_blocks) *
-=======
+  quad::cuda_memcpy_to_device<T>(out, &res, 1);
   q_ct1
     .parallel_for(sycl::nd_range(sycl::range(1, 1, num_blocks) *
->>>>>>> 94617c3 (add atomic operation to custom inner product, additional formatting changes)
                                    sycl::range(1, 1, num_threads),
                                  sycl::range(1, 1, num_threads)),
                   [=](sycl::nd_item<3> item_ct1)
@@ -310,7 +282,6 @@ min_max(T* input, const int size) {
 }
 
 template <typename T1, typename T2>
-
 void
 device_custom_inner_product_atomics(T1* arr1,
                                     T2* arr2,
@@ -368,142 +339,7 @@ custom_inner_product_atomics(T1* arr1, T2* arr2, size_t size)
   return res;
 }
 
-template <typename T>
-__inline__ T
-warpReduceMax(T val, sycl::nd_item<3> item_ct1)
-{
-  const unsigned int FULL_MASK = 0xffffffff;
 
-  for (int mask = item_ct1.get_sub_group().get_local_range().get(0) / 2;
-       mask > 0;
-       mask /= 2) {
-
-    val = sycl::max(
-      sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
-  }
-
-  return val;
-}
-
-template <typename T>
-__inline__ T
-warpReduceMin(T val, sycl::nd_item<3> item_ct1)
-{
-  const unsigned int FULL_MASK = 0xffffffff;
-
-  for (int mask = item_ct1.get_sub_group().get_local_range().get(0) / 2;
-       mask > 0;
-       mask /= 2) {
-
-    val = sycl::min(
-      sycl::permute_group_by_xor(item_ct1.get_sub_group(), val, mask), val);
-  }
-
-  return val;
-}
-
-template <typename T>
-void
-blockReduceMinMax(T& min,
-                  T& max,
-                  sycl::nd_item<3> item_ct1,
-                  T* shared_max,
-                  T* shared_min)
-{
-
-  int lane = item_ct1.get_local_id(2) % 32; // 32 is for warp size
-  int wid = item_ct1.get_local_id(2) >> 5 /* threadIdx.x / 32  */;
-
-  min = warpReduceMin(min, item_ct1);
-  max = warpReduceMax(max, item_ct1);
-
-  if (lane == 0) {
-    shared_min[wid] = min;
-    shared_max[wid] = max;
-    // printf("all warps blockReduceMinMax [%i](%i) min:%f\n", blockIdx.x,
-    // threadIdx.x, min);
-  }
-
-  item_ct1.barrier(); // Wait for all partial reductions
-
-  // read from shared memory only if that warp existed
-  min = (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
-          shared_min[lane] :
-          DBL_MAX;
-  max = (item_ct1.get_local_id(2) < (item_ct1.get_local_range().get(2) >> 5)) ?
-          shared_max[lane] :
-          0.;
-
-  if (wid == 0) {
-    min = warpReduceMin(min, item_ct1);
-    max = warpReduceMax(max, item_ct1);
-  }
-}
-
-template <typename T>
-
-void
-blocks_min_max(const T* __restrict__ input,
-               const int size,
-               T* min,
-               T* max,
-               sycl::nd_item<3> item_ct1,
-               T* shared_max,
-               T* shared_min)
-{
-  const int tid = item_ct1.get_group(2) * item_ct1.get_local_range().get(2) +
-                  item_ct1.get_local_id(2);
-  const int total_num_threads =
-    item_ct1.get_local_range().get(2) * item_ct1.get_group_range(2);
-
-  T localMax = 0.f;
-  T localMin = DBL_MAX;
-
-  for (int i = tid; i < size; i += total_num_threads) {
-    T val = input[tid];
-
-    if (localMax < val) {
-      localMax = val;
-    }
-
-    if (localMin > val) {
-      localMin = val;
-    }
-  }
-
-  blockReduceMinMax(localMin, localMax, item_ct1, shared_max, shared_min);
-
-  if (item_ct1.get_local_id(2) == 0) {
-    max[item_ct1.get_group(2)] = localMax;
-    min[item_ct1.get_group(2)] = localMin;
-  }
-}
-
-template <typename T>
-void
-block0_min_max(T* mins,
-               T* maxs,
-               const int size,
-               T* min,
-               T* max,
-               sycl::nd_item<3> item_ct1,
-               T* shared_max,
-               T* shared_min)
-{
-  const int tid = item_ct1.get_local_id(2);
-
-  T localMax = tid < size ? maxs[tid] : 0.;
-  T localMin = tid < size ? mins[tid] : DBL_MAX;
-
-  blockReduceMinMax(localMin, localMax, item_ct1, shared_max, shared_min);
-
-  if (item_ct1.get_local_id(2) == 0) {
-    max[item_ct1.get_group(2)] = localMax;
-    min[item_ct1.get_group(2)] = localMin;
-    // printf("reducing the block results [%i] :%f,%f\n", blockIdx.x, localMax,
-    // localMin);
-  }
-}
 
 template <typename T>
 std::pair<T, T>
@@ -808,7 +644,7 @@ gpu_prescan(T* const d_out,
 
   // Upsweep/Reduce step
   int offset = 1;
-  for (int d = max_elems_per_block >> 1; d > 0; d >>= 1) {
+  for (unsigned int d = max_elems_per_block >> 1; d > 0; d >>= 1) {
 
     item_ct1.barrier();
 
@@ -833,7 +669,7 @@ gpu_prescan(T* const d_out,
   }
 
   // Downsweep step
-  for (int d = 1; d < max_elems_per_block; d <<= 1) {
+  for (unsigned int d = 1; d < max_elems_per_block; d <<= 1) {
     offset >>= 1;
 
     item_ct1.barrier();

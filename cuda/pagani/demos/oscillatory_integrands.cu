@@ -20,7 +20,7 @@ osc_time_and_call(std::string id,
   double constexpr epsabs = 1.0e-40;
   bool good = false;
   bool relerr_classification = true;
-  Workspace<double, ndim, use_custom> workspace;
+  Workspace<double, ndim, debug, use_custom> workspace;
   F integrand;
   integrand.set_true_value(vol.lows[0], vol.highs[0]);
   auto print_custom = [=](bool use_custom_flag) {
@@ -36,7 +36,7 @@ osc_time_and_call(std::string id,
     constexpr bool collect_iters = false;
 
     numint::integration_result result =
-      workspace.template integrate<F, predict_split, collect_iters, debug>(
+      workspace.template integrate<F, predict_split, collect_iters>(
         integrand, sub_regions, epsrel, epsabs, vol, relerr_classification);
     MilliSeconds dt = std::chrono::high_resolution_clock::now() - t0;
     double const absolute_error =
