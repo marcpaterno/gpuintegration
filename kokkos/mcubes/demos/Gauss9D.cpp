@@ -3,7 +3,7 @@
 
 class Gauss9D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x,
              double y,
              double z,
@@ -27,9 +27,7 @@ main()
   Kokkos::initialize();
   {
     double epsrel = 1.e-3;
-    double epsrel_min = 1e-9;
     constexpr int ndim = 9;
-    double epsabs = 1.e-20;
     double ncall = 1.0e8;
     int titer = 15;
     int itmax = 10;
@@ -41,10 +39,6 @@ main()
     double highs[] = {1., 1., 1., 1., 1., 1., 1., 1., 1.};
     quad::Volume<double, ndim> volume(lows, highs);
     Gauss9D integrand;
-
-    // mcubes_time_and_call<GENZ_4_5D, ndim>(integrand, epsrel, true_value, "f4
-    // 5D", params, &volume); std::array<double, 6> required_ncall =
-    // {1.e7, 1.e7, 1.e7, 1.e9, 1.e9, 8.e9};
 
     PrintHeader();
     bool success = false;

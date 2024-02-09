@@ -594,7 +594,6 @@ GetChunkSize(const double ncall)
                       const uint32_t* kg,
                       int* const ia,
                       double* const x,
-                      double& wgt,
                       ViewVectorDouble d,
                       double& fb,
                       double& f2b,
@@ -657,7 +656,6 @@ GetChunkSize(const double ncall)
                  uint32_t* const kg,
                  int* const ia,
                  double* const x,
-                 double& wgt,
                  ViewVectorDouble d,
                  double& fbg,
                  double& f2bg,
@@ -688,7 +686,7 @@ GetChunkSize(const double ncall)
                                                        kg,
                                                        ia,
                                                        x,
-                                                       wgt,
+                                                       //wgt,
                                                        d,
                                                        fb,
                                                        f2b,
@@ -736,7 +734,6 @@ GetChunkSize(const double ncall)
                       uint32_t totalNumThreads,
                       int LastChunk,
                       unsigned int seed_init,
-                      int iter,
                       FuncEval<ndim>* funcevals = nullptr)
   {
     Kokkos::parallel_for(
@@ -749,7 +746,7 @@ GetChunkSize(const double ncall)
         uint32_t tx = team_member.team_rank(); // local id
         uint32_t m = team_member.league_rank() * team_member.team_size() +
                      tx; // global thread id
-        double wgt;
+
         uint32_t kg[mxdim_p1];
         int ia[mxdim_p1];
         double x[mxdim_p1];
@@ -782,7 +779,6 @@ GetChunkSize(const double ncall)
                                                       kg,
                                                       ia,
                                                       x,
-                                                      wgt,
                                                       d,
                                                       fbg,
                                                       f2bg,
@@ -1123,7 +1119,7 @@ GetChunkSize(const double ncall)
                                                        totalNumThreads,
                                                        LastChunk,
                                                        seed + it,
-                                                       it,
+                                                       //it,
                                                        data_collector.funcevals.data());
       Kokkos::fence();
 

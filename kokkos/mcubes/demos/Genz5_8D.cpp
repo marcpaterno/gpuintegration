@@ -3,7 +3,7 @@
 
 class GENZ_5_8D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x,
              double y,
              double z,
@@ -37,7 +37,7 @@ main()
     int skip = 5;
     VegasParams params(ncall, titer, itmax, skip);
 
-    double true_value = 1.79132603674879e-06;
+    double true_value = 2.42521762564189e-06;
 
     double lows[] = {0., 0., 0., 0., 0., 0., 0., 0.};
     double highs[] = {1., 1., 1., 1., 1., 1., 1., 1.};
@@ -45,7 +45,6 @@ main()
     GENZ_5_8D integrand;
 
     PrintHeader();
-    // size_t expID = 0;
     bool success = false;
 
     do {

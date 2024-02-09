@@ -3,7 +3,7 @@
 
 class GENZ_3_8D {
 public:
-  __device__ __host__ double
+  KOKKOS_INLINE_FUNCTION double
   operator()(double x,
              double y,
              double z,
